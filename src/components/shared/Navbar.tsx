@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { apiClient } from "@/lib/apiClient";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -9,12 +10,17 @@ import { MapPin, ChevronDown, Search, ShoppingCart, Menu } from "lucide-react";
 import Cookies from "js-cookie";
 
 import { navLinks } from "../../data/navLinks";
-import { getAccessToken, ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "../../lib/authCookies";
+import {
+  getAccessToken,
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+} from "../../lib/authCookies";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [addressText, setAddressText] = useState("Add Address");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
@@ -24,21 +30,46 @@ export default function Navbar() {
 
   useEffect(() => {
     const tokenExists = !!getAccessToken();
-    setIsLoggedIn(prev => {
+    setIsLoggedIn((prev) => {
       if (prev === tokenExists) return prev;
       return tokenExists;
     });
   }, [pathname]);
- 
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setShowAccountDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await apiClient.get("/profile");
+
+        const profile = res.data?.data;
+
+        const address =
+          profile?.address?.street ||
+          profile?.deliveryAddresses?.[0]?.street ||
+          "Add Address";
+
+        setAddressText(address);
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+      }
+    };
+
+    if (isLoggedIn) {
+      fetchProfile();
+    }
+  }, [isLoggedIn]);
 
   const handleLogout = () => {
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
@@ -60,15 +91,20 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-[#b0004a] text-white transition-all duration-300 dark:bg-[#d81b60]">
       <div className="flex w-full items-center justify-between px-4 py-4 lg:px-16">
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-[20px] font-black leading-7 md:text-[24px]">
+          <Link
+            href="/"
+            className="text-[20px] font-black leading-7 md:text-[24px]"
+          >
             DeliGo
           </Link>
 
-          <button className="hidden cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20 lg:flex">
-            <MapPin size={20} />
-            <span className="text-[14px] font-semibold leading-5">Rua Augusta</span>
-            <ChevronDown size={16} />
-          </button>
+          <Link href="add-address">
+            <button className="hidden cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20 lg:flex">
+              <MapPin size={20} />
+              {addressText}
+              <ChevronDown size={16} />
+            </button>
+          </Link>
         </div>
 
         <div className="mx-8 hidden flex-1 md:block">
@@ -85,7 +121,8 @@ export default function Navbar() {
         <div className="flex items-center gap-6">
           <nav className="hidden items-center gap-8 lg:flex">
             {navLinks.map((item, index) => {
-              const isActive = pathname === item.href || (pathname === "/" && index === 0);
+              const isActive =
+                pathname === item.href || (pathname === "/" && index === 0);
               return (
                 <Link
                   key={item.label}
