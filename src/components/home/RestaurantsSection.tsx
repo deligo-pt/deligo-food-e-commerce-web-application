@@ -2,16 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import {
-  ChevronRight,
-  Star,
-  Clock,
-  Heart,
-  Truck,
-  Check,
-} from "lucide-react";
+import { ChevronRight, Star, Clock, Heart, Truck, Check } from "lucide-react";
 
 import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
+import Link from "next/link";
 
 interface Vendor {
   id: string;
@@ -53,12 +47,7 @@ export default function RestaurantsSection() {
       } catch (err) {
         console.error("Failed to fetch vendors:", err);
 
-        setError(
-          getApiErrorMessage(
-            err,
-            "Unable to load nearby restaurants."
-          )
-        );
+        setError(getApiErrorMessage(err, "Unable to load nearby restaurants."));
       } finally {
         setLoading(false);
       }
@@ -105,9 +94,12 @@ export default function RestaurantsSection() {
           Near You
         </h2>
 
-        <button className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline">
+        <Link
+          href="/vendors"
+          className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline"
+        >
           View All <ChevronRight size={20} />
-        </button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
@@ -122,8 +114,7 @@ export default function RestaurantsSection() {
                 sizes="(max-width:1024px) 100vw, 33vw"
                 alt={vendor.businessDetails.businessName}
                 src={
-                  vendor.storePhoto?.[0] ||
-                  "https://placehold.co/600x400/png"
+                  vendor.storePhoto?.[0] || "https://placehold.co/600x400/png"
                 }
                 className="object-fit transition-transform duration-1000 group-hover:scale-110"
               />
@@ -161,9 +152,7 @@ export default function RestaurantsSection() {
               <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-[14px] font-medium text-[#5a4044]">
                 <span className="flex items-center gap-2 text-[#b0004a]">
                   <Truck size={20} />
-                  {vendor.businessDetails.isStoreOpen
-                    ? "Open Now"
-                    : "Closed"}
+                  {vendor.businessDetails.isStoreOpen ? "Open Now" : "Closed"}
                 </span>
 
                 <span className="flex items-center gap-2 text-[#b70052]">
