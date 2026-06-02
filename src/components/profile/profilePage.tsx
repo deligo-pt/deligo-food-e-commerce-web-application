@@ -23,9 +23,14 @@ import {
   Star,
 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
-import { getAccessToken, ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/authCookies";
+import {
+  getAccessToken,
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+} from "@/lib/authCookies";
 import Cookies from "js-cookie";
 import Image from "next/image";
+import Link from "next/link";
 
 interface ProfileData {
   _id: string;
@@ -101,7 +106,10 @@ export default function AccountPage() {
 
     const fetchProfile = async () => {
       try {
-        const response = await apiClient.get<{ success: boolean; data: ProfileData }>("/profile");
+        const response = await apiClient.get<{
+          success: boolean;
+          data: ProfileData;
+        }>("/profile");
         if (response.data.success) {
           setProfile(response.data.data);
         } else {
@@ -135,12 +143,16 @@ export default function AccountPage() {
   if (error || !profile) {
     return (
       <section className="bg-[#f7f7f7] min-h-screen p-4 md:p-6 flex items-center justify-center">
-        <div className="text-red-500 text-lg">Error: {error || "Profile not found"}</div>
+        <div className="text-red-500 text-lg">
+          Error: {error || "Profile not found"}
+        </div>
       </section>
     );
   }
 
-  const fullName = [profile.name.firstName, profile.name.lastName].filter(Boolean).join(" ") || "Unnamed User";
+  const fullName =
+    [profile.name.firstName, profile.name.lastName].filter(Boolean).join(" ") ||
+    "Unnamed User";
 
   return (
     <section className="bg-[#f7f7f7] min-h-screen p-4 md:p-6">
@@ -177,10 +189,13 @@ export default function AccountPage() {
                   {profile.email}
                 </div>
 
-                <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#c1005a] py-3 font-medium text-white transition hover:bg-[#a6004d]">
-                  <Edit size={16} />
-                  Edit Profile
-                </button>
+                <Link href="/edit-profile" className="w-full">
+                  {" "}
+                  <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#c1005a] py-3 font-medium text-white transition hover:bg-[#a6004d]">
+                    <Edit size={16} />
+                    Edit Profile
+                  </button>
+                </Link>
               </div>
             </div>
 
@@ -240,7 +255,9 @@ export default function AccountPage() {
 
                         <div>
                           <h4 className="font-semibold">{item.title}</h4>
-                          <p className="text-sm text-gray-500">{item.description}</p>
+                          <p className="text-sm text-gray-500">
+                            {item.description}
+                          </p>
                         </div>
                       </div>
 
