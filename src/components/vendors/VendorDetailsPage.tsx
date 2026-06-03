@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,63 +19,35 @@ interface Vendor {
     isStoreOpen: boolean;
   };
   storePhoto?: string[];
+  availableCategories?: { _id: string; name: string; icon: string }[];
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  images: string[];
+  pricing: {
+    price: number;
+    discount: number;
+    finalPrice: number;
+    currency: string;
+  };
+  category?: { name: string };
 }
 
 interface VendorDetailsPageProps {
   vendorId: string;
 }
 
-const categories = ["All", "Popular", "PADARIA", "GELATARIA", "BEBIDAS"];
-
-const menuItems = [
-  {
-    id: 1,
-    name: "Pão Artesão de Fermentação",
-    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200",
-    price: "€9,00",
-    oldPrice: "€10,00",
-  },
-  {
-    id: 2,
-    name: "Taça Dolce Gelato",
-    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?q=80&w=1200",
-    price: "€9,00",
-    oldPrice: "€10,00",
-  },
-  {
-    id: 3,
-    name: "Smartwatch Pulse",
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1200",
-    price: "€135,00",
-    oldPrice: "€150,00",
-  },
-  {
-    id: 4,
-    name: "Caderno Explore",
-    image: "https://images.unsplash.com/photo-1517842645767-c639042777db?q=80&w=1200",
-    price: "€9,00",
-    oldPrice: "€10,00",
-  },
-  {
-    id: 5,
-    name: "Batata Chips Ondulada",
-    image: "https://images.unsplash.com/photo-1585238342024-78d387f4a707?q=80&w=1200",
-    price: "€135,00",
-    oldPrice: "€150,00",
-  },
-  {
-    id: 6,
-    name: "Molho de Tomate Tradicional",
-    image: "https://images.unsplash.com/photo-1608897013039-887f21d8c804?q=80&w=1200",
-    price: "€54,00",
-    oldPrice: "€60,00",
-  },
-];
-
 export default function VendorDetailsPage({ vendorId }: VendorDetailsPageProps) {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
     const fetchVendor = async () => {
@@ -86,13 +59,10 @@ export default function VendorDetailsPage({ vendorId }: VendorDetailsPageProps) 
           const { data } = await apiClient.get(
             `/vendors/customer?page=${currentPage}&limit=50`
           );
-
           const vendors: Vendor[] = data.data;
           if (vendors.length === 0) break;
-
           foundVendor = vendors.find((v) => v.userId === vendorId) || null;
           if (foundVendor) break;
-
           if (currentPage >= (data.meta?.totalPage || 1)) break;
           currentPage++;
         }
@@ -105,9 +75,25 @@ export default function VendorDetailsPage({ vendorId }: VendorDetailsPageProps) 
         setLoading(false);
       }
     };
-
     fetchVendor();
   }, [vendorId]);
+
+  useEffect(() => {
+    if (!vendor) return;
+
+    const fetchProducts = async () => {
+      try {
+        setProductsLoading(true);
+        const { data } = await apiClient.get(`/products?vendorId=${vendor.id}&limit=100`);
+        setProducts(data.data || []);
+      } catch (err) {
+        setProductsError(getApiErrorMessage(err, "Unable to load menu"));
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [vendor]);
 
   if (loading) {
     return (
@@ -128,10 +114,24 @@ export default function VendorDetailsPage({ vendorId }: VendorDetailsPageProps) 
   const heroImage = vendor.storePhoto?.[0] || "/placeholder-store.jpg";
   const prepTime = vendor.businessDetails.preparationTimeMinutes || 30;
 
+  const vendorCategoryNames = vendor.availableCategories?.map((cat) => cat.name) || [];
+  const categories = ["All", "POPULAR", ...vendorCategoryNames];
+
+  const filteredProducts = products.filter((product) => {
+    if (selectedCategory === "All" || selectedCategory === "POPULAR") return true;
+    const productCategory = product.category?.name;
+    if (!productCategory) return false;
+    return productCategory.toLowerCase() === selectedCategory.toLowerCase();
+  });
+
+  const formatPrice = (price: number, currency: string) => {
+    return `${currency}${price.toFixed(2)}`.replace(".", ",");
+  };
+
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
-      <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        {/* Hero */}
+      <div className="mx-auto max-w-full px-4 py-6 lg:px-8">
+        {/* Hero Section */}
         <section className="mb-6">
           <div className="relative overflow-hidden rounded-3xl shadow-lg">
             <div className="relative h-62.5 md:h-90">
@@ -177,16 +177,17 @@ export default function VendorDetailsPage({ vendorId }: VendorDetailsPageProps) 
           </div>
         </section>
 
-        {/* Categories */}
+        {/* Dynamic Categories with Filtering */}
         <section className="mb-8 overflow-x-auto">
           <div className="flex min-w-max gap-3">
             {categories.map((cat, idx) => (
               <button
                 key={cat}
+                onClick={() => setSelectedCategory(cat)}
                 className={`rounded-lg px-5 py-2 text-sm font-semibold transition ${
-                  idx === 0
+                  selectedCategory === cat
                     ? "bg-pink-600 text-white"
-                    : "border border-gray-200 bg-white text-gray-500"
+                    : "border border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
                 }`}
               >
                 {cat}
@@ -195,41 +196,84 @@ export default function VendorDetailsPage({ vendorId }: VendorDetailsPageProps) 
           </div>
         </section>
 
-        {/* Menu */}
+        {/* Dynamic Menu with Filtering */}
         <section>
           <h2 className="mb-6 text-xl font-bold text-gray-900">Menu</h2>
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {menuItems.map((item) => (
-              <div
-                key={item.id}
-                className="group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-lg"
-              >
-                <div className="relative h-36 w-32 shrink-0">
-                  <Image src={item.image} alt={item.name} fill className="object-cover" />
-                  <span className="absolute left-2 top-2 rounded-full bg-pink-600 px-2 py-1 text-[10px] font-bold text-white">
-                    10% OFF
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col justify-between p-4">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                    <p className="mt-1 line-clamp-2 text-xs text-gray-500">
-                      Premium handcrafted product made with carefully selected ingredients.
-                    </p>
-                  </div>
-                  <div className="mt-4 flex items-end justify-between">
-                    <div>
-                      <p className="text-xl font-bold text-pink-600">{item.price}</p>
-                      <p className="text-xs text-gray-400 line-through">{item.oldPrice}</p>
+
+          {productsLoading && (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-48 animate-pulse rounded-2xl bg-gray-100" />
+              ))}
+            </div>
+          )}
+
+          {productsError && (
+            <div className="rounded-2xl bg-red-50 p-6 text-center text-red-600">
+              {productsError}
+            </div>
+          )}
+
+          {!productsLoading && !productsError && filteredProducts.length === 0 && (
+            <div className="rounded-2xl bg-gray-50 p-6 text-center text-gray-500">
+              No items found in this category.
+            </div>
+          )}
+
+          {!productsLoading && !productsError && filteredProducts.length > 0 && (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {filteredProducts.map((product) => {
+                const hasDiscount = product.pricing.discount > 0;
+                const originalPrice = product.pricing.price;
+                const finalPrice = product.pricing.finalPrice;
+                const currency = product.pricing.currency || "€";
+
+                return (
+                  <div
+                    key={product.id}
+                    className="group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-lg"
+                  >
+                    <div className="relative h-36 w-32 shrink-0">
+                      <Image
+                        src={product.images?.[0] || "/placeholder-product.jpg"}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                      />
+                      {hasDiscount && (
+                        <span className="absolute left-2 top-2 rounded-full bg-pink-600 px-2 py-1 text-[10px] font-bold text-white">
+                          {Math.round(product.pricing.discount)}% OFF
+                        </span>
+                      )}
                     </div>
-                    <button className="rounded-xl bg-pink-600 p-2 text-white transition hover:scale-105">
-                      <Plus size={18} />
-                    </button>
+                    <div className="flex flex-1 flex-col justify-between p-4">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{product.name}</h3>
+                        <p className="mt-1 line-clamp-2 text-xs text-gray-500">
+                          {product.description || "Delicious item from our menu."}
+                        </p>
+                      </div>
+                      <div className="mt-4 flex items-end justify-between">
+                        <div>
+                          <p className="text-xl font-bold text-pink-600">
+                            {formatPrice(finalPrice, currency)}
+                          </p>
+                          {hasDiscount && (
+                            <p className="text-xs text-gray-400 line-through">
+                              {formatPrice(originalPrice, currency)}
+                            </p>
+                          )}
+                        </div>
+                        <button className="rounded-xl bg-pink-600 p-2 text-white transition hover:scale-105">
+                          <Plus size={18} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       </div>
     </div>
