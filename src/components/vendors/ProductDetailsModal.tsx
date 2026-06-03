@@ -42,6 +42,7 @@ interface Product {
     options: {
       label: string;
       price: number;
+      sku: string;
       isOutOfStock?: boolean;
     }[];
   }[];
@@ -52,6 +53,7 @@ interface VariantOption {
   groupName: string;
   label: string;
   price: number;
+  sku: string;
 }
 
 export default function ProductDetailsModal({
@@ -64,6 +66,7 @@ export default function ProductDetailsModal({
   const [error, setError] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [selectedOption, setSelectedOption] = useState<VariantOption | null>(null);
+  const [cartLoading, setCartLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !productId) return;
@@ -99,6 +102,7 @@ export default function ProductDetailsModal({
         groupName: group.name,
         label: opt.label,
         price: opt.price,
+        sku: opt.sku,
       }));
       if (groupOptions.length) {
         groupedOptions.push({ groupName: group.name, options: groupOptions });
@@ -125,16 +129,35 @@ export default function ProductDetailsModal({
     }
   };
 
-  const handleAddToCart = () => {
-    console.log("Add to cart", {
-      product,
-      quantity,
-      selectedOption,
-      unitPrice,
-      total,
-    });
-    // Integrate your cart logic here
-    onClose();
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    setCartLoading(true);
+    try {
+      const payload: any = {
+        items: [
+          {
+            productId: product.id,
+            quantity,
+          },
+        ],
+      };
+      if (selectedOption) {
+        payload.items[0].variationSku = selectedOption.sku;
+      }
+
+      const response = await apiClient.post("/carts/add-to-cart", payload);
+      if (response.data.success) {
+        alert("Item added to cart successfully!");
+        onClose();
+      } else {
+        throw new Error(response.data.message || "Failed to add to cart");
+      }
+    } catch (err: any) {
+      alert(getApiErrorMessage(err, "Could not add item to cart"));
+    } finally {
+      setCartLoading(false);
+    }
   };
 
   return (
@@ -188,7 +211,7 @@ export default function ProductDetailsModal({
                 </span>
               </div>
 
-              {/* Product Info with dynamic unit price */}
+              {/* Product Info */}
               <div className="mb-8 w-full">
                 <div className="flex items-start justify-between gap-4">
                   <h2 className="max-w-[70%] text-3xl font-bold leading-tight text-gray-900">
@@ -329,10 +352,17 @@ export default function ProductDetailsModal({
           <div className="border-t bg-white p-8">
             <button
               onClick={handleAddToCart}
-              className="flex w-full items-center justify-center gap-3 rounded-2xl bg-pink-600 py-5 text-lg font-semibold text-white shadow-lg transition hover:bg-pink-700"
+              disabled={cartLoading}
+              className="flex w-full items-center justify-center gap-3 rounded-2xl bg-pink-600 py-5 text-lg font-semibold text-white shadow-lg transition hover:bg-pink-700 disabled:opacity-50"
             >
-              <ShoppingCart size={22} />
-              Add To Cart • {formatPrice(total, currency)}
+              {cartLoading ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <>
+                  <ShoppingCart size={22} />
+                  Add To Cart • {formatPrice(total, currency)}
+                </>
+              )}
             </button>
           </div>
         )}
