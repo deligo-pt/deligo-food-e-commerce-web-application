@@ -1,9 +1,3 @@
-// import VendorDetailsPage from "@/components/vendors/VendorDetailsPage";
-
-// export default function Page() {
-//   return <VendorDetailsPage />;
-// }
-
 import VendorDetailsPage from "@/components/vendors/VendorDetailsPage";
 
 interface PageProps {

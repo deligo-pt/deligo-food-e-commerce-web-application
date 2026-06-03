@@ -21,7 +21,7 @@ interface Vendor {
 }
 
 interface VendorDetailsPageProps {
-  vendorId: string; 
+  vendorId: string;
 }
 
 const categories = ["All", "Popular", "PADARIA", "GELATARIA", "BEBIDAS"];
@@ -79,16 +79,33 @@ export default function VendorDetailsPage({ vendorId }: VendorDetailsPageProps) 
   useEffect(() => {
     const fetchVendor = async () => {
       try {
-        const { data } = await apiClient.get("/vendors/customer?limit=10");
-        const found = data.data.find((v: Vendor) => v.userId === vendorId);
-        if (!found) throw new Error("Vendor not found");
-        setVendor(found);
+        let currentPage = 1;
+        let foundVendor: Vendor | null = null;
+
+        while (!foundVendor) {
+          const { data } = await apiClient.get(
+            `/vendors/customer?page=${currentPage}&limit=50`
+          );
+
+          const vendors: Vendor[] = data.data;
+          if (vendors.length === 0) break;
+
+          foundVendor = vendors.find((v) => v.userId === vendorId) || null;
+          if (foundVendor) break;
+
+          if (currentPage >= (data.meta?.totalPage || 1)) break;
+          currentPage++;
+        }
+
+        if (!foundVendor) throw new Error("Vendor not found");
+        setVendor(foundVendor);
       } catch (err) {
         setError(getApiErrorMessage(err));
       } finally {
         setLoading(false);
       }
     };
+
     fetchVendor();
   }, [vendorId]);
 
