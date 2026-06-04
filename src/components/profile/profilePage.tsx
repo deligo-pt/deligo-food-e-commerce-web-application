@@ -270,9 +270,22 @@ export default function AccountPage() {
                 {orderItems.map((item, index) => {
                   const Icon = item.icon;
 
-                  return (
+                  const getPath = (title: string) => {
+                    switch (title) {
+                      case "Orders":
+                        return "/orders";
+                      case "Payment Methods":
+                        return "/payment-methods";
+                      case "Referrals":
+                        return "/referrals";
+                      default:
+                        return null;
+                    }
+                  };
+
+                  const path = getPath(item.title);
+                  const content = (
                     <div
-                      key={item.title}
                       className={`flex cursor-pointer items-center justify-between p-5 hover:bg-gray-50 ${
                         index !== orderItems.length - 1 ? "border-b" : ""
                       }`}
@@ -281,7 +294,6 @@ export default function AccountPage() {
                         <div className="rounded-full bg-pink-100 p-3">
                           <Icon className="h-5 w-5 text-[#c1005a]" />
                         </div>
-
                         <div>
                           <h4 className="font-semibold">{item.title}</h4>
                           <p className="text-sm text-gray-500">
@@ -289,10 +301,19 @@ export default function AccountPage() {
                           </p>
                         </div>
                       </div>
-
                       <ChevronRight size={18} />
                     </div>
                   );
+
+                  if (path) {
+                    return (
+                      <Link key={item.title} href={path}>
+                        {content}
+                      </Link>
+                    );
+                  }
+
+                  return <div key={item.title}>{content}</div>;
                 })}
               </div>
             </div>
