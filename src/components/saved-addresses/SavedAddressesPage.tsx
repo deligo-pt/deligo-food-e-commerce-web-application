@@ -2,14 +2,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  RefreshCw,
-  Home,
-  Pencil,
-  Trash2,
-  Plus,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, RefreshCw, Home, Pencil, Trash2, Plus } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 
 interface DeliveryAddress {
@@ -33,54 +27,38 @@ interface ProfileResponse {
 }
 
 export default function SavedAddressesPage() {
+  const router = useRouter();
   const [addresses, setAddresses] = useState<DeliveryAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [updatingId, setUpdatingId] = useState<string | null>(
-    null
-  );
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const fetchAddresses = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const response =
-        await apiClient.get<ProfileResponse>("/profile");
+      const response = await apiClient.get<ProfileResponse>("/profile");
 
-      setAddresses(
-        response.data.data.deliveryAddresses || []
-      );
+      setAddresses(response.data.data.deliveryAddresses || []);
     } catch (error) {
-      setError(
-        getApiErrorMessage(
-          error,
-          "Failed to load addresses"
-        )
-      );
+      setError(getApiErrorMessage(error, "Failed to load addresses"));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSetPrimaryAddress = async (
-    addressId: string
-  ) => {
+  const handleSetPrimaryAddress = async (addressId: string) => {
     try {
       setUpdatingId(addressId);
 
       await apiClient.patch(
-        `/customers/toggle-delivery-address-status/${addressId}`
+        `/customers/toggle-delivery-address-status/${addressId}`,
       );
 
       await fetchAddresses();
     } catch (error) {
-      alert(
-        getApiErrorMessage(
-          error,
-          "Failed to update primary address"
-        )
-      );
+      alert(getApiErrorMessage(error, "Failed to update primary address"));
     } finally {
       setUpdatingId(null);
     }
@@ -96,10 +74,7 @@ export default function SavedAddressesPage() {
     window.addEventListener("focus", handleFocus);
 
     return () => {
-      window.removeEventListener(
-        "focus",
-        handleFocus
-      );
+      window.removeEventListener("focus", handleFocus);
     };
   }, []);
 
@@ -128,9 +103,7 @@ export default function SavedAddressesPage() {
             <ArrowLeft className="h-5 w-5 text-black" />
           </button>
 
-          <h1 className="text-3xl font-bold text-black">
-            Saved Addresses
-          </h1>
+          <h1 className="text-3xl font-bold text-black">Saved Addresses</h1>
         </div>
 
         <button onClick={fetchAddresses}>
@@ -148,9 +121,7 @@ export default function SavedAddressesPage() {
               key={address._id}
               onClick={() => {
                 if (!address.isActive) {
-                  handleSetPrimaryAddress(
-                    address._id
-                  );
+                  handleSetPrimaryAddress(address._id);
                 }
               }}
               className={`flex cursor-pointer items-start gap-4 rounded-xl p-4 transition-all ${
@@ -165,16 +136,12 @@ export default function SavedAddressesPage() {
             >
               <div
                 className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                  isPrimary
-                    ? "bg-white"
-                    : "bg-gray-100"
+                  isPrimary ? "bg-white" : "bg-gray-100"
                 }`}
               >
                 <Home
                   className={`h-4 w-4 ${
-                    isPrimary
-                      ? "text-[#C2185B]"
-                      : "text-gray-600"
+                    isPrimary ? "text-[#C2185B]" : "text-gray-600"
                   }`}
                 />
               </div>
@@ -183,9 +150,7 @@ export default function SavedAddressesPage() {
                 <div className="mb-1 flex items-center gap-2">
                   <span
                     className={`text-sm font-semibold uppercase ${
-                      isPrimary
-                        ? "text-[#C2185B]"
-                        : "text-black"
+                      isPrimary ? "text-[#C2185B]" : "text-black"
                     }`}
                   >
                     {address.addressType}
@@ -199,13 +164,11 @@ export default function SavedAddressesPage() {
                 </div>
 
                 <p className="truncate text-sm font-semibold text-black">
-                  {address.detailedAddress ||
-                    address.street}
+                  {address.detailedAddress || address.street}
                 </p>
 
                 <p className="truncate text-xs text-gray-600">
-                  {address.city}, {address.state},{" "}
-                  {address.country}
+                  {address.city}, {address.state}, {address.country}
                 </p>
               </div>
 
@@ -213,7 +176,7 @@ export default function SavedAddressesPage() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    // edit logic
+                    router.push(`/edit-address/${address._id}`);
                   }}
                 >
                   <Pencil className="h-4 w-4 text-[#C2185B]" />
@@ -242,9 +205,7 @@ export default function SavedAddressesPage() {
         <button className="flex h-24 w-full items-center justify-center gap-3 rounded-xl border border-dashed border-[#C2185B] text-[#C2185B]">
           <Plus className="h-5 w-5" />
 
-          <span className="text-base font-medium">
-            Add New Address
-          </span>
+          <span className="text-base font-medium">Add New Address</span>
         </button>
       </div>
     </div>

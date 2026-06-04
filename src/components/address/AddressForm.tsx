@@ -1,28 +1,57 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import {
-  Building2,
-  Globe,
-  Home,
-  MapPin,
-  Navigation,
-  Save,
-} from "lucide-react";
+import { Building2, Globe, Home, MapPin, Navigation, Save } from "lucide-react";
 import { useState } from "react";
+import { useEffect } from "react";
 
 interface AddressFormProps {
   coordinates: {
     lat: number;
     lng: number;
   };
+  initialData?: any;
+
+  isEditMode?: boolean;
 }
 
 export default function AddressForm({
   coordinates,
+  initialData,
+  isEditMode = false,
 }: AddressFormProps) {
-  const [addressType, setAddressType] = useState<
-    "home" | "work" | "other"
-  >("home");
+  const [addressType, setAddressType] = useState<"home" | "work" | "other">(
+    "home",
+  );
+  const [formData, setFormData] = useState({
+    street: "",
+    detailedAddress: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+  });
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        street: initialData.street || "",
+        detailedAddress: initialData.detailedAddress || "",
+        city: initialData.city || "",
+        state: initialData.state || "",
+        country: initialData.country || "",
+        postalCode: initialData.postalCode || "",
+      });
+
+      setAddressType(
+        initialData.addressType === "OFFICE"
+          ? "work"
+          : initialData.addressType === "OTHER"
+            ? "other"
+            : "home",
+      );
+    }
+  }, [initialData]);
 
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm md:p-8">
@@ -33,8 +62,7 @@ export default function AddressForm({
         </h2>
 
         <p className="text-sm text-[#5a4044]">
-          Fill in the details to save this address for future
-          deliveries.
+          Fill in the details to save this address for future deliveries.
         </p>
       </div>
 
@@ -93,13 +121,17 @@ export default function AddressForm({
           </label>
 
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
-            <MapPin
-              size={18}
-              className="mr-3 text-[#5a4044]"
-            />
+            <MapPin size={18} className="mr-3 text-[#5a4044]" />
 
             <input
               type="text"
+              value={formData.street}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  street: e.target.value,
+                })
+              }
               placeholder="Enter street address"
               className="h-14 w-full bg-transparent outline-none"
             />
@@ -112,13 +144,17 @@ export default function AddressForm({
           </label>
 
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
-            <Building2
-              size={18}
-              className="mr-3 text-[#5a4044]"
-            />
+            <Building2 size={18} className="mr-3 text-[#5a4044]" />
 
             <input
               type="text"
+              value={formData.detailedAddress}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  detailedAddress: e.target.value,
+                })
+              }
               placeholder="Apt 4B, Floor 2"
               className="h-14 w-full bg-transparent outline-none"
             />
@@ -135,6 +171,13 @@ export default function AddressForm({
 
           <input
             type="text"
+            value={formData.city}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                city: e.target.value,
+              })
+            }
             placeholder="Enter city"
             className="h-14 w-full rounded-xl border border-[#e3bdc3] px-4 outline-none focus:border-[#b0004a]"
           />
@@ -147,6 +190,13 @@ export default function AddressForm({
 
           <input
             type="text"
+            value={formData.postalCode}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                postalCode: e.target.value,
+              })
+            }
             placeholder="1000-001"
             className="h-14 w-full rounded-xl border border-[#e3bdc3] px-4 outline-none focus:border-[#b0004a]"
           />
@@ -162,6 +212,13 @@ export default function AddressForm({
 
           <input
             type="text"
+            value={formData.state}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                state: e.target.value,
+              })
+            }
             placeholder="Lisbon"
             className="h-14 w-full rounded-xl border border-[#e3bdc3] px-4 outline-none focus:border-[#b0004a]"
           />
@@ -173,14 +230,17 @@ export default function AddressForm({
           </label>
 
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
-            <Globe
-              size={18}
-              className="mr-3 text-[#5a4044]"
-            />
+            <Globe size={18} className="mr-3 text-[#5a4044]" />
 
             <input
               type="text"
-              defaultValue="Portugal"
+              value={formData.country}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  country: e.target.value,
+                })
+              }
               className="h-14 w-full bg-transparent outline-none"
             />
           </div>
@@ -190,14 +250,9 @@ export default function AddressForm({
       {/* Coordinates Card */}
       <div className="mb-8 rounded-2xl border border-[#e3bdc3] bg-[#fafafa] p-5">
         <div className="mb-4 flex items-center gap-2">
-          <Navigation
-            size={18}
-            className="text-[#b0004a]"
-          />
+          <Navigation size={18} className="text-[#b0004a]" />
 
-          <h3 className="font-semibold text-[#191c1d]">
-            GPS Coordinates
-          </h3>
+          <h3 className="font-semibold text-[#191c1d]">GPS Coordinates</h3>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -223,26 +278,13 @@ export default function AddressForm({
         </div>
       </div>
 
-      {/* Additional Notes
-      <div className="mb-8">
-        <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-          Delivery Notes (Optional)
-        </label>
-
-        <textarea
-          rows={4}
-          placeholder="Add any instructions for the delivery driver..."
-          className="w-full rounded-xl border border-[#e3bdc3] p-4 outline-none focus:border-[#b0004a]"
-        />
-      </div> */}
-
       {/* Save Button */}
       <button
         type="submit"
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#b0004a] py-4 font-semibold text-white transition hover:opacity-90"
       >
         <Save size={18} />
-        Save Address
+        {isEditMode ? "Update Address" : "Save Address"}
       </button>
     </div>
   );

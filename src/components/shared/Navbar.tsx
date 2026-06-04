@@ -98,7 +98,7 @@ export default function Navbar() {
             DeliGo
           </Link>
 
-          <Link href="add-address">
+          <Link href="/add-address">
             <button className="hidden cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20 lg:flex">
               <MapPin size={20} />
               {addressText}
