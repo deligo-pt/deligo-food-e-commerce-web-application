@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Bike, Plus, Star } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import ProductDetailsModal from "./ProductDetailsModal";
+import VendorDetailsModal from "./VendorDetailsModal";
 
 interface Vendor {
   id: string;
@@ -52,7 +53,10 @@ export default function VendorDetailsPage({
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null); // 👈 new state
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    null,
+  );
+  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchVendor = async () => {
@@ -171,7 +175,10 @@ export default function VendorDetailsPage({
                       vendor.businessDetails.businessType}
                   </p>
                   <div className="flex flex-wrap items-center gap-4 text-sm">
-                    <button className="font-semibold text-pink-600">
+                    <button
+                      onClick={() => setIsVendorModalOpen(true)}
+                      className="font-semibold text-pink-600"
+                    >
                       More Info →
                     </button>
                     <div className="flex items-center gap-1">
@@ -193,7 +200,6 @@ export default function VendorDetailsPage({
             </div>
           </div>
         </section>
-
         {/* Dynamic Categories with Filtering */}
         <section className="mb-8 overflow-x-auto">
           <div className="flex min-w-max gap-3">
@@ -212,8 +218,12 @@ export default function VendorDetailsPage({
             ))}
           </div>
         </section>
-
-        {/* Dynamic Menu with Filtering */}
+        <VendorDetailsModal
+          isOpen={isVendorModalOpen}
+          onClose={() => setIsVendorModalOpen(false)}
+          vendorId={vendorId}
+        />
+        ;{/* Dynamic Menu with Filtering */}
         <section>
           <h2 className="mb-6 text-xl font-bold text-gray-900">Menu</h2>
 
@@ -294,7 +304,9 @@ export default function VendorDetailsPage({
                             )}
                           </div>
                           <button
-                            onClick={() => setSelectedProductId(product.productId)}
+                            onClick={() =>
+                              setSelectedProductId(product.productId)
+                            }
                             className="rounded-xl bg-pink-600 p-2 text-white transition hover:scale-105"
                           >
                             <Plus size={18} />
@@ -307,7 +319,6 @@ export default function VendorDetailsPage({
               </div>
             )}
         </section>
-
         {/* Product Details Modal */}
         <ProductDetailsModal
           isOpen={!!selectedProductId}
