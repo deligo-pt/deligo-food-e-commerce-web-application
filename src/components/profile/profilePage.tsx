@@ -32,6 +32,11 @@ import Cookies from "js-cookie";
 import Image from "next/image";
 import Link from "next/link";
 
+interface Offer {
+  _id: string;
+  isActive: boolean;
+  isDeleted: boolean;
+}
 interface ProfileData {
   _id: string;
   userId: string;
@@ -96,6 +101,7 @@ export default function AccountPage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [voucherCount, setVoucherCount] = useState(0);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -104,6 +110,21 @@ export default function AccountPage() {
       return;
     }
 
+    const fetchVoucherCount = async () => {
+      try {
+        const response = await apiClient.get("/offers");
+
+        const offers = response.data?.data || [];
+
+        const activeOffers = offers.filter(
+          (offer: Offer) => offer.isActive && !offer.isDeleted,
+        );
+
+        setVoucherCount(activeOffers.length);
+      } catch (error) {
+        console.error("Failed to fetch vouchers", error);
+      }
+    };
     const fetchProfile = async () => {
       try {
         const response = await apiClient.get<{
@@ -124,6 +145,7 @@ export default function AccountPage() {
     };
 
     fetchProfile();
+    fetchVoucherCount();
   }, [router]);
 
   const handleLogout = () => {
@@ -201,11 +223,18 @@ export default function AccountPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-xl bg-white p-5 text-center shadow-sm">
+              {/* <div className="rounded-xl bg-white p-5 text-center shadow-sm">
                 <Ticket className="mx-auto mb-2 text-[#c1005a]" />
                 <h3 className="font-bold">0</h3>
                 <p className="text-sm text-gray-500">Vouchers</p>
-              </div>
+              </div> */}
+              <Link href="/vouchers">
+                <div className="rounded-xl bg-white p-5 text-center shadow-sm transition hover:shadow-md cursor-pointer">
+                  <Ticket className="mx-auto mb-2 text-[#c1005a]" />
+                  <h3 className="font-bold">{voucherCount}</h3>
+                  <p className="text-sm text-gray-500">Vouchers</p>
+                </div>
+              </Link>
 
               <div className="rounded-xl bg-white p-5 text-center shadow-sm">
                 <Gift className="mx-auto mb-2 text-[#c1005a]" />
