@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, RefreshCw, Home, Pencil, Trash2, Plus } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import Link from "next/link";
 
 interface DeliveryAddress {
   _id: string;
@@ -32,6 +33,7 @@ export default function SavedAddressesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchAddresses = async () => {
     try {
@@ -61,6 +63,25 @@ export default function SavedAddressesPage() {
       alert(getApiErrorMessage(error, "Failed to update primary address"));
     } finally {
       setUpdatingId(null);
+    }
+  };
+  const handleDeleteAddress = async (addressId: string) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this address?",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(addressId);
+
+      await apiClient.delete(`/customers/delete-delivery-address/${addressId}`);
+
+      await fetchAddresses();
+    } catch (error) {
+      alert(getApiErrorMessage(error, "Failed to delete address"));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -129,7 +150,7 @@ export default function SavedAddressesPage() {
                   ? "border border-pink-200 bg-pink-50"
                   : "border border-gray-200 bg-white hover:border-pink-300 hover:bg-pink-50/40"
               } ${
-                updatingId === address._id
+                updatingId === address._id || deletingId === address._id
                   ? "pointer-events-none opacity-70"
                   : ""
               }`}
@@ -185,7 +206,7 @@ export default function SavedAddressesPage() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    // delete logic
+                    handleDeleteAddress(address._id);
                   }}
                 >
                   <Trash2 className="h-4 w-4 text-[#C2185B]" />
@@ -202,11 +223,13 @@ export default function SavedAddressesPage() {
         )}
 
         {/* Add New Address */}
-        <button className="flex h-24 w-full items-center justify-center gap-3 rounded-xl border border-dashed border-[#C2185B] text-[#C2185B]">
-          <Plus className="h-5 w-5" />
+        <Link href="/add-address">
+          <button className="flex h-24 w-full items-center justify-center gap-3 rounded-xl border border-dashed border-[#C2185B] text-[#C2185B]">
+            <Plus className="h-5 w-5" />
 
-          <span className="text-base font-medium">Add New Address</span>
-        </button>
+            <span className="text-base font-medium">Add New Address</span>
+          </button>
+        </Link>
       </div>
     </div>
   );
