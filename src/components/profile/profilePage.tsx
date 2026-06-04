@@ -223,11 +223,6 @@ export default function AccountPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4">
-              {/* <div className="rounded-xl bg-white p-5 text-center shadow-sm">
-                <Ticket className="mx-auto mb-2 text-[#c1005a]" />
-                <h3 className="font-bold">0</h3>
-                <p className="text-sm text-gray-500">Vouchers</p>
-              </div> */}
               <Link href="/vouchers">
                 <div className="rounded-xl bg-white p-5 text-center shadow-sm transition hover:shadow-md cursor-pointer">
                   <Ticket className="mx-auto mb-2 text-[#c1005a]" />
@@ -327,22 +322,47 @@ export default function AccountPage() {
                 {settingItems.map((item) => {
                   const Icon = item.icon;
 
-                  return (
-                    <div
-                      key={item.title}
-                      className="flex cursor-pointer items-center justify-between rounded-xl bg-white p-5 shadow-sm transition hover:shadow-md"
-                    >
+                  const getPath = (title: string) => {
+                    switch (title) {
+                      case "Saved Addresses":
+                        return "/saved-addresses";
+                      case "Favorite Orders":
+                        return "/favorite-orders";
+                      case "Notifications":
+                        return "/notifications";
+                      case "Account Settings":
+                        return "/account-settings";
+                      case "Help Center":
+                        return "/help-center";
+                      case "Available Countries":
+                        return "/available-countries";
+                      default:
+                        return null;
+                    }
+                  };
+
+                  const path = getPath(item.title);
+                  const content = (
+                    <div className="flex cursor-pointer items-center justify-between rounded-xl bg-white p-5 shadow-sm transition hover:shadow-md">
                       <div className="flex items-center gap-3">
                         <div className="rounded-lg bg-gray-100 p-2">
                           <Icon size={18} />
                         </div>
-
                         <span className="font-medium">{item.title}</span>
                       </div>
-
                       <ChevronRight size={16} />
                     </div>
                   );
+
+                  if (path) {
+                    return (
+                      <Link key={item.title} href={path}>
+                        {content}
+                      </Link>
+                    );
+                  }
+
+                  return <div key={item.title}>{content}</div>;
                 })}
               </div>
             </div>
