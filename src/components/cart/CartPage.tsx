@@ -12,18 +12,23 @@ import { CartResponse } from "@/types/cart";
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartResponse | null>(null);
+  const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchCart = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const { data } = await apiClient.get("/carts/view-cart");
+        const [cartRes, vendorsRes] = await Promise.all([
+          apiClient.get("/carts/view-cart"),
+          apiClient.get("/vendors/customer?page=1&limit=100"),
+        ]);
 
-        setCart(data.data);
+        setCart(cartRes.data.data);
+        setVendors(vendorsRes.data.data || []);
       } catch (error) {
         setError(getApiErrorMessage(error, "Failed to load cart"));
       } finally {
@@ -31,7 +36,7 @@ export default function CartPage() {
       }
     };
 
-    fetchCart();
+    fetchData();
   }, []);
 
   const stores = useMemo(() => {
@@ -41,19 +46,29 @@ export default function CartPage() {
       (acc, item) => {
         const vendorId = item.vendorId._id;
 
+        const vendorInfo = vendors.find((vendor) => vendor.id === vendorId);
+
         if (!acc[vendorId]) {
           acc[vendorId] = {
             vendorId,
 
-            vendorUserId: item.vendorId.userId,
+            businessName:
+              vendorInfo?.businessDetails?.businessName ||
+              `${item.vendorId.name.firstName} ${item.vendorId.name.lastName}`,
 
-            storeName: `${item.vendorId.name.firstName} ${item.vendorId.name.lastName}`,
+            image: vendorInfo?.storePhoto?.[0] || "/placeholder-store.jpg",
+
+            rating: vendorInfo?.rating?.average || 0,
 
             items: [],
+
+            total: 0,
           };
         }
 
         acc[vendorId].items.push(item);
+
+        acc[vendorId].total += item.itemSummary.grandTotal;
 
         return acc;
       },
@@ -61,8 +76,7 @@ export default function CartPage() {
     );
 
     return Object.values(grouped);
-  }, [cart]);
-
+  }, [cart, vendors]);
   if (loading) {
     return (
       <div className="flex min-h-125 items-center justify-center">
@@ -107,28 +121,17 @@ export default function CartPage() {
               </p>
             </div>
           ) : (
-            stores.map((store: any) => {
-              const total = store.items.reduce(
-                (sum: number, item: any) => sum + item.itemSummary.grandTotal,
-                0,
-              );
-
-              return (
-                <CartStoreCard
-                  key={store.vendorId}
-                  storeName={store.storeName}
-                  itemCount={store.items.length}
-                  total={total}
-                  items={store.items.map((item: any) => ({
-                    productId: item.productId,
-                    name: item.name,
-                    image: item.image,
-                    quantity: item.itemSummary.quantity,
-                    grandTotal: item.itemSummary.grandTotal,
-                  }))}
-                />
-              );
-            })
+            stores.map((store: any) => (
+              <CartStoreCard
+                key={store.vendorId}
+                vendorId={store.vendorId}
+                businessName={store.businessName}
+                image={store.image}
+                rating={store.rating}
+                itemCount={store.items.length}
+                total={store.total}
+              />
+            ))
           )}
         </div>
 
