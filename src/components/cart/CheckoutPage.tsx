@@ -1,8 +1,8 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -20,12 +20,14 @@ interface CheckoutPageProps {
 }
 
 export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
+  const router = useRouter();
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [vendor, setVendor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [updatingItem, setUpdatingItem] = useState<string | null>(null);
   const [instructions, setInstructions] = useState("");
   const [error, setError] = useState("");
+  const [isProceeding, setIsProceeding] = useState(false);
 
   const fetchCheckoutData = useCallback(async () => {
     try {
@@ -52,6 +54,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   }, [vendorId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCheckoutData();
   }, [fetchCheckoutData]);
 
@@ -73,23 +76,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     );
   }, [vendorItems]);
 
-  const updateQuantity = async (
-    item: any,
-    action: "increment" | "decrement",
-  ) => {
+  const updateQuantity = async (item: any, action: "increment" | "decrement") => {
     try {
       setUpdatingItem(item.productId);
-
-      const payload: any = {
-        productId: item.productId,
-        quantity: 1,
-        action,
-      };
-      // Only send variationSku if the product actually has one
+      const payload: any = { productId: item.productId, quantity: 1, action };
       if (item.variationSku && item.variationSku !== null) {
         payload.variationSku = item.variationSku;
       }
-
       await apiClient.patch("/carts/update-quantity", payload);
       await fetchCheckoutData();
     } catch (error) {
@@ -103,12 +96,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     try {
       setUpdatingItem(item.productId);
       await apiClient.delete("/carts/delete-item", {
-        data: [
-          {
-            productId: item.productId,
-            variationSku: item.variationSku ?? null,
-          },
-        ],
+        data: [{ productId: item.productId, variationSku: item.variationSku ?? null }],
       });
       await fetchCheckoutData();
     } catch (error) {
@@ -118,7 +106,44 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     }
   };
 
-  const goBack = () => window.history.back();
+// const handleProceedToCheckout = async () => {
+//   if (!vendorId) {
+//     alert("Vendor information missing");
+//     return;
+//   }
+//   try {
+//     setIsProceeding(true);
+//     const response = await apiClient.post("/checkout", {
+//       useCart: true,          // required to use the cart items
+//       // vendorId,               // optional but may be needed
+//       // instructions,           // optional delivery notes
+//     });
+//     const checkoutId = response.data.data._id;
+//     router.push(`/payment?checkoutId=${checkoutId}`);
+//   } catch (error) {
+//     alert(getApiErrorMessage(error, "Failed to create checkout session"));
+//   } finally {
+//     setIsProceeding(false);
+//   }
+// };
+const handleProceedToCheckout = async () => {
+  if (!vendorId) {
+    alert("Vendor information missing");
+    return;
+  }
+  try {
+    setIsProceeding(true);
+    const response = await apiClient.post("/checkout", { useCart: true });
+    const checkoutId = response.data.data._id;
+    // Redirect to payment page under the same vendor route
+    router.push(`/cart/checkout/${vendorId}/payment?checkoutId=${checkoutId}`);
+  } catch (error) {
+    alert(getApiErrorMessage(error, "Failed to create checkout session"));
+  } finally {
+    setIsProceeding(false);
+  }
+};
+const goBack = () => window.history.back();
 
   if (loading) {
     return (
@@ -138,7 +163,6 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     );
   }
 
-  // Fallback image for vendor
   const vendorImage =
     vendor?.documents?.storePhoto?.[0] ||
     vendor?.storePhoto?.[0] ||
@@ -154,12 +178,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         Back
       </button>
 
-      <h1 className="text-4xl font-extrabold text-gray-900">
-        Review Your Cart
-      </h1>
-      <p className="mt-2 text-gray-500">
-        Complete your order details before checkout
-      </p>
+      <h1 className="text-4xl font-extrabold text-gray-900">Review Your Cart</h1>
+      <p className="mt-2 text-gray-500">Complete your order details before checkout</p>
 
       <div className="mt-8 mb-8 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
         <div className="p-6">
@@ -184,9 +204,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               <div className="mt-3 flex flex-wrap gap-3">
                 <div className="flex items-center gap-2 rounded-xl bg-pink-50 px-3 py-2 text-pink-600">
                   <ShoppingBag size={16} />
-                  <span className="font-medium">
-                    {vendorItems.length} Products
-                  </span>
+                  <span className="font-medium">{vendorItems.length} Products</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-green-600">
                   <MapPin size={16} />
@@ -199,7 +217,6 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-12">
-        {/* Products list */}
         <div className="space-y-5 lg:col-span-8">
           {vendorItems.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-12 text-center">
@@ -228,13 +245,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">
-                            {item.name}
-                          </h3>
+                          <h3 className="text-xl font-bold text-gray-900">{item.name}</h3>
                           {item.variationSku && (
-                            <p className="mt-1 text-sm text-gray-500">
-                              SKU: {item.variationSku}
-                            </p>
+                            <p className="mt-1 text-sm text-gray-500">SKU: {item.variationSku}</p>
                           )}
                         </div>
                         <button
@@ -286,23 +299,16 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
           )}
         </div>
 
-        {/* Order Summary */}
         <div className="lg:col-span-4">
           <div className="sticky top-24 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
             <div className="border-b border-gray-100 p-6">
-              <h3 className="text-2xl font-bold text-gray-900">
-                Order Summary
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Review your order details
-              </p>
+              <h3 className="text-2xl font-bold text-gray-900">Order Summary</h3>
+              <p className="mt-1 text-sm text-gray-500">Review your order details</p>
             </div>
             <div className="space-y-4 p-6">
               <div className="flex justify-between">
                 <span className="text-gray-600">Original Price</span>
-                <span className="font-semibold">
-                  €{summary.originalPrice.toFixed(2)}
-                </span>
+                <span className="font-semibold">€{summary.originalPrice.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Product Discount</span>
@@ -325,9 +331,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
             </div>
 
             <div className="border-t border-gray-100 p-6">
-              <label className="mb-2 block font-semibold text-gray-900">
-                Delivery Instructions
-              </label>
+              <label className="mb-2 block font-semibold text-gray-900">Delivery Instructions</label>
               <textarea
                 rows={4}
                 value={instructions}
@@ -338,8 +342,12 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
             </div>
 
             <div className="border-t border-gray-100 p-6">
-              <button className="w-full rounded-2xl bg-pink-600 py-4 text-lg font-semibold text-white transition hover:bg-pink-700">
-                Proceed to Checkout
+              <button
+                onClick={handleProceedToCheckout}
+                disabled={isProceeding || vendorItems.length === 0}
+                className="w-full rounded-2xl bg-pink-600 py-4 text-lg font-semibold text-white transition hover:bg-pink-700 disabled:opacity-50"
+              >
+                {isProceeding ? "Processing..." : "Proceed to Checkout"}
               </button>
               <p className="mt-3 text-center text-xs text-gray-400">
                 By continuing you agree to our terms and conditions.
