@@ -98,7 +98,7 @@ export default function Navbar() {
             DeliGo
           </Link>
 
-          <Link href="add-address">
+          <Link href="/add-address">
             <button className="hidden cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20 lg:flex">
               <MapPin size={20} />
               {addressText}
@@ -141,12 +141,14 @@ export default function Navbar() {
           </nav>
 
           <div className="flex items-center gap-4 border-l border-white/20 pl-8">
-            <button className="relative rounded-full p-2 text-white transition-colors hover:bg-white/10">
-              <ShoppingCart size={22} />
-              <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#b70052] text-[10px] font-medium text-white">
-                2
-              </span>
-            </button>
+            <Link href="/cart">
+              <button className="relative rounded-full p-2 text-white transition-colors hover:bg-white/10">
+                <ShoppingCart size={22} />
+                <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#b70052] text-[10px] font-medium text-white">
+                  2
+                </span>
+              </button>
+            </Link>
 
             {/* Account area with dropdown for logged in users */}
             <div className="relative" ref={dropdownRef}>

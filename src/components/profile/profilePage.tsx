@@ -32,6 +32,11 @@ import Cookies from "js-cookie";
 import Image from "next/image";
 import Link from "next/link";
 
+interface Offer {
+  _id: string;
+  isActive: boolean;
+  isDeleted: boolean;
+}
 interface ProfileData {
   _id: string;
   userId: string;
@@ -96,6 +101,7 @@ export default function AccountPage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [voucherCount, setVoucherCount] = useState(0);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -104,6 +110,21 @@ export default function AccountPage() {
       return;
     }
 
+    const fetchVoucherCount = async () => {
+      try {
+        const response = await apiClient.get("/offers");
+
+        const offers = response.data?.data || [];
+
+        const activeOffers = offers.filter(
+          (offer: Offer) => offer.isActive && !offer.isDeleted,
+        );
+
+        setVoucherCount(activeOffers.length);
+      } catch (error) {
+        console.error("Failed to fetch vouchers", error);
+      }
+    };
     const fetchProfile = async () => {
       try {
         const response = await apiClient.get<{
@@ -124,6 +145,7 @@ export default function AccountPage() {
     };
 
     fetchProfile();
+    fetchVoucherCount();
   }, [router]);
 
   const handleLogout = () => {
@@ -201,11 +223,13 @@ export default function AccountPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-xl bg-white p-5 text-center shadow-sm">
-                <Ticket className="mx-auto mb-2 text-[#c1005a]" />
-                <h3 className="font-bold">0</h3>
-                <p className="text-sm text-gray-500">Vouchers</p>
-              </div>
+              <Link href="/vouchers">
+                <div className="rounded-xl bg-white p-5 text-center shadow-sm transition hover:shadow-md cursor-pointer">
+                  <Ticket className="mx-auto mb-2 text-[#c1005a]" />
+                  <h3 className="font-bold">{voucherCount}</h3>
+                  <p className="text-sm text-gray-500">Vouchers</p>
+                </div>
+              </Link>
 
               <div className="rounded-xl bg-white p-5 text-center shadow-sm">
                 <Gift className="mx-auto mb-2 text-[#c1005a]" />
@@ -241,9 +265,22 @@ export default function AccountPage() {
                 {orderItems.map((item, index) => {
                   const Icon = item.icon;
 
-                  return (
+                  const getPath = (title: string) => {
+                    switch (title) {
+                      case "Orders":
+                        return "/orders";
+                      case "Payment Methods":
+                        return "/payment-methods";
+                      case "Referrals":
+                        return "/referrals";
+                      default:
+                        return null;
+                    }
+                  };
+
+                  const path = getPath(item.title);
+                  const content = (
                     <div
-                      key={item.title}
                       className={`flex cursor-pointer items-center justify-between p-5 hover:bg-gray-50 ${
                         index !== orderItems.length - 1 ? "border-b" : ""
                       }`}
@@ -252,7 +289,6 @@ export default function AccountPage() {
                         <div className="rounded-full bg-pink-100 p-3">
                           <Icon className="h-5 w-5 text-[#c1005a]" />
                         </div>
-
                         <div>
                           <h4 className="font-semibold">{item.title}</h4>
                           <p className="text-sm text-gray-500">
@@ -260,10 +296,19 @@ export default function AccountPage() {
                           </p>
                         </div>
                       </div>
-
                       <ChevronRight size={18} />
                     </div>
                   );
+
+                  if (path) {
+                    return (
+                      <Link key={item.title} href={path}>
+                        {content}
+                      </Link>
+                    );
+                  }
+
+                  return <div key={item.title}>{content}</div>;
                 })}
               </div>
             </div>
@@ -277,22 +322,47 @@ export default function AccountPage() {
                 {settingItems.map((item) => {
                   const Icon = item.icon;
 
-                  return (
-                    <div
-                      key={item.title}
-                      className="flex cursor-pointer items-center justify-between rounded-xl bg-white p-5 shadow-sm transition hover:shadow-md"
-                    >
+                  const getPath = (title: string) => {
+                    switch (title) {
+                      case "Saved Addresses":
+                        return "/saved-addresses";
+                      case "Favorite Orders":
+                        return "/favorite-orders";
+                      case "Notifications":
+                        return "/notifications";
+                      case "Account Settings":
+                        return "/account-settings";
+                      case "Help Center":
+                        return "/help-center";
+                      case "Available Countries":
+                        return "/available-countries";
+                      default:
+                        return null;
+                    }
+                  };
+
+                  const path = getPath(item.title);
+                  const content = (
+                    <div className="flex cursor-pointer items-center justify-between rounded-xl bg-white p-5 shadow-sm transition hover:shadow-md">
                       <div className="flex items-center gap-3">
                         <div className="rounded-lg bg-gray-100 p-2">
                           <Icon size={18} />
                         </div>
-
                         <span className="font-medium">{item.title}</span>
                       </div>
-
                       <ChevronRight size={16} />
                     </div>
                   );
+
+                  if (path) {
+                    return (
+                      <Link key={item.title} href={path}>
+                        {content}
+                      </Link>
+                    );
+                  }
+
+                  return <div key={item.title}>{content}</div>;
                 })}
               </div>
             </div>

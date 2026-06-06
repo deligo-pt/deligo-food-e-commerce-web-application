@@ -2,13 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronRight, Star, Clock, Heart, Truck, Check } from "lucide-react";
+import Link from "next/link";
+import {
+  ChevronRight,
+  Star,
+  Clock,
+  Heart,
+  Truck,
+  Check,
+} from "lucide-react";
 
 import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
-import Link from "next/link";
 
 interface Vendor {
-  id: string;
+  userId: string;
   businessDetails: {
     businessName: string;
     businessType: string;
@@ -47,7 +54,9 @@ export default function RestaurantsSection() {
       } catch (err) {
         console.error("Failed to fetch vendors:", err);
 
-        setError(getApiErrorMessage(err, "Unable to load nearby restaurants."));
+        setError(
+          getApiErrorMessage(err, "Unable to load nearby restaurants.")
+        );
       } finally {
         setLoading(false);
       }
@@ -104,65 +113,74 @@ export default function RestaurantsSection() {
 
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
         {vendors.map((vendor) => (
-          <article
-            key={vendor.id}
-            className="group cursor-pointer overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all hover:border-[#ffd9de] hover:shadow-2xl"
+          <Link
+            key={vendor.userId}
+            href={`/vendors/${vendor.userId}`}
+            className="block"
           >
-            <div className="relative aspect-16/10 overflow-hidden">
-              <Image
-                fill
-                sizes="(max-width:1024px) 100vw, 33vw"
-                alt={vendor.businessDetails.businessName}
-                src={
-                  vendor.storePhoto?.[0] || "https://placehold.co/600x400/png"
-                }
-                className="object-fit transition-transform duration-1000 group-hover:scale-110"
-              />
+            <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] hover:shadow-2xl">
+              <div className="relative aspect-16/10 overflow-hidden">
+                <Image
+                  fill
+                  sizes="(max-width:1024px) 100vw, 33vw"
+                  alt={vendor.businessDetails.businessName}
+                  src={
+                    vendor.storePhoto?.[0] ||
+                    "https://placehold.co/600x400/png"
+                  }
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                />
 
-              <div className="absolute left-5 top-5">
-                <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 px-4 py-2 text-[14px] font-bold text-[#191c1d] shadow-lg backdrop-blur-md">
-                  <Star size={18} className="text-[#f6c344]" />
-                  {vendor.rating?.average ?? 0}
-                </span>
+                <div className="absolute left-5 top-5">
+                  <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 px-4 py-2 text-sm font-bold text-[#191c1d] shadow-lg backdrop-blur-md">
+                    <Star size={18} className="text-[#f6c344]" />
+                    {vendor.rating?.average ?? 0}
+                  </span>
+                </div>
+
+                <div className="absolute bottom-5 right-5">
+                  <span className="flex items-center gap-2 rounded-2xl bg-black/70 px-4 py-2 text-sm text-white backdrop-blur-md">
+                    <Clock size={18} />
+                    {vendor.businessDetails.openingHours} -{" "}
+                    {vendor.businessDetails.closingHours}
+                  </span>
+                </div>
               </div>
 
-              <div className="absolute bottom-5 right-5">
-                <span className="flex items-center gap-2 rounded-2xl bg-black/70 px-4 py-2 text-[14px] text-white backdrop-blur-md">
-                  <Clock size={18} />
-                  {vendor.businessDetails.openingHours} -
-                  {vendor.businessDetails.closingHours}
-                </span>
+              <div className="p-8">
+                <div className="mb-2 flex items-center justify-between gap-4">
+                  <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d]">
+                    {vendor.businessDetails.businessName}
+                  </h3>
+
+                  <Heart
+                    size={22}
+                    className="text-[#d81b60] transition-transform group-hover:scale-110"
+                  />
+                </div>
+
+                <p className="mb-6 text-lg text-[#5a4044]">
+                  {vendor.businessDetails.restaurantCuisineType ||
+                    vendor.businessDetails.businessType}
+                </p>
+
+                <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-sm font-medium text-[#5a4044]">
+                  <span className="flex items-center gap-2 text-[#b0004a]">
+                    <Truck size={18} />
+                    {vendor.businessDetails.isStoreOpen
+                      ? "Open Now"
+                      : "Closed"}
+                  </span>
+
+                  <span className="flex items-center gap-2 text-[#b70052]">
+                    <Check size={18} />
+                    {vendor.businessLocation.city},{" "}
+                    {vendor.businessLocation.country}
+                  </span>
+                </div>
               </div>
-            </div>
-
-            <div className="p-8">
-              <div className="mb-2 flex items-center justify-between gap-4">
-                <h3 className="line-clamp-1 text-[24px] font-bold leading-8 text-[#191c1d]">
-                  {vendor.businessDetails.businessName}
-                </h3>
-
-                <Heart size={22} className="text-[#d81b60]" />
-              </div>
-
-              <p className="mb-6 text-[18px] leading-7 text-[#5a4044]">
-                {vendor.businessDetails.restaurantCuisineType ||
-                  vendor.businessDetails.businessType}
-              </p>
-
-              <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-[14px] font-medium text-[#5a4044]">
-                <span className="flex items-center gap-2 text-[#b0004a]">
-                  <Truck size={20} />
-                  {vendor.businessDetails.isStoreOpen ? "Open Now" : "Closed"}
-                </span>
-
-                <span className="flex items-center gap-2 text-[#b70052]">
-                  <Check size={20} />
-                  {vendor.businessLocation.city},{" "}
-                  {vendor.businessLocation.country}
-                </span>
-              </div>
-            </div>
-          </article>
+            </article>
+          </Link>
         ))}
       </div>
     </section>
