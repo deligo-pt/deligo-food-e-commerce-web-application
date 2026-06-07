@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { ArrowLeft, CheckCircle, LocateFixed, Map, Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "./AddressForm";
 
@@ -11,21 +12,36 @@ export default function AddAddressPage() {
     lng: 90.4125,
   });
 
+  const [addressData, setAddressData] = useState({
+    street: "",
+    detailedAddress: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+  });
+  const [searchValue, setSearchValue] = useState("");
+
   const handleUseGPS = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        console.log("GPS Position:", {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
+
         setCoordinates({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
       },
-      () => {
-        alert("Unable to retrieve your location.");
+      (error) => {
+        console.log(error);
       },
     );
   };
@@ -35,6 +51,69 @@ export default function AddAddressPage() {
       .getElementById("map-section")
       ?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const reverseGeocode = (lat: number, lng: number) => {
+    if (!window.google?.maps) return;
+
+    const geocoder = new window.google.maps.Geocoder();
+
+    geocoder.geocode(
+      {
+        location: { lat, lng },
+      },
+      (results: any, status: string) => {
+        if (status !== "OK" || !results?.length) return;
+
+        const addressComponents = results[0].address_components;
+
+        let street = "";
+        let city = "";
+        let state = "";
+        let country = "";
+        let postalCode = "";
+
+        addressComponents.forEach((component: any) => {
+          const types = component.types;
+
+          if (types.includes("route")) {
+            street = component.long_name;
+          }
+
+          if (types.includes("locality")) {
+            city = component.long_name;
+          }
+
+          if (types.includes("administrative_area_level_1")) {
+            state = component.long_name;
+          }
+
+          if (types.includes("country")) {
+            country = component.long_name;
+          }
+
+          if (types.includes("postal_code")) {
+            postalCode = component.long_name;
+          }
+        });
+
+        setAddressData((prev) => ({
+          ...prev,
+          street,
+          city,
+          state,
+          country,
+          postalCode,
+        }));
+      },
+    );
+  };
+  useEffect(() => {
+    reverseGeocode(coordinates.lat, coordinates.lng);
+  }, [coordinates]);
+
+  useEffect(() => {
+    handleUseGPS();
+  }, []);
 
   return (
     <section className="bg-[#f8f9fa] py-8">
@@ -73,9 +152,16 @@ export default function AddAddressPage() {
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
                   size={18}
                 />
-
+                {/* 
                 <input
                   type="text"
+                  placeholder="Search for area, street name..."
+                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-4 outline-none transition focus:border-[#b0004a]"
+                /> */}
+                <input
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
                   placeholder="Search for area, street name..."
                   className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-4 outline-none transition focus:border-[#b0004a]"
                 />
@@ -106,6 +192,7 @@ export default function AddAddressPage() {
               <div id="map-section" className="mb-6">
                 <LocationPicker
                   defaultCenter={coordinates}
+                  searchValue={searchValue}
                   onCoordinatesChange={(lat, lng) =>
                     setCoordinates({ lat, lng })
                   }
@@ -138,7 +225,7 @@ export default function AddAddressPage() {
 
           {/* Right Side */}
           <div className="lg:col-span-7">
-            <AddressForm coordinates={coordinates} />
+            <AddressForm coordinates={coordinates} initialData={addressData} />
           </div>
         </div>
       </div>

@@ -33,16 +33,18 @@ export default function AddressForm({
     postalCode: "",
   });
   useEffect(() => {
-    if (initialData) {
-      setFormData({
-        street: initialData.street || "",
-        detailedAddress: initialData.detailedAddress || "",
-        city: initialData.city || "",
-        state: initialData.state || "",
-        country: initialData.country || "",
-        postalCode: initialData.postalCode || "",
-      });
+    if (!initialData) return;
 
+    setFormData((prev) => ({
+      ...prev,
+      street: initialData.street || "",
+      city: initialData.city || "",
+      state: initialData.state || "",
+      country: initialData.country || "",
+      postalCode: initialData.postalCode || "",
+    }));
+
+    if ("addressType" in initialData) {
       setAddressType(
         initialData.addressType === "OFFICE"
           ? "work"
@@ -52,7 +54,6 @@ export default function AddressForm({
       );
     }
   }, [initialData]);
-
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm md:p-8">
       {/* Header */}
