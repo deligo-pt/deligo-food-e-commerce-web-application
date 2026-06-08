@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
@@ -6,10 +7,9 @@ import { apiClient } from "@/lib/apiClient";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { MapPin, ChevronDown, Search, ShoppingCart, Menu } from "lucide-react";
+import { MapPin, ChevronDown, Search, ShoppingCart, Menu, Bell } from "lucide-react";
 import Cookies from "js-cookie";
 
-import { navLinks } from "../../data/navLinks";
 import {
   getAccessToken,
   ACCESS_TOKEN_COOKIE,
@@ -27,6 +27,9 @@ export default function Navbar() {
     if (typeof window === "undefined") return false;
     return !!getAccessToken();
   });
+
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [cartItemCount, setCartItemCount] = useState(0);
 
   useEffect(() => {
     const tokenExists = !!getAccessToken();
@@ -48,18 +51,16 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await apiClient.get("/profile");
-
         const profile = res.data?.data;
-
         const address =
           profile?.address?.street ||
           profile?.deliveryAddresses?.[0]?.street ||
           "Add Address";
-
         setAddressText(address);
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -70,6 +71,50 @@ export default function Navbar() {
       fetchProfile();
     }
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await apiClient.get("/notifications/my-notifications", {
+          params: { limit: 100 },
+        });
+        const notifications = response.data?.data || [];
+        const unread = notifications.filter((n: any) => !n.isRead).length;
+        setUnreadCount(unread);
+      } catch (error) {
+        console.error("Failed to fetch notifications count:", error);
+        setUnreadCount(0);
+      }
+    };
+
+    fetchUnreadCount();
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setCartItemCount(0);
+      return;
+    }
+
+    const fetchCartCount = async () => {
+      try {
+        const response = await apiClient.get("/carts/view-cart");
+        const cartData = response.data?.data;
+        const totalItems = cartData?.totalItems ?? 0;
+        setCartItemCount(totalItems);
+      } catch (error) {
+        console.error("Failed to fetch cart count:", error);
+        setCartItemCount(0);
+      }
+    };
+
+    fetchCartCount();
+  }, [isLoggedIn, pathname]);
 
   const handleLogout = () => {
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
@@ -119,75 +164,67 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-6">
-          <nav className="hidden items-center gap-8 lg:flex">
-            {navLinks.map((item, index) => {
-              const isActive =
-                pathname === item.href || (pathname === "/" && index === 0);
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={[
-                    "pb-1 text-[14px] leading-5 transition-colors",
-                    isActive
-                      ? "border-b-2 border-white font-bold text-white"
-                      : "font-medium text-white/80 hover:text-white",
-                  ].join(" ")}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="flex items-center gap-4 border-l border-white/20 pl-8">
-            <Link href="/cart">
+          {/* Notification and Cart Icons */}
+          <div className="flex items-center gap-4">
+            <Link href="/notifications">
               <button className="relative rounded-full p-2 text-white transition-colors hover:bg-white/10">
-                <ShoppingCart size={22} />
-                <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#b70052] text-[10px] font-medium text-white">
-                  2
-                </span>
+                <Bell size={22} />
+                {unreadCount > 0 && (
+                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#b70052] text-[10px] font-medium text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </button>
             </Link>
 
-            {/* Account area with dropdown for logged in users */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={handleAccountClick}
-                className="flex items-center gap-3 rounded-full p-1.5 text-white transition-colors hover:bg-white/10"
-              >
-                <div className="h-9 w-9 overflow-hidden rounded-full border-2 border-white/20 bg-[#edeeef]">
-                  <Image
-                    alt="User avatar"
-                    className="h-full w-full object-cover"
-                    height={36}
-                    width={36}
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3HK_ck--tlX6pTwJ0djnpKaVYN3IZ9Bjuz-L9h9EWbAVqiBm4fdfcd7p7_hAJx9ftyhl9KfCemQKsV1XNEie_Gg16WW0xNz3S_lmyMGsTq-ZJ8L30ey1GMPF5XD1S6LiB5j2SetOyaSQfDjnVbtHPCBEKKy0g57EskBQU9VV1-1FG87q7et1ImrR1dz-RpJ3mRwTomBstK_t53Dxcx3ywMYwT6Qi0Ehf3MyaRohi9aJ2KhCbHDGpc0v6gtMmmOf5wpctFt41o9zE"
-                  />
-                </div>
-                <span className="hidden text-[14px] font-semibold leading-5 xl:block">
-                  Account
-                </span>
+            <Link href="/cart">
+              <button className="relative rounded-full p-2 text-white transition-colors hover:bg-white/10">
+                <ShoppingCart size={22} />
+                {cartItemCount > 0 && (
+                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#b70052] text-[10px] font-medium text-white">
+                    {cartItemCount > 9 ? "9+" : cartItemCount}
+                  </span>
+                )}
               </button>
+            </Link>
+          </div>
+          {/* Account area with dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={handleAccountClick}
+              className="flex items-center gap-3 rounded-full p-1.5 text-white transition-colors hover:bg-white/10"
+            >
+              <div className="h-9 w-9 overflow-hidden rounded-full border-2 border-white/20 bg-[#edeeef]">
+                <Image
+                  alt="User avatar"
+                  className="h-full w-full object-cover"
+                  height={36}
+                  width={36}
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3HK_ck--tlX6pTwJ0djnpKaVYN3IZ9Bjuz-L9h9EWbAVqiBm4fdfcd7p7_hAJx9ftyhl9KfCemQKsV1XNEie_Gg16WW0xNz3S_lmyMGsTq-ZJ8L30ey1GMPF5XD1S6LiB5j2SetOyaSQfDjnVbtHPCBEKKy0g57EskBQU9VV1-1FG87q7et1ImrR1dz-RpJ3mRwTomBstK_t53Dxcx3ywMYwT6Qi0Ehf3MyaRohi9aJ2KhCbHDGpc0v6gtMmmOf5wpctFt41o9zE"
+                />
+              </div>
+              <span className="hidden text-[14px] font-semibold leading-5 xl:block">
+                Account
+              </span>
+            </button>
 
-              {isLoggedIn && showAccountDropdown && (
-                <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5">
-                  <Link
-                    href="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setShowAccountDropdown(false)}
-                  >
-                    Profile
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
+            {isLoggedIn && showAccountDropdown && (
+              <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5">
+                <Link
+                  href="/profile"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => setShowAccountDropdown(false)}
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
 
           <button className="text-white lg:hidden">
