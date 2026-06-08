@@ -7,7 +7,16 @@ import { apiClient } from "@/lib/apiClient";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { MapPin, ChevronDown, Search, ShoppingCart, Menu, Bell } from "lucide-react";
+import {
+  MapPin,
+  ChevronDown,
+  Search,
+  ShoppingCart,
+  Menu,
+  Bell,
+  User,
+  LogOut,
+} from "lucide-react";
 import Cookies from "js-cookie";
 
 import {
@@ -80,9 +89,12 @@ export default function Navbar() {
 
     const fetchUnreadCount = async () => {
       try {
-        const response = await apiClient.get("/notifications/my-notifications", {
-          params: { limit: 100 },
-        });
+        const response = await apiClient.get(
+          "/notifications/my-notifications",
+          {
+            params: { limit: 100 },
+          },
+        );
         const notifications = response.data?.data || [];
         const unread = notifications.filter((n: any) => !n.isRead).length;
         setUnreadCount(unread);
@@ -207,20 +219,21 @@ export default function Navbar() {
                 Account
               </span>
             </button>
-
             {isLoggedIn && showAccountDropdown && (
               <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5">
                 <Link
                   href="/profile"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setShowAccountDropdown(false)}
                 >
+                  <User size={16} />
                   Profile
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                 >
+                  <LogOut size={16} />
                   Logout
                 </button>
               </div>
