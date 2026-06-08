@@ -93,12 +93,16 @@ export default function CategoriesSection() {
     return (
       <section>
         <div className="mb-10 flex items-center justify-between">
-          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
-            What&apos;s on your mind?
-          </h2>
+          <div className="h-10 w-72 animate-pulse rounded-full bg-gray-200" />
+          <div className="hidden h-7 w-24 animate-pulse rounded-full bg-gray-200 sm:block" />
         </div>
-        <div className="flex h-40 items-center justify-center">
-          <div className="text-center text-gray-500">Loading categories...</div>
+        <div className="-mx-4 flex gap-12 overflow-hidden px-4 pb-6 lg:-mx-16 lg:px-16">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div key={index} className="flex min-w-35 flex-col items-center gap-4">
+              <div className="h-32 w-32 animate-pulse rounded-full bg-gray-200" />
+              <div className="h-4 w-24 animate-pulse rounded-full bg-gray-200" />
+            </div>
+          ))}
         </div>
       </section>
     );
