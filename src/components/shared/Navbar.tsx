@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { apiClient } from "@/lib/apiClient";
 import Image from "next/image";
 import Link from "next/link";
@@ -31,6 +31,8 @@ export default function Navbar() {
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [addressText, setAddressText] = useState("Add Address");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -39,6 +41,58 @@ export default function Navbar() {
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [cartItemCount, setCartItemCount] = useState(0);
+
+  const handleSearch = useCallback(() => {
+    if (localSearchTerm.trim()) {
+      router.push(`/search?q=${encodeURIComponent(localSearchTerm.trim())}`);
+    }
+  }, [localSearchTerm, router]);
+
+  const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalSearchTerm(value);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      if (value.trim()) {
+        router.push(`/search?q=${encodeURIComponent(value.trim())}`);
+      }
+    }, 500);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      handleSearch();
+    }
+  };
+
+  useEffect(() => {
+    if (pathname !== "/search") {
+      setLocalSearchTerm("");
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.pathname !== "/search") {
+        setLocalSearchTerm("");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const tokenExists = !!getAccessToken();
@@ -93,7 +147,7 @@ export default function Navbar() {
           "/notifications/my-notifications",
           {
             params: { limit: 100 },
-          },
+          }
         );
         const notifications = response.data?.data || [];
         const unread = notifications.filter((n: any) => !n.isRead).length;
@@ -170,13 +224,15 @@ export default function Navbar() {
             <input
               type="text"
               placeholder="Search stores, restaurants, or cuisines..."
+              value={localSearchTerm}
+              onChange={onSearchChange}
+              onKeyDown={onKeyDown}
               className="w-full rounded-full border-0 bg-[#ffffff] py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] outline-none ring-0 placeholder:text-black/45 focus:ring-2 focus:ring-[#dd2269]/50"
             />
           </div>
         </div>
 
         <div className="flex items-center gap-6">
-          {/* Notification and Cart Icons */}
           <div className="flex items-center gap-4">
             <Link href="/notifications">
               <button className="relative rounded-full p-2 text-white transition-colors hover:bg-white/10">
@@ -200,7 +256,7 @@ export default function Navbar() {
               </button>
             </Link>
           </div>
-          {/* Account area with dropdown */}
+
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={handleAccountClick}
