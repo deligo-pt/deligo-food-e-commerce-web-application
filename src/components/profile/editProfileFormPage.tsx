@@ -39,6 +39,7 @@ interface ProfileData {
 export default function EditProfileFormPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -62,6 +63,24 @@ export default function EditProfileFormPage() {
     lng: 90.4125,
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper: Upload image and return URL
+  const uploadProfilePhoto = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("files", file);
+
+    const response = await apiClient.post("/uploads", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    if (!response.data?.success || !response.data?.data?.length) {
+      throw new Error("Upload response missing image URL");
+    }
+
+    return response.data.data[0];
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -181,32 +200,51 @@ export default function EditProfileFormPage() {
     setSuccess(null);
 
     try {
-      const addressPayload = {
-        street,
-        city,
-        state,
-        country,
-        postalCode,
-        detailedAddress: houseDetail,
-        latitude: coordinates.lat,
-        longitude: coordinates.lng,
-        geoAccuracy: 10,
-      };
+      let uploadedPhotoUrl: string | undefined = undefined;
 
-      const payload = {
-        name: { firstName, lastName },
-        contactNumber: mobileNumber,
-        address: addressPayload,
-      };
-
+      // Upload new profile photo if a new file is selected
       if (selectedFile) {
-        const formData = new FormData();
-        formData.append("file", selectedFile);
-        formData.append("data", JSON.stringify(payload));
-        await apiClient.patch(`/customers/${profileData.userId}`, formData);
-      } else {
-        await apiClient.patch(`/customers/${profileData.userId}`, payload);
+        setImageUploading(true);
+        try {
+          uploadedPhotoUrl = await uploadProfilePhoto(selectedFile);
+        } catch (uploadErr) {
+          setError(getApiErrorMessage(uploadErr, "Failed to upload profile photo"));
+          setSubmitting(false);
+          setImageUploading(false);
+          return;
+        } finally {
+          setImageUploading(false);
+        }
       }
+
+      // Build address object with only changed fields
+      const addressPayload: any = {};
+      if (street) addressPayload.street = street;
+      if (city) addressPayload.city = city;
+      if (state) addressPayload.state = state;
+      if (country) addressPayload.country = country;
+      if (postalCode) addressPayload.postalCode = postalCode;
+      if (houseDetail) addressPayload.detailedAddress = houseDetail;
+      if (coordinates.lat) addressPayload.latitude = coordinates.lat;
+      if (coordinates.lng) addressPayload.longitude = coordinates.lng;
+      addressPayload.geoAccuracy = 10; 
+
+      const payload: any = {};
+
+      if (firstName || lastName) {
+        payload.name = {};
+        if (firstName) payload.name.firstName = firstName;
+        if (lastName) payload.name.lastName = lastName;
+      }
+
+      if (mobileNumber) payload.contactNumber = mobileNumber;
+      if (nif) payload.NIF = nif;
+      if (uploadedPhotoUrl) payload.profilePhoto = uploadedPhotoUrl;
+
+      if (Object.keys(addressPayload).length > 0) {
+        payload.address = addressPayload;
+      }
+      await apiClient.patch(`/customers/${profileData.userId}`, payload);
 
       setSuccess("Profile updated successfully!");
       setSelectedFile(null);
@@ -270,7 +308,7 @@ export default function EditProfileFormPage() {
                   ref={fileInputRef}
                 />
               </label>
-              {imagePreview && imagePreview !== profileData?.profilePhoto && (
+              {selectedFile && (
                 <button
                   type="button"
                   onClick={handleRemoveImage}
@@ -534,10 +572,10 @@ export default function EditProfileFormPage() {
               </button>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || imageUploading}
                 className="rounded bg-[#b0004a] px-12 py-3 font-bold text-white shadow-lg disabled:opacity-50"
               >
-                {submitting ? "Saving..." : "Save Changes"}
+                {imageUploading ? "Uploading image..." : submitting ? "Saving..." : "Save Changes"}
               </button>
             </div>
 
