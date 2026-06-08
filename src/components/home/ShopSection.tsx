@@ -4,18 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
-
-type BusinessCategory = {
-  _id: string;
-  name: string;
-  slug: string;
-  description: string;
-  icon: string;
-  isActive: boolean;
-  isDeleted: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+import { useBusinessCategoryStore, BusinessCategory } from "@/stores/businessCategoryStore";
 
 type ApiResponse = {
   success: boolean;
@@ -35,6 +24,7 @@ export default function ShopSection() {
   const [categories, setCategories] = useState<BusinessCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { selectedCategory, setSelectedCategory } = useBusinessCategoryStore();
 
   useEffect(() => {
     let alive = true;
@@ -64,6 +54,16 @@ export default function ShopSection() {
 
         if (alive) {
           setCategories(activeCategories);
+          
+          // Set default selected category to RESTAURANT if none is selected
+          if (!selectedCategory && activeCategories.length > 0) {
+            const restaurantCategory = activeCategories.find(cat => cat.name === "RESTAURANT");
+            if (restaurantCategory) {
+              setSelectedCategory(restaurantCategory);
+            } else {
+              setSelectedCategory(activeCategories[0]);
+            }
+          }
           setError(null);
         }
       } catch {
@@ -80,7 +80,7 @@ export default function ShopSection() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [selectedCategory, setSelectedCategory]);
 
   if (loading) {
     return (
@@ -128,40 +128,51 @@ export default function ShopSection() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:gap-6">
-        {categories.map((category) => (
-          <div
-            key={category._id}
-            className="group flex cursor-pointer items-center gap-10 rounded-4xl border-2 border-transparent bg-[#ffffff] p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all duration-300 hover:border-[#ffd9de] hover:shadow-2xl"
-          >
-            <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-3xl bg-gray-100 shadow-inner transition-transform duration-500 group-hover:scale-105">
-              {category.icon ? (
-                <Image
-                  alt={category.name}
-                  className="h-full w-full object-cover"
-                  style={{ height: "100%", width: "100%" }}
-                  height={160}
-                  width={160}
-                  src={category.icon}
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-gray-400">
-                  {category.name.charAt(0)}
-                </div>
-              )}
-            </div>
+        {categories.map((category) => {
+          const isActive = selectedCategory?._id === category._id;
+          return (
+            <div
+              key={category._id}
+              onClick={() => setSelectedCategory(category)}
+              className={`
+                group flex cursor-pointer items-center gap-10 rounded-4xl 
+                bg-[#ffffff] p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] 
+                transition-all duration-300 hover:shadow-2xl
+                ${isActive 
+                  ? 'border-2 border-[#b0004a] shadow-lg' 
+                  : 'border-2 border-transparent hover:border-[#ffd9de]'}
+              `}
+            >
+              <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-3xl bg-gray-100 shadow-inner transition-transform duration-500 group-hover:scale-105">
+                {category.icon ? (
+                  <Image
+                    alt={category.name}
+                    className="h-full w-full object-cover"
+                    style={{ height: "100%", width: "100%" }}
+                    height={160}
+                    width={160}
+                    src={category.icon}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-gray-400">
+                    {category.name.charAt(0)}
+                  </div>
+                )}
+              </div>
 
-            <div className="flex-1">
-              <h3 className="mb-3 text-[24px] font-black leading-8 text-[#191c1d]">
-                {category.name}
-              </h3>
-              {category.description && (
-                <p className="text-[18px] leading-7 text-[#5a4044]">
-                  {category.description}
-                </p>
-              )}
+              <div className="flex-1">
+                <h3 className="mb-3 text-[24px] font-black leading-8 text-[#191c1d]">
+                  {category.name}
+                </h3>
+                {category.description && (
+                  <p className="text-[18px] leading-7 text-[#5a4044]">
+                    {category.description}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
