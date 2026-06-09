@@ -4,8 +4,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import CartStoreCard from "./CartStoreCard";
-import CartSummary from "./CartSummary";
-import PromoBanner from "./PromoBanner";
 
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
@@ -77,10 +75,56 @@ export default function CartPage() {
 
     return Object.values(grouped);
   }, [cart, vendors]);
+
   if (loading) {
     return (
-      <div className="flex min-h-125 items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-pink-600 border-t-transparent" />
+      <div className="mx-auto max-w-7xl px-6 py-10">
+        {/* Header Skeleton */}
+        <div className="mb-10">
+          <div className="mb-3 h-4 w-32 animate-pulse rounded bg-gray-200" />
+          <div className="h-10 w-72 animate-pulse rounded bg-gray-200" />
+          <div className="mt-3 h-4 w-40 animate-pulse rounded bg-gray-200" />
+        </div>
+
+        {/* Store Cards Skeleton */}
+        <div className="space-y-6">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm"
+            >
+              <div className="mb-6 flex items-start justify-between">
+                <div className="flex gap-4">
+                  {/* Store Image */}
+                  <div className="h-20 w-20 animate-pulse rounded-full border-4 border-gray-100 bg-gray-200" />
+
+                  {/* Store Info */}
+                  <div>
+                    {/* Business Name */}
+                    <div className="h-8 w-56 animate-pulse rounded bg-gray-200" />
+
+                    {/* Rating + Items */}
+                    <div className="mt-3 flex gap-3">
+                      <div className="h-10 w-24 animate-pulse rounded-xl bg-gray-200" />
+
+                      <div className="h-10 w-28 animate-pulse rounded-xl bg-gray-200" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* More Button */}
+                <div className="h-6 w-6 animate-pulse rounded bg-gray-200" />
+              </div>
+
+              {/* Checkout Button */}
+              <div className="flex items-center justify-between rounded-3xl bg-gray-200 px-6 py-5 animate-pulse">
+                <div className="h-7 w-40 rounded bg-gray-300" />
+
+                <div className="h-10 w-24 rounded-xl bg-gray-300" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -108,47 +152,27 @@ export default function CartPage() {
         </p>
       </div>
 
-      {/* Layout */}
-      <div className="grid gap-8 xl:grid-cols-12">
-        {/* Left Side */}
-        <div className="space-y-6 xl:col-span-8">
-          {stores.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-gray-300 p-12 text-center">
-              <h3 className="text-xl font-semibold">Your cart is empty</h3>
+      {/* Full Width Store List */}
+      <div className="space-y-6">
+        {stores.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-gray-300 p-12 text-center">
+            <h3 className="text-xl font-semibold">Your cart is empty</h3>
 
-              <p className="mt-2 text-gray-500">
-                Add some products to continue.
-              </p>
-            </div>
-          ) : (
-            stores.map((store: any) => (
-              <CartStoreCard
-                key={store.vendorId}
-                vendorId={store.vendorId}
-                businessName={store.businessName}
-                image={store.image}
-                rating={store.rating}
-                itemCount={store.items.length}
-                total={store.total}
-              />
-            ))
-          )}
-        </div>
-
-        {/* Right Side */}
-        <div className="xl:col-span-4">
-          <div className="sticky top-24 space-y-6">
-            <CartSummary
-              originalPrice={cart?.cartCalculation?.totalOriginalPrice ?? 0}
-              discount={cart?.cartCalculation?.totalProductDiscount ?? 0}
-              taxableAmount={cart?.cartCalculation?.taxableAmount ?? 0}
-              tax={cart?.cartCalculation?.totalTaxAmount ?? 0}
-              total={cart?.cartCalculation?.grandTotal ?? 0}
-            />
-
-            <PromoBanner />
+            <p className="mt-2 text-gray-500">Add some products to continue.</p>
           </div>
-        </div>
+        ) : (
+          stores.map((store: any) => (
+            <CartStoreCard
+              key={store.vendorId}
+              vendorId={store.vendorId}
+              businessName={store.businessName}
+              image={store.image}
+              rating={store.rating}
+              itemCount={store.items.length}
+              total={store.total}
+            />
+          ))
+        )}
       </div>
     </div>
   );
