@@ -64,6 +64,18 @@ export default function EditProfileFormPage() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // OTP states
+  const [originalEmail, setOriginalEmail] = useState("");
+  const [originalMobile, setOriginalMobile] = useState("");
+  const [emailOtp, setEmailOtp] = useState("");
+  const [mobileOtp, setMobileOtp] = useState("");
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [mobileOtpSent, setMobileOtpSent] = useState(false);
+  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
+  const [sendingMobileOtp, setSendingMobileOtp] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [verifyingMobile, setVerifyingMobile] = useState(false);
+
   // Helper: Upload image and return URL
   const uploadProfilePhoto = async (file: File): Promise<string> => {
     const formData = new FormData();
@@ -93,7 +105,9 @@ export default function EditProfileFormPage() {
           setFirstName(d.name?.firstName || "");
           setLastName(d.name?.lastName || "");
           setEmail(d.email || "");
+          setOriginalEmail(d.email || "");
           setMobileNumber(d.contactNumber || "");
+          setOriginalMobile(d.contactNumber || "");
           setNif(d.NIF || "");
           setStreet(d.address?.street || "");
           setHouseDetail(d.address?.detailedAddress || "");
@@ -188,6 +202,92 @@ export default function EditProfileFormPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Send OTP for email
+  const handleSendEmailOtp = async () => {
+    if (!email || email === originalEmail) {
+      setError("Please enter a new email address to update");
+      return;
+    }
+    setSendingEmailOtp(true);
+    setError(null);
+    try {
+      await apiClient.patch("/profile/send-otp", { email });
+      setEmailOtpSent(true);
+      setSuccess("OTP sent to your new email address");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to send OTP"));
+    } finally {
+      setSendingEmailOtp(false);
+    }
+  };
+
+  // Verify OTP and update email
+  const handleVerifyEmailOtp = async () => {
+    if (!emailOtp) {
+      setError("Please enter OTP");
+      return;
+    }
+    setVerifyingEmail(true);
+    setError(null);
+    try {
+      await apiClient.patch("/profile/update-email-or-contact-number", {
+        otp: emailOtp,
+        type: "email",
+      });
+      setOriginalEmail(email);
+      setEmailOtpSent(false);
+      setEmailOtp("");
+      setSuccess("Email updated successfully");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to verify OTP"));
+    } finally {
+      setVerifyingEmail(false);
+    }
+  };
+
+  // Send OTP for mobile
+  const handleSendMobileOtp = async () => {
+    if (!mobileNumber || mobileNumber === originalMobile) {
+      setError("Please enter a new mobile number to update");
+      return;
+    }
+    setSendingMobileOtp(true);
+    setError(null);
+    try {
+      await apiClient.patch("/profile/send-otp", { contactNumber: mobileNumber });
+      setMobileOtpSent(true);
+      setSuccess("OTP sent to your new mobile number");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to send OTP"));
+    } finally {
+      setSendingMobileOtp(false);
+    }
+  };
+
+  // Verify OTP and update mobile
+  const handleVerifyMobileOtp = async () => {
+    if (!mobileOtp) {
+      setError("Please enter OTP");
+      return;
+    }
+    setVerifyingMobile(true);
+    setError(null);
+    try {
+      await apiClient.patch("/profile/update-email-or-contact-number", {
+        otp: mobileOtp,
+        type: "mobile",
+      });
+      setOriginalMobile(mobileNumber);
+      setMobileOtpSent(false);
+      setMobileOtp("");
+      setSuccess("Mobile number updated successfully");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to verify OTP"));
+    } finally {
+      setVerifyingMobile(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profileData?.userId) {
@@ -227,7 +327,7 @@ export default function EditProfileFormPage() {
       if (houseDetail) addressPayload.detailedAddress = houseDetail;
       if (coordinates.lat) addressPayload.latitude = coordinates.lat;
       if (coordinates.lng) addressPayload.longitude = coordinates.lng;
-      addressPayload.geoAccuracy = 10; 
+      addressPayload.geoAccuracy = 10;
 
       const payload: any = {};
 
@@ -237,7 +337,6 @@ export default function EditProfileFormPage() {
         if (lastName) payload.name.lastName = lastName;
       }
 
-      if (mobileNumber) payload.contactNumber = mobileNumber;
       if (nif) payload.NIF = nif;
       if (uploadedPhotoUrl) payload.profilePhoto = uploadedPhotoUrl;
 
@@ -255,6 +354,11 @@ export default function EditProfileFormPage() {
         const d = data.data;
         setProfileData(d);
         if (d.profilePhoto) setImagePreview(d.profilePhoto);
+        // Sync original values after refresh
+        setOriginalEmail(d.email || "");
+        setOriginalMobile(d.contactNumber || "");
+        setEmail(d.email || "");
+        setMobileNumber(d.contactNumber || "");
       }
     } catch (err) {
       console.error("Update error:", err);
@@ -361,27 +465,83 @@ export default function EditProfileFormPage() {
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
                     Email Address
                   </label>
-                  <input
-                    type="email"
-                    value={email}
-                    readOnly
-                    className="w-full rounded border border-[#e3bdc3] bg-gray-50 px-4 py-3 outline-none text-gray-500"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="flex-1 rounded border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
+                    />
+                    {!emailOtpSent ? (
+                      <button
+                        type="button"
+                        onClick={handleSendEmailOtp}
+                        disabled={sendingEmailOtp || email === originalEmail}
+                        className="whitespace-nowrap rounded bg-[#b0004a] px-4 py-2 text-white disabled:opacity-50"
+                      >
+                        {sendingEmailOtp ? "Sending..." : "Send OTP"}
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="OTP"
+                          value={emailOtp}
+                          onChange={(e) => setEmailOtp(e.target.value)}
+                          className="w-24 rounded border border-[#e3bdc3] px-2 py-2 text-center outline-none focus:border-[#b0004a]"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyEmailOtp}
+                          disabled={verifyingEmail}
+                          className="whitespace-nowrap rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50"
+                        >
+                          {verifyingEmail ? "Verifying..." : "Verify"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
                     Mobile Number *
                   </label>
-                  <div className="flex">
-                    <div className="flex items-center border border-r-0 border-[#e3bdc3] bg-gray-100 px-3">
-                      +351
-                    </div>
+                  <div className="flex gap-2">
                     <input
                       type="tel"
+                      placeholder="+1234567890"
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}
-                      className="w-full rounded-r border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
+                      className="flex-1 rounded border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
                     />
+                    {!mobileOtpSent ? (
+                      <button
+                        type="button"
+                        onClick={handleSendMobileOtp}
+                        disabled={sendingMobileOtp || mobileNumber === originalMobile}
+                        className="whitespace-nowrap rounded bg-[#b0004a] px-4 py-2 text-white disabled:opacity-50"
+                      >
+                        {sendingMobileOtp ? "Sending..." : "Send OTP"}
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="OTP"
+                          value={mobileOtp}
+                          onChange={(e) => setMobileOtp(e.target.value)}
+                          className="w-24 rounded border border-[#e3bdc3] px-2 py-2 text-center outline-none focus:border-[#b0004a]"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyMobileOtp}
+                          disabled={verifyingMobile}
+                          className="whitespace-nowrap rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50"
+                        >
+                          {verifyingMobile ? "Verifying..." : "Verify"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
