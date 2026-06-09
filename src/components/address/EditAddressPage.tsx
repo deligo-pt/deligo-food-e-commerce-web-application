@@ -34,13 +34,16 @@ export default function EditAddressPage({ addressId }: Props) {
     lat: 23.8103,
     lng: 90.4125,
   });
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
     const fetchAddress = async () => {
       try {
         setLoading(true);
         const response = await apiClient.get("/profile");
-        const deliveryAddresses = response.data.data.deliveryAddresses || [];
+        const userData = response.data.data;
+        setUserId(userData._id || userData.id || "");
+        const deliveryAddresses = userData.deliveryAddresses || [];
         const foundAddress = deliveryAddresses.find(
           (item: Address) => item._id === addressId,
         );
@@ -206,8 +209,10 @@ export default function EditAddressPage({ addressId }: Props) {
           <div className="lg:col-span-7">
             <AddressForm
               coordinates={coordinates}
-              initialData={address}
+              initialAddress={address}
               isEditMode={true}
+              userId={userId}
+              addressId={addressId}
             />
           </div>
         </div>
