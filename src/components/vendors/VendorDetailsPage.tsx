@@ -7,6 +7,7 @@ import { Bike, Plus, Star } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import ProductDetailsModal from "./ProductDetailsModal";
 import VendorDetailsModal from "./VendorDetailsModal";
+import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
 
 interface Vendor {
   id: string;
@@ -106,13 +107,9 @@ export default function VendorDetailsPage({
     fetchProducts();
   }, [vendor]);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center text-lg font-medium">
-        Loading vendor...
-      </div>
-    );
-  }
+if (loading) {
+  return <VendorDetailsSkeleton />;
+}
 
   if (error || !vendor) {
     return (
