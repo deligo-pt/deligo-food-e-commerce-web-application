@@ -15,6 +15,7 @@ import {
 import LocationPicker from "@/components/profile/locationPicker";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
+import EditProfileFormSkeleton from "./EditProfileFormSkeleton";
 
 interface ProfileData {
   userId: string;
@@ -369,13 +370,7 @@ export default function EditProfileFormPage() {
   };
 
   if (loading) {
-    return (
-      <section className="bg-[#f8f9fa] py-8">
-        <div className="mx-auto max-w-250 px-4 text-center">
-          Loading profile...
-        </div>
-      </section>
-    );
+    return <EditProfileFormSkeleton />;
   }
 
   return (
