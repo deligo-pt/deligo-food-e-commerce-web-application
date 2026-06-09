@@ -8,6 +8,7 @@ import { ChevronLeft, Plus } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useProductCategoryStore } from "@/stores/productCategoryStore";
+import CategoriesPageSkeleton from "./CategoriesPageSkeleton";
 
 type Category = {
   _id: string;
@@ -61,7 +62,7 @@ export default function CategoriesPage() {
           "/categories/productCategory?page=1&limit=1",
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         const initialData = initialRes.data;
@@ -71,12 +72,12 @@ export default function CategoriesPage() {
           `/categories/productCategory?page=1&limit=${total}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         const payload = response.data;
         const activeCategories = (payload.data?.data ?? []).filter(
-          (category) => category.isActive && !category.isDeleted
+          (category) => category.isActive && !category.isDeleted,
         );
 
         if (alive) {
@@ -108,6 +109,9 @@ export default function CategoriesPage() {
     });
     router.push("/");
   };
+  if (loading) {
+    return <CategoriesPageSkeleton />;
+  }
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 lg:px-16">
@@ -128,11 +132,7 @@ export default function CategoriesPage() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex h-48 items-center justify-center rounded-3xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
-          <div className="text-center text-gray-500">Loading categories...</div>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="flex h-48 items-center justify-center rounded-3xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
           <div className="text-center text-red-500">{error}</div>
         </div>
