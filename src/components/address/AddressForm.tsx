@@ -4,6 +4,7 @@
 
 import { Building2, Globe, Home, MapPin, Navigation, Save } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Toaster, toast } from "sonner";
 import {
   addDeliveryAddress,
   updateDeliveryAddress,
@@ -12,7 +13,7 @@ import {
 
 interface AddressFormProps {
   coordinates: { lat: number; lng: number };
-  initialData?: any;
+  initialAddress?: any;
   isEditMode?: boolean;
   userId?: string;
   addressId?: string;
@@ -21,15 +22,13 @@ interface AddressFormProps {
 
 export default function AddressForm({
   coordinates,
-  initialData,
+  initialAddress,
   isEditMode = false,
   userId,
   addressId,
   onSuccess,
 }: AddressFormProps) {
-  const [addressType, setAddressType] = useState<"home" | "work" | "other">(
-    "home",
-  );
+  const [addressType, setAddressType] = useState<"home" | "work" | "other">("home");
   const [formData, setFormData] = useState({
     street: "",
     detailedAddress: "",
@@ -39,29 +38,59 @@ export default function AddressForm({
     postalCode: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize from initialAddress (edit mode) only when it changes
   useEffect(() => {
-    if (!initialData) return;
+    if (!initialAddress) return;
     setFormData({
-      street: initialData.street || "",
-      detailedAddress: initialData.detailedAddress || "",
-      city: initialData.city || "",
-      state: initialData.state || "",
-      country: initialData.country || "",
-      postalCode: initialData.postalCode || "",
+      street: initialAddress.street || "",
+      detailedAddress: initialAddress.detailedAddress || "",
+      city: initialAddress.city || "",
+      state: initialAddress.state || "",
+      country: initialAddress.country || "",
+      postalCode: initialAddress.postalCode || "",
     });
-    if (initialData.addressType) {
+    if (initialAddress.addressType) {
       setAddressType(
-        initialData.addressType === "OFFICE"
+        initialAddress.addressType === "OFFICE"
           ? "work"
-          : initialData.addressType === "OTHER"
+          : initialAddress.addressType === "OTHER"
             ? "other"
-            : "home",
+            : "home"
       );
     }
-  }, [initialData]);
-  const mapAddressTypeToBackend = (
-    type: string,
-  ): "HOME" | "OFFICE" | "OTHER" => {
+  }, [initialAddress]);
+
+  // Reverse geocode when coordinates change (map moved or GPS used)
+  useEffect(() => {
+    if (!window.google?.maps) return;
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode(
+      { location: { lat: coordinates.lat, lng: coordinates.lng } },
+      (results: any[], status: any) => {
+        if (status !== "OK" || !results?.length) return;
+        const comps = results[0].address_components;
+        let street = "", city = "", state = "", country = "", postalCode = "";
+        comps.forEach((c: any) => {
+          if (c.types.includes("route")) street = c.long_name;
+          if (c.types.includes("locality")) city = c.long_name;
+          if (c.types.includes("administrative_area_level_1")) state = c.long_name;
+          if (c.types.includes("country")) country = c.long_name;
+          if (c.types.includes("postal_code")) postalCode = c.long_name;
+        });
+        setFormData((prev) => ({
+          ...prev,
+          street: street,
+          city: city,
+          state: state,
+          country: country,
+          postalCode: postalCode,
+        }));
+      }
+    );
+  }, [coordinates]);
+
+  const mapAddressTypeToBackend = (type: string): "HOME" | "OFFICE" | "OTHER" => {
     if (type === "home") return "HOME";
     if (type === "work") return "OFFICE";
     return "OTHER";
@@ -69,7 +98,7 @@ export default function AddressForm({
 
   const handleSave = async () => {
     if (!userId) {
-      alert("User not loaded. Please refresh.");
+      toast.error("User not loaded. Please refresh.");
       return;
     }
 
@@ -78,6 +107,7 @@ export default function AddressForm({
       await updateLiveLocation(userId, coordinates.lat, coordinates.lng);
       const payload = {
         street: formData.street,
+        detailedAddress: formData.detailedAddress,
         city: formData.city,
         state: formData.state,
         country: formData.country,
@@ -93,28 +123,16 @@ export default function AddressForm({
         await addDeliveryAddress(payload);
       }
 
-      alert(
-        isEditMode
-          ? "Address updated successfully!"
-          : "Address added successfully!",
-      );
+      toast.success(isEditMode ? "Address updated successfully!" : "Address added successfully!");
       onSuccess?.();
     } catch (error: any) {
-      // Log the full server response to the console
       if (error.response && error.response.data) {
-        console.error(
-          "Server error response data:",
-          JSON.stringify(error.response.data, null, 2),
-        );
+        console.error("Server error response data:", JSON.stringify(error.response.data, null, 2));
       } else {
         console.error("Unexpected error:", error);
       }
-
       const serverMessage = error.response?.data?.message || error.message;
-      alert(
-        serverMessage ||
-          "Failed to save address. Please check the console for details.",
-      );
+      toast.error(serverMessage || "Failed to save address. Please check the console for details.");
     } finally {
       setIsSaving(false);
     }
@@ -122,20 +140,15 @@ export default function AddressForm({
 
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm md:p-8">
+      <Toaster position="top-center" richColors />
       <div className="mb-8">
-        <h2 className="mb-2 text-2xl font-bold text-[#191c1d]">
-          Address Details
-        </h2>
-        <p className="text-sm text-[#5a4044]">
-          Fill in the details to save this address for future deliveries.
-        </p>
+        <h2 className="mb-2 text-2xl font-bold text-[#191c1d]">Address Details</h2>
+        <p className="text-sm text-[#5a4044]">Fill in the details to save this address for future deliveries.</p>
       </div>
 
       {/* Address Label */}
       <div className="mb-8">
-        <label className="mb-4 block text-sm font-semibold text-[#191c1d]">
-          Label Address As
-        </label>
+        <label className="mb-4 block text-sm font-semibold text-[#191c1d]">Label Address As</label>
         <div className="grid grid-cols-3 gap-3">
           {(["home", "work", "other"] as const).map((type) => (
             <button
@@ -160,34 +173,26 @@ export default function AddressForm({
       {/* Street + Detailed */}
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            Street Address *
-          </label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">Street Address *</label>
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
             <MapPin size={18} className="mr-3 text-[#5a4044]" />
             <input
               type="text"
               value={formData.street}
-              onChange={(e) =>
-                setFormData({ ...formData, street: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, street: e.target.value })}
               placeholder="Enter street address"
               className="h-14 w-full bg-transparent outline-none"
             />
           </div>
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            House / Apartment / Floor
-          </label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">House / Apartment / Floor</label>
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
             <Building2 size={18} className="mr-3 text-[#5a4044]" />
             <input
               type="text"
               value={formData.detailedAddress}
-              onChange={(e) =>
-                setFormData({ ...formData, detailedAddress: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, detailedAddress: e.target.value })}
               placeholder="Apt 4B, Floor 2"
               className="h-14 w-full bg-transparent outline-none"
             />
@@ -198,9 +203,7 @@ export default function AddressForm({
       {/* City + Postal */}
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            City *
-          </label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">City *</label>
           <input
             type="text"
             value={formData.city}
@@ -210,15 +213,11 @@ export default function AddressForm({
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            Postal Code *
-          </label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">Postal Code *</label>
           <input
             type="text"
             value={formData.postalCode}
-            onChange={(e) =>
-              setFormData({ ...formData, postalCode: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
             placeholder="1000-001"
             className="h-14 w-full rounded-xl border border-[#e3bdc3] px-4 outline-none focus:border-[#b0004a]"
           />
@@ -228,31 +227,23 @@ export default function AddressForm({
       {/* State + Country */}
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            State / Region
-          </label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">State / Region</label>
           <input
             type="text"
             value={formData.state}
-            onChange={(e) =>
-              setFormData({ ...formData, state: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
             placeholder="Lisbon"
             className="h-14 w-full rounded-xl border border-[#e3bdc3] px-4 outline-none focus:border-[#b0004a]"
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            Country
-          </label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">Country</label>
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
             <Globe size={18} className="mr-3 text-[#5a4044]" />
             <input
               type="text"
               value={formData.country}
-              onChange={(e) =>
-                setFormData({ ...formData, country: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
               className="h-14 w-full bg-transparent outline-none"
             />
           </div>
@@ -267,20 +258,12 @@ export default function AddressForm({
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <p className="mb-1 text-xs uppercase tracking-wide text-[#5a4044]">
-              Latitude
-            </p>
-            <p className="rounded-lg bg-white px-4 py-3 font-mono text-sm">
-              {coordinates.lat.toFixed(6)}
-            </p>
+            <p className="mb-1 text-xs uppercase tracking-wide text-[#5a4044]">Latitude</p>
+            <p className="rounded-lg bg-white px-4 py-3 font-mono text-sm">{coordinates.lat.toFixed(6)}</p>
           </div>
           <div>
-            <p className="mb-1 text-xs uppercase tracking-wide text-[#5a4044]">
-              Longitude
-            </p>
-            <p className="rounded-lg bg-white px-4 py-3 font-mono text-sm">
-              {coordinates.lng.toFixed(6)}
-            </p>
+            <p className="mb-1 text-xs uppercase tracking-wide text-[#5a4044]">Longitude</p>
+            <p className="rounded-lg bg-white px-4 py-3 font-mono text-sm">{coordinates.lng.toFixed(6)}</p>
           </div>
         </div>
       </div>
@@ -291,11 +274,7 @@ export default function AddressForm({
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#b0004a] py-4 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
       >
         <Save size={18} />
-        {isSaving
-          ? "Saving..."
-          : isEditMode
-            ? "Update Address"
-            : "Save Address"}
+        {isSaving ? "Saving..." : isEditMode ? "Update Address" : "Save Address"}
       </button>
     </div>
   );
