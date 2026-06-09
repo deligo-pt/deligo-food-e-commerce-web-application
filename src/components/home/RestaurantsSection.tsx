@@ -15,6 +15,7 @@ import {
 
 import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
+import { useProductCategoryStore } from "@/stores/productCategoryStore";
 
 interface Vendor {
   userId: string;
@@ -133,7 +134,8 @@ export default function RestaurantsSection() {
   const [deliveryTimes, setDeliveryTimes] = useState<Record<string, string>>({});
   const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
   const { coords: userCoords, loading: userLoading } = useUserAddress();
-  const { selectedCategory } = useBusinessCategoryStore();
+  const { selectedCategory: selectedBusinessCategory } = useBusinessCategoryStore();
+  const { selectedCategory: selectedProductCategory } = useProductCategoryStore();
 
   useEffect(() => {
     const fetchVendors = async () => {
@@ -155,19 +157,29 @@ export default function RestaurantsSection() {
 
   const filteredVendors = useMemo(() => {
     if (!allVendors.length) return [];
-    
-    // Default: show RESTAURANT vendors
-    if (!selectedCategory) {
-      return allVendors.filter(
+
+
+    let filtered = allVendors;
+    if (!selectedBusinessCategory) {
+      filtered = filtered.filter(
         (vendor) => vendor.businessDetails.businessType === "RESTAURANT"
       );
+    } else {
+      filtered = filtered.filter(
+        (vendor) => vendor.businessDetails.businessType === selectedBusinessCategory.name
+      );
     }
-    
-    // Filter by selected business category (STORE or RESTAURANT)
-    return allVendors.filter(
-      (vendor) => vendor.businessDetails.businessType === selectedCategory.name
-    );
-  }, [allVendors, selectedCategory]);
+
+    if (selectedProductCategory) {
+      filtered = filtered.filter((vendor) =>
+        vendor.availableCategories?.some(
+          (cat) => cat._id === selectedProductCategory._id
+        )
+      );
+    }
+
+    return filtered;
+  }, [allVendors, selectedBusinessCategory, selectedProductCategory]);
 
   const estimateDeliveryTime = useCallback(async (vendor: Vendor) => {
     if (!userCoords) {
@@ -260,7 +272,9 @@ export default function RestaurantsSection() {
           </Link>
         </div>
         <div className="py-12 text-center text-gray-500">
-          No vendors found for this category.
+          {selectedProductCategory
+            ? `No vendors found for "${selectedProductCategory.name}"`
+            : "No vendors found for this category."}
         </div>
       </section>
     );
