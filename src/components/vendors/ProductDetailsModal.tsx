@@ -13,6 +13,7 @@ import {
   Circle,
   CheckCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useCartStore } from "@/stores/cartStore";
 
@@ -158,14 +159,14 @@ export default function ProductDetailsModal({
       if (response.data.success) {
         await fetchCart();
 
-        alert("Item added to cart successfully!");
+        toast.success("Item added to cart successfully!");
 
         onClose();
       } else {
         throw new Error(response.data.message || "Failed to add to cart");
       }
     } catch (err: any) {
-      alert(getApiErrorMessage(err, "Could not add item to cart"));
+      toast.error(getApiErrorMessage(err, "Could not add item to cart"));
     } finally {
       setCartLoading(false);
     }
