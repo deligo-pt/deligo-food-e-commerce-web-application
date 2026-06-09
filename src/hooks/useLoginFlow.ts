@@ -13,6 +13,7 @@ import { COUNTRY_OPTIONS } from "../data/countryCodes";
 
 type LoginMode = "mobile" | "email";
 type LoginStep = "credentials" | "otp";
+type PendingAction = "verify" | null;
 
 export function useLoginFlow() {
   const router = useRouter();
@@ -33,8 +34,9 @@ export function useLoginFlow() {
   const [isResendingOtp, setIsResendingOtp] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [loginIdentifier, setLoginIdentifier] =
-    useState<LoginIdentifier | null>(null);
+  const [loginIdentifier, setLoginIdentifier] = useState<LoginIdentifier | null>(null);
+  const [showDeviceLimitModal, setShowDeviceLimitModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   const languageLabel = language === "english" ? "English" : "Português";
 
@@ -44,7 +46,6 @@ export function useLoginFlow() {
         ? "Enter the OTP sent to your phone."
         : "Enter the OTP sent to your email.";
     }
-
     return mode === "mobile"
       ? "Use your phone number to request a login OTP."
       : "Use your email address to request a login OTP.";
@@ -57,23 +58,13 @@ export function useLoginFlow() {
 
   function buildIdentifier() {
     const referral = referralCode.trim();
-
     if (mode === "email") {
       const value = email.trim().toLowerCase();
-
-      if (!value) {
-        throw new Error("Enter your email address.");
-      }
-
+      if (!value) throw new Error("Enter your email address.");
       return { email: value, ...(referral ? { referralCode: referral } : {}) };
     }
-
     const number = mobileNumber.replace(/\D/g, "");
-
-    if (!number) {
-      throw new Error("Enter your mobile number.");
-    }
-
+    if (!number) throw new Error("Enter your mobile number.");
     return {
       contactNumber: `${selectedCountry.dialCode}${number}`,
       ...(referral ? { referralCode: referral } : {}),
@@ -82,36 +73,33 @@ export function useLoginFlow() {
 
   async function sendOtp() {
     clearMessages();
+    setShowDeviceLimitModal(false);
 
     try {
       const identifier = buildIdentifier();
       setIsSendingOtp(true);
-
       const response = await sendLoginOtp(identifier);
-
       setLoginIdentifier(identifier);
       setStep("otp");
       setOtp("");
       setSuccessMessage(response.message);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to request OTP.",
-      );
+      const message = error instanceof Error ? error.message : "Unable to request OTP.";
+      setErrorMessage(message);
     } finally {
       setIsSendingOtp(false);
     }
   }
 
-  async function verifyOtp() {
+  async function verifyOtp(forceLogin = false) {
     clearMessages();
+    setShowDeviceLimitModal(false);
 
     if (!loginIdentifier) {
       setErrorMessage("Request a new OTP first.");
       return;
     }
-
     const trimmedOtp = otp.trim();
-
     if (!trimmedOtp) {
       setErrorMessage("Enter the OTP sent to you.");
       return;
@@ -119,21 +107,23 @@ export function useLoginFlow() {
 
     try {
       setIsVerifyingOtp(true);
-
       const response = await verifyLoginOtp({
         ...loginIdentifier,
         otp: trimmedOtp,
         deviceDetails: buildDeviceDetails(),
+        forceLogin,
       });
-
       storeAuthTokens(response.data.accessToken, response.data.refreshToken);
-
       router.replace("/");
       router.refresh();
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to verify OTP.",
-      );
+      const message = error instanceof Error ? error.message : "Unable to verify OTP.";
+      if (message.includes("LIMIT_EXCEEDED") || message.toLowerCase().includes("device limit")) {
+        setPendingAction("verify");
+        setShowDeviceLimitModal(true);
+      } else {
+        setErrorMessage(message);
+      }
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -141,20 +131,16 @@ export function useLoginFlow() {
 
   async function resendOtp() {
     clearMessages();
-
     if (!loginIdentifier) {
       setErrorMessage("Request a new OTP first.");
       return;
     }
-
     try {
       setIsResendingOtp(true);
       const response = await sendLoginOtp(loginIdentifier);
       setSuccessMessage(response.message);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to resend OTP.",
-      );
+      setErrorMessage(error instanceof Error ? error.message : "Unable to resend OTP.");
     } finally {
       setIsResendingOtp(false);
     }
@@ -166,12 +152,22 @@ export function useLoginFlow() {
     setOtp("");
     setLoginIdentifier(null);
     clearMessages();
+    setShowDeviceLimitModal(false);
+    setPendingAction(null);
   }
 
   function backToCredentials() {
     setStep("credentials");
     setOtp("");
     clearMessages();
+  }
+
+  function clearSessionAndRetry() {
+    setShowDeviceLimitModal(false);
+    if (pendingAction === "verify") {
+      verifyOtp(true); 
+    }
+    setPendingAction(null);
   }
 
   return {
@@ -194,6 +190,7 @@ export function useLoginFlow() {
     languageLabel,
     loginHint,
     loginIdentifier,
+    showDeviceLimitModal,
     setShowReferral,
     setShowLanguageModal,
     setShowCountryMenu,
@@ -208,5 +205,6 @@ export function useLoginFlow() {
     verifyOtp,
     resendOtp,
     backToCredentials,
+    clearSessionAndRetry,
   };
 }

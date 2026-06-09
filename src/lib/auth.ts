@@ -39,10 +39,7 @@ type ApiErrorResponse = {
 const deviceStorageKey = "deligo-device-id";
 
 function getBrowserStorageValue(key: string) {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
+  if (typeof window === "undefined") return null;
   try {
     return window.localStorage.getItem(key);
   } catch {
@@ -51,41 +48,26 @@ function getBrowserStorageValue(key: string) {
 }
 
 function setBrowserStorageValue(key: string, value: string) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
+  if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(key, value);
-  } catch {
-    return;
-  }
+  } catch {}
 }
 
 function getStableDeviceId() {
   const existingDeviceId = getBrowserStorageValue(deviceStorageKey);
-
-  if (existingDeviceId) {
-    return existingDeviceId;
-  }
-
+  if (existingDeviceId) return existingDeviceId;
   const generatedDeviceId =
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID()
       : `deligo-${Math.random().toString(36).slice(2, 10)}`;
-
   setBrowserStorageValue(deviceStorageKey, generatedDeviceId);
-
   return generatedDeviceId;
 }
 
 function getDeviceType(userAgent: string) {
   const normalizedUserAgent = userAgent.toLowerCase();
-
-  if (normalizedUserAgent.includes("tablet")) {
-    return "tablet";
-  }
-
+  if (normalizedUserAgent.includes("tablet")) return "tablet";
   return normalizedUserAgent.includes("mobi") ? "mobile" : "desktop";
 }
 
@@ -100,10 +82,8 @@ export function buildDeviceDetails(): DeviceDetails {
       userAgent: "",
     };
   }
-
   const userAgent = window.navigator.userAgent;
   const platform = window.navigator.platform || "";
-
   return {
     deviceId: getStableDeviceId(),
     deviceType: getDeviceType(userAgent),
@@ -118,11 +98,9 @@ async function requestJson<T>(url: string, body: unknown): Promise<T> {
   try {
     const response = await apiClient.post<T>(url, body);
     const payload = response.data as T & ApiErrorResponse;
-
     if (payload && typeof payload === "object" && "success" in payload && payload.success === false) {
       throw new Error(payload.message || payload.errorSources?.[0]?.message || "Request failed");
     }
-
     return response.data;
   } catch (error) {
     throw new Error(getApiErrorMessage(error));
@@ -138,6 +116,7 @@ export async function verifyLoginOtp(payload: {
   contactNumber?: string;
   otp: string;
   deviceDetails: DeviceDetails;
+  forceLogin?: boolean;
 }): Promise<VerifyOtpResponse> {
   return requestJson<VerifyOtpResponse>("/auth/verify-otp", payload);
 }
