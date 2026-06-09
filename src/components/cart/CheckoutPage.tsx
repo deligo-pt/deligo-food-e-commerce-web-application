@@ -11,7 +11,9 @@ import {
   Trash2,
   ShoppingBag,
   MapPin,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
 
@@ -24,40 +26,52 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [vendor, setVendor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [updatingItem, setUpdatingItem] = useState<string | null>(null);
+  const [updatingAction, setUpdatingAction] = useState<{
+    productId: string;
+    action: "increment" | "decrement";
+  } | null>(null);
+  const [deletingItem, setDeletingItem] = useState<string | null>(null);
   const [instructions, setInstructions] = useState("");
   const [error, setError] = useState("");
   const [isProceeding, setIsProceeding] = useState(false);
 
-  const fetchCheckoutData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const fetchCheckoutData = useCallback(
+    async (showLoader = true) => {
+      try {
+        if (showLoader) {
+          setLoading(true);
+        }
 
-      const [cartRes, vendorRes] = await Promise.all([
-        apiClient.get("/carts/view-cart"),
-        apiClient.get("/vendors/customer?page=1&limit=100"),
-      ]);
+        setError("");
 
-      const cartData = cartRes.data.data;
-      setCart(cartData);
+        const [cartRes, vendorRes] = await Promise.all([
+          apiClient.get("/carts/view-cart"),
+          apiClient.get("/vendors/customer?page=1&limit=100"),
+        ]);
 
-      const foundVendor = vendorRes.data.data.find(
-        (v: any) => v.id === vendorId || v._id === vendorId,
-      );
-      setVendor(foundVendor);
-    } catch (error) {
-      setError(getApiErrorMessage(error, "Failed to load checkout"));
-    } finally {
-      setLoading(false);
-    }
-  }, [vendorId]);
+        const cartData = cartRes.data.data;
+        setCart(cartData);
+
+        const foundVendor = vendorRes.data.data.find(
+          (v: any) => v.id === vendorId || v._id === vendorId,
+        );
+
+        setVendor(foundVendor);
+      } catch (error) {
+        setError(getApiErrorMessage(error, "Failed to load checkout"));
+      } finally {
+        if (showLoader) {
+          setLoading(false);
+        }
+      }
+    },
+    [vendorId],
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchCheckoutData();
+    fetchCheckoutData(true);
   }, [fetchCheckoutData]);
-
   const vendorItems = useMemo(() => {
     return cart?.items.filter((item) => item.vendorId._id === vendorId) || [];
   }, [cart, vendorId]);
@@ -76,74 +90,69 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     );
   }, [vendorItems]);
 
-  const updateQuantity = async (item: any, action: "increment" | "decrement") => {
+  const updateQuantity = async (
+    item: any,
+    action: "increment" | "decrement",
+  ) => {
     try {
-      setUpdatingItem(item.productId);
+      setUpdatingAction({
+        productId: item.productId,
+        action,
+      });
       const payload: any = { productId: item.productId, quantity: 1, action };
       if (item.variationSku && item.variationSku !== null) {
         payload.variationSku = item.variationSku;
       }
       await apiClient.patch("/carts/update-quantity", payload);
-      await fetchCheckoutData();
+      await fetchCheckoutData(false);
     } catch (error) {
-      alert(getApiErrorMessage(error, "Failed to update quantity"));
+      toast.error(getApiErrorMessage(error, "Failed to update quantity"));
     } finally {
-      setUpdatingItem(null);
+      setUpdatingAction(null);
     }
   };
 
   const deleteItem = async (item: any) => {
     try {
-      setUpdatingItem(item.productId);
+      setDeletingItem(item.productId);
+
       await apiClient.delete("/carts/delete-item", {
-        data: [{ productId: item.productId, variationSku: item.variationSku ?? null }],
+        data: [
+          {
+            productId: item.productId,
+            variationSku: item.variationSku ?? null,
+          },
+        ],
       });
-      await fetchCheckoutData();
+
+      await fetchCheckoutData(false);
     } catch (error) {
-      alert(getApiErrorMessage(error, "Failed to remove item"));
+      toast.error(getApiErrorMessage(error, "Failed to remove item"));
     } finally {
-      setUpdatingItem(null);
+      setDeletingItem(null);
     }
   };
 
-// const handleProceedToCheckout = async () => {
-//   if (!vendorId) {
-//     alert("Vendor information missing");
-//     return;
-//   }
-//   try {
-//     setIsProceeding(true);
-//     const response = await apiClient.post("/checkout", {
-//       useCart: true,          // required to use the cart items
-//       // vendorId,               // optional but may be needed
-//       // instructions,           // optional delivery notes
-//     });
-//     const checkoutId = response.data.data._id;
-//     router.push(`/payment?checkoutId=${checkoutId}`);
-//   } catch (error) {
-//     alert(getApiErrorMessage(error, "Failed to create checkout session"));
-//   } finally {
-//     setIsProceeding(false);
-//   }
-// };
-const handleProceedToCheckout = async () => {
-  if (!vendorId) {
-    alert("Vendor information missing");
-    return;
-  }
-  try {
-    setIsProceeding(true);
-    const response = await apiClient.post("/checkout", { useCart: true });
-    const checkoutId = response.data.data._id;
-    // Redirect to payment page under the same vendor route
-    router.push(`/cart/checkout/${vendorId}/payment?checkoutId=${checkoutId}`);
-  } catch (error) {
-    alert(getApiErrorMessage(error, "Failed to create checkout session"));
-  } finally {
-    setIsProceeding(false);
-  }
-};
-const goBack = () => window.history.back();
+  const handleProceedToCheckout = async () => {
+    if (!vendorId) {
+      toast.error("Vendor information missing");
+      return;
+    }
+    try {
+      setIsProceeding(true);
+      const response = await apiClient.post("/checkout", { useCart: true });
+      const checkoutId = response.data.data._id;
+      // Redirect to payment page under the same vendor route
+      router.push(
+        `/cart/checkout/${vendorId}/payment?checkoutId=${checkoutId}`,
+      );
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Failed to create checkout session"));
+    } finally {
+      setIsProceeding(false);
+    }
+  };
+  const goBack = () => window.history.back();
 
   if (loading) {
     return (
@@ -178,8 +187,12 @@ const goBack = () => window.history.back();
         Back
       </button>
 
-      <h1 className="text-4xl font-extrabold text-gray-900">Review Your Cart</h1>
-      <p className="mt-2 text-gray-500">Complete your order details before checkout</p>
+      <h1 className="text-4xl font-extrabold text-gray-900">
+        Review Your Cart
+      </h1>
+      <p className="mt-2 text-gray-500">
+        Complete your order details before checkout
+      </p>
 
       <div className="mt-8 mb-8 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
         <div className="p-6">
@@ -204,7 +217,9 @@ const goBack = () => window.history.back();
               <div className="mt-3 flex flex-wrap gap-3">
                 <div className="flex items-center gap-2 rounded-xl bg-pink-50 px-3 py-2 text-pink-600">
                   <ShoppingBag size={16} />
-                  <span className="font-medium">{vendorItems.length} Products</span>
+                  <span className="font-medium">
+                    {vendorItems.length} Products
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-green-600">
                   <MapPin size={16} />
@@ -245,37 +260,60 @@ const goBack = () => window.history.back();
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">{item.name}</h3>
+                          <h3 className="text-xl font-bold text-gray-900">
+                            {item.name}
+                          </h3>
                           {item.variationSku && (
-                            <p className="mt-1 text-sm text-gray-500">SKU: {item.variationSku}</p>
+                            <p className="mt-1 text-sm text-gray-500">
+                              SKU: {item.variationSku}
+                            </p>
                           )}
                         </div>
                         <button
                           onClick={() => deleteItem(item)}
-                          disabled={updatingItem === item.productId}
+                          disabled={deletingItem === item.productId}
                           className="rounded-xl p-2 text-red-500 transition hover:bg-red-50"
                         >
-                          <Trash2 size={18} />
+                          {deletingItem === item.productId ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={18} />
+                          )}
                         </button>
                       </div>
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center rounded-2xl border border-gray-200">
                           <button
                             onClick={() => updateQuantity(item, "decrement")}
-                            disabled={updatingItem === item.productId}
+                            disabled={
+                              updatingAction?.productId === item.productId
+                            }
                             className="p-3 transition hover:bg-gray-100"
                           >
-                            <Minus size={16} />
+                            {updatingAction?.productId === item.productId &&
+                            updatingAction?.action === "decrement" ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Minus size={16} />
+                            )}
                           </button>
                           <div className="min-w-15 text-center font-bold">
                             {item.itemSummary.quantity}
                           </div>
+
                           <button
                             onClick={() => updateQuantity(item, "increment")}
-                            disabled={updatingItem === item.productId}
+                            disabled={
+                              updatingAction?.productId === item.productId
+                            }
                             className="p-3 transition hover:bg-gray-100"
                           >
-                            <Plus size={16} />
+                            {updatingAction?.productId === item.productId &&
+                            updatingAction?.action === "increment" ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Plus size={16} />
+                            )}
                           </button>
                         </div>
                         <div className="text-right">
@@ -302,13 +340,19 @@ const goBack = () => window.history.back();
         <div className="lg:col-span-4">
           <div className="sticky top-24 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
             <div className="border-b border-gray-100 p-6">
-              <h3 className="text-2xl font-bold text-gray-900">Order Summary</h3>
-              <p className="mt-1 text-sm text-gray-500">Review your order details</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                Order Summary
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Review your order details
+              </p>
             </div>
             <div className="space-y-4 p-6">
               <div className="flex justify-between">
                 <span className="text-gray-600">Original Price</span>
-                <span className="font-semibold">€{summary.originalPrice.toFixed(2)}</span>
+                <span className="font-semibold">
+                  €{summary.originalPrice.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Product Discount</span>
@@ -331,7 +375,9 @@ const goBack = () => window.history.back();
             </div>
 
             <div className="border-t border-gray-100 p-6">
-              <label className="mb-2 block font-semibold text-gray-900">Delivery Instructions</label>
+              <label className="mb-2 block font-semibold text-gray-900">
+                Delivery Instructions
+              </label>
               <textarea
                 rows={4}
                 value={instructions}

@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, Plus } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
+import { useProductCategoryStore } from "@/stores/productCategoryStore";
+import CategoriesPageSkeleton from "./CategoriesPageSkeleton";
 
 type Category = {
   _id: string;
@@ -38,6 +41,8 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { setSelectedCategory } = useProductCategoryStore();
+  const router = useRouter();
 
   useEffect(() => {
     let alive = true;
@@ -57,7 +62,7 @@ export default function CategoriesPage() {
           "/categories/productCategory?page=1&limit=1",
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         const initialData = initialRes.data;
@@ -67,12 +72,12 @@ export default function CategoriesPage() {
           `/categories/productCategory?page=1&limit=${total}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         const payload = response.data;
         const activeCategories = (payload.data?.data ?? []).filter(
-          (category) => category.isActive && !category.isDeleted
+          (category) => category.isActive && !category.isDeleted,
         );
 
         if (alive) {
@@ -95,6 +100,19 @@ export default function CategoriesPage() {
     };
   }, []);
 
+  const handleCategoryClick = (category: Category) => {
+    setSelectedCategory({
+      _id: category._id,
+      name: category.name,
+      slug: category.slug,
+      icon: category.icon,
+    });
+    router.push("/");
+  };
+  if (loading) {
+    return <CategoriesPageSkeleton />;
+  }
+
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 lg:px-16">
       <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
@@ -114,11 +132,7 @@ export default function CategoriesPage() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex h-48 items-center justify-center rounded-3xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
-          <div className="text-center text-gray-500">Loading categories...</div>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="flex h-48 items-center justify-center rounded-3xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
           <div className="text-center text-red-500">{error}</div>
         </div>
@@ -127,7 +141,8 @@ export default function CategoriesPage() {
           {categories.map((category) => (
             <article
               key={category._id}
-              className="group flex flex-col items-center gap-4 rounded-3xl bg-white p-5 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-transform duration-300 hover:-translate-y-1"
+              onClick={() => handleCategoryClick(category)}
+              className="group flex cursor-pointer flex-col items-center gap-4 rounded-3xl bg-white p-5 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-transform duration-300 hover:-translate-y-1"
             >
               <div className="h-28 w-28 rounded-full bg-[#e7e8e9] p-1 shadow-md transition-all group-hover:bg-[#b0004a]">
                 <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#ffffff]">

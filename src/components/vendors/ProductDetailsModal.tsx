@@ -13,7 +13,9 @@ import {
   Circle,
   CheckCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { useCartStore } from "@/stores/cartStore";
 
 interface ProductDetailsModalProps {
   isOpen: boolean;
@@ -65,8 +67,11 @@ export default function ProductDetailsModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [selectedOption, setSelectedOption] = useState<VariantOption | null>(null);
+  const [selectedOption, setSelectedOption] = useState<VariantOption | null>(
+    null,
+  );
   const [cartLoading, setCartLoading] = useState(false);
+  const { fetchCart } = useCartStore();
 
   useEffect(() => {
     if (!isOpen || !productId) return;
@@ -110,7 +115,8 @@ export default function ProductDetailsModal({
     }
   }
 
-  const unitPrice = selectedOption?.price ?? product?.pricing?.discountedBasePrice ?? 0;
+  const unitPrice =
+    selectedOption?.price ?? product?.pricing?.discountedBasePrice ?? 0;
   const subtotal = unitPrice * quantity;
   const taxRate = product?.pricing?.taxRate ?? 0;
   const taxAmount = subtotal * (taxRate / 100);
@@ -133,6 +139,7 @@ export default function ProductDetailsModal({
     if (!product) return;
 
     setCartLoading(true);
+
     try {
       const payload: any = {
         items: [
@@ -142,24 +149,28 @@ export default function ProductDetailsModal({
           },
         ],
       };
+
       if (selectedOption) {
         payload.items[0].variationSku = selectedOption.sku;
       }
 
       const response = await apiClient.post("/carts/add-to-cart", payload);
+
       if (response.data.success) {
-        alert("Item added to cart successfully!");
+        await fetchCart();
+
+        toast.success("Item added to cart successfully!");
+
         onClose();
       } else {
         throw new Error(response.data.message || "Failed to add to cart");
       }
     } catch (err: any) {
-      alert(getApiErrorMessage(err, "Could not add item to cart"));
+      toast.error(getApiErrorMessage(err, "Could not add item to cart"));
     } finally {
       setCartLoading(false);
     }
   };
-
   return (
     <div
       onClick={onClose}
@@ -185,9 +196,7 @@ export default function ProductDetailsModal({
             </div>
           )}
 
-          {error && (
-            <div className="p-8 text-center text-red-500">{error}</div>
-          )}
+          {error && <div className="p-8 text-center text-red-500">{error}</div>}
 
           {!loading && !error && product && (
             <div className="flex flex-col items-center px-8 pb-6 pt-10">
@@ -233,8 +242,9 @@ export default function ProductDetailsModal({
                     <span className="text-sm font-semibold">
                       Save{" "}
                       {formatPrice(
-                        originalProductPrice - product.pricing.discountedBasePrice,
-                        currency
+                        originalProductPrice -
+                          product.pricing.discountedBasePrice,
+                        currency,
                       )}{" "}
                       ({Math.round(product.pricing.discount)}% Off)
                     </span>
@@ -263,11 +273,16 @@ export default function ProductDetailsModal({
                             >
                               <div className="flex items-center gap-3">
                                 {isSelected ? (
-                                  <CheckCircle size={20} className="text-pink-600" />
+                                  <CheckCircle
+                                    size={20}
+                                    className="text-pink-600"
+                                  />
                                 ) : (
                                   <Circle size={20} className="text-gray-400" />
                                 )}
-                                <span className="text-gray-800">{opt.label}</span>
+                                <span className="text-gray-800">
+                                  {opt.label}
+                                </span>
                               </div>
                               <span className="font-medium text-pink-600">
                                 {formatPrice(opt.price, currency)}
@@ -289,7 +304,9 @@ export default function ProductDetailsModal({
                 >
                   <Minus size={16} />
                 </button>
-                <span className="w-8 text-center text-xl font-bold">{quantity}</span>
+                <span className="w-8 text-center text-xl font-bold">
+                  {quantity}
+                </span>
                 <button
                   onClick={() => setQuantity((q) => q + 1)}
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-600 text-white transition hover:bg-pink-700"
@@ -340,7 +357,8 @@ export default function ProductDetailsModal({
                   <h3 className="text-lg font-semibold">Details</h3>
                 </div>
                 <p className="leading-7 text-gray-600">
-                  {product.description || "Freshly prepared with premium ingredients."}
+                  {product.description ||
+                    "Freshly prepared with premium ingredients."}
                 </p>
               </div>
             </div>

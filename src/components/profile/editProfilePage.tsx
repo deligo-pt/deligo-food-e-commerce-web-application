@@ -6,6 +6,7 @@ import Image from "next/image";
 import { FileText, Mail, MapPin, Pencil, Phone, User } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
 import Link from "next/link";
+import EditProfileSkeleton from "./EditProfileSkeleton";
 
 interface ProfileData {
   name: { firstName: string; lastName: string };
@@ -63,7 +64,7 @@ export default function EditProfilePage() {
     fetchProfile();
   }, []);
 
-  if (loading) return <LoadingState />;
+  if (loading) return <EditProfileSkeleton />;
   if (error) return <ErrorState message={error} />;
 
   return (
@@ -166,15 +167,6 @@ export default function EditProfilePage() {
   );
 }
 
-function LoadingState() {
-  return (
-    <section className="bg-[#f8f9fa] py-10">
-      <div className="mx-auto max-w-5xl px-4 text-center">
-        Loading profile...
-      </div>
-    </section>
-  );
-}
 
 function ErrorState({ message }: { message: string }) {
   return (

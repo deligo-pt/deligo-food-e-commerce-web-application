@@ -31,6 +31,7 @@ import {
 import Cookies from "js-cookie";
 import Image from "next/image";
 import Link from "next/link";
+import ProfilePageSkeleton from "./profilePageSkeleton";
 
 interface Offer {
   _id: string;
@@ -155,11 +156,7 @@ export default function AccountPage() {
   };
 
   if (loading) {
-    return (
-      <section className="bg-[#f7f7f7] min-h-screen p-4 md:p-6 flex items-center justify-center">
-        <div className="text-[#c1005a] text-lg">Loading profile...</div>
-      </section>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   if (error || !profile) {

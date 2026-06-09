@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/apiClient";
 import OrderCard from "./OrderCard";
+import OrdersPageSkeleton from "./OrdersPageSkeleton";
 
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<"ongoing" | "history">("ongoing");
@@ -32,11 +33,7 @@ export default function OrdersPage() {
   }, []);
 
   if (loading) {
-    return (
-      <section className="min-h-screen bg-[#f8f9fa] py-8">
-        <div className="mx-auto max-w-5xl px-4 md:px-8">Loading...</div>
-      </section>
-    );
+    return <OrdersPageSkeleton />;
   }
 
   return (

@@ -21,6 +21,7 @@ type SponsorshipResponse = {
 
 export default function HeroSection() {
   const [slides, setSlides] = useState<Sponsorship[]>([]);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Loading sponsorship banners...");
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -35,6 +36,7 @@ export default function HeroSection() {
         if (alive) {
           setSlides([]);
           setMessage("Authentication token is missing. Please log in again.");
+          setLoading(false);
         }
 
         return;
@@ -65,6 +67,10 @@ export default function HeroSection() {
         if (alive) {
           setSlides([]);
           setMessage("Unable to load sponsorship banners.");
+        }
+      } finally {
+        if (alive) {
+          setLoading(false);
         }
       }
     }
@@ -99,7 +105,27 @@ export default function HeroSection() {
 
   return (
     <section className="group relative mt-8">
-      {hasSlides ? (
+      {loading ? (
+        <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-0">
+          <div className="relative overflow-hidden rounded-4xl bg-gray-100">
+            <div className="relative aspect-video animate-pulse lg:aspect-21/8">
+              <div className="absolute inset-0 bg-linear-to-r from-gray-100 via-gray-200 to-gray-100" />
+              <div className="absolute left-6 top-6 h-9 w-40 rounded-full bg-white/80 lg:left-16 lg:top-8" />
+              <div className="absolute bottom-8 left-6 right-6 space-y-4 lg:left-16 lg:max-w-xl">
+                <div className="h-8 w-3/4 rounded-full bg-white/80 lg:h-11" />
+                <div className="h-4 w-full rounded-full bg-white/70" />
+                <div className="h-4 w-2/3 rounded-full bg-white/70" />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 flex justify-center gap-3 pb-1">
+            <span className="h-2.5 w-12 animate-pulse rounded-full bg-[#b70052]/20" />
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20" />
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20" />
+          </div>
+        </div>
+      ) : hasSlides ? (
         <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-0">
           <div className="relative overflow-hidden rounded-4xl ">
             <div className="absolute inset-0 z-10 pointer-events-none" />
@@ -150,7 +176,7 @@ export default function HeroSection() {
               Sponsorships
             </span>
             <h1 className="mb-4 text-3xl font-extrabold lg:text-5xl">
-              {message === "Loading sponsorship banners..." ? "No banners available" : message}
+              {message}
             </h1>
             <p className="text-base leading-7 text-white/75 lg:text-lg">{message}</p>
           </div>

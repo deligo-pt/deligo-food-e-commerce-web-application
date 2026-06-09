@@ -3,6 +3,7 @@
 
 import { ArrowLeft, CheckCircle, LocateFixed, Map, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Toaster, toast } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "./AddressForm";
 import { fetchUserProfile, updateLiveLocation } from "@/services/addressApi";
@@ -17,14 +18,7 @@ export default function AddAddressPage() {
   const [userId, setUserId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [coordinates, setCoordinates] = useState({ lat: 23.8103, lng: 90.4125 });
-  const [addressData, setAddressData] = useState({
-    street: "",
-    detailedAddress: "",
-    city: "",
-    state: "",
-    country: "",
-    postalCode: "",
-  });
+  const [initialAddress, setInitialAddress] = useState<any>(null);
   const [searchValue, setSearchValue] = useState("");
   const [updatingLocation, setUpdatingLocation] = useState(false);
 
@@ -40,14 +34,7 @@ export default function AddAddressPage() {
             const address = userData.deliveryAddresses?.find((a: any) => a._id === addressId);
             if (address) {
               setCoordinates({ lat: address.latitude, lng: address.longitude });
-              setAddressData({
-                street: address.street || "",
-                detailedAddress: address.detailedAddress || "",
-                city: address.city || "",
-                state: address.state || "",
-                country: address.country || "",
-                postalCode: address.postalCode || "",
-              });
+              setInitialAddress(address);
             }
           } else {
             const loc = userData.currentSessionLocation?.coordinates;
@@ -58,6 +45,7 @@ export default function AddAddressPage() {
         }
       } catch (error) {
         console.error("Failed to load profile", error);
+        toast.error("Failed to load profile");
       } finally {
         setLoading(false);
       }
@@ -67,12 +55,15 @@ export default function AddAddressPage() {
 
   const handleUseGPS = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation not supported");
+      toast.error("Geolocation not supported");
       return;
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => console.error(err)
+      (err) => {
+        console.error(err);
+        toast.error("Could not get your location");
+      }
     );
   };
 
@@ -81,43 +72,26 @@ export default function AddAddressPage() {
   };
 
   const handleUpdateLocation = async () => {
-    if (!userId) return alert("User not loaded");
+    if (!userId) {
+      toast.error("User not loaded");
+      return;
+    }
     setUpdatingLocation(true);
     try {
       await updateLiveLocation(userId, coordinates.lat, coordinates.lng);
-      alert("Live location updated!");
+      toast.success("Live location updated!");
     } catch (err: any) {
-      alert(err.message || "Update failed");
+      toast.error(err.message || "Update failed");
     } finally {
       setUpdatingLocation(false);
     }
   };
 
-  const reverseGeocode = (lat: number, lng: number) => {
-    if (!window.google?.maps) return;
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ location: { lat, lng } }, (results: any[], status: any) => {
-      if (status !== "OK" || !results?.length) return;
-      const comps = results[0].address_components;
-      let street = "", city = "", state = "", country = "", postalCode = "";
-      comps.forEach((c: any) => {
-        if (c.types.includes("route")) street = c.long_name;
-        if (c.types.includes("locality")) city = c.long_name;
-        if (c.types.includes("administrative_area_level_1")) state = c.long_name;
-        if (c.types.includes("country")) country = c.long_name;
-        if (c.types.includes("postal_code")) postalCode = c.long_name;
-      });
-      setAddressData(prev => ({ ...prev, street: street || prev.street, city: city || prev.city, state: state || prev.state, country: country || prev.country, postalCode: postalCode || prev.postalCode }));
-    });
-  };
-  useEffect(() => {
-    reverseGeocode(coordinates.lat, coordinates.lng);
-  }, [coordinates]);
-
   if (loading) return <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent"></div></div>;
 
   return (
     <section className="bg-[#f8f9fa] py-8">
+      <Toaster position="top-center" richColors />
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="mb-8 flex items-center gap-4">
           <button onClick={() => router.back()} className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm hover:bg-gray-100">
@@ -168,7 +142,7 @@ export default function AddAddressPage() {
           <div className="lg:col-span-7">
             <AddressForm
               coordinates={coordinates}
-              initialData={addressData}
+              initialAddress={initialAddress}
               isEditMode={isEditMode}
               userId={userId}
               addressId={addressId || undefined}

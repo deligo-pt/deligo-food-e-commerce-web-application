@@ -29,6 +29,49 @@ function CountryFlag({ countryCode, name }: { countryCode: string; name: string 
   );
 }
 
+function ClearSessionModal({
+  open,
+  onOpenChange,
+  onRemove,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onRemove: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h3 className="text-2xl font-bold text-[#191c1d]">Device Limit Exceeded</h3>
+        <p className="mt-2 text-[15px] text-[#5a4044]">
+          You have reached your maximum device limit. Do you want to remove an
+          existing session and log in here?
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-full border border-[#e3bdc3] px-5 py-2 text-[15px] font-medium text-[#5a4044] hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onRemove();
+              onOpenChange(false);
+            }}
+            className="rounded-full bg-[#b0004a] px-5 py-2 text-[15px] font-medium text-white shadow-sm hover:bg-[#8a0038]"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const {
     mode,
@@ -50,6 +93,7 @@ export default function LoginPage() {
     languageLabel,
     loginHint,
     loginIdentifier,
+    showDeviceLimitModal,
     setShowReferral,
     setShowLanguageModal,
     setShowCountryMenu,
@@ -64,11 +108,13 @@ export default function LoginPage() {
     verifyOtp,
     resendOtp,
     backToCredentials,
+    clearSessionAndRetry,
   } = useLoginFlow();
 
   return (
     <main className="min-h-screen bg-[#f7f2f5] px-4 py-8 text-[#191c1d] sm:px-6 lg:px-8 lg:py-10">
       <section className="mx-auto flex w-full max-w-5xl flex-col overflow-hidden rounded-4xl bg-white shadow-[0_18px_70px_rgba(16,24,40,0.12)] lg:min-h-[calc(100vh-5rem)] lg:flex-row">
+        {/* Left side - same as before */}
         <div className="flex items-center justify-center bg-[#ef2f7a] px-6 py-12 text-center text-white sm:px-10 lg:min-h-full lg:w-[42%] lg:px-12 lg:py-16">
           <div className="flex w-full max-w-sm flex-col items-center">
             <div className="overflow-hidden rounded-[28px] shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
@@ -81,11 +127,9 @@ export default function LoginPage() {
                 priority
               />
             </div>
-
             <h1 className="mt-6 text-[40px] font-extrabold tracking-[-0.03em] text-white sm:text-[46px]">
               DeliGo
             </h1>
-
             <p className="mt-4 text-[15px] leading-6 text-white/90 sm:text-[16px]">
               Fast, reliable food delivery with a simple sign-in experience.
             </p>
@@ -215,7 +259,6 @@ export default function LoginPage() {
                         Choose your country and dial code
                       </p>
                     </div>
-
                     <div className="max-h-72 overflow-y-auto p-2">
                       {COUNTRY_OPTIONS.map((country: CountryOption) => (
                         <button
@@ -288,7 +331,7 @@ export default function LoginPage() {
               {step === "credentials" ? (
                 <button
                   type="button"
-                  onClick={sendOtp}
+                  onClick={() => sendOtp()}
                   disabled={isSendingOtp}
                   className="mt-1 flex h-14 w-full items-center justify-center rounded-4xl bg-linear-to-r from-[#d9357b] to-[#ff65b4] text-[18px] font-bold text-white shadow-[0_12px_28px_rgba(217,53,123,0.32)] transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[19px]"
                 >
@@ -311,10 +354,9 @@ export default function LoginPage() {
                     <ArrowLeft size={18} />
                     Change details
                   </button>
-
                   <button
                     type="button"
-                    onClick={verifyOtp}
+                    onClick={() => verifyOtp()}
                     disabled={isVerifyingOtp}
                     className="mt-1 inline-flex h-14 items-center justify-center rounded-4xl bg-linear-to-r from-[#d9357b] to-[#ff65b4] text-[18px] font-bold text-white shadow-[0_12px_28px_rgba(217,53,123,0.32)] transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[19px]"
                   >
@@ -347,7 +389,6 @@ export default function LoginPage() {
                       "Resend OTP"
                     )}
                   </button>
-
                   <p className="text-[14px] text-[#7a7a7a]">
                     OTP sent to {loginIdentifier?.email ?? loginIdentifier?.contactNumber}
                   </p>
@@ -369,7 +410,6 @@ export default function LoginPage() {
               <p className="pt-6 text-center text-[15px] leading-7 text-[#696969] sm:text-[16px]">
                 By continuing, you agree to our
               </p>
-
               <p className="-mt-1 text-center text-[15px] font-semibold leading-7 text-[#d7357c] sm:text-[16px]">
                 <Link href="#" className="transition-opacity hover:opacity-80">
                   Terms of Service
@@ -391,7 +431,6 @@ export default function LoginPage() {
               <h3 className="text-[28px] font-extrabold tracking-[-0.03em] text-[#252525] sm:text-[34px]">
                 Select Language
               </h3>
-
               <button
                 type="button"
                 onClick={() => setShowLanguageModal(false)}
@@ -401,9 +440,7 @@ export default function LoginPage() {
                 <CircleX size={34} strokeWidth={1.8} />
               </button>
             </div>
-
             <div className="my-6 h-px w-full bg-[#e7e7e7]" />
-
             <div className="space-y-4">
               <button
                 type="button"
@@ -424,12 +461,8 @@ export default function LoginPage() {
                     English
                   </span>
                 </div>
-
-                {language === "english" ? (
-                  <Check size={28} className="text-[#d7357c]" />
-                ) : null}
+                {language === "english" ? <Check size={28} className="text-[#d7357c]" /> : null}
               </button>
-
               <button
                 type="button"
                 onClick={() => {
@@ -449,15 +482,19 @@ export default function LoginPage() {
                     Português
                   </span>
                 </div>
-
-                {language === "portugues" ? (
-                  <Check size={28} className="text-[#d7357c]" />
-                ) : null}
+                {language === "portugues" ? <Check size={28} className="text-[#d7357c]" /> : null}
               </button>
             </div>
           </div>
         </div>
       ) : null}
+
+      {/* Device limit modal */}
+      <ClearSessionModal
+        open={showDeviceLimitModal}
+        onOpenChange={() => {}}
+        onRemove={clearSessionAndRetry}
+      />
     </main>
   );
 }

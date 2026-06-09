@@ -1,18 +1,21 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   ChevronRight,
   Star,
-  Clock,
   Heart,
   Truck,
   Check,
 } from "lucide-react";
 
 import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
+import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
+import { useProductCategoryStore } from "@/stores/productCategoryStore";
 
 interface Vendor {
   userId: string;
@@ -27,59 +30,222 @@ interface Vendor {
   businessLocation: {
     city: string;
     country: string;
+    latitude?: number;
+    longitude?: number;
   };
   storePhoto: string[];
   rating: {
     average: number;
     totalReviews: number;
   };
+  availableCategories?: {
+    _id: string;
+    name: string;
+    icon: string;
+  }[];
+}
+
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatTimeRange(totalMinutes: number): string {
+  if (totalMinutes < 60) {
+    return `${Math.floor(totalMinutes)} to ${Math.ceil(totalMinutes + 10)} mins`;
+  }
+  const hours = totalMinutes / 60;
+  if (hours < 24) {
+    const low = Math.floor(hours);
+    const high = Math.ceil(hours + 10 / 60);
+    return low === high ? `${low} hour${low !== 1 ? 's' : ''}` : `${low} to ${high} hours`;
+  }
+  const days = totalMinutes / (60 * 24);
+  if (days < 7) {
+    const low = Math.floor(days);
+    const high = Math.ceil(days + 10 / (60 * 24));
+    return low === high ? `${low} day${low !== 1 ? 's' : ''}` : `${low} to ${high} days`;
+  }
+  const weeks = totalMinutes / (60 * 24 * 7);
+  if (weeks < 4) {
+    const low = Math.floor(weeks);
+    const high = Math.ceil(weeks + 10 / (60 * 24 * 7));
+    return low === high ? `${low} week${low !== 1 ? 's' : ''}` : `${low} to ${high} weeks`;
+  }
+  const months = totalMinutes / (60 * 24 * 30);
+  if (months < 12) {
+    const low = Math.floor(months);
+    const high = Math.ceil(months + 10 / (60 * 24 * 30));
+    return low === high ? `${low} month${low !== 1 ? 's' : ''}` : `${low} to ${high} months`;
+  }
+  const years = totalMinutes / (60 * 24 * 365);
+  const low = Math.floor(years);
+  const high = Math.ceil(years + 10 / (60 * 24 * 365));
+  return low === high ? `${low} year${low !== 1 ? 's' : ''}` : `${low} to ${high} years`;
+}
+
+function getVendorCoords(vendor: Vendor): { lat: number; lng: number } | null {
+  const { latitude, longitude } = vendor.businessLocation;
+  return latitude && longitude ? { lat: latitude, lng: longitude } : null;
+}
+
+let cachedUserCoords: { lat: number; lng: number } | null = null;
+let userPromise: Promise<{ lat: number; lng: number } | null> | null = null;
+
+async function fetchUserPrimaryAddress() {
+  if (cachedUserCoords) return cachedUserCoords;
+  try {
+    const { data } = await apiClient.get("/profile");
+    const primary = data?.data?.deliveryAddresses?.find((a: any) => a.isActive === true);
+    if (primary?.latitude && primary?.longitude) {
+      cachedUserCoords = { lat: primary.latitude, lng: primary.longitude };
+    }
+    return cachedUserCoords;
+  } catch (error) {
+    console.error("Failed to fetch user address", error);
+    return null;
+  }
+}
+
+function useUserAddress() {
+  const [coords, setCoords] = useState(cachedUserCoords);
+  const [loading, setLoading] = useState(!cachedUserCoords);
+  useEffect(() => {
+    if (cachedUserCoords) {
+      setCoords(cachedUserCoords);
+      setLoading(false);
+      return;
+    }
+    if (!userPromise) userPromise = fetchUserPrimaryAddress();
+    userPromise.then(setCoords).finally(() => setLoading(false));
+  }, []);
+  return { coords, loading };
 }
 
 export default function RestaurantsSection() {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [allVendors, setAllVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deliveryTimes, setDeliveryTimes] = useState<Record<string, string>>({});
+  const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
+  const { coords: userCoords, loading: userLoading } = useUserAddress();
+  const { selectedCategory: selectedBusinessCategory } = useBusinessCategoryStore();
+  const { selectedCategory: selectedProductCategory } = useProductCategoryStore();
 
   useEffect(() => {
     const fetchVendors = async () => {
       try {
         setLoading(true);
         setError("");
-
         const response = await apiClient.get("/vendors/customer");
-
         console.log("Vendor Response:", response.data);
-
-        setVendors(response.data?.data || []);
+        setAllVendors(response.data?.data || []);
       } catch (err) {
         console.error("Failed to fetch vendors:", err);
-
-        setError(
-          getApiErrorMessage(err, "Unable to load nearby restaurants.")
-        );
+        setError(getApiErrorMessage(err, "Unable to load nearby restaurants."));
       } finally {
         setLoading(false);
       }
     };
-
     fetchVendors();
   }, []);
 
-  if (loading) {
+  const filteredVendors = useMemo(() => {
+    if (!allVendors.length) return [];
+
+
+    let filtered = allVendors;
+    if (!selectedBusinessCategory) {
+      filtered = filtered.filter(
+        (vendor) => vendor.businessDetails.businessType === "RESTAURANT"
+      );
+    } else {
+      filtered = filtered.filter(
+        (vendor) => vendor.businessDetails.businessType === selectedBusinessCategory.name
+      );
+    }
+
+    if (selectedProductCategory) {
+      filtered = filtered.filter((vendor) =>
+        vendor.availableCategories?.some(
+          (cat) => cat._id === selectedProductCategory._id
+        )
+      );
+    }
+
+    return filtered;
+  }, [allVendors, selectedBusinessCategory, selectedProductCategory]);
+
+  const estimateDeliveryTime = useCallback(async (vendor: Vendor) => {
+    if (!userCoords) {
+      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+      return;
+    }
+    const vendorCoords = getVendorCoords(vendor);
+    if (!vendorCoords) {
+      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+      return;
+    }
+
+    setLoadingTimes(prev => ({ ...prev, [vendor.userId]: true }));
+    try {
+      const url = `/api/distance-matrix?originLat=${vendorCoords.lat}&originLng=${vendorCoords.lng}&destLat=${userCoords.lat}&destLng=${userCoords.lng}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.status === "OK" && data.rows?.[0]?.elements?.[0]?.status === "OK") {
+        const minutes = Math.round(data.rows[0].elements[0].duration.value / 60);
+        setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: formatTimeRange(minutes) }));
+        return;
+      }
+      const distance = getDistanceKm(vendorCoords.lat, vendorCoords.lng, userCoords.lat, userCoords.lng);
+      const estimatedMinutes = Math.round((distance / 30) * 60);
+      const timeStr = estimatedMinutes < 10 ? "Under 10 min" : formatTimeRange(estimatedMinutes);
+      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: timeStr }));
+    } catch (err) {
+      console.error("Time estimation error", err);
+      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+    } finally {
+      setLoadingTimes(prev => ({ ...prev, [vendor.userId]: false }));
+    }
+  }, [userCoords]);
+
+  useEffect(() => {
+    if (!userLoading && filteredVendors.length > 0) {
+      filteredVendors.forEach(vendor => estimateDeliveryTime(vendor));
+    }
+  }, [userCoords, userLoading, filteredVendors, estimateDeliveryTime]);
+
+  const isPageLoading = loading || userLoading;
+
+  if (isPageLoading) {
     return (
       <section>
         <div className="mb-10 flex items-center justify-between">
-          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
-            Near You
-          </h2>
+          <div className="h-10 w-40 animate-pulse rounded-full bg-gray-200" />
+          <div className="hidden h-7 w-24 animate-pulse rounded-full bg-gray-200 sm:block" />
         </div>
-
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-105 animate-pulse rounded-4xl bg-gray-100"
-            />
+            <div key={index} className="overflow-hidden rounded-4xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+              <div className="aspect-16/10 animate-pulse bg-gray-200" />
+              <div className="space-y-5 p-8">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="h-7 w-2/3 animate-pulse rounded-full bg-gray-200" />
+                  <div className="h-6 w-6 animate-pulse rounded-full bg-gray-200" />
+                </div>
+                <div className="h-5 w-1/2 animate-pulse rounded-full bg-gray-200" />
+                <div className="flex gap-4 border-t border-[#edeeef] pt-6">
+                  <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200" />
+                  <div className="h-5 w-32 animate-pulse rounded-full bg-gray-200" />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </section>
@@ -96,92 +262,92 @@ export default function RestaurantsSection() {
     );
   }
 
+  if (filteredVendors.length === 0) {
+    return (
+      <section>
+        <div className="mb-10 flex items-center justify-between">
+          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">Near You</h2>
+          <Link href="/vendors" className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline">
+            View All <ChevronRight size={20} />
+          </Link>
+        </div>
+        <div className="py-12 text-center text-gray-500">
+          {selectedProductCategory
+            ? `No vendors found for "${selectedProductCategory.name}"`
+            : "No vendors found for this category."}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section>
       <div className="mb-10 flex items-center justify-between">
-        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
-          Near You
-        </h2>
-
-        <Link
-          href="/vendors"
-          className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline"
-        >
+        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">Near You</h2>
+        <Link href="/vendors" className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline">
           View All <ChevronRight size={20} />
         </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
-        {vendors.map((vendor) => (
-          <Link
-            key={vendor.userId}
-            href={`/vendors/${vendor.userId}`}
-            className="block"
-          >
-            <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] hover:shadow-2xl">
-              <div className="relative aspect-16/10 overflow-hidden">
-                <Image
-                  fill
-                  sizes="(max-width:1024px) 100vw, 33vw"
-                  alt={vendor.businessDetails.businessName}
-                  src={
-                    vendor.storePhoto?.[0] ||
-                    "https://placehold.co/600x400/png"
-                  }
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
-                />
+        {filteredVendors.map((vendor) => {
+          const deliveryTime = deliveryTimes[vendor.userId];
+          const isTimeLoading = loadingTimes[vendor.userId];
+          const displayTime = isTimeLoading ? "Calculating..." : (deliveryTime || "Under 10 min");
 
-                <div className="absolute left-5 top-5">
-                  <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 px-4 py-2 text-sm font-bold text-[#191c1d] shadow-lg backdrop-blur-md">
-                    <Star size={18} className="text-[#f6c344]" />
-                    {vendor.rating?.average ?? 0}
-                  </span>
-                </div>
-
-                <div className="absolute bottom-5 right-5">
-                  <span className="flex items-center gap-2 rounded-2xl bg-black/70 px-4 py-2 text-sm text-white backdrop-blur-md">
-                    <Clock size={18} />
-                    {vendor.businessDetails.openingHours} -{" "}
-                    {vendor.businessDetails.closingHours}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-8">
-                <div className="mb-2 flex items-center justify-between gap-4">
-                  <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d]">
-                    {vendor.businessDetails.businessName}
-                  </h3>
-
-                  <Heart
-                    size={22}
-                    className="text-[#d81b60] transition-transform group-hover:scale-110"
+          return (
+            <Link key={vendor.userId} href={`/vendors/${vendor.userId}`} className="block">
+              <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] hover:shadow-2xl">
+                <div className="relative aspect-16/10 overflow-hidden">
+                  <Image
+                    fill
+                    sizes="(max-width:1024px) 100vw, 33vw"
+                    alt={vendor.businessDetails.businessName}
+                    src={vendor.storePhoto?.[0] || "https://placehold.co/600x400/png"}
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
                   />
+
+                  <div className="absolute left-5 top-5">
+                    <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 px-4 py-2 text-sm font-bold text-[#191c1d] shadow-lg backdrop-blur-md">
+                      <Star size={18} className="text-[#f6c344]" />
+                      {vendor.rating?.average ?? 0}
+                    </span>
+                  </div>
+                  <div className="absolute bottom-5 right-5">
+                    <span className="flex items-center gap-2 rounded-2xl bg-black/70 px-4 py-2 text-sm text-white backdrop-blur-md">
+                      <Truck size={18} />
+                      {displayTime}
+                    </span>
+                  </div>
                 </div>
 
-                <p className="mb-6 text-lg text-[#5a4044]">
-                  {vendor.businessDetails.restaurantCuisineType ||
-                    vendor.businessDetails.businessType}
-                </p>
+                <div className="p-8">
+                  <div className="mb-2 flex items-center justify-between gap-4">
+                    <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d]">
+                      {vendor.businessDetails.businessName}
+                    </h3>
+                    <Heart size={22} className="text-[#d81b60] transition-transform group-hover:scale-110" />
+                  </div>
 
-                <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-sm font-medium text-[#5a4044]">
-                  <span className="flex items-center gap-2 text-[#b0004a]">
-                    <Truck size={18} />
-                    {vendor.businessDetails.isStoreOpen
-                      ? "Open Now"
-                      : "Closed"}
-                  </span>
+                  <p className="mb-6 text-lg text-[#5a4044]">
+                    {vendor.businessDetails.restaurantCuisineType || vendor.businessDetails.businessType}
+                  </p>
 
-                  <span className="flex items-center gap-2 text-[#b70052]">
-                    <Check size={18} />
-                    {vendor.businessLocation.city},{" "}
-                    {vendor.businessLocation.country}
-                  </span>
+                  <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-sm font-medium text-[#5a4044]">
+                    <span className="flex items-center gap-2 text-[#b0004a]">
+                      <Truck size={18} />
+                      {vendor.businessDetails.isStoreOpen ? "Open Now" : "Closed"}
+                    </span>
+                    <span className="flex items-center gap-2 text-[#b70052]">
+                      <Check size={18} />
+                      {vendor.businessLocation.city}, {vendor.businessLocation.country}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </article>
-          </Link>
-        ))}
+              </article>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
