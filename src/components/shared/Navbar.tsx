@@ -24,6 +24,7 @@ import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
 } from "../../lib/authCookies";
+import { useCartStore } from "@/stores/cartStore";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -40,7 +41,7 @@ export default function Navbar() {
   });
 
   const [unreadCount, setUnreadCount] = useState(0);
-  const [cartItemCount, setCartItemCount] = useState(0);
+  const { vendorCount, fetchCart } = useCartStore();
 
   const handleSearch = useCallback(() => {
     if (localSearchTerm.trim()) {
@@ -147,7 +148,7 @@ export default function Navbar() {
           "/notifications/my-notifications",
           {
             params: { limit: 100 },
-          }
+          },
         );
         const notifications = response.data?.data || [];
         const unread = notifications.filter((n: any) => !n.isRead).length;
@@ -162,26 +163,10 @@ export default function Navbar() {
   }, [isLoggedIn]);
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      setCartItemCount(0);
-      return;
+    if (isLoggedIn) {
+      fetchCart();
     }
-
-    const fetchCartCount = async () => {
-      try {
-        const response = await apiClient.get("/carts/view-cart");
-        const cartData = response.data?.data;
-        const totalItems = cartData?.totalItems ?? 0;
-        setCartItemCount(totalItems);
-      } catch (error) {
-        console.error("Failed to fetch cart count:", error);
-        setCartItemCount(0);
-      }
-    };
-
-    fetchCartCount();
-  }, [isLoggedIn, pathname]);
-
+  }, [isLoggedIn, pathname, fetchCart]);
   const handleLogout = () => {
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
@@ -248,9 +233,9 @@ export default function Navbar() {
             <Link href="/cart">
               <button className="relative rounded-full p-2 text-white transition-colors hover:bg-white/10">
                 <ShoppingCart size={22} />
-                {cartItemCount > 0 && (
+                {vendorCount > 0 && (
                   <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#b70052] text-[10px] font-medium text-white">
-                    {cartItemCount > 9 ? "9+" : cartItemCount}
+                    {vendorCount > 9 ? "9+" : vendorCount}
                   </span>
                 )}
               </button>
