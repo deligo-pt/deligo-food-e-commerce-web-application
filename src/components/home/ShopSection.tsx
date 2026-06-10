@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -5,7 +6,7 @@ import Image from "next/image";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useBusinessCategoryStore, BusinessCategory } from "@/stores/businessCategoryStore";
-
+import { useTranslation } from "@/hooks/useTranslation";
 type ApiResponse = {
   success: boolean;
   message: string;
@@ -21,6 +22,7 @@ type ApiResponse = {
 };
 
 export default function ShopSection() {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<BusinessCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export default function ShopSection() {
 
       if (!token) {
         if (alive) {
-          setError("Authentication token missing. Please log in again.");
+          setError(t("authTokenMissing"));
           setLoading(false);
         }
         return;
@@ -68,7 +70,7 @@ export default function ShopSection() {
         }
       } catch {
         if (alive) {
-          setError("Unable to load shop categories. Please try again.");
+          setError(t("unableToLoadShopCategories"));
         }
       } finally {
         if (alive) setLoading(false);
@@ -81,7 +83,6 @@ export default function ShopSection() {
       alive = false;
     };
   }, [selectedCategory, setSelectedCategory]);
-
   if (loading) {
     return (
       <section>
@@ -112,10 +113,10 @@ export default function ShopSection() {
     return (
       <section>
         <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">Shop On DeliGo</h2>
+          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">{t("shopOnDeligo")}</h2>
         </div>
         <div className="flex h-64 items-center justify-center">
-          <div className="text-red-500">{error || "No shop categories available."}</div>
+          <div className="text-red-500">{error || t("noShopCategoriesAvailable")}</div>
         </div>
       </section>
     );
@@ -124,7 +125,7 @@ export default function ShopSection() {
   return (
     <section>
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">Shop On DeliGo</h2>
+        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">{t("shopOnDeligo")}</h2>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:gap-6">

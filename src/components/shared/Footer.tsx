@@ -15,12 +15,6 @@ const supportLinks = [
   "FAQs",
 ];
 
-const policyLinks = [
-  "Privacy Policy",
-  "Terms of Service",
-  "Cookie Settings",
-];
-
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
@@ -70,6 +64,7 @@ export default function Footer() {
                 {label}
               </a>
             ))}
+
             <Link
               href="/delete-account"
               className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
@@ -117,9 +112,7 @@ export default function Footer() {
                   Download on the
                 </p>
 
-                <p className="text-lg font-bold">
-                  App Store
-                </p>
+                <p className="text-lg font-bold">App Store</p>
               </div>
             </button>
 
@@ -131,9 +124,7 @@ export default function Footer() {
                   Get it on
                 </p>
 
-                <p className="text-lg font-bold">
-                  Google Play
-                </p>
+                <p className="text-lg font-bold">Google Play</p>
               </div>
             </button>
           </div>
@@ -150,15 +141,26 @@ export default function Footer() {
         </div>
 
         <div className="flex flex-wrap justify-center gap-8">
-          {policyLinks.map((label) => (
-            <a
-              key={label}
-              href="#"
-              className="transition-colors hover:text-[#b0004a]"
-            >
-              {label}
-            </a>
-          ))}
+          <Link
+            href="/privacy"
+            className="transition-colors hover:text-[#b0004a]"
+          >
+            Privacy Policy
+          </Link>
+
+          <Link
+            href="/terms"
+            className="transition-colors hover:text-[#b0004a]"
+          >
+            Terms of Service
+          </Link>
+
+          <a
+            href="#"
+            className="transition-colors hover:text-[#b0004a]"
+          >
+            Cookie Settings
+          </a>
         </div>
       </div>
     </footer>

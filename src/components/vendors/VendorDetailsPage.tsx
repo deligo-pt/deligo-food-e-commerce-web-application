@@ -1,13 +1,91 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { Bike, Plus, Star } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import ProductDetailsModal from "./ProductDetailsModal";
 import VendorDetailsModal from "./VendorDetailsModal";
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
+
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatTimeRange(totalMinutes: number): string {
+  if (totalMinutes < 60) {
+    return `${Math.floor(totalMinutes)} to ${Math.ceil(totalMinutes + 10)} mins`;
+  }
+  const hours = totalMinutes / 60;
+  if (hours < 24) {
+    const low = Math.floor(hours);
+    const high = Math.ceil(hours + 10 / 60);
+    return low === high ? `${low} hour${low !== 1 ? 's' : ''}` : `${low} to ${high} hours`;
+  }
+  const days = totalMinutes / (60 * 24);
+  if (days < 7) {
+    const low = Math.floor(days);
+    const high = Math.ceil(days + 10 / (60 * 24));
+    return low === high ? `${low} day${low !== 1 ? 's' : ''}` : `${low} to ${high} days`;
+  }
+  const weeks = totalMinutes / (60 * 24 * 7);
+  if (weeks < 4) {
+    const low = Math.floor(weeks);
+    const high = Math.ceil(weeks + 10 / (60 * 24 * 7));
+    return low === high ? `${low} week${low !== 1 ? 's' : ''}` : `${low} to ${high} weeks`;
+  }
+  const months = totalMinutes / (60 * 24 * 30);
+  if (months < 12) {
+    const low = Math.floor(months);
+    const high = Math.ceil(months + 10 / (60 * 24 * 30));
+    return low === high ? `${low} month${low !== 1 ? 's' : ''}` : `${low} to ${high} months`;
+  }
+  const years = totalMinutes / (60 * 24 * 365);
+  const low = Math.floor(years);
+  const high = Math.ceil(years + 10 / (60 * 24 * 365));
+  return low === high ? `${low} year${low !== 1 ? 's' : ''}` : `${low} to ${high} years`;
+}
+
+let cachedUserCoords: { lat: number; lng: number } | null = null;
+let userPromise: Promise<{ lat: number; lng: number } | null> | null = null;
+
+async function fetchUserPrimaryAddress() {
+  if (cachedUserCoords) return cachedUserCoords;
+  try {
+    const { data } = await apiClient.get("/profile");
+    const primary = data?.data?.deliveryAddresses?.find((a: any) => a.isActive === true);
+    if (primary?.latitude && primary?.longitude) {
+      cachedUserCoords = { lat: primary.latitude, lng: primary.longitude };
+    }
+    return cachedUserCoords;
+  } catch (error) {
+    console.error("Failed to fetch user address", error);
+    return null;
+  }
+}
+
+function useUserAddress() {
+  const [coords, setCoords] = useState(cachedUserCoords);
+  const [loading, setLoading] = useState(!cachedUserCoords);
+  useEffect(() => {
+    if (cachedUserCoords) {
+      setCoords(cachedUserCoords);
+      setLoading(false);
+      return;
+    }
+    if (!userPromise) userPromise = fetchUserPrimaryAddress();
+    userPromise.then(setCoords).finally(() => setLoading(false));
+  }, []);
+  return { coords, loading };
+}
 
 interface Vendor {
   id: string;
@@ -21,8 +99,15 @@ interface Vendor {
     restaurantCuisineType?: string;
     isStoreOpen: boolean;
   };
+  businessLocation?: {
+    city: string;
+    country: string;
+    latitude?: number;
+    longitude?: number;
+  };
   storePhoto?: string[];
   availableCategories?: { _id: string; name: string; icon: string }[];
+  rating?: { average: number; totalReviews: number };
 }
 
 interface Product {
@@ -58,6 +143,11 @@ export default function VendorDetailsPage({
     null,
   );
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+
+  const { coords: userCoords, loading: userLoading } = useUserAddress();
+  const [estimatedTime, setEstimatedTime] = useState<string | null>(null);
+  const [loadingTime, setLoadingTime] = useState(false);
+  const timeFetchedRef = useRef(false);
 
   useEffect(() => {
     const fetchVendor = async () => {
@@ -107,9 +197,57 @@ export default function VendorDetailsPage({
     fetchProducts();
   }, [vendor]);
 
-if (loading) {
-  return <VendorDetailsSkeleton />;
-}
+  useEffect(() => {
+    if (!vendor || userLoading) return;
+    if (timeFetchedRef.current) return;
+
+    const fetchTime = async () => {
+      const vendorCoords = vendor.businessLocation?.latitude && vendor.businessLocation?.longitude
+        ? { lat: vendor.businessLocation.latitude, lng: vendor.businessLocation.longitude }
+        : null;
+
+      if (!vendorCoords || !userCoords) {
+        setEstimatedTime("Under 10 min");
+        timeFetchedRef.current = true;
+        return;
+      }
+
+      setLoadingTime(true);
+      try {
+        const url = `/api/distance-matrix?originLat=${vendorCoords.lat}&originLng=${vendorCoords.lng}&destLat=${userCoords.lat}&destLng=${userCoords.lng}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === "OK" && data.rows?.[0]?.elements?.[0]?.status === "OK") {
+          const minutes = Math.round(data.rows[0].elements[0].duration.value / 60);
+          setEstimatedTime(formatTimeRange(minutes));
+        } else {
+ 
+          const distance = getDistanceKm(vendorCoords.lat, vendorCoords.lng, userCoords.lat, userCoords.lng);
+          const estimatedMinutes = Math.round((distance / 30) * 60);
+          setEstimatedTime(estimatedMinutes < 10 ? "Under 10 min" : formatTimeRange(estimatedMinutes));
+        }
+      } catch (err) {
+        console.error("Time estimation error", err);
+        setEstimatedTime("Under 10 min");
+      } finally {
+        setLoadingTime(false);
+        timeFetchedRef.current = true;
+      }
+    };
+
+    fetchTime();
+  }, [vendor, userCoords, userLoading]);
+
+  useEffect(() => {
+    timeFetchedRef.current = false;
+    setEstimatedTime(null);
+    setLoadingTime(false);
+  }, [vendor?.id]);
+
+  if (loading) {
+    return <VendorDetailsSkeleton />;
+  }
 
   if (error || !vendor) {
     return (
@@ -120,7 +258,7 @@ if (loading) {
   }
 
   const heroImage = vendor.storePhoto?.[0] || "/placeholder-store.jpg";
-  const prepTime = vendor.businessDetails.preparationTimeMinutes || 30;
+  const displayTime = loadingTime ? "Calculating..." : estimatedTime || "Under 10 min";
 
   const vendorCategoryNames =
     vendor.availableCategories?.map((cat) => cat.name) || [];
@@ -183,13 +321,13 @@ if (loading) {
                         size={16}
                         className="fill-yellow-400 text-yellow-400"
                       />
-                      <span className="font-medium">New</span>
+                      <span className="font-medium">
+                        {vendor.rating?.average?.toFixed(1) || "New"}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1 text-gray-500">
                       <Bike size={16} />
-                      <span>
-                        {prepTime}-{prepTime + 10} min
-                      </span>
+                      <span>{displayTime}</span>
                     </div>
                   </div>
                 </div>
@@ -197,10 +335,10 @@ if (loading) {
             </div>
           </div>
         </section>
-        {/* Dynamic Categories with Filtering */}
+
         <section className="mb-8 overflow-x-auto">
           <div className="flex min-w-max gap-3">
-            {categories.map((cat, idx) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
@@ -215,12 +353,13 @@ if (loading) {
             ))}
           </div>
         </section>
+
         <VendorDetailsModal
           isOpen={isVendorModalOpen}
           onClose={() => setIsVendorModalOpen(false)}
           vendorId={vendorId}
         />
-        ;{/* Dynamic Menu with Filtering */}
+
         <section>
           <h2 className="mb-6 text-xl font-bold text-gray-900">Menu</h2>
 
@@ -316,7 +455,7 @@ if (loading) {
               </div>
             )}
         </section>
-        {/* Product Details Modal */}
+
         <ProductDetailsModal
           isOpen={!!selectedProductId}
           onClose={() => setSelectedProductId(null)}
