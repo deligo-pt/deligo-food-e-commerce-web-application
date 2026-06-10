@@ -25,8 +25,11 @@ import {
   REFRESH_TOKEN_COOKIE,
 } from "../../lib/authCookies";
 import { useCartStore } from "@/stores/cartStore";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function Navbar() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
@@ -208,7 +211,7 @@ export default function Navbar() {
             <Search size={18} className="absolute left-4 text-black/60" />
             <input
               type="text"
-              placeholder="Search stores, restaurants, or cuisines..."
+              placeholder={t("searchPlaceholder")}
               value={localSearchTerm}
               onChange={onSearchChange}
               onKeyDown={onKeyDown}
@@ -219,6 +222,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-4">
+            <LanguageSwitcher />
             <Link href="/notifications">
               <button className="relative rounded-full p-2 text-white transition-colors hover:bg-white/10">
                 <Bell size={22} />
@@ -257,7 +261,7 @@ export default function Navbar() {
                 />
               </div>
               <span className="hidden text-[14px] font-semibold leading-5 xl:block">
-                Account
+                {t("account")}
               </span>
             </button>
             {isLoggedIn && showAccountDropdown && (
@@ -268,14 +272,14 @@ export default function Navbar() {
                   onClick={() => setShowAccountDropdown(false)}
                 >
                   <User size={16} />
-                  Profile
+                  {t("profile")}
                 </Link>
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                 >
                   <LogOut size={16} />
-                  Logout
+                  {t("logout")}
                 </button>
               </div>
             )}

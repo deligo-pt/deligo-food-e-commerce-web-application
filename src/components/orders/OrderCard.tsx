@@ -2,6 +2,7 @@
 
 import { CheckCircle, Clock3, UtensilsCrossed } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface OrderCardProps {
   restaurant: string;
@@ -12,8 +13,6 @@ interface OrderCardProps {
   items: string;
   progress: number;
   progressText: string;
-  eta: string;
-  secondaryButton: string;
   image?: string;
 }
 
@@ -26,8 +25,6 @@ export default function OrderCard({
   items,
   progress,
   progressText,
-  eta,
-  secondaryButton,
   image,
 }: OrderCardProps) {
   return (
@@ -40,8 +37,8 @@ export default function OrderCard({
               src={image || "/placeholder.png"}
               alt={restaurant}
               className="h-full w-full object-cover"
-              height={80}
               width={80}
+              height={80}
             />
           </div>
 
@@ -77,14 +74,13 @@ export default function OrderCard({
       <div className="mt-4 rounded-lg bg-[#f3f4f5] px-3 py-3">
         <div className="flex items-center gap-2">
           <UtensilsCrossed size={15} className="text-[#b0004a]" />
-
           <p className="text-sm text-[#191c1d]">{items}</p>
         </div>
       </div>
 
       {/* Progress */}
       <div className="mt-4">
-        <div className="mb-2 flex justify-between text-xs">
+        <div className="mb-2 text-xs">
           <span
             className={
               status === "accepted"
@@ -94,8 +90,6 @@ export default function OrderCard({
           >
             {progressText}
           </span>
-
-          <span className="text-[#5a4044]">Estimated Arrival: {eta}</span>
         </div>
 
         <div className="h-1.5 rounded-full bg-gray-200">
@@ -109,14 +103,13 @@ export default function OrderCard({
       </div>
 
       {/* Actions */}
-      <div className="mt-5 flex gap-3">
-        <button className="flex-1 rounded-lg bg-[#b0004a] py-3 text-sm font-semibold text-white transition hover:opacity-90">
+      <div className="mt-5">
+        <Link
+          href={`/orders/track-order/${orderId}`}
+          className="block w-full rounded-lg bg-[#b0004a] py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
+        >
           Track Order
-        </button>
-
-        <button className="rounded-lg border border-[#b0004a] px-5 py-3 text-sm font-medium text-[#b0004a] transition hover:bg-[#fff2f5]">
-          {secondaryButton}
-        </button>
+        </Link>
       </div>
     </div>
   );

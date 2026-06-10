@@ -3,6 +3,7 @@ export interface CartItem {
   name: string;
   image: string;
   variationSku: string | null;
+  isActive: boolean;
 
   vendorId: {
     _id: string;

@@ -8,7 +8,6 @@ import OrdersPageSkeleton from "./OrdersPageSkeleton";
 
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<"ongoing" | "history">("ongoing");
-
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,9 +15,7 @@ export default function OrdersPage() {
     const getOrders = async () => {
       try {
         const res = await apiClient.get("/orders", {
-          params: {
-            limit: 10,
-          },
+          params: { limit: 10 },
         });
 
         setOrders(res.data.data || []);
@@ -36,10 +33,19 @@ export default function OrdersPage() {
     return <OrdersPageSkeleton />;
   }
 
+  const ongoingOrders = orders.filter(
+    (order) =>
+      order.orderStatus === "PENDING" || order.orderStatus === "ACCEPTED",
+  );
+
+  const historyOrders = orders.filter(
+    (order) =>
+      order.orderStatus !== "PENDING" && order.orderStatus !== "ACCEPTED",
+  );
+
   return (
     <section className="min-h-screen bg-[#f8f9fa] py-8">
       <div className="mx-auto max-w-5xl px-4 md:px-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-[32px] font-bold text-[#191c1d]">My Orders</h1>
 
@@ -48,7 +54,6 @@ export default function OrdersPage() {
           </p>
         </div>
 
-        {/* Tabs */}
         <div className="mb-8 flex border-b border-[#e3bdc3]">
           <button
             onClick={() => setActiveTab("ongoing")}
@@ -77,45 +82,71 @@ export default function OrdersPage() {
 
         {activeTab === "ongoing" ? (
           <div className="space-y-6">
-            {orders.map((order) => (
-              <OrderCard
-                key={order._id}
-                image={order.items?.[0]?.image}
-                restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
-                  order.vendorId?.name?.lastName ?? ""
-                }`}
-                orderId={order.orderId}
-                date={new Date(order.createdAt).toLocaleString()}
-                price={`€${order.payoutSummary?.grandTotal?.toFixed(2)}`}
-                status={
-                  order.orderStatus === "ACCEPTED" ? "accepted" : "pending"
-                }
-                items={order.items
-                  ?.map(
-                    (item: any) =>
-                      `${item.itemSummary?.quantity}x ${item.name}`,
-                  )
-                  .join(", ")}
-                progress={order.orderStatus === "ACCEPTED" ? 65 : 15}
-                progressText={
-                  order.orderStatus === "ACCEPTED"
-                    ? "Chef is preparing your meal"
-                    : "Waiting for restaurant confirmation"
-                }
-                eta="1:15 PM"
-                secondaryButton={
-                  order.orderStatus === "ACCEPTED"
-                    ? "Call Support"
-                    : "Cancel Order"
-                }
-              />
-            ))}
+            {ongoingOrders.length === 0 ? (
+              <div className="flex h-75 items-center justify-center rounded-xl bg-white">
+                <p className="text-[#5a4044]">No ongoing orders</p>
+              </div>
+            ) : (
+              ongoingOrders.map((order) => (
+                <OrderCard
+                  key={order._id}
+                  image={order.items?.[0]?.image}
+                  restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
+                    order.vendorId?.name?.lastName ?? ""
+                  }`}
+                  orderId={order.orderId}
+                  date={new Date(order.createdAt).toLocaleString()}
+                  price={`€${order.payoutSummary?.grandTotal?.toFixed(2)}`}
+                  status={
+                    order.orderStatus === "ACCEPTED" ? "accepted" : "pending"
+                  }
+                  items={order.items
+                    ?.map(
+                      (item: any) =>
+                        `${item.itemSummary?.quantity}x ${item.name}`,
+                    )
+                    .join(", ")}
+                  progress={order.orderStatus === "ACCEPTED" ? 65 : 15}
+                  progressText={
+                    order.orderStatus === "ACCEPTED"
+                      ? "Chef is preparing your meal"
+                      : "Waiting for restaurant confirmation"
+                  }
+                />
+              ))
+            )}
           </div>
         ) : (
-          <div className="flex h-75 items-center justify-center rounded-xl bg-white">
-            <p className="text-[#5a4044]">
-              Your previous orders will appear here
-            </p>
+          <div className="space-y-6">
+            {historyOrders.length === 0 ? (
+              <div className="flex h-75 items-center justify-center rounded-xl bg-white">
+                <p className="text-[#5a4044]">
+                  Your previous orders will appear here
+                </p>
+              </div>
+            ) : (
+              historyOrders.map((order) => (
+                <OrderCard
+                  key={order._id}
+                  image={order.items?.[0]?.image}
+                  restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
+                    order.vendorId?.name?.lastName ?? ""
+                  }`}
+                  orderId={order.orderId}
+                  date={new Date(order.createdAt).toLocaleString()}
+                  price={`€${order.payoutSummary?.grandTotal?.toFixed(2)}`}
+                  status="pending"
+                  items={order.items
+                    ?.map(
+                      (item: any) =>
+                        `${item.itemSummary?.quantity}x ${item.name}`,
+                    )
+                    .join(", ")}
+                  progress={100}
+                  progressText="Delivered"
+                />
+              ))
+            )}
           </div>
         )}
       </div>

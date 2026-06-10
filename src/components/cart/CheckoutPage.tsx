@@ -73,7 +73,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     fetchCheckoutData(true);
   }, [fetchCheckoutData]);
   const vendorItems = useMemo(() => {
-    return cart?.items.filter((item) => item.vendorId._id === vendorId) || [];
+    return cart?.items.filter((item) => item.vendorId._id === vendorId && item.isActive === true) || [];
   }, [cart, vendorId]);
 
   const summary = useMemo(() => {
