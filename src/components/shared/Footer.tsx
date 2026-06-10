@@ -1,4 +1,5 @@
 import { Globe, AtSign, Phone, Smartphone, Play } from "lucide-react";
+import Link from "next/link";
 
 const companyLinks = [
   "About Us",
@@ -21,6 +22,8 @@ const policyLinks = [
 ];
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer className="w-full border-t border-[#e3bdc3]/20 bg-[#e1e3e4] px-4 py-20 md:px-8 lg:px-16">
       <div className="mb-20 grid w-full grid-cols-1 gap-16 md:grid-cols-12">
@@ -67,6 +70,12 @@ export default function Footer() {
                 {label}
               </a>
             ))}
+            <Link
+              href="/delete-account"
+              className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
+            >
+              Delete Account
+            </Link>
           </nav>
         </div>
 
@@ -137,7 +146,7 @@ export default function Footer() {
       {/* Bottom */}
       <div className="flex w-full flex-col items-center justify-between gap-6 text-[14px] leading-5 text-[#5a4044] md:flex-row">
         <div>
-          © 2024 DeliGo Technologies Inc. All rights reserved.
+          © {currentYear} DeliGo Technologies Inc. All rights reserved.
         </div>
 
         <div className="flex flex-wrap justify-center gap-8">
