@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type Sponsorship = {
   _id: string;
@@ -20,9 +21,11 @@ type SponsorshipResponse = {
 };
 
 export default function HeroSection() {
+  const { t } = useTranslation();
   const [slides, setSlides] = useState<Sponsorship[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("Loading sponsorship banners...");
+  const [tokenMissing, setTokenMissing] = useState(false);
+  const [error, setError] = useState(false);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -34,44 +37,33 @@ export default function HeroSection() {
 
       if (!token) {
         if (alive) {
-          setSlides([]);
-          setMessage("Authentication token is missing. Please log in again.");
+          setTokenMissing(true);
           setLoading(false);
         }
-
         return;
       }
 
       try {
         const response = await apiClient.get<SponsorshipResponse>("/sponsorships", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        const payload = response.data;
-
-        const activeSlides = (payload.data ?? []).filter(
-          (slide) => slide.isActive && !slide.isDeleted && Boolean(slide.bannerImage),
+        const activeSlides = (response.data.data ?? []).filter(
+          (slide) => slide.isActive && !slide.isDeleted && Boolean(slide.bannerImage)
         );
 
         if (alive) {
           setSlides(activeSlides);
-          setMessage(
-            activeSlides.length > 0
-              ? "Browse the latest sponsorship banners from the API."
-              : "No sponsorship banners available right now.",
-          );
+          setError(false);
+          setTokenMissing(false);
         }
       } catch {
         if (alive) {
+          setError(true);
           setSlides([]);
-          setMessage("Unable to load sponsorship banners.");
         }
       } finally {
-        if (alive) {
-          setLoading(false);
-        }
+        if (alive) setLoading(false);
       }
     }
 
@@ -80,26 +72,26 @@ export default function HeroSection() {
     return () => {
       alive = false;
     };
-  }, []);
-
+  }, []); 
   useEffect(() => {
-    if (!emblaApi) {
-      return;
-    }
-
-    const onSelect = () => {
-      setSelectedIndex(emblaApi.selectedScrollSnap());
-    };
-
+    if (!emblaApi) return;
+    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
     onSelect();
     emblaApi.on("select", onSelect);
     emblaApi.on("reInit", onSelect);
-
     return () => {
       emblaApi.off("select", onSelect);
       emblaApi.off("reInit", onSelect);
     };
   }, [emblaApi]);
+
+  const emptyStateMessage = useMemo(() => {
+    if (loading) return t("loadingSponsorshipBanners");
+    if (tokenMissing) return t("authTokenMissing");
+    if (error) return t("unableToLoadSponsorshipBanners");
+    if (slides.length === 0) return t("noSponsorshipBannersAvailable");
+    return t("browseLatestSponsorshipBanners");
+  }, [loading, tokenMissing, error, slides.length, t]);
 
   const hasSlides = slides.length > 0;
 
@@ -118,7 +110,6 @@ export default function HeroSection() {
               </div>
             </div>
           </div>
-
           <div className="mt-5 flex justify-center gap-3 pb-1">
             <span className="h-2.5 w-12 animate-pulse rounded-full bg-[#b70052]/20" />
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20" />
@@ -127,13 +118,15 @@ export default function HeroSection() {
         </div>
       ) : hasSlides ? (
         <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-0">
-          <div className="relative overflow-hidden rounded-4xl ">
+          <div className="relative overflow-hidden rounded-4xl">
             <div className="absolute inset-0 z-10 pointer-events-none" />
-
             <div className="overflow-hidden touch-pan-y" ref={emblaRef}>
               <div className="flex">
                 {slides.map((slide) => (
-                  <div key={slide._id} className="relative aspect-video min-w-0 flex-[0_0_100%] lg:aspect-21/8">
+                  <div
+                    key={slide._id}
+                    className="relative aspect-video min-w-0 flex-[0_0_100%] lg:aspect-21/8"
+                  >
                     <Image
                       src={slide.bannerImage}
                       alt={slide.sponsorName}
@@ -146,14 +139,12 @@ export default function HeroSection() {
                 ))}
               </div>
             </div>
-
             <div className="pointer-events-none absolute inset-0 z-20 flex items-start px-6 pt-6 text-white lg:px-16 lg:pt-8">
               <span className="rounded-full bg-black/40 px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] backdrop-blur-sm">
-                {slides[selectedIndex]?.sponsorType ?? "Sponsorship"}
+                {slides[selectedIndex]?.sponsorType ?? t("sponsorship")}
               </span>
             </div>
           </div>
-
           <div className="mt-5 flex justify-center gap-3 pb-1">
             {slides.map((slide, index) => (
               <button
@@ -163,7 +154,9 @@ export default function HeroSection() {
                 onClick={() => emblaApi?.scrollTo(index)}
                 className={[
                   "rounded-full transition-all",
-                  index === selectedIndex ? "h-2.5 w-12 bg-[#b70052]" : "h-2.5 w-2.5 bg-[#b70052]/30",
+                  index === selectedIndex
+                    ? "h-2.5 w-12 bg-[#b70052]"
+                    : "h-2.5 w-2.5 bg-[#b70052]/30",
                 ].join(" ")}
               />
             ))}
@@ -173,12 +166,14 @@ export default function HeroSection() {
         <div className="flex h-125 items-center justify-center bg-[#111418] px-6 text-center text-white">
           <div className="max-w-xl">
             <span className="mb-4 inline-flex rounded-full bg-white/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
-              Sponsorships
+              {t("sponsorships")}
             </span>
             <h1 className="mb-4 text-3xl font-extrabold lg:text-5xl">
-              {message}
+              {emptyStateMessage}
             </h1>
-            <p className="text-base leading-7 text-white/75 lg:text-lg">{message}</p>
+            <p className="text-base leading-7 text-white/75 lg:text-lg">
+              {emptyStateMessage}
+            </p>
           </div>
         </div>
       )}

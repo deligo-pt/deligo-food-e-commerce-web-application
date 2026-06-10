@@ -33,6 +33,21 @@ const pt = {
     "Não foi possível carregar as categorias da loja. Tente novamente.",
 
   noShopCategoriesAvailable: "Nenhuma categoria disponível.",
+  whatsOnYourMind: "O que você está pensando?",
+  viewAll: "Ver Todos",
+  unableToLoadCategories:
+    "Não foi possível carregar as categorias. Tente novamente.",
+  nearYou: "Perto de Você",
+
+  noVendorsFoundFor: "Nenhum fornecedor encontrado para",
+  noVendorsFoundForCategory:
+    "Nenhum fornecedor encontrado para esta categoria.",
+
+  calculating: "Calculando...",
+  under10Min: "Menos de 10 min",
+
+  openNow: "Aberto Agora",
+  closed: "Fechado",
 };
 
 export default pt;

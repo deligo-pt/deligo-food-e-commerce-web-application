@@ -30,6 +30,19 @@ const en = {
     "Unable to load shop categories. Please try again.",
 
   noShopCategoriesAvailable: "No shop categories available.",
+   whatsOnYourMind: "What's on your mind?",
+  viewAll: "View All",
+  unableToLoadCategories: "Unable to load categories. Please try again.",
+  nearYou: "Near You",
+
+  noVendorsFoundFor: "No vendors found for",
+  noVendorsFoundForCategory: "No vendors found for this category.",
+
+  calculating: "Calculating...",
+  under10Min: "Under 10 min",
+
+  openNow: "Open Now",
+  closed: "Closed",
 };
 
 export default en;
