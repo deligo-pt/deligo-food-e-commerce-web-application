@@ -234,6 +234,57 @@ const en = {
   allVendors: "All Vendors",
 
   browseAllVendors: "Browse all stores and restaurants available on DeliGo.",
+
+  moreInfo: "More Info",
+
+  menu: "Menu",
+
+  noItemsFoundInCategory: "No items found in this category.",
+
+  off: "OFF",
+
+  deliciousMenuItem: "Delicious item from our menu.",
+  pleaseContactVendor: "Please contact the vendor",
+
+  mapUnavailable: "Map unavailable",
+  locationNotAvailable: "Location not available",
+
+  closedNow: "Closed now",
+  hoursNotSet: "Hours not set",
+
+  preparationTime: "Preparation Time",
+  minutes: "minutes",
+
+  address: "Address",
+  addressNotProvided: "Address not provided",
+
+  contactInformation: "Contact Information",
+
+  phone: "Phone",
+  email: "Email",
+  nifNumber: "NIF Number",
+
+  otherDetails: "Other details",
+  legalEntityName: "Legal entity name",
+
+  euComplianceNotice:
+    "The partner commits to only offer products that comply with the applicable rules of European Union law.",
+
+  loadingVendorDetails: "Loading vendor details...",
+  notProvided: "Not provided",
+  errorLoadingVendorDetails: "Failed to load vendor details",
+  vendor: "Vendor",
+  product: "Product",
+
+  customizeYourOrder: "Customize your order",
+  chooseToppingsAndExtras: "Choose toppings & extras in the next step",
+
+  details: "Details",
+
+  freshlyPreparedWithPremiumIngredients:
+    "Freshly prepared with premium ingredients.",
+
+  addToCart: "Add To Cart",
 };
 
 export default en;

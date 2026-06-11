@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useCartStore } from "@/stores/cartStore";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ProductDetailsModalProps {
   isOpen: boolean;
@@ -63,6 +64,7 @@ export default function ProductDetailsModal({
   onClose,
   productId,
 }: ProductDetailsModalProps) {
+  const { t } = useTranslation();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -216,7 +218,7 @@ export default function ProductDetailsModal({
               {/* Category Badge */}
               <div className="mb-6 flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 text-green-700">
                 <span className="text-xs font-bold uppercase tracking-wider">
-                  {product.category?.name || "Product"}
+                  {product.category?.name || t("product")}
                 </span>
               </div>
 
@@ -319,15 +321,17 @@ export default function ProductDetailsModal({
               <div className="mb-6 w-full rounded-3xl border border-gray-200 bg-gray-50 p-6">
                 <div className="space-y-3">
                   <div className="flex justify-between text-gray-600">
-                    <span>Subtotal</span>
+                    <span>{t("subtotal")}</span>
                     <span>{formatPrice(subtotal, currency)}</span>
                   </div>
                   <div className="flex justify-between border-b border-gray-200 pb-3 text-gray-600">
-                    <span>Tax ({taxRate}%)</span>
+                    <span>
+                      {t("tax")} ({taxRate}%)
+                    </span>
                     <span>{formatPrice(taxAmount, currency)}</span>
                   </div>
                   <div className="flex justify-between pt-1">
-                    <span className="text-lg font-semibold">Total</span>
+                    <span className="text-lg font-semibold">{t("total")}</span>
                     <span className="text-lg font-bold text-pink-600">
                       {formatPrice(total, currency)}
                     </span>
@@ -342,10 +346,10 @@ export default function ProductDetailsModal({
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">
-                    Customize your order
+                    {t("customizeYourOrder")}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    Choose toppings & extras in the next step
+                    {t("chooseToppingsAndExtras")}
                   </p>
                 </div>
               </div>
@@ -354,11 +358,11 @@ export default function ProductDetailsModal({
               <div className="w-full">
                 <div className="mb-4 flex items-center gap-2">
                   <FileText size={18} />
-                  <h3 className="text-lg font-semibold">Details</h3>
+                  <h3 className="text-lg font-semibold">{t("details")}</h3>
                 </div>
                 <p className="leading-7 text-gray-600">
                   {product.description ||
-                    "Freshly prepared with premium ingredients."}
+                    t("freshlyPreparedWithPremiumIngredients")}
                 </p>
               </div>
             </div>
@@ -378,7 +382,7 @@ export default function ProductDetailsModal({
               ) : (
                 <>
                   <ShoppingCart size={22} />
-                  Add To Cart • {formatPrice(total, currency)}
+                  {t("addToCart")} • {formatPrice(total, currency)}
                 </>
               )}
             </button>

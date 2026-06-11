@@ -248,6 +248,57 @@ const pt = {
 
   browseAllVendors:
     "Explore todas as lojas e restaurantes disponíveis na DeliGo.",
+  moreInfo: "Mais Informações",
+
+  menu: "Menu",
+
+  noItemsFoundInCategory: "Nenhum item encontrado nesta categoria.",
+
+  off: "DESCONTO",
+
+  deliciousMenuItem: "Item delicioso do nosso menu.",
+
+  pleaseContactVendor: "Por favor contacte o vendedor",
+
+  mapUnavailable: "Mapa indisponível",
+  locationNotAvailable: "Localização indisponível",
+
+  closedNow: "Fechado agora",
+  hoursNotSet: "Horário não definido",
+
+  preparationTime: "Tempo de Preparação",
+  minutes: "minutos",
+
+  address: "Morada",
+  addressNotProvided: "Morada não fornecida",
+
+  contactInformation: "Informações de Contacto",
+
+  phone: "Telefone",
+  email: "Email",
+  nifNumber: "Número NIF",
+
+  otherDetails: "Outros detalhes",
+  legalEntityName: "Nome da entidade legal",
+
+  euComplianceNotice:
+    "O parceiro compromete-se a oferecer apenas produtos que cumpram as regras aplicáveis da legislação da União Europeia.",
+
+  loadingVendorDetails: "A carregar detalhes do vendedor...",
+  notProvided: "Não fornecido",
+  errorLoadingVendorDetails: "Falha ao carregar os detalhes do vendedor",
+  vendor: "Vendedor",
+  product: "Produto",
+
+  customizeYourOrder: "Personalize o seu pedido",
+  chooseToppingsAndExtras: "Escolha coberturas e extras no próximo passo",
+
+  details: "Detalhes",
+
+  freshlyPreparedWithPremiumIngredients:
+    "Preparado na hora com ingredientes premium.",
+
+  addToCart: "Adicionar ao Carrinho",
 };
 
 export default pt;

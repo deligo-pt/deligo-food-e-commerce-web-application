@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface VendorDetailsModalProps {
   isOpen: boolean;
@@ -60,6 +61,7 @@ export default function VendorDetailsModal({
   onClose,
   vendorId,
 }: VendorDetailsModalProps) {
+  const { t } = useTranslation();
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +90,8 @@ export default function VendorDetailsModal({
 
   // Build static map URL using vendor coordinates
   const mapStaticUrl =
-    vendorData?.businessLocation?.latitude && vendorData?.businessLocation?.longitude
+    vendorData?.businessLocation?.latitude &&
+    vendorData?.businessLocation?.longitude
       ? `https://maps.googleapis.com/maps/api/staticmap?center=${vendorData.businessLocation.latitude},${vendorData.businessLocation.longitude}&zoom=15&size=600x240&markers=color:red%7C${vendorData.businessLocation.latitude},${vendorData.businessLocation.longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_LOCATION_API_KEY}`
       : null;
 
@@ -111,9 +114,11 @@ export default function VendorDetailsModal({
 
             <div>
               <h1 className="text-[18px] font-semibold text-gray-900">
-                {vendorData?.businessDetails?.businessName || "Vendor"}
+                {vendorData?.businessDetails?.businessName || t("vendor")}
               </h1>
-              <p className="text-xs sm:text-sm text-gray-500">Please contact the vendor</p>
+              <p className="text-xs sm:text-sm text-gray-500">
+                {t("pleaseContactVendor")}
+              </p>
             </div>
           </div>
 
@@ -132,7 +137,7 @@ export default function VendorDetailsModal({
                 <div className="h-48 sm:h-60 w-full animate-pulse bg-gray-200" />
               ) : error ? (
                 <div className="flex h-48 sm:h-60 w-full items-center justify-center bg-gray-100 text-gray-500">
-                  <p>Map unavailable</p>
+                  <p>{t("mapUnavailable")}</p>
                 </div>
               ) : mapStaticUrl ? (
                 <Image
@@ -145,14 +150,14 @@ export default function VendorDetailsModal({
                 />
               ) : (
                 <div className="flex h-48 sm:h-60 w-full items-center justify-center bg-gray-100 text-gray-500">
-                  <p>Location not available</p>
+                  <p>{t("locationNotAvailable")}</p>
                 </div>
               )}
 
               <div className="absolute left-3 top-3 sm:left-4 sm:top-4 flex items-center gap-1.5 sm:gap-2 rounded-full bg-white/95 px-2 py-1 sm:px-3 sm:py-1.5 shadow-sm">
                 <MapPin size={14} className="fill-pink-600 text-pink-600" />
                 <span className="text-xs font-medium text-gray-900">
-                  {vendorData?.businessDetails?.businessName || "Vendor"}
+                  {vendorData?.businessDetails?.businessName || t("vendor")}
                 </span>
               </div>
             </div>
@@ -166,14 +171,14 @@ export default function VendorDetailsModal({
                 <div>
                   <p className="text-xs sm:text-sm font-bold text-green-600">
                     {vendorData?.businessDetails?.isStoreOpen
-                      ? "Open now"
-                      : "Closed now"}
+                      ? t("openNow")
+                      : t("closedNow")}
                   </p>
                   <p className="text-[11px] sm:text-xs text-gray-500">
                     {vendorData?.businessDetails?.openingHours &&
                     vendorData?.businessDetails?.closingHours
                       ? `${vendorData.businessDetails.openingHours} – ${vendorData.businessDetails.closingHours}`
-                      : "Hours not set"}
+                      : t("hoursNotSet")}
                   </p>
                 </div>
               </div>
@@ -184,11 +189,11 @@ export default function VendorDetailsModal({
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm font-bold text-pink-600">
-                    Preparation Time
+                    {t("preparationTime")}
                   </p>
                   <p className="text-[11px] sm:text-xs text-gray-500">
                     {vendorData?.businessDetails?.preparationTimeMinutes ?? "—"}{" "}
-                    minutes
+                    {t("minutes")}
                   </p>
                 </div>
               </div>
@@ -199,9 +204,11 @@ export default function VendorDetailsModal({
               <div className="flex gap-3 sm:gap-4">
                 <MapPin size={20} className="mt-1 text-pink-600 shrink-0" />
                 <div>
-                  <h3 className="mb-1 text-xs sm:text-sm text-gray-500">Address</h3>
+                  <h3 className="mb-1 text-xs sm:text-sm text-gray-500">
+                    {t("address")}
+                  </h3>
                   <p className="text-sm text-gray-900 wrap-break-words">
-                    {fullAddress || "Address not provided"}
+                    {fullAddress || t("addressNotProvided")}
                   </p>
                 </div>
               </div>
@@ -212,7 +219,7 @@ export default function VendorDetailsModal({
           <div className="space-y-5 sm:space-y-6">
             <div>
               <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-pink-600">
-                Contact Information
+                {t("contactInformation")}
               </h2>
               <div className="space-y-3">
                 {/* Phone */}
@@ -221,9 +228,11 @@ export default function VendorDetailsModal({
                     <Phone size={18} className="text-pink-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] sm:text-xs text-gray-500">Phone</p>
+                    <p className="text-[11px] sm:text-xs text-gray-500">
+                      {t("phone")}
+                    </p>
                     <p className="text-sm sm:text-base font-bold text-gray-900 break-all">
-                      {vendorData?.contactNumber || "N/A"}
+                      {vendorData?.contactNumber || t("notProvided")}
                     </p>
                   </div>
                 </div>
@@ -234,9 +243,11 @@ export default function VendorDetailsModal({
                     <Mail size={18} className="text-pink-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] sm:text-xs text-gray-500">Email</p>
+                    <p className="text-[11px] sm:text-xs text-gray-500">
+                      {t("email")}
+                    </p>
                     <p className="text-sm sm:text-base font-bold text-gray-900 break-all">
-                      {vendorData?.email || "N/A"}
+                      {vendorData?.email || t("notProvided")}
                     </p>
                   </div>
                 </div>
@@ -247,9 +258,11 @@ export default function VendorDetailsModal({
                     <FileText size={18} className="text-pink-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] sm:text-xs text-gray-500">NIF Number</p>
+                    <p className="text-[11px] sm:text-xs text-gray-500">
+                      {t("nifNumber")}
+                    </p>
                     <p className="text-sm sm:text-base font-bold text-gray-900">
-                      {vendorData?.businessDetails?.NIF || "N/A"}
+                      {vendorData?.businessDetails?.NIF || t("notProvided")}
                     </p>
                   </div>
                 </div>
@@ -259,20 +272,19 @@ export default function VendorDetailsModal({
             {/* Other Details */}
             <div className="border-t border-gray-200 pt-4 sm:pt-5">
               <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-pink-600">
-                Other details
+                {t("otherDetails")}
               </h2>
               <div className="space-y-3 sm:space-y-4">
                 <div>
                   <p className="mb-1 text-xs sm:text-sm text-gray-500">
-                    Legal entity name
+                    {t("legalEntityName")}
                   </p>
                   <p className="font-bold text-gray-900 wrap-break-words">
-                    {vendorData?.businessDetails?.businessName || "N/A"}
+                    {vendorData?.businessDetails?.businessName || t("notProvided")}
                   </p>
                 </div>
                 <div className="rounded-lg bg-gray-100 p-3 sm:p-4 italic leading-relaxed text-gray-500 text-sm sm:text-base">
-                  The partner commits to only offer products that comply with
-                  the applicable rules of European Union law.
+                  {t("euComplianceNotice")}
                 </div>
               </div>
             </div>
@@ -283,13 +295,13 @@ export default function VendorDetailsModal({
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-sm rounded-xl">
             <div className="rounded-lg bg-white p-4 shadow-lg text-sm sm:text-base">
-              Loading vendor details...
+              {t("loadingVendorDetails")}
             </div>
           </div>
         )}
         {error && !loading && (
           <div className="mx-4 sm:mx-8 mb-4 rounded-lg bg-red-50 p-3 text-center text-xs sm:text-sm text-red-600">
-            {error}
+            {t("errorLoadingVendorDetails")}
           </div>
         )}
       </div>
