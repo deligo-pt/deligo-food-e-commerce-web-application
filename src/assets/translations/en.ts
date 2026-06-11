@@ -90,6 +90,37 @@ longitude: "Longitude",
 saving: "Saving...",
 updateAddress: "Update Address",
 saveAddress: "Save Address",
+cartBreadcrumb: "Home / Active Carts",
+
+myShoppingCart: "My Shopping Cart",
+
+itemsInCart: "item(s) in your cart",
+
+yourCartIsEmpty: "Your cart is empty",
+
+addProductsToContinue: "Add some products to continue.",
+active: "Active",
+inactive: "Inactive",
+
+sku: "SKU",
+
+setAsActive: "Set as Active",
+setAsInactive: "Set as Inactive",
+
+remove: "Remove",
+
+qty: "Qty",
+
+removeFromCart: "Remove",
+new: "New",
+
+goToCheckout: "Go to Checkout",
+
+activateAtLeastOneProduct:
+  "Activate at least one product to checkout",
+
+cannotCheckoutNoActiveItems:
+  "Cannot checkout: no active items in this store. Please activate at least one product.",
 };
 
 export default en;

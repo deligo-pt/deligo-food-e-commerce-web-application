@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { Star, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import CartProductRow from "./CartProductRow";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface CartItem {
   productId: string;
@@ -45,6 +46,7 @@ export default function CartStoreCard({
   onProductUpdate,
   onProductRemove,
 }: CartStoreCardProps) {
+  const { t } = useTranslation();
   const activeItems = useMemo(
     () => items.filter((item) => item.isActive),
     [items],
@@ -76,19 +78,19 @@ export default function CartStoreCard({
               <div className="flex items-center gap-2 rounded-xl bg-yellow-50 px-3 py-2">
                 <Star size={16} className="fill-yellow-500 text-yellow-500" />
                 <span className="font-semibold text-yellow-700">
-                  {rating > 0 ? rating.toFixed(1) : "New"}
+                  {rating > 0 ? rating.toFixed(1) : t("new")}
                 </span>
               </div>
               <div className="flex items-center gap-2 rounded-xl bg-pink-50 px-3 py-2">
                 <UtensilsCrossed size={16} className="text-pink-600" />
                 <span className="font-semibold text-pink-600">
-                  {activeItems.length} / {items.length} Active
+                  {activeItems.length} / {items.length} {t("active")}
                 </span>
               </div>
               {inactiveCount > 0 && (
                 <div className="flex items-center gap-2 rounded-xl bg-gray-100 px-3 py-2">
                   <span className="text-sm font-medium text-gray-600">
-                    {inactiveCount} inactive
+                    {inactiveCount} {t("inactive")}
                   </span>
                 </div>
               )}
@@ -116,9 +118,7 @@ export default function CartStoreCard({
           onClick={(e) => {
             if (!hasActive) {
               e.preventDefault();
-              toast.error(
-                "Cannot checkout: no active items in this store. Please activate at least one product.",
-              );
+              toast.error(t("cannotCheckoutNoActiveItems"));
             }
           }}
           className={`flex items-center justify-between rounded-3xl px-6 py-5 text-white transition ${
@@ -127,14 +127,14 @@ export default function CartStoreCard({
               : "cursor-not-allowed bg-gray-400"
           }`}
         >
-          <span className="text-xl font-bold">Go to Checkout</span>
+          <span className="text-xl font-bold">{t("goToCheckout")}</span>
           <div className="rounded-xl bg-white/20 px-4 py-2 font-bold">
             €{activeTotal.toFixed(2)}
           </div>
         </Link>
         {!hasActive && (
           <p className="mt-2 text-center text-sm text-gray-500">
-            Activate at least one product to checkout
+            {t("activateAtLeastOneProduct")}
           </p>
         )}
       </div>

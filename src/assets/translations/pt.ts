@@ -65,37 +65,68 @@ const pt = {
 
   locationConfirmed: "LOCALIZAÇÃO CONFIRMADA",
   addressDetails: "Detalhes do Endereço",
-addressDetailsDescription:
-  "Preencha os detalhes para salvar este endereço para futuras entregas.",
+  addressDetailsDescription:
+    "Preencha os detalhes para salvar este endereço para futuras entregas.",
 
-labelAddressAs: "Rotular Endereço Como",
+  labelAddressAs: "Rotular Endereço Como",
 
-work: "Trabalho",
-other: "Outro",
+  work: "Trabalho",
+  other: "Outro",
 
-streetAddress: "Endereço *",
-enterStreetAddress: "Digite o endereço",
+  streetAddress: "Endereço *",
+  enterStreetAddress: "Digite o endereço",
 
-houseApartmentFloor: "Casa / Apartamento / Andar",
-apartmentPlaceholder: "Apto 4B, Andar 2",
+  houseApartmentFloor: "Casa / Apartamento / Andar",
+  apartmentPlaceholder: "Apto 4B, Andar 2",
 
-city: "Cidade *",
-enterCity: "Digite a cidade",
+  city: "Cidade *",
+  enterCity: "Digite a cidade",
 
-postalCode: "Código Postal *",
+  postalCode: "Código Postal *",
 
-stateRegion: "Estado / Região",
+  stateRegion: "Estado / Região",
 
-country: "País",
+  country: "País",
 
-gpsCoordinates: "Coordenadas GPS",
+  gpsCoordinates: "Coordenadas GPS",
 
-latitude: "Latitude",
-longitude: "Longitude",
+  latitude: "Latitude",
+  longitude: "Longitude",
 
-saving: "Salvando...",
-updateAddress: "Atualizar Endereço",
-saveAddress: "Salvar Endereço",
+  saving: "Salvando...",
+  updateAddress: "Atualizar Endereço",
+  saveAddress: "Salvar Endereço",
+  cartBreadcrumb: "Início / Carrinhos Ativos",
+
+  myShoppingCart: "Meu Carrinho de Compras",
+
+  itemsInCart: "item(ns) no seu carrinho",
+
+  yourCartIsEmpty: "Seu carrinho está vazio",
+
+  addProductsToContinue: "Adicione alguns produtos para continuar.",
+  active: "Ativo",
+  inactive: "Inativo",
+
+  sku: "SKU",
+
+  setAsActive: "Definir como Ativo",
+  setAsInactive: "Definir como Inativo",
+
+  remove: "Remover",
+
+  qty: "Qtd",
+
+  removeFromCart: "Remover",
+  new: "Novo",
+
+goToCheckout: "Ir para Checkout",
+
+activateAtLeastOneProduct:
+  "Ative pelo menos um produto para finalizar a compra",
+
+cannotCheckoutNoActiveItems:
+  "Não é possível finalizar a compra: não há produtos ativos nesta loja. Ative pelo menos um produto.",
 };
 
 export default pt;
