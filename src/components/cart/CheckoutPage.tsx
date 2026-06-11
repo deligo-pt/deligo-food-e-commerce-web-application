@@ -16,12 +16,14 @@ import {
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface CheckoutPageProps {
   vendorId: string;
 }
 
 export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [vendor, setVendor] = useState<any>(null);
@@ -73,7 +75,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     fetchCheckoutData(true);
   }, [fetchCheckoutData]);
   const vendorItems = useMemo(() => {
-    return cart?.items.filter((item) => item.vendorId._id === vendorId && item.isActive === true) || [];
+    return (
+      cart?.items.filter(
+        (item) => item.vendorId._id === vendorId && item.isActive === true,
+      ) || []
+    );
   }, [cart, vendorId]);
 
   const summary = useMemo(() => {
@@ -147,7 +153,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         `/cart/checkout/${vendorId}/payment?checkoutId=${checkoutId}`,
       );
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to create checkout session"));
+      toast.error(
+        getApiErrorMessage(error, "Failed to create checkout session"),
+      );
     } finally {
       setIsProceeding(false);
     }
@@ -184,15 +192,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         className="mb-4 flex items-center gap-2 text-gray-500 transition hover:text-gray-700"
       >
         <ArrowLeft size={18} />
-        Back
+        {t("back")}
       </button>
 
       <h1 className="text-4xl font-extrabold text-gray-900">
-        Review Your Cart
+        {t("reviewYourCart")}
       </h1>
-      <p className="mt-2 text-gray-500">
-        Complete your order details before checkout
-      </p>
+      <p className="mt-2 text-gray-500">{t("completeOrderDetails")}</p>
 
       <div className="mt-8 mb-8 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
         <div className="p-6">
@@ -218,12 +224,12 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 <div className="flex items-center gap-2 rounded-xl bg-pink-50 px-3 py-2 text-pink-600">
                   <ShoppingBag size={16} />
                   <span className="font-medium">
-                    {vendorItems.length} Products
+                    {vendorItems.length} {t("products")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-green-600">
                   <MapPin size={16} />
-                  <span className="font-medium">Delivery Available</span>
+                  <span className="font-medium">{t("deliveryAvailable")}</span>
                 </div>
               </div>
             </div>
@@ -235,10 +241,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         <div className="space-y-5 lg:col-span-8">
           {vendorItems.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-12 text-center">
-              <h3 className="text-xl font-semibold">No products found</h3>
-              <p className="mt-2 text-gray-500">
-                This vendor currently has no products in your cart.
-              </p>
+              <h3 className="text-xl font-semibold">{t("noProductsFound")}</h3>
+              <p className="mt-2 text-gray-500">{t("vendorHasNoProducts")}</p>
             </div>
           ) : (
             vendorItems.map((item) => (
@@ -265,7 +269,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                           </h3>
                           {item.variationSku && (
                             <p className="mt-1 text-sm text-gray-500">
-                              SKU: {item.variationSku}
+                              {t("sku")}: {item.variationSku}
                             </p>
                           )}
                         </div>
@@ -341,32 +345,32 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
           <div className="sticky top-24 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
             <div className="border-b border-gray-100 p-6">
               <h3 className="text-2xl font-bold text-gray-900">
-                Order Summary
+                {t("orderSummary")}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                Review your order details
+                {t("reviewOrderDetails")}
               </p>
             </div>
             <div className="space-y-4 p-6">
               <div className="flex justify-between">
-                <span className="text-gray-600">Original Price</span>
+                <span className="text-gray-600">{t("originalPrice")}</span>
                 <span className="font-semibold">
                   €{summary.originalPrice.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Product Discount</span>
+                <span className="text-gray-600">{t("productDiscount")}</span>
                 <span className="font-semibold text-green-600">
                   -€{summary.discount.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Tax</span>
+                <span className="text-gray-600">{t("tax")}</span>
                 <span className="font-semibold">€{summary.tax.toFixed(2)}</span>
               </div>
               <div className="border-t border-dashed border-gray-200 pt-4">
                 <div className="flex justify-between">
-                  <span className="text-xl font-bold">Total</span>
+                  <span className="text-xl font-bold">{t("total")}</span>
                   <span className="text-3xl font-extrabold text-pink-600">
                     €{summary.total.toFixed(2)}
                   </span>
@@ -376,13 +380,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
             <div className="border-t border-gray-100 p-6">
               <label className="mb-2 block font-semibold text-gray-900">
-                Delivery Instructions
+                {t("deliveryInstructions")}
               </label>
               <textarea
                 rows={4}
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
-                placeholder="Add any special instructions for delivery..."
+                placeholder={t("deliveryInstructionsPlaceholder")}
                 className="w-full rounded-2xl border border-gray-200 p-4 outline-none transition focus:border-pink-500"
               />
             </div>
@@ -393,10 +397,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 disabled={isProceeding || vendorItems.length === 0}
                 className="w-full rounded-2xl bg-pink-600 py-4 text-lg font-semibold text-white transition hover:bg-pink-700 disabled:opacity-50"
               >
-                {isProceeding ? "Processing..." : "Proceed to Checkout"}
+                {isProceeding ? t("processing") : t("proceedToCheckout")}
               </button>
               <p className="mt-3 text-center text-xs text-gray-400">
-                By continuing you agree to our terms and conditions.
+                {t("termsAndConditions")}
               </p>
             </div>
           </div>

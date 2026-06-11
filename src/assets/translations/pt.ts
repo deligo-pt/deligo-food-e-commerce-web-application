@@ -120,13 +120,43 @@ const pt = {
   removeFromCart: "Remover",
   new: "Novo",
 
-goToCheckout: "Ir para Checkout",
+  goToCheckout: "Ir para Checkout",
 
-activateAtLeastOneProduct:
-  "Ative pelo menos um produto para finalizar a compra",
+  activateAtLeastOneProduct:
+    "Ative pelo menos um produto para finalizar a compra",
 
-cannotCheckoutNoActiveItems:
-  "Não é possível finalizar a compra: não há produtos ativos nesta loja. Ative pelo menos um produto.",
+  cannotCheckoutNoActiveItems:
+    "Não é possível finalizar a compra: não há produtos ativos nesta loja. Ative pelo menos um produto.",
+  back: "Voltar",
+
+  reviewYourCart: "Revise Seu Carrinho",
+  completeOrderDetails: "Complete os detalhes do seu pedido antes do checkout",
+
+  store: "Loja",
+  products: "Produtos",
+  deliveryAvailable: "Entrega Disponível",
+
+  noProductsFound: "Nenhum produto encontrado",
+  vendorHasNoProducts:
+    "Este vendedor atualmente não possui produtos no seu carrinho.",
+
+  orderSummary: "Resumo do Pedido",
+  reviewOrderDetails: "Revise os detalhes do seu pedido",
+
+  originalPrice: "Preço Original",
+  productDiscount: "Desconto do Produto",
+  tax: "Imposto",
+  total: "Total",
+
+  deliveryInstructions: "Instruções de Entrega",
+  deliveryInstructionsPlaceholder:
+    "Adicione quaisquer instruções especiais para a entrega...",
+
+  processing: "Processando...",
+  proceedToCheckout: "Prosseguir para o Checkout",
+
+  termsAndConditions:
+    "Ao continuar você concorda com nossos termos e condições.",
 };
 
 export default pt;

@@ -30,7 +30,7 @@ const en = {
     "Unable to load shop categories. Please try again.",
 
   noShopCategoriesAvailable: "No shop categories available.",
-   whatsOnYourMind: "What's on your mind?",
+  whatsOnYourMind: "What's on your mind?",
   viewAll: "View All",
   unableToLoadCategories: "Unable to load categories. Please try again.",
   nearYou: "Near You",
@@ -60,67 +60,94 @@ const en = {
 
   locationConfirmed: "LOCATION CONFIRMED",
   addressDetails: "Address Details",
-addressDetailsDescription:
-  "Fill in the details to save this address for future deliveries.",
+  addressDetailsDescription:
+    "Fill in the details to save this address for future deliveries.",
 
-labelAddressAs: "Label Address As",
-work: "Work",
-other: "Other",
+  labelAddressAs: "Label Address As",
+  work: "Work",
+  other: "Other",
 
-streetAddress: "Street Address *",
-enterStreetAddress: "Enter street address",
+  streetAddress: "Street Address *",
+  enterStreetAddress: "Enter street address",
 
-houseApartmentFloor: "House / Apartment / Floor",
-apartmentPlaceholder: "Apt 4B, Floor 2",
+  houseApartmentFloor: "House / Apartment / Floor",
+  apartmentPlaceholder: "Apt 4B, Floor 2",
 
-city: "City *",
-enterCity: "Enter city",
+  city: "City *",
+  enterCity: "Enter city",
 
-postalCode: "Postal Code *",
+  postalCode: "Postal Code *",
 
-stateRegion: "State / Region",
+  stateRegion: "State / Region",
 
-country: "Country",
+  country: "Country",
 
-gpsCoordinates: "GPS Coordinates",
+  gpsCoordinates: "GPS Coordinates",
 
-latitude: "Latitude",
-longitude: "Longitude",
+  latitude: "Latitude",
+  longitude: "Longitude",
 
-saving: "Saving...",
-updateAddress: "Update Address",
-saveAddress: "Save Address",
-cartBreadcrumb: "Home / Active Carts",
+  saving: "Saving...",
+  updateAddress: "Update Address",
+  saveAddress: "Save Address",
+  cartBreadcrumb: "Home / Active Carts",
 
-myShoppingCart: "My Shopping Cart",
+  myShoppingCart: "My Shopping Cart",
 
-itemsInCart: "item(s) in your cart",
+  itemsInCart: "item(s) in your cart",
 
-yourCartIsEmpty: "Your cart is empty",
+  yourCartIsEmpty: "Your cart is empty",
 
-addProductsToContinue: "Add some products to continue.",
-active: "Active",
-inactive: "Inactive",
+  addProductsToContinue: "Add some products to continue.",
+  active: "Active",
+  inactive: "Inactive",
 
-sku: "SKU",
+  sku: "SKU",
 
-setAsActive: "Set as Active",
-setAsInactive: "Set as Inactive",
+  setAsActive: "Set as Active",
+  setAsInactive: "Set as Inactive",
 
-remove: "Remove",
+  remove: "Remove",
 
-qty: "Qty",
+  qty: "Qty",
 
-removeFromCart: "Remove",
-new: "New",
+  removeFromCart: "Remove",
+  new: "New",
 
-goToCheckout: "Go to Checkout",
+  goToCheckout: "Go to Checkout",
 
-activateAtLeastOneProduct:
-  "Activate at least one product to checkout",
+  activateAtLeastOneProduct: "Activate at least one product to checkout",
 
-cannotCheckoutNoActiveItems:
-  "Cannot checkout: no active items in this store. Please activate at least one product.",
+  cannotCheckoutNoActiveItems:
+    "Cannot checkout: no active items in this store. Please activate at least one product.",
+  back: "Back",
+
+  reviewYourCart: "Review Your Cart",
+  completeOrderDetails: "Complete your order details before checkout",
+
+  store: "Store",
+  products: "Products",
+  deliveryAvailable: "Delivery Available",
+
+  noProductsFound: "No products found",
+  vendorHasNoProducts: "This vendor currently has no products in your cart.",
+
+  orderSummary: "Order Summary",
+  reviewOrderDetails: "Review your order details",
+
+  originalPrice: "Original Price",
+  productDiscount: "Product Discount",
+  tax: "Tax",
+  total: "Total",
+
+  deliveryInstructions: "Delivery Instructions",
+  deliveryInstructionsPlaceholder:
+    "Add any special instructions for delivery...",
+
+  processing: "Processing...",
+  proceedToCheckout: "Proceed to Checkout",
+
+  termsAndConditions: "By continuing you agree to our terms and conditions.",
 };
 
 export default en;
