@@ -220,6 +220,11 @@ const en = {
   promo: "Promo",
   security: "Security",
   delivered: "Delivered",
+
+  allCategories: "All Categories",
+  browseAllCategories: "Browse every category available in DeliGo.",
+
+  backToHome: "Back to home",
 };
 
 export default en;

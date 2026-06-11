@@ -231,6 +231,11 @@ const pt = {
   promo: "Promoção",
   security: "Segurança",
   delivered: "Entregue",
+
+  allCategories: "Todas as Categorias",
+  browseAllCategories: "Explore todas as categorias disponíveis na DeliGo.",
+
+  backToHome: "Voltar para a página inicial",
 };
 
 export default pt;
