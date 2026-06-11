@@ -10,6 +10,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface NotificationData {
   orderId?: string;
@@ -43,7 +44,10 @@ interface ApiResponse {
 
 type FilterType = "all" | "unread" | "orders" | "promos";
 
-const formatRelativeTime = (isoDate: string): string => {
+const formatRelativeTime = (
+  isoDate: string,
+  t: (key: string) => string,
+): string => {
   const now = new Date();
   const date = new Date(isoDate);
   const diffMs = now.getTime() - date.getTime();
@@ -51,12 +55,15 @@ const formatRelativeTime = (isoDate: string): string => {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? "" : "s"} ago`;
-  if (diffHours < 24)
-    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffMins < 1) return t("justNow");
+
+  if (diffMins < 60) return `${diffMins} ${t("minutesAgo")}`;
+
+  if (diffHours < 24) return `${diffHours} ${t("hoursAgo")}`;
+
+  if (diffDays === 1) return t("yesterday");
+
+  if (diffDays < 7) return `${diffDays} ${t("daysAgo")}`;
   return date.toLocaleDateString();
 };
 
@@ -76,6 +83,7 @@ const getIconByType = (type: Notification["type"]) => {
 };
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -153,7 +161,7 @@ export default function NotificationsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f6f6f7] flex items-center justify-center">
-        <div className="text-[#c1005b]">Loading notifications...</div>
+        <div className="text-[#c1005b]">{t("loadingNotifications")}</div>
       </div>
     );
   }
@@ -162,12 +170,14 @@ export default function NotificationsPage() {
     return (
       <div className="min-h-screen bg-[#f6f6f7] flex items-center justify-center">
         <div className="text-red-500 text-center">
-          <p>Error: {error}</p>
+          <p>
+            {t("error")}: {error}
+          </p>
           <button
             onClick={fetchNotifications}
             className="mt-4 rounded-md bg-[#c1005b] px-4 py-2 text-white"
           >
-            Retry
+            {t("retry")}
           </button>
         </div>
       </div>
@@ -181,10 +191,10 @@ export default function NotificationsPage() {
         <div className="mb-6 flex items-start justify-between">
           <div>
             <h1 className="text-[36px] font-bold leading-none text-[#1f1f1f]">
-              Notifications
+              {t("notifications")}
             </h1>
             <p className="mt-2 text-sm text-[#777]">
-              Stay updated on your orders and local offers.
+              {t("notificationsSubtitle")}
             </p>
           </div>
 
@@ -207,7 +217,7 @@ export default function NotificationsPage() {
                 : "border-[#e4d3d8] bg-white text-[#666]"
             }`}
           >
-            All
+            {t("all")}
             <span
               className={`rounded-full px-2 py-px ${
                 filter === "all" ? "bg-white/20 text-white" : "bg-[#f2f2f2]"
@@ -225,7 +235,7 @@ export default function NotificationsPage() {
                 : "border-[#e4d3d8] bg-white text-[#666]"
             }`}
           >
-            Unread
+            {t("unread")}
             <span
               className={`rounded-full px-2 py-px ${
                 filter === "unread" ? "bg-white/20 text-white" : "bg-[#f2f2f2]"
@@ -243,7 +253,7 @@ export default function NotificationsPage() {
                 : "border-[#e4d3d8] bg-white text-[#666]"
             }`}
           >
-            Orders
+            {t("orders")}
             <span
               className={`rounded-full px-2 py-px ${
                 filter === "orders" ? "bg-white/20 text-white" : "bg-[#f2f2f2]"
@@ -261,7 +271,7 @@ export default function NotificationsPage() {
                 : "border-[#e4d3d8] bg-white text-[#666]"
             }`}
           >
-            Promos
+            {t("promos")}
             {filter === "promos" && (
               <span className="ml-2 rounded-full bg-white/20 px-2 py-px">
                 {promosCount}
@@ -274,7 +284,7 @@ export default function NotificationsPage() {
         <div className="space-y-4">
           {filteredNotifications.length === 0 ? (
             <div className="rounded-xl border border-[#ededed] bg-white p-8 text-center text-[#666]">
-              No notifications to show.
+              {t("noNotifications")}
             </div>
           ) : (
             filteredNotifications.map((notification) => {
@@ -314,7 +324,7 @@ export default function NotificationsPage() {
                       </h3>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-[#888]">
-                          {formatRelativeTime(notification.createdAt)}
+                          {formatRelativeTime(notification.createdAt, t)}
                         </span>
                         {isUnread && (
                           <span className="h-2 w-2 rounded-full bg-[#c1005b]" />
@@ -329,7 +339,13 @@ export default function NotificationsPage() {
                     {/* Type badge */}
                     <div className="mt-3">
                       <span className="rounded bg-[#fff0f5] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#c1005b]">
-                        {notification.type}
+                        {notification.type === "ORDER"
+                          ? t("order")
+                          : notification.type === "PROMO"
+                            ? t("promo")
+                            : notification.type === "SECURITY"
+                              ? t("security")
+                              : t("delivered")}
                       </span>
                     </div>
 
@@ -347,7 +363,7 @@ export default function NotificationsPage() {
                             );
                           }}
                         >
-                          Track Order
+                          {t("trackOrder")}
                         </button>
                       )}
 
@@ -357,13 +373,13 @@ export default function NotificationsPage() {
                           className="text-sm font-medium text-[#c1005b]"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          Rate Order
+                          {t("rateOrder")}
                         </button>
                         <button
                           className="text-sm font-medium text-[#c1005b]"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          Order Again
+                          {t("orderAgain")}
                         </button>
                       </div>
                     )}

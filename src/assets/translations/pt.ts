@@ -202,6 +202,35 @@ const pt = {
   contactSupport: "Contactar Suporte",
 
   secureCheckout: "Checkout Seguro",
+
+  notificationsSubtitle:
+    "Mantenha-se atualizado sobre os seus pedidos e ofertas locais.",
+
+  all: "Todas",
+  unread: "Não lidas",
+  orders: "Pedidos",
+  promos: "Promoções",
+
+  loadingNotifications: "A carregar notificações...",
+  retry: "Tentar novamente",
+  error: "Erro",
+
+  noNotifications: "Nenhuma notificação para mostrar.",
+
+  justNow: "Agora mesmo",
+  yesterday: "Ontem",
+  minutesAgo: "min atrás",
+  hoursAgo: "h atrás",
+  daysAgo: "dias atrás",
+
+  trackOrder: "Rastrear Pedido",
+  rateOrder: "Avaliar Pedido",
+  orderAgain: "Pedir Novamente",
+
+  order: "Pedido",
+  promo: "Promoção",
+  security: "Segurança",
+  delivered: "Entregue",
 };
 
 export default pt;

@@ -192,6 +192,34 @@ const en = {
   contactSupport: "Contact Support",
 
   secureCheckout: "Secure Checkout",
+
+  notificationsSubtitle: "Stay updated on your orders and local offers.",
+
+  all: "All",
+  unread: "Unread",
+  orders: "Orders",
+  promos: "Promos",
+
+  loadingNotifications: "Loading notifications...",
+  retry: "Retry",
+  error: "Error",
+
+  noNotifications: "No notifications to show.",
+
+  justNow: "Just now",
+  yesterday: "Yesterday",
+  minutesAgo: "mins ago",
+  hoursAgo: "hours ago",
+  daysAgo: "days ago",
+
+  trackOrder: "Track Order",
+  rateOrder: "Rate Order",
+  orderAgain: "Order Again",
+
+  order: "Order",
+  promo: "Promo",
+  security: "Security",
+  delivered: "Delivered",
 };
 
 export default en;
