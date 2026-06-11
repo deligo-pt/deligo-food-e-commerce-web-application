@@ -236,6 +236,18 @@ const pt = {
   browseAllCategories: "Explore todas as categorias disponíveis na DeliGo.",
 
   backToHome: "Voltar para a página inicial",
+
+  underTenMin: "Menos de 10 min",
+
+  noVendorsFound: "Nenhum vendedor encontrado",
+
+  previous: "Anterior",
+  next: "Seguinte",
+
+  allVendors: "Todos os Vendedores",
+
+  browseAllVendors:
+    "Explore todas as lojas e restaurantes disponíveis na DeliGo.",
 };
 
 export default pt;

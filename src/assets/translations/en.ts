@@ -225,6 +225,15 @@ const en = {
   browseAllCategories: "Browse every category available in DeliGo.",
 
   backToHome: "Back to home",
+  underTenMin: "Under 10 min",
+
+  noVendorsFound: "No vendors found",
+
+  previous: "Previous",
+  next: "Next",
+  allVendors: "All Vendors",
+
+  browseAllVendors: "Browse all stores and restaurants available on DeliGo.",
 };
 
 export default en;
