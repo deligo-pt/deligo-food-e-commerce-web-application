@@ -48,6 +48,54 @@ const pt = {
 
   openNow: "Aberto Agora",
   closed: "Fechado",
+  editAddress: "Editar Endereço",
+  addNewAddress: "Adicionar Novo Endereço",
+
+  confirmLocation: "Confirmar Localização",
+  confirmLocationDescription:
+    "Selecione uma etiqueta e salve sua localização para futuros pedidos",
+
+  searchAreaPlaceholder: "Pesquisar área, nome da rua...",
+
+  useGps: "Usar GPS",
+  fullMap: "Mapa Completo",
+
+  updating: "Atualizando...",
+  updateLocation: "Atualizar Localização",
+
+  locationConfirmed: "LOCALIZAÇÃO CONFIRMADA",
+  addressDetails: "Detalhes do Endereço",
+addressDetailsDescription:
+  "Preencha os detalhes para salvar este endereço para futuras entregas.",
+
+labelAddressAs: "Rotular Endereço Como",
+
+work: "Trabalho",
+other: "Outro",
+
+streetAddress: "Endereço *",
+enterStreetAddress: "Digite o endereço",
+
+houseApartmentFloor: "Casa / Apartamento / Andar",
+apartmentPlaceholder: "Apto 4B, Andar 2",
+
+city: "Cidade *",
+enterCity: "Digite a cidade",
+
+postalCode: "Código Postal *",
+
+stateRegion: "Estado / Região",
+
+country: "País",
+
+gpsCoordinates: "Coordenadas GPS",
+
+latitude: "Latitude",
+longitude: "Longitude",
+
+saving: "Salvando...",
+updateAddress: "Atualizar Endereço",
+saveAddress: "Salvar Endereço",
 };
 
 export default pt;

@@ -43,6 +43,53 @@ const en = {
 
   openNow: "Open Now",
   closed: "Closed",
+  editAddress: "Edit Address",
+  addNewAddress: "Add New Address",
+
+  confirmLocation: "Confirm Location",
+  confirmLocationDescription:
+    "Select a label and save your location for future orders",
+
+  searchAreaPlaceholder: "Search for area, street name...",
+
+  useGps: "Use GPS",
+  fullMap: "Full Map",
+
+  updating: "Updating...",
+  updateLocation: "Update Location",
+
+  locationConfirmed: "LOCATION CONFIRMED",
+  addressDetails: "Address Details",
+addressDetailsDescription:
+  "Fill in the details to save this address for future deliveries.",
+
+labelAddressAs: "Label Address As",
+work: "Work",
+other: "Other",
+
+streetAddress: "Street Address *",
+enterStreetAddress: "Enter street address",
+
+houseApartmentFloor: "House / Apartment / Floor",
+apartmentPlaceholder: "Apt 4B, Floor 2",
+
+city: "City *",
+enterCity: "Enter city",
+
+postalCode: "Postal Code *",
+
+stateRegion: "State / Region",
+
+country: "Country",
+
+gpsCoordinates: "GPS Coordinates",
+
+latitude: "Latitude",
+longitude: "Longitude",
+
+saving: "Saving...",
+updateAddress: "Update Address",
+saveAddress: "Save Address",
 };
 
 export default en;
