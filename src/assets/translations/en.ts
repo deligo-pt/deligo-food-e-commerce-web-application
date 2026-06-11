@@ -148,6 +148,50 @@ const en = {
   proceedToCheckout: "Proceed to Checkout",
 
   termsAndConditions: "By continuing you agree to our terms and conditions.",
+  deliveryDetails: "Delivery Details",
+  change: "Change",
+
+  deliveryFrom: "Delivery From",
+  deliveryTo: "Delivery To",
+
+  open: "Open",
+
+  distanceAndTime: "Distance & Time",
+  deliveryDistance: "Delivery distance",
+  estimatedTime: "Est. time",
+
+  yourOrder: "Your Order",
+  addMoreItems: "Add more items",
+
+  basePrice: "Base price",
+
+  paymentSummary: "Payment Summary",
+
+  itemsTotal: "Items Total",
+  subtotal: "Subtotal",
+  discount: "Discount",
+  deliveryFee: "Delivery Fee",
+
+  free: "FREE",
+
+  applyVoucherCode: "Apply voucher code",
+  enterVoucherCode: "Enter voucher code",
+  apply: "Apply",
+
+  orderTotal: "Order Total",
+
+  paymentMethod: "Payment Method",
+
+  debitCreditCard: "Debit/Credit Card",
+
+  paymentFailed: "Payment Failed",
+
+  placeOrder: "Place Order",
+
+  needHelpWithOrder: "Need help with your order?",
+  contactSupport: "Contact Support",
+
+  secureCheckout: "Secure Checkout",
 };
 
 export default en;
