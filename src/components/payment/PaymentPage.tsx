@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -11,13 +12,15 @@ import {
   ArrowRight,
   Lock,
   AlertCircle,
+  Star,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
+import { useTranslation } from "@/hooks/useTranslation";
 
-// Type definitions (adjust based on actual API response)
+// Type definitions
 interface CheckoutItem {
   productId: string;
   name: string;
@@ -52,6 +55,7 @@ interface DeliveryAddress {
 
 interface CheckoutSummary {
   _id: string;
+  vendorId: string;
   items: CheckoutItem[];
   orderCalculation: OrderCalculation;
   delivery: Delivery;
@@ -59,12 +63,38 @@ interface CheckoutSummary {
   deliveryAddress: DeliveryAddress;
   paymentStatus: string;
 }
+interface Vendor {
+  id: string;
+  userId: string;
+  name: { firstName: string; lastName: string };
+  businessDetails: {
+    businessName: string;
+    businessType: string;
+    openingHours: string;
+    closingHours: string;
+    closingDays: string[];
+    isStoreOpen: boolean;
+  };
+  businessLocation: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+    latitude: number;
+    longitude: number;
+  };
+  storePhoto: string[];
+  rating: { average: number; totalReviews: number };
+}
 
 export default function PaymentPage() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const checkoutId = searchParams.get("checkoutId");
 
   const [summary, setSummary] = useState<CheckoutSummary | null>(null);
+  const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>("CARD");
@@ -75,25 +105,48 @@ export default function PaymentPage() {
 
   useEffect(() => {
     if (!checkoutId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("No checkout ID provided");
       setLoading(false);
       return;
     }
 
-    const fetchSummary = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await apiClient.get(`/checkout/summary/${checkoutId}`);
-        setSummary(response.data.data);
+
+        // 1. Fetch checkout summary
+        const summaryResponse = await apiClient.get(
+          `/checkout/summary/${checkoutId}`,
+        );
+
+        const summaryData = summaryResponse.data.data;
+
+        setSummary(summaryData);
+
+        // 2. Fetch vendor immediately
+        if (summaryData.vendorId) {
+          const vendorResponse = await apiClient.get("/vendors/customer");
+
+          const vendors: Vendor[] = vendorResponse.data.data;
+
+          const matchedVendor = vendors.find(
+            (v) => v.id === summaryData.vendorId,
+          );
+
+          if (matchedVendor) {
+            setVendor(matchedVendor);
+          }
+        }
       } catch (err) {
-        setError(getApiErrorMessage(err, "Failed to load checkout summary"));
+        setError(
+          getApiErrorMessage(err, "Failed to load checkout information"),
+        );
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSummary();
+    fetchData();
   }, [checkoutId]);
 
   const handlePlaceOrder = async () => {
@@ -102,21 +155,24 @@ export default function PaymentPage() {
       setIsPlacingOrder(true);
       setPaymentError("");
 
-      const response = await apiClient.post("/payment/reduniq/create-payment-intent", {
-        checkoutSummaryId: summary._id,
-        paymentMethod,
-      });
+      const response = await apiClient.post(
+        "/payment/reduniq/create-payment-intent",
+        {
+          checkoutSummaryId: summary._id,
+          paymentMethod,
+        },
+      );
 
       const { redirectUrl } = response.data.data;
-      // Redirect to payment gateway
       window.location.href = redirectUrl;
     } catch (err) {
       const errorMsg = getApiErrorMessage(err, "Failed to process payment");
       setPaymentError(errorMsg);
 
-      // Call failure endpoint to reset payment status
       try {
-        await apiClient.post(`/payment/reduniq/handle-payment-failure/${summary._id}`);
+        await apiClient.post(
+          `/payment/reduniq/handle-payment-failure/${summary._id}`,
+        );
       } catch (failureErr) {
         console.error("Failed to reset payment status", failureErr);
       }
@@ -143,9 +199,14 @@ export default function PaymentPage() {
     );
   }
 
-  const { items, orderCalculation, delivery, payoutSummary, deliveryAddress } = summary;
-  const subtotal = orderCalculation.totalOriginalPrice - orderCalculation.totalProductDiscount;
+  const { items, orderCalculation, delivery, payoutSummary, deliveryAddress } =
+    summary;
+  const subtotal =
+    orderCalculation.totalOriginalPrice - orderCalculation.totalProductDiscount;
   const orderTotal = payoutSummary.grandTotal;
+
+  const vendorRating = vendor?.rating.average ?? 0;
+  const vendorReviewCount = vendor?.rating.totalReviews ?? 0;
 
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
@@ -156,32 +217,71 @@ export default function PaymentPage() {
             {/* Delivery Details */}
             <div className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Delivery Details</h2>
-                <button className="text-sm font-semibold text-pink-600">Change</button>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {t("deliveryDetails")}
+                </h2>
+                <button className="text-sm font-semibold text-pink-600">
+                  {t("change")}
+                </button>
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
+                {/* Delivery From - dynamic vendor */}
                 <div>
                   <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">
-                    Delivery From
+                    {t("deliveryFrom")}
                   </p>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100">
-                      <Store className="h-5 w-5 text-pink-600" />
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-pink-100">
+                      {vendor?.storePhoto?.[0] ? (
+                        <Image
+                          src={vendor.storePhoto[0]}
+                          alt={vendor.businessDetails.businessName}
+                          className="h-full w-full object-cover"
+                          width={48}
+                          height={48}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Store className="h-5 w-5 text-pink-600" />
+                        </div>
+                      )}
                     </div>
                     <div>
-                      <p className="font-semibold">Nova Vida Market</p>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <span className="text-xs font-medium text-green-600">Online</span>
-                      </div>
+                      <p className="font-semibold">
+                        {vendor?.businessDetails.businessName}
+                      </p>
+                      {vendor && (
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`h-2 w-2 rounded-full ${
+                              vendor.businessDetails.isStoreOpen
+                                ? "bg-green-500"
+                                : "bg-red-500"
+                            }`}
+                          />
+                          <span className="text-xs font-medium text-gray-600">
+                            {vendor.businessDetails.isStoreOpen
+                              ? t("open")
+                              : t("closed")}
+                          </span>
+                          {vendorRating > 0 && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-xs font-medium">
+                                {vendorRating.toFixed(1)} ({vendorReviewCount})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div>
                   <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">
-                    Delivery To
+                    {t("deliveryTo")}
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100">
@@ -200,10 +300,11 @@ export default function PaymentPage() {
               <div className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-pink-200 bg-gray-50 p-4">
                 <MapPinned className="h-5 w-5 text-pink-600" />
                 <div>
-                  <p className="font-medium">Distance & Time</p>
+                  <p className="font-medium">{t("distanceAndTime")}</p>
                   <p className="text-sm text-gray-500">
-                    Delivery distance: {(delivery.distance || 2.5).toFixed(1)} km • Est. time:{" "}
-                    {(delivery.estimatedTime || 25)} min
+                    {t("deliveryDistance")}:{" "}
+                    {(delivery.distance || 2.5).toFixed(1)} km •{" "}
+                    {t("estimatedTime")}: {delivery.estimatedTime || 25} min
                   </p>
                 </div>
               </div>
@@ -212,13 +313,18 @@ export default function PaymentPage() {
             {/* Your Order */}
             <div className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Your Order</h2>
-                <button className="text-sm font-semibold text-pink-600">Add more items</button>
+                <h2 className="text-2xl font-bold">{t("yourOrder")}</h2>
+                <button className="text-sm font-semibold text-pink-600">
+                  {t("addMoreItems")}
+                </button>
               </div>
 
               <div className="divide-y">
                 {items.map((item) => (
-                  <div key={item.productId} className="flex items-center gap-4 py-4">
+                  <div
+                    key={item.productId}
+                    className="flex items-center gap-4 py-4"
+                  >
                     <div className="relative h-20 w-20 overflow-hidden rounded-lg bg-gray-100">
                       <Image
                         src={item.image}
@@ -234,48 +340,55 @@ export default function PaymentPage() {
                     <div className="flex-1">
                       <p className="font-medium">{item.name}</p>
                       <p className="text-sm text-gray-500">
-                        Base price €{item.productPricing.priceAfterProductDiscount.toFixed(2)}
+                        {t("basePrice")} €
+                        {item.productPricing.priceAfterProductDiscount.toFixed(
+                          2,
+                        )}
                       </p>
                     </div>
-                    <p className="font-bold">€{item.itemSummary.grandTotal.toFixed(2)}</p>
+                    <p className="font-bold">
+                      €{item.itemSummary.grandTotal.toFixed(2)}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* RIGHT COLUMN - Payment Summary */}
+          {/* RIGHT COLUMN - Payment Summary (unchanged) */}
           <div className="w-full lg:w-100">
             <div className="sticky top-6 rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
-              <h2 className="mb-6 text-2xl font-bold">Payment Summary</h2>
+              <h2 className="mb-6 text-2xl font-bold">{t("paymentSummary")}</h2>
 
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Items Total</span>
+                  <span className="text-gray-500">{t("itemsTotal")}</span>
                   <span className="font-semibold">
                     €{orderCalculation.totalOriginalPrice.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Subtotal</span>
+                  <span className="text-gray-500">{t("subtotal")}</span>
                   <span className="font-semibold">€{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Discount</span>
+                  <span className="text-gray-500">{t("discount")}</span>
                   <span className="font-semibold text-green-600">
                     -€{orderCalculation.totalProductDiscount.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Tax</span>
-                  <span className="font-semibold">€{orderCalculation.totalTaxAmount.toFixed(2)}</span>
+                  <span className="text-gray-500">{t("tax")}</span>
+                  <span className="font-semibold">
+                    €{orderCalculation.totalTaxAmount.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Delivery Fee</span>
+                  <span className="text-gray-500">{t("deliveryFee")}</span>
                   <span className="font-semibold text-green-600">
                     {delivery.totalDeliveryCharge > 0
                       ? `€${delivery.totalDeliveryCharge.toFixed(2)}`
-                      : "FREE"}
+                      : t("free")}
                   </span>
                 </div>
               </div>
@@ -286,37 +399,43 @@ export default function PaymentPage() {
                   className="mb-6 flex w-full items-center justify-end gap-2 text-pink-600"
                 >
                   <Ticket className="h-4 w-4" />
-                  Apply voucher code
+                  {t("applyVoucherCode")}
                 </button>
 
                 {showVoucherInput && (
                   <div className="mb-4 flex gap-2">
                     <input
                       type="text"
-                      placeholder="Enter voucher code"
+                      placeholder={t("enterVoucherCode")}
                       value={voucherCode}
                       onChange={(e) => setVoucherCode(e.target.value)}
                       className="flex-1 rounded-lg border border-gray-200 px-4 py-2 outline-none focus:border-pink-500"
                     />
                     <button className="rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white">
-                      Apply
+                      {t("apply")}
                     </button>
                   </div>
                 )}
 
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">Order Total</span>
+                  <span className="text-2xl font-bold">{t("orderTotal")}</span>
                   <span className="text-3xl font-bold text-pink-600">
                     €{orderTotal.toFixed(2)}
                   </span>
                 </div>
               </div>
 
-              <h3 className="mb-4 text-lg font-semibold">Payment Method</h3>
+              <h3 className="mb-4 text-lg font-semibold">
+                {t("paymentMethod")}
+              </h3>
 
               <div className="space-y-3">
                 {[
-                  { icon: CreditCard, name: "Debit/Credit Card", value: "CARD" },
+                  {
+                    icon: CreditCard,
+                    name: "Debit/Credit Card",
+                    value: "CARD",
+                  },
                   { icon: Smartphone, name: "MB WAY", value: "MB_WAY" },
                   { icon: Wallet, name: "Google Pay", value: "GOOGLE_PAY" },
                   { icon: Wallet, name: "Other", value: "OTHER" },
@@ -350,7 +469,9 @@ export default function PaymentPage() {
                   <div className="flex gap-3">
                     <AlertCircle className="mt-0.5 h-5 w-5 text-red-600" />
                     <div>
-                      <p className="font-semibold text-red-600">Payment Failed</p>
+                      <p className="font-semibold text-red-600">
+                        {t("paymentFailed")}
+                      </p>
                       <p className="text-sm text-gray-600">{paymentError}</p>
                     </div>
                   </div>
@@ -362,18 +483,22 @@ export default function PaymentPage() {
                 disabled={isPlacingOrder}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-pink-600 py-4 font-semibold text-white transition hover:bg-pink-700 disabled:opacity-50"
               >
-                {isPlacingOrder ? "Processing..." : "Place Order"}
+                {isPlacingOrder ? t("processing") : t("placeOrder")}
                 <ArrowRight className="h-5 w-5" />
               </button>
 
               <div className="mt-6 text-center">
-                <p className="text-sm text-gray-500">Need help with your order?</p>
-                <button className="font-semibold text-pink-600">Contact Support</button>
+                <p className="text-sm text-gray-500">
+                  {t("needHelpWithOrder")}
+                </p>
+                <button className="font-semibold text-pink-600">
+                  {t("contactSupport")}
+                </button>
               </div>
 
               <div className="mt-6 flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-gray-400">
                 <Lock className="h-3 w-3" />
-                Secure Checkout
+                {t("secureCheckout")}
               </div>
             </div>
           </div>

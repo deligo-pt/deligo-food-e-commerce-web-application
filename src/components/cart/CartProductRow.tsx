@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { MoreVertical, CheckCircle, Ban, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface CartItem {
   productId: string;
@@ -29,7 +30,12 @@ interface CartProductRowProps {
   onRemove: (productId: string, variationSku: string | null) => void;
 }
 
-export default function CartProductRow({ item, onUpdate, onRemove }: CartProductRowProps) {
+export default function CartProductRow({
+  item,
+  onUpdate,
+  onRemove,
+}: CartProductRowProps) {
+  const { t } = useTranslation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -38,7 +44,10 @@ export default function CartProductRow({ item, onUpdate, onRemove }: CartProduct
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
@@ -62,7 +71,9 @@ export default function CartProductRow({ item, onUpdate, onRemove }: CartProduct
       await onUpdate();
     } catch (error: any) {
       console.error("Toggle error:", error);
-      toast.error(error?.response?.data?.message || "Could not change product status");
+      toast.error(
+        error?.response?.data?.message || "Could not change product status",
+      );
     } finally {
       setIsToggling(false);
       setIsDropdownOpen(false);
@@ -76,7 +87,7 @@ export default function CartProductRow({ item, onUpdate, onRemove }: CartProduct
     if (processingRef.current) return;
     processingRef.current = true;
 
-    const confirmRemove = confirm(`Remove "${item.name}" from your cart?`);
+    const confirmRemove = confirm(`${t("removeFromCart")} "${item.name}"?`);
     if (!confirmRemove) {
       processingRef.current = false;
       return;
@@ -85,7 +96,12 @@ export default function CartProductRow({ item, onUpdate, onRemove }: CartProduct
     setIsDeleting(true);
     try {
       await apiClient.delete("/carts/delete-item", {
-        data: [{ productId: item.productId, variationSku: item.variationSku ?? null }],
+        data: [
+          {
+            productId: item.productId,
+            variationSku: item.variationSku ?? null,
+          },
+        ],
       });
       onRemove(item.productId, item.variationSku);
       toast.success(`Removed "${item.name}" from cart`);
@@ -109,7 +125,13 @@ export default function CartProductRow({ item, onUpdate, onRemove }: CartProduct
     >
       {/* Product image */}
       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-200">
-        <Image src={item.image} alt={item.name} fill className="object-cover" sizes="96px" />
+        <Image
+          src={item.image}
+          alt={item.name}
+          fill
+          className="object-cover"
+          sizes="96px"
+        />
       </div>
 
       {/* Product details */}
@@ -126,11 +148,13 @@ export default function CartProductRow({ item, onUpdate, onRemove }: CartProduct
                     : "bg-gray-300 text-gray-700"
                 }`}
               >
-                {item.isActive ? "Active" : "Inactive"}
+                {item.isActive ? t("active") : t("inactive")}
               </span>
             </div>
             {item.variationSku && (
-              <p className="text-xs text-gray-500">SKU: {item.variationSku}</p>
+              <p className="text-xs text-gray-500">
+                {t("sku")}: {item.variationSku}
+              </p>
             )}
           </div>
 
@@ -157,7 +181,7 @@ export default function CartProductRow({ item, onUpdate, onRemove }: CartProduct
                   ) : (
                     <CheckCircle className="h-4 w-4 text-green-600" />
                   )}
-                  {item.isActive ? "Set as Inactive" : "Set as Active"}
+                  {item.isActive ? t("setAsInactive") : t("setAsActive")}
                 </button>
                 <button
                   onClick={handleDelete}
@@ -169,7 +193,7 @@ export default function CartProductRow({ item, onUpdate, onRemove }: CartProduct
                   ) : (
                     <Trash2 className="h-4 w-4" />
                   )}
-                  Remove
+                  {t("remove")}
                 </button>
               </div>
             )}
@@ -179,13 +203,16 @@ export default function CartProductRow({ item, onUpdate, onRemove }: CartProduct
         {/* Quantity and price */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1">
-            <span className="text-sm text-gray-500">Qty:</span>
+            <span className="text-sm text-gray-500">{t("qty")}:</span>
             <span className="font-semibold">{item.itemSummary.quantity}</span>
           </div>
           <div className="text-right">
             {item.productPricing.productDiscountAmount > 0 && (
               <p className="text-xs text-gray-400 line-through">
-                €{(item.productPricing.originalPrice * item.itemSummary.quantity).toFixed(2)}
+                €
+                {(
+                  item.productPricing.originalPrice * item.itemSummary.quantity
+                ).toFixed(2)}
               </p>
             )}
             <p className="text-xl font-bold text-pink-600">

@@ -9,6 +9,7 @@ import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useProductCategoryStore } from "@/stores/productCategoryStore";
 import CategoriesPageSkeleton from "./CategoriesPageSkeleton";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type Category = {
   _id: string;
@@ -38,6 +39,7 @@ type ApiResponse = {
 };
 
 export default function CategoriesPage() {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,13 +123,13 @@ export default function CategoriesPage() {
             href="/"
             className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-[#b0004a] transition-colors hover:text-[#8d003d]"
           >
-            <ChevronLeft size={18} /> Back to home
+            <ChevronLeft size={18} /> {t("backToHome")}
           </Link>
           <h1 className="text-[32px] font-bold leading-10 text-[#191c1d]">
-            All Categories
+            {t("allCategories")}
           </h1>
           <p className="mt-2 text-[16px] leading-6 text-[#5a4044]">
-            Browse every category available in DeliGo.
+            {t("browseAllCategories")}
           </p>
         </div>
       </div>

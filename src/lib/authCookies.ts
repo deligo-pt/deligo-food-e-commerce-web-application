@@ -50,3 +50,7 @@ export function getAccessToken() {
 
   return Cookies.get(ACCESS_TOKEN_COOKIE);
 }
+export function clearAuthTokens() {
+  Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
+  Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
+}

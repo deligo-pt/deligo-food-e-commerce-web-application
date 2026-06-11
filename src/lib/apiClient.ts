@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearAuthTokens } from "./authCookies";
 
 type ApiErrorResponse = {
   success?: boolean;
@@ -38,7 +39,28 @@ apiClient.interceptors.request.use((config) => {
 
   return config;
 });
+let isRedirecting = false;
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response?.status === 401 &&
+      typeof window !== "undefined" &&
+      !isRedirecting
+    ) {
+      isRedirecting = true;
+
+      clearAuthTokens();
+
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 export function getApiErrorMessage(error: unknown, fallbackMessage = "Request failed") {
   if (axios.isAxiosError(error)) {
     const payload = error.response?.data as ApiErrorResponse | undefined;

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface VendorDetailsModalProps {
   isOpen: boolean;
@@ -60,6 +61,7 @@ export default function VendorDetailsModal({
   onClose,
   vendorId,
 }: VendorDetailsModalProps) {
+  const { t } = useTranslation();
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +90,8 @@ export default function VendorDetailsModal({
 
   // Build static map URL using vendor coordinates
   const mapStaticUrl =
-    vendorData?.businessLocation?.latitude && vendorData?.businessLocation?.longitude
+    vendorData?.businessLocation?.latitude &&
+    vendorData?.businessLocation?.longitude
       ? `https://maps.googleapis.com/maps/api/staticmap?center=${vendorData.businessLocation.latitude},${vendorData.businessLocation.longitude}&zoom=15&size=600x240&markers=color:red%7C${vendorData.businessLocation.latitude},${vendorData.businessLocation.longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_LOCATION_API_KEY}`
       : null;
 
@@ -97,11 +100,11 @@ export default function VendorDetailsModal({
     : "";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-250 overflow-hidden rounded-xl bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2 sm:p-4">
+      <div className="w-full max-w-250 max-h-[95vh] overflow-y-auto rounded-xl bg-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-8 py-6">
-          <div className="flex items-center gap-4">
+        <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-4 sm:px-6 md:px-8 sm:py-5 md:py-6">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button
               onClick={onClose}
               className="rounded-full p-2 transition hover:bg-gray-100"
@@ -111,28 +114,30 @@ export default function VendorDetailsModal({
 
             <div>
               <h1 className="text-[18px] font-semibold text-gray-900">
-                {vendorData?.businessDetails?.businessName || "Vendor"}
+                {vendorData?.businessDetails?.businessName || t("vendor")}
               </h1>
-              <p className="text-sm text-gray-500">Please contact the vendor</p>
+              <p className="text-xs sm:text-sm text-gray-500">
+                {t("pleaseContactVendor")}
+              </p>
             </div>
           </div>
 
-          <button className="rounded-full p-2 text-pink-600 transition hover:bg-pink-50">
+          <button className="self-end sm:self-auto rounded-full p-2 text-pink-600 transition hover:bg-pink-50">
             <Share2 size={18} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="grid grid-cols-1 gap-8 p-8 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 p-4 sm:gap-8 sm:p-6 md:p-8 lg:grid-cols-2">
           {/* Left Column */}
-          <div className="space-y-4">
+          <div className="space-y-4 sm:space-y-5 md:space-y-6">
             {/* Map */}
             <div className="relative overflow-hidden rounded-xl shadow-md">
               {loading ? (
-                <div className="h-60 w-full animate-pulse bg-gray-200" />
+                <div className="h-48 sm:h-60 w-full animate-pulse bg-gray-200" />
               ) : error ? (
-                <div className="flex h-60 w-full items-center justify-center bg-gray-100 text-gray-500">
-                  <p>Map unavailable</p>
+                <div className="flex h-48 sm:h-60 w-full items-center justify-center bg-gray-100 text-gray-500">
+                  <p>{t("mapUnavailable")}</p>
                 </div>
               ) : mapStaticUrl ? (
                 <Image
@@ -140,68 +145,70 @@ export default function VendorDetailsModal({
                   alt="Vendor Location"
                   width={600}
                   height={350}
-                  className="h-60 w-full object-cover"
+                  className="h-48 sm:h-60 w-full object-cover"
                   unoptimized
                 />
               ) : (
-                <div className="flex h-60 w-full items-center justify-center bg-gray-100 text-gray-500">
-                  <p>Location not available</p>
+                <div className="flex h-48 sm:h-60 w-full items-center justify-center bg-gray-100 text-gray-500">
+                  <p>{t("locationNotAvailable")}</p>
                 </div>
               )}
 
-              <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 shadow-sm">
+              <div className="absolute left-3 top-3 sm:left-4 sm:top-4 flex items-center gap-1.5 sm:gap-2 rounded-full bg-white/95 px-2 py-1 sm:px-3 sm:py-1.5 shadow-sm">
                 <MapPin size={14} className="fill-pink-600 text-pink-600" />
                 <span className="text-xs font-medium text-gray-900">
-                  {vendorData?.businessDetails?.businessName || "Vendor"}
+                  {vendorData?.businessDetails?.businessName || t("vendor")}
                 </span>
               </div>
             </div>
 
             {/* Status Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <div className="rounded-full bg-green-100 p-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-gray-200 bg-gray-50 p-3 sm:p-4">
+                <div className="rounded-full bg-green-100 p-2 sm:p-3">
                   <Clock3 size={20} className="text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-green-600">
+                  <p className="text-xs sm:text-sm font-bold text-green-600">
                     {vendorData?.businessDetails?.isStoreOpen
-                      ? "Open now"
-                      : "Closed now"}
+                      ? t("openNow")
+                      : t("closedNow")}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-[11px] sm:text-xs text-gray-500">
                     {vendorData?.businessDetails?.openingHours &&
                     vendorData?.businessDetails?.closingHours
                       ? `${vendorData.businessDetails.openingHours} – ${vendorData.businessDetails.closingHours}`
-                      : "Hours not set"}
+                      : t("hoursNotSet")}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <div className="rounded-full bg-pink-100 p-3">
+              <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-gray-200 bg-gray-50 p-3 sm:p-4">
+                <div className="rounded-full bg-pink-100 p-2 sm:p-3">
                   <UtensilsCrossed size={20} className="text-pink-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-pink-600">
-                    Preparation Time
+                  <p className="text-xs sm:text-sm font-bold text-pink-600">
+                    {t("preparationTime")}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-[11px] sm:text-xs text-gray-500">
                     {vendorData?.businessDetails?.preparationTimeMinutes ?? "—"}{" "}
-                    minutes
+                    {t("minutes")}
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Address */}
-            <div className="rounded-xl border-l-4 border-pink-600 bg-gray-100 p-6">
-              <div className="flex gap-4">
-                <MapPin size={20} className="mt-1 text-pink-600" />
+            <div className="rounded-xl border-l-4 border-pink-600 bg-gray-100 p-4 sm:p-6">
+              <div className="flex gap-3 sm:gap-4">
+                <MapPin size={20} className="mt-1 text-pink-600 shrink-0" />
                 <div>
-                  <h3 className="mb-1 text-sm text-gray-500">Address</h3>
-                  <p className="text-sm text-gray-900">
-                    {fullAddress || "Address not provided"}
+                  <h3 className="mb-1 text-xs sm:text-sm text-gray-500">
+                    {t("address")}
+                  </h3>
+                  <p className="text-sm text-gray-900 wrap-break-words">
+                    {fullAddress || t("addressNotProvided")}
                   </p>
                 </div>
               </div>
@@ -209,47 +216,53 @@ export default function VendorDetailsModal({
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="space-y-5 sm:space-y-6">
             <div>
-              <h2 className="mb-4 text-lg font-semibold text-pink-600">
-                Contact Information
+              <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-pink-600">
+                {t("contactInformation")}
               </h2>
               <div className="space-y-3">
                 {/* Phone */}
-                <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50 p-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100">
+                <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-gray-100 bg-gray-50 p-3 sm:p-4">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-pink-100">
                     <Phone size={18} className="text-pink-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Phone</p>
-                    <p className="text-sm font-bold text-gray-900">
-                      {vendorData?.contactNumber || "N/A"}
+                    <p className="text-[11px] sm:text-xs text-gray-500">
+                      {t("phone")}
+                    </p>
+                    <p className="text-sm sm:text-base font-bold text-gray-900 break-all">
+                      {vendorData?.contactNumber || t("notProvided")}
                     </p>
                   </div>
                 </div>
 
                 {/* Email */}
-                <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50 p-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100">
+                <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-gray-100 bg-gray-50 p-3 sm:p-4">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-pink-100">
                     <Mail size={18} className="text-pink-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Email</p>
-                    <p className="text-sm font-bold text-gray-900">
-                      {vendorData?.email || "N/A"}
+                    <p className="text-[11px] sm:text-xs text-gray-500">
+                      {t("email")}
+                    </p>
+                    <p className="text-sm sm:text-base font-bold text-gray-900 break-all">
+                      {vendorData?.email || t("notProvided")}
                     </p>
                   </div>
                 </div>
 
                 {/* NIF */}
-                <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50 p-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100">
+                <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-gray-100 bg-gray-50 p-3 sm:p-4">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-pink-100">
                     <FileText size={18} className="text-pink-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">NIF Number</p>
-                    <p className="text-sm font-bold text-gray-900">
-                      {vendorData?.businessDetails?.NIF || "N/A"}
+                    <p className="text-[11px] sm:text-xs text-gray-500">
+                      {t("nifNumber")}
+                    </p>
+                    <p className="text-sm sm:text-base font-bold text-gray-900">
+                      {vendorData?.businessDetails?.NIF || t("notProvided")}
                     </p>
                   </div>
                 </div>
@@ -257,22 +270,21 @@ export default function VendorDetailsModal({
             </div>
 
             {/* Other Details */}
-            <div className="border-t border-gray-200 pt-4">
-              <h2 className="mb-4 text-lg font-semibold text-pink-600">
-                Other details
+            <div className="border-t border-gray-200 pt-4 sm:pt-5">
+              <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-pink-600">
+                {t("otherDetails")}
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <p className="mb-1 text-sm text-gray-500">
-                    Legal entity name
+                  <p className="mb-1 text-xs sm:text-sm text-gray-500">
+                    {t("legalEntityName")}
                   </p>
-                  <p className="font-bold text-gray-900">
-                    {vendorData?.businessDetails?.businessName || "N/A"}
+                  <p className="font-bold text-gray-900 wrap-break-words">
+                    {vendorData?.businessDetails?.businessName || t("notProvided")}
                   </p>
                 </div>
-                <div className="rounded-lg bg-gray-100 p-4 italic leading-relaxed text-gray-500">
-                  The partner commits to only offer products that comply with
-                  the applicable rules of European Union law.
+                <div className="rounded-lg bg-gray-100 p-3 sm:p-4 italic leading-relaxed text-gray-500 text-sm sm:text-base">
+                  {t("euComplianceNotice")}
                 </div>
               </div>
             </div>
@@ -281,15 +293,15 @@ export default function VendorDetailsModal({
 
         {/* Loading / Error overlay */}
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-sm">
-            <div className="rounded-lg bg-white p-4 shadow-lg">
-              Loading vendor details...
+          <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-sm rounded-xl">
+            <div className="rounded-lg bg-white p-4 shadow-lg text-sm sm:text-base">
+              {t("loadingVendorDetails")}
             </div>
           </div>
         )}
         {error && !loading && (
-          <div className="mx-8 mb-4 rounded-lg bg-red-50 p-3 text-center text-sm text-red-600">
-            {error}
+          <div className="mx-4 sm:mx-8 mb-4 rounded-lg bg-red-50 p-3 text-center text-xs sm:text-sm text-red-600">
+            {t("errorLoadingVendorDetails")}
           </div>
         )}
       </div>

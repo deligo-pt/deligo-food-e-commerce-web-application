@@ -9,14 +9,22 @@ import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import ProductDetailsModal from "./ProductDetailsModal";
 import VendorDetailsModal from "./VendorDetailsModal";
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
+import { useTranslation } from "@/hooks/useTranslation";
 
-function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function getDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -28,30 +36,40 @@ function formatTimeRange(totalMinutes: number): string {
   if (hours < 24) {
     const low = Math.floor(hours);
     const high = Math.ceil(hours + 10 / 60);
-    return low === high ? `${low} hour${low !== 1 ? 's' : ''}` : `${low} to ${high} hours`;
+    return low === high
+      ? `${low} hour${low !== 1 ? "s" : ""}`
+      : `${low} to ${high} hours`;
   }
   const days = totalMinutes / (60 * 24);
   if (days < 7) {
     const low = Math.floor(days);
     const high = Math.ceil(days + 10 / (60 * 24));
-    return low === high ? `${low} day${low !== 1 ? 's' : ''}` : `${low} to ${high} days`;
+    return low === high
+      ? `${low} day${low !== 1 ? "s" : ""}`
+      : `${low} to ${high} days`;
   }
   const weeks = totalMinutes / (60 * 24 * 7);
   if (weeks < 4) {
     const low = Math.floor(weeks);
     const high = Math.ceil(weeks + 10 / (60 * 24 * 7));
-    return low === high ? `${low} week${low !== 1 ? 's' : ''}` : `${low} to ${high} weeks`;
+    return low === high
+      ? `${low} week${low !== 1 ? "s" : ""}`
+      : `${low} to ${high} weeks`;
   }
   const months = totalMinutes / (60 * 24 * 30);
   if (months < 12) {
     const low = Math.floor(months);
     const high = Math.ceil(months + 10 / (60 * 24 * 30));
-    return low === high ? `${low} month${low !== 1 ? 's' : ''}` : `${low} to ${high} months`;
+    return low === high
+      ? `${low} month${low !== 1 ? "s" : ""}`
+      : `${low} to ${high} months`;
   }
   const years = totalMinutes / (60 * 24 * 365);
   const low = Math.floor(years);
   const high = Math.ceil(years + 10 / (60 * 24 * 365));
-  return low === high ? `${low} year${low !== 1 ? 's' : ''}` : `${low} to ${high} years`;
+  return low === high
+    ? `${low} year${low !== 1 ? "s" : ""}`
+    : `${low} to ${high} years`;
 }
 
 let cachedUserCoords: { lat: number; lng: number } | null = null;
@@ -61,7 +79,9 @@ async function fetchUserPrimaryAddress() {
   if (cachedUserCoords) return cachedUserCoords;
   try {
     const { data } = await apiClient.get("/profile");
-    const primary = data?.data?.deliveryAddresses?.find((a: any) => a.isActive === true);
+    const primary = data?.data?.deliveryAddresses?.find(
+      (a: any) => a.isActive === true,
+    );
     if (primary?.latitude && primary?.longitude) {
       cachedUserCoords = { lat: primary.latitude, lng: primary.longitude };
     }
@@ -132,6 +152,7 @@ interface VendorDetailsPageProps {
 export default function VendorDetailsPage({
   vendorId,
 }: VendorDetailsPageProps) {
+  const { t } = useTranslation();
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -202,9 +223,13 @@ export default function VendorDetailsPage({
     if (timeFetchedRef.current) return;
 
     const fetchTime = async () => {
-      const vendorCoords = vendor.businessLocation?.latitude && vendor.businessLocation?.longitude
-        ? { lat: vendor.businessLocation.latitude, lng: vendor.businessLocation.longitude }
-        : null;
+      const vendorCoords =
+        vendor.businessLocation?.latitude && vendor.businessLocation?.longitude
+          ? {
+              lat: vendor.businessLocation.latitude,
+              lng: vendor.businessLocation.longitude,
+            }
+          : null;
 
       if (!vendorCoords || !userCoords) {
         setEstimatedTime("Under 10 min");
@@ -218,14 +243,27 @@ export default function VendorDetailsPage({
         const res = await fetch(url);
         const data = await res.json();
 
-        if (data.status === "OK" && data.rows?.[0]?.elements?.[0]?.status === "OK") {
-          const minutes = Math.round(data.rows[0].elements[0].duration.value / 60);
+        if (
+          data.status === "OK" &&
+          data.rows?.[0]?.elements?.[0]?.status === "OK"
+        ) {
+          const minutes = Math.round(
+            data.rows[0].elements[0].duration.value / 60,
+          );
           setEstimatedTime(formatTimeRange(minutes));
         } else {
- 
-          const distance = getDistanceKm(vendorCoords.lat, vendorCoords.lng, userCoords.lat, userCoords.lng);
+          const distance = getDistanceKm(
+            vendorCoords.lat,
+            vendorCoords.lng,
+            userCoords.lat,
+            userCoords.lng,
+          );
           const estimatedMinutes = Math.round((distance / 30) * 60);
-          setEstimatedTime(estimatedMinutes < 10 ? "Under 10 min" : formatTimeRange(estimatedMinutes));
+          setEstimatedTime(
+            estimatedMinutes < 10
+              ? "Under 10 min"
+              : formatTimeRange(estimatedMinutes),
+          );
         }
       } catch (err) {
         console.error("Time estimation error", err);
@@ -258,7 +296,9 @@ export default function VendorDetailsPage({
   }
 
   const heroImage = vendor.storePhoto?.[0] || "/placeholder-store.jpg";
-  const displayTime = loadingTime ? "Calculating..." : estimatedTime || "Under 10 min";
+  const displayTime = loadingTime
+    ? "Calculating..."
+    : estimatedTime || "Under 10 min";
 
   const vendorCategoryNames =
     vendor.availableCategories?.map((cat) => cat.name) || [];
@@ -314,7 +354,7 @@ export default function VendorDetailsPage({
                       onClick={() => setIsVendorModalOpen(true)}
                       className="font-semibold text-pink-600"
                     >
-                      More Info →
+                      {t("moreInfo")} →
                     </button>
                     <div className="flex items-center gap-1">
                       <Star
@@ -361,7 +401,7 @@ export default function VendorDetailsPage({
         />
 
         <section>
-          <h2 className="mb-6 text-xl font-bold text-gray-900">Menu</h2>
+          <h2 className="mb-6 text-xl font-bold text-gray-900">{t("menu")}</h2>
 
           {productsLoading && (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -384,7 +424,7 @@ export default function VendorDetailsPage({
             !productsError &&
             filteredProducts.length === 0 && (
               <div className="rounded-2xl bg-gray-50 p-6 text-center text-gray-500">
-                No items found in this category.
+                {t("noItemsFoundInCategory")}
               </div>
             )}
 
@@ -414,7 +454,7 @@ export default function VendorDetailsPage({
                         />
                         {hasDiscount && (
                           <span className="absolute left-2 top-2 rounded-full bg-pink-600 px-2 py-1 text-[10px] font-bold text-white">
-                            {Math.round(product.pricing.discount)}% OFF
+                            {Math.round(product.pricing.discount)}% {t("off")}
                           </span>
                         )}
                       </div>
@@ -425,7 +465,7 @@ export default function VendorDetailsPage({
                           </h3>
                           <p className="mt-1 line-clamp-2 text-xs text-gray-500">
                             {product.description ||
-                              "Delicious item from our menu."}
+                              t("deliciousMenuItem")}
                           </p>
                         </div>
                         <div className="mt-4 flex items-end justify-between">

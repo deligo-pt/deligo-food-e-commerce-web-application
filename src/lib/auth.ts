@@ -110,7 +110,6 @@ async function requestJson<T>(url: string, body: unknown): Promise<T> {
 export async function sendLoginOtp(payload: LoginIdentifier): Promise<LoginResponse> {
   return requestJson<LoginResponse>("/auth/login-customer", payload);
 }
-
 export async function verifyLoginOtp(payload: {
   email?: string;
   contactNumber?: string;
@@ -118,5 +117,11 @@ export async function verifyLoginOtp(payload: {
   deviceDetails: DeviceDetails;
   forceLogin?: boolean;
 }): Promise<VerifyOtpResponse> {
-  return requestJson<VerifyOtpResponse>("/auth/verify-otp", payload);
+  return requestJson<VerifyOtpResponse>(
+    "/auth/verify-otp",
+    {
+      ...payload,
+      role: "CUSTOMER",
+    }
+  );
 }

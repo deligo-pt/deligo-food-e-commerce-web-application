@@ -10,6 +10,7 @@ import {
   updateDeliveryAddress,
   updateLiveLocation,
 } from "@/services/addressApi";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface AddressFormProps {
   coordinates: { lat: number; lng: number };
@@ -28,7 +29,10 @@ export default function AddressForm({
   addressId,
   onSuccess,
 }: AddressFormProps) {
-  const [addressType, setAddressType] = useState<"home" | "work" | "other">("home");
+  const { t } = useTranslation();
+  const [addressType, setAddressType] = useState<"home" | "work" | "other">(
+    "home",
+  );
   const [formData, setFormData] = useState({
     street: "",
     detailedAddress: "",
@@ -56,7 +60,7 @@ export default function AddressForm({
           ? "work"
           : initialAddress.addressType === "OTHER"
             ? "other"
-            : "home"
+            : "home",
       );
     }
   }, [initialAddress]);
@@ -70,11 +74,16 @@ export default function AddressForm({
       (results: any[], status: any) => {
         if (status !== "OK" || !results?.length) return;
         const comps = results[0].address_components;
-        let street = "", city = "", state = "", country = "", postalCode = "";
+        let street = "",
+          city = "",
+          state = "",
+          country = "",
+          postalCode = "";
         comps.forEach((c: any) => {
           if (c.types.includes("route")) street = c.long_name;
           if (c.types.includes("locality")) city = c.long_name;
-          if (c.types.includes("administrative_area_level_1")) state = c.long_name;
+          if (c.types.includes("administrative_area_level_1"))
+            state = c.long_name;
           if (c.types.includes("country")) country = c.long_name;
           if (c.types.includes("postal_code")) postalCode = c.long_name;
         });
@@ -86,11 +95,13 @@ export default function AddressForm({
           country: country,
           postalCode: postalCode,
         }));
-      }
+      },
     );
   }, [coordinates]);
 
-  const mapAddressTypeToBackend = (type: string): "HOME" | "OFFICE" | "OTHER" => {
+  const mapAddressTypeToBackend = (
+    type: string,
+  ): "HOME" | "OFFICE" | "OTHER" => {
     if (type === "home") return "HOME";
     if (type === "work") return "OFFICE";
     return "OTHER";
@@ -123,16 +134,26 @@ export default function AddressForm({
         await addDeliveryAddress(payload);
       }
 
-      toast.success(isEditMode ? "Address updated successfully!" : "Address added successfully!");
+      toast.success(
+        isEditMode
+          ? "Address updated successfully!"
+          : "Address added successfully!",
+      );
       onSuccess?.();
     } catch (error: any) {
       if (error.response && error.response.data) {
-        console.error("Server error response data:", JSON.stringify(error.response.data, null, 2));
+        console.error(
+          "Server error response data:",
+          JSON.stringify(error.response.data, null, 2),
+        );
       } else {
         console.error("Unexpected error:", error);
       }
       const serverMessage = error.response?.data?.message || error.message;
-      toast.error(serverMessage || "Failed to save address. Please check the console for details.");
+      toast.error(
+        serverMessage ||
+          "Failed to save address. Please check the console for details.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -142,13 +163,19 @@ export default function AddressForm({
     <div className="rounded-2xl bg-white p-6 shadow-sm md:p-8">
       <Toaster position="top-center" richColors />
       <div className="mb-8">
-        <h2 className="mb-2 text-2xl font-bold text-[#191c1d]">Address Details</h2>
-        <p className="text-sm text-[#5a4044]">Fill in the details to save this address for future deliveries.</p>
+        <h2 className="mb-2 text-2xl font-bold text-[#191c1d]">
+          {t("addressDetails")}
+        </h2>
+        <p className="text-sm text-[#5a4044]">
+          {t("addressDetailsDescription")}
+        </p>
       </div>
 
       {/* Address Label */}
       <div className="mb-8">
-        <label className="mb-4 block text-sm font-semibold text-[#191c1d]">Label Address As</label>
+        <label className="mb-4 block text-sm font-semibold text-[#191c1d]">
+          {t("labelAddressAs")}
+        </label>
         <div className="grid grid-cols-3 gap-3">
           {(["home", "work", "other"] as const).map((type) => (
             <button
@@ -164,7 +191,7 @@ export default function AddressForm({
               {type === "home" && <Home size={18} />}
               {type === "work" && <Building2 size={18} />}
               {type === "other" && <Globe size={18} />}
-              {type.charAt(0).toUpperCase() + type.slice(1)}
+              {t(type)}
             </button>
           ))}
         </div>
@@ -173,27 +200,35 @@ export default function AddressForm({
       {/* Street + Detailed */}
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">Street Address *</label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
+            {t("streetAddress")}
+          </label>
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
             <MapPin size={18} className="mr-3 text-[#5a4044]" />
             <input
               type="text"
               value={formData.street}
-              onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-              placeholder="Enter street address"
+              onChange={(e) =>
+                setFormData({ ...formData, street: e.target.value })
+              }
+              placeholder={t("enterStreetAddress")}
               className="h-14 w-full bg-transparent outline-none"
             />
           </div>
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">House / Apartment / Floor</label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
+            {t("houseApartmentFloor")}
+          </label>
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
             <Building2 size={18} className="mr-3 text-[#5a4044]" />
             <input
               type="text"
               value={formData.detailedAddress}
-              onChange={(e) => setFormData({ ...formData, detailedAddress: e.target.value })}
-              placeholder="Apt 4B, Floor 2"
+              onChange={(e) =>
+                setFormData({ ...formData, detailedAddress: e.target.value })
+              }
+              placeholder={t("apartmentPlaceholder")}
               className="h-14 w-full bg-transparent outline-none"
             />
           </div>
@@ -203,21 +238,28 @@ export default function AddressForm({
       {/* City + Postal */}
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">City *</label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
+            {t("city")}
+          </label>
           <input
             type="text"
             value={formData.city}
             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            placeholder="Enter city"
+            // placeholder="Enter city"
+            placeholder={t("enterCity")}
             className="h-14 w-full rounded-xl border border-[#e3bdc3] px-4 outline-none focus:border-[#b0004a]"
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">Postal Code *</label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
+            {t("postalCode")}
+          </label>
           <input
             type="text"
             value={formData.postalCode}
-            onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, postalCode: e.target.value })
+            }
             placeholder="1000-001"
             className="h-14 w-full rounded-xl border border-[#e3bdc3] px-4 outline-none focus:border-[#b0004a]"
           />
@@ -227,23 +269,31 @@ export default function AddressForm({
       {/* State + Country */}
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">State / Region</label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
+            {t("stateRegion")}
+          </label>
           <input
             type="text"
             value={formData.state}
-            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, state: e.target.value })
+            }
             placeholder="Lisbon"
             className="h-14 w-full rounded-xl border border-[#e3bdc3] px-4 outline-none focus:border-[#b0004a]"
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d]">Country</label>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d]">
+            {t("country")}
+          </label>
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
             <Globe size={18} className="mr-3 text-[#5a4044]" />
             <input
               type="text"
               value={formData.country}
-              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, country: e.target.value })
+              }
               className="h-14 w-full bg-transparent outline-none"
             />
           </div>
@@ -254,16 +304,26 @@ export default function AddressForm({
       <div className="mb-8 rounded-2xl border border-[#e3bdc3] bg-[#fafafa] p-5">
         <div className="mb-4 flex items-center gap-2">
           <Navigation size={18} className="text-[#b0004a]" />
-          <h3 className="font-semibold text-[#191c1d]">GPS Coordinates</h3>
+          <h3 className="font-semibold text-[#191c1d]">
+            {t("gpsCoordinates")}
+          </h3>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <p className="mb-1 text-xs uppercase tracking-wide text-[#5a4044]">Latitude</p>
-            <p className="rounded-lg bg-white px-4 py-3 font-mono text-sm">{coordinates.lat.toFixed(6)}</p>
+            <p className="mb-1 text-xs uppercase tracking-wide text-[#5a4044]">
+              {t("latitude")}
+            </p>
+            <p className="rounded-lg bg-white px-4 py-3 font-mono text-sm">
+              {coordinates.lat.toFixed(6)}
+            </p>
           </div>
           <div>
-            <p className="mb-1 text-xs uppercase tracking-wide text-[#5a4044]">Longitude</p>
-            <p className="rounded-lg bg-white px-4 py-3 font-mono text-sm">{coordinates.lng.toFixed(6)}</p>
+            <p className="mb-1 text-xs uppercase tracking-wide text-[#5a4044]">
+              {t("longitude")}
+            </p>
+            <p className="rounded-lg bg-white px-4 py-3 font-mono text-sm">
+              {coordinates.lng.toFixed(6)}
+            </p>
           </div>
         </div>
       </div>
@@ -274,7 +334,11 @@ export default function AddressForm({
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#b0004a] py-4 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
       >
         <Save size={18} />
-        {isSaving ? "Saving..." : isEditMode ? "Update Address" : "Save Address"}
+        {isSaving
+          ? t("saving")
+          : isEditMode
+            ? t("updateAddress")
+            : t("saveAddress")}
       </button>
     </div>
   );

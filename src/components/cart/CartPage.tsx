@@ -6,8 +6,10 @@ import { toast } from "sonner";
 import CartStoreCard from "./CartStoreCard";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function CartPage() {
+  const { t } = useTranslation();
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,34 +37,48 @@ export default function CartPage() {
   };
 
   // Optimistic removal of a single product (used by product row)
-  const removeProductFromCart = (productId: string, variationSku: string | null) => {
+  const removeProductFromCart = (
+    productId: string,
+    variationSku: string | null,
+  ) => {
     if (!cart) return;
 
     const newItems = cart.items.filter(
-      (item) => !(item.productId === productId && item.variationSku === variationSku)
+      (item) =>
+        !(item.productId === productId && item.variationSku === variationSku),
     );
 
     // Recalculate totals
-    const totalItems = newItems.reduce((sum, item) => sum + item.itemSummary.quantity, 0);
+    const totalItems = newItems.reduce(
+      (sum, item) => sum + item.itemSummary.quantity,
+      0,
+    );
     const totalOriginalPrice = newItems.reduce(
-      (sum, item) => sum + item.productPricing.originalPrice * item.itemSummary.quantity,
-      0
+      (sum, item) =>
+        sum + item.productPricing.originalPrice * item.itemSummary.quantity,
+      0,
     );
     const totalProductDiscount = newItems.reduce(
-      (sum, item) => sum + (item.productPricing.productDiscountAmount || 0) * item.itemSummary.quantity,
-      0
+      (sum, item) =>
+        sum +
+        (item.productPricing.productDiscountAmount || 0) *
+          item.itemSummary.quantity,
+      0,
     );
     const taxableAmount = newItems.reduce(
-      (sum, item) => sum + item.productPricing.priceAfterProductDiscount * item.itemSummary.quantity,
-      0
+      (sum, item) =>
+        sum +
+        item.productPricing.priceAfterProductDiscount *
+          item.itemSummary.quantity,
+      0,
     );
     const totalTaxAmount = newItems.reduce(
       (sum, item) => sum + (item.itemSummary.totalTaxAmount || 0),
-      0
+      0,
     );
     const grandTotal = newItems.reduce(
       (sum, item) => sum + item.itemSummary.grandTotal,
-      0
+      0,
     );
 
     setCart({
@@ -110,7 +126,7 @@ export default function CartPage() {
 
         return acc;
       },
-      {} as Record<string, any>
+      {} as Record<string, any>,
     );
 
     return Object.values(grouped);
@@ -129,7 +145,10 @@ export default function CartPage() {
         {/* Store cards skeleton */}
         <div className="space-y-6">
           {Array.from({ length: 2 }).map((_, idx) => (
-            <div key={idx} className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div
+              key={idx}
+              className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm"
+            >
               <div className="mb-6 flex items-start justify-between">
                 <div className="flex gap-4">
                   <div className="h-20 w-20 animate-pulse rounded-full bg-gray-200" />
@@ -181,18 +200,20 @@ export default function CartPage() {
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
       <div className="mb-10">
-        <p className="mb-3 text-sm text-gray-500">Home / Active Carts</p>
-        <h1 className="text-4xl font-extrabold text-gray-900">My Shopping Cart</h1>
+        <p className="mb-3 text-sm text-gray-500">{t("cartBreadcrumb")}</p>
+        <h1 className="text-4xl font-extrabold text-gray-900">
+          {t("myShoppingCart")}
+        </h1>
         <p className="mt-2 text-gray-500">
-          {cart?.totalItems ?? 0} item(s) in your cart
+          {cart?.totalItems ?? 0} {t("itemsInCart")}
         </p>
       </div>
 
       <div className="space-y-6">
         {stores.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-gray-300 p-12 text-center">
-            <h3 className="text-xl font-semibold">Your cart is empty</h3>
-            <p className="mt-2 text-gray-500">Add some products to continue.</p>
+            <h3 className="text-xl font-semibold">{t("yourCartIsEmpty")}</h3>
+            <p className="mt-2 text-gray-500">{t("addProductsToContinue")}</p>
           </div>
         ) : (
           stores.map((store: any) => (
