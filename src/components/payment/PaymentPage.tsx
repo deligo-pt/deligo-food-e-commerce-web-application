@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -11,13 +12,14 @@ import {
   ArrowRight,
   Lock,
   AlertCircle,
+  Star,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
 
-// Type definitions (adjust based on actual API response)
+// Type definitions
 interface CheckoutItem {
   productId: string;
   name: string;
@@ -52,6 +54,7 @@ interface DeliveryAddress {
 
 interface CheckoutSummary {
   _id: string;
+  vendorId: string;
   items: CheckoutItem[];
   orderCalculation: OrderCalculation;
   delivery: Delivery;
@@ -59,12 +62,37 @@ interface CheckoutSummary {
   deliveryAddress: DeliveryAddress;
   paymentStatus: string;
 }
+interface Vendor {
+  id: string;
+  userId: string;
+  name: { firstName: string; lastName: string };
+  businessDetails: {
+    businessName: string;
+    businessType: string;
+    openingHours: string;
+    closingHours: string;
+    closingDays: string[];
+    isStoreOpen: boolean;
+  };
+  businessLocation: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+    latitude: number;
+    longitude: number;
+  };
+  storePhoto: string[];
+  rating: { average: number; totalReviews: number };
+}
 
 export default function PaymentPage() {
   const searchParams = useSearchParams();
   const checkoutId = searchParams.get("checkoutId");
 
   const [summary, setSummary] = useState<CheckoutSummary | null>(null);
+  const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>("CARD");
@@ -74,27 +102,50 @@ export default function PaymentPage() {
   const [showVoucherInput, setShowVoucherInput] = useState(false);
 
   useEffect(() => {
-    if (!checkoutId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setError("No checkout ID provided");
-      setLoading(false);
-      return;
-    }
+  if (!checkoutId) {
+    setError("No checkout ID provided");
+    setLoading(false);
+    return;
+  }
 
-    const fetchSummary = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.get(`/checkout/summary/${checkoutId}`);
-        setSummary(response.data.data);
-      } catch (err) {
-        setError(getApiErrorMessage(err, "Failed to load checkout summary"));
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      // 1. Fetch checkout summary
+      const summaryResponse = await apiClient.get(
+        `/checkout/summary/${checkoutId}`
+      );
+
+      const summaryData = summaryResponse.data.data;
+
+      setSummary(summaryData);
+
+      // 2. Fetch vendor immediately
+      if (summaryData.vendorId) {
+        const vendorResponse = await apiClient.get("/vendors/customer");
+
+        const vendors: Vendor[] = vendorResponse.data.data;
+
+        const matchedVendor = vendors.find(
+          (v) => v.id === summaryData.vendorId
+        );
+
+        if (matchedVendor) {
+          setVendor(matchedVendor);
+        }
       }
-    };
+    } catch (err) {
+      setError(
+        getApiErrorMessage(err, "Failed to load checkout information")
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchSummary();
-  }, [checkoutId]);
+  fetchData();
+}, [checkoutId]);
 
   const handlePlaceOrder = async () => {
     if (!summary) return;
@@ -108,13 +159,11 @@ export default function PaymentPage() {
       });
 
       const { redirectUrl } = response.data.data;
-      // Redirect to payment gateway
       window.location.href = redirectUrl;
     } catch (err) {
       const errorMsg = getApiErrorMessage(err, "Failed to process payment");
       setPaymentError(errorMsg);
 
-      // Call failure endpoint to reset payment status
       try {
         await apiClient.post(`/payment/reduniq/handle-payment-failure/${summary._id}`);
       } catch (failureErr) {
@@ -147,6 +196,9 @@ export default function PaymentPage() {
   const subtotal = orderCalculation.totalOriginalPrice - orderCalculation.totalProductDiscount;
   const orderTotal = payoutSummary.grandTotal;
 
+  const vendorRating = vendor?.rating.average ?? 0;
+  const vendorReviewCount = vendor?.rating.totalReviews ?? 0;
+
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
@@ -161,20 +213,51 @@ export default function PaymentPage() {
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
+                {/* Delivery From - dynamic vendor */}
                 <div>
                   <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">
                     Delivery From
                   </p>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100">
-                      <Store className="h-5 w-5 text-pink-600" />
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-pink-100">
+                      {vendor?.storePhoto?.[0] ? (
+                        <Image
+                          src={vendor.storePhoto[0]}
+                          alt={vendor.businessDetails.businessName}
+                          className="h-full w-full object-cover"
+                          width={48}
+                          height={48}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Store className="h-5 w-5 text-pink-600" />
+                        </div>
+                      )}
                     </div>
                     <div>
-                      <p className="font-semibold">Nova Vida Market</p>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <span className="text-xs font-medium text-green-600">Online</span>
-                      </div>
+                      <p className="font-semibold">
+                        {vendor?.businessDetails.businessName}
+                      </p>
+                      {vendor && (
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`h-2 w-2 rounded-full ${
+                              vendor.businessDetails.isStoreOpen ? "bg-green-500" : "bg-red-500"
+                            }`}
+                          />
+                          <span className="text-xs font-medium text-gray-600">
+                            {vendor.businessDetails.isStoreOpen ? "Open" : "Closed"}
+                          </span>
+                          {vendorRating > 0 && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-xs font-medium">
+                                {vendorRating.toFixed(1)} ({vendorReviewCount})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -244,7 +327,7 @@ export default function PaymentPage() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN - Payment Summary */}
+          {/* RIGHT COLUMN - Payment Summary (unchanged) */}
           <div className="w-full lg:w-100">
             <div className="sticky top-6 rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
               <h2 className="mb-6 text-2xl font-bold">Payment Summary</h2>
@@ -268,7 +351,9 @@ export default function PaymentPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Tax</span>
-                  <span className="font-semibold">€{orderCalculation.totalTaxAmount.toFixed(2)}</span>
+                  <span className="font-semibold">
+                    €{orderCalculation.totalTaxAmount.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Delivery Fee</span>
