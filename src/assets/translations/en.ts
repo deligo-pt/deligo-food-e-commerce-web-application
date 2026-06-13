@@ -410,6 +410,24 @@ const en = {
   notAvailable: "N/A",
 
   paid: "PAID",
+
+  creditDebitCard: "Credit/Debit Card",
+  visaMastercardMaestro: "Visa, Mastercard, Maestro",
+
+  mbway: "MB WAY",
+  fastMobilePayment: "Fast mobile payment",
+
+  applePay: "Apple Pay",
+  oneTapCheckout: "One-tap checkout",
+
+  otherMethods: "Other Methods",
+  paypalGooglePayEtc: "PayPal, Google Pay, etc.",
+
+  recommended: "Recommended",
+
+  confirmPaymentMethod: "Confirm Payment Method",
+
+  paymentInfoSecure: "Your payment information is encrypted and secure",
 };
 
 export default en;

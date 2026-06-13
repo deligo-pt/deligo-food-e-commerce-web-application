@@ -2,37 +2,38 @@
 
 import { useState } from "react";
 import { CreditCard, Smartphone, Grid3X3, Wallet, Lock } from "lucide-react";
-
-const paymentMethods = [
-  {
-    id: "card",
-    title: "Credit/Debit Card",
-    subtitle: "Visa, Mastercard, Maestro",
-    icon: CreditCard,
-    recommended: true,
-  },
-  {
-    id: "mbway",
-    title: "MB WAY",
-    subtitle: "Fast mobile payment",
-    icon: Smartphone,
-  },
-  {
-    id: "applepay",
-    title: "Apple Pay",
-    subtitle: "One-tap checkout",
-    icon: Grid3X3,
-  },
-  {
-    id: "other",
-    title: "Other Methods",
-    subtitle: "PayPal, Google Pay, etc.",
-    icon: Wallet,
-  },
-];
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function PaymentMethodPage() {
+  const { t } = useTranslation();
   const [selectedMethod, setSelectedMethod] = useState("card");
+  const paymentMethods = [
+    {
+      id: "card",
+      title: t("creditDebitCard"),
+      subtitle: t("visaMastercardMaestro"),
+      icon: CreditCard,
+      recommended: true,
+    },
+    {
+      id: "mbway",
+      title: t("mbway"),
+      subtitle: t("fastMobilePayment"),
+      icon: Smartphone,
+    },
+    {
+      id: "applepay",
+      title: t("applePay"),
+      subtitle: t("oneTapCheckout"),
+      icon: Grid3X3,
+    },
+    {
+      id: "other",
+      title: t("otherMethods"),
+      subtitle: t("paypalGooglePayEtc"),
+      icon: Wallet,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#f6f6f6]">
@@ -42,10 +43,10 @@ export default function PaymentMethodPage() {
           {/* Header */}
           <div className="border-b border-gray-200 px-4 py-6">
             <h1 className="text-[32px] font-bold text-[#222]">
-              Payment Methods
+              {t("paymentMethods")}
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Choose your preferred way to pay for your delicious meal.
+              {t("paymentMethodsDescription")}
             </p>
           </div>
 
@@ -82,7 +83,7 @@ export default function PaymentMethodPage() {
 
                         {method.recommended && (
                           <span className="rounded-full bg-[#c5005a] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                            Recommended
+                            {t("recommended")}
                           </span>
                         )}
                       </div>
@@ -109,12 +110,12 @@ export default function PaymentMethodPage() {
           {/* Footer Action */}
           <div className="border-t border-gray-200 bg-[#fafafa] px-4 py-8">
             <button className="w-full rounded-md bg-[#c5005a] py-4 text-base font-semibold text-white shadow-md transition hover:opacity-95">
-              Confirm Payment Method
+              {t("confirmPaymentMethod")}
             </button>
 
             <div className="mt-4 flex items-center justify-center gap-1 text-[11px] text-gray-500">
               <Lock className="h-3 w-3" />
-              <span>Your payment information is encrypted and secure</span>
+              <span>{t("paymentInfoSecure")}</span>
             </div>
           </div>
         </div>

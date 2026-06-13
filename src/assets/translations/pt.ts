@@ -425,7 +425,26 @@ const pt = {
   riderHeadingLocation: "O estafeta está a caminho da sua localização",
 
   orderDelivered: "O pedido foi entregue",
-  paid: "PAGO"
+  paid: "PAGO",
+
+  creditDebitCard: "Cartão de Crédito/Débito",
+  visaMastercardMaestro: "Visa, Mastercard, Maestro",
+
+  mbway: "MB WAY",
+  fastMobilePayment: "Pagamento móvel rápido",
+
+  applePay: "Apple Pay",
+  oneTapCheckout: "Pagamento com um toque",
+
+  otherMethods: "Outros Métodos",
+  paypalGooglePayEtc: "PayPal, Google Pay, etc.",
+
+  recommended: "Recomendado",
+
+  confirmPaymentMethod: "Confirmar Método de Pagamento",
+
+  paymentInfoSecure:
+    "As suas informações de pagamento estão encriptadas e seguras",
 };
 
 export default pt;
