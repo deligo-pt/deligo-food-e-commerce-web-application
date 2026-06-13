@@ -13,75 +13,68 @@ import {
   ChevronDown,
   ArrowRight,
 } from "lucide-react";
-
-const contactItems = [
-  {
-    icon: MessageSquare,
-    title: "Live Chat",
-    description: "Real-time support",
-    action: "Start conversation",
-  },
-  {
-    icon: Mail,
-    title: "Email Us",
-    description: "contact@deligo.com",
-    action: "Send email",
-  },
-  {
-    icon: Phone,
-    title: "Call Us",
-    description: "+351 920 136 680",
-    action: "Call support",
-  },
-];
-
-const categories = [
-  {
-    icon: HelpCircle,
-    title: "General FAQs",
-    description:
-      "Find answers to common questions about tracking, delivery times, and more.",
-  },
-  {
-    icon: ShoppingBag,
-    title: "Order Issues",
-    description:
-      "Problems with your current order? Learn how to track, modify, or report errors.",
-  },
-  {
-    icon: CreditCard,
-    title: "Payments & Refunds",
-    description:
-      "Billing queries, voucher issues, and everything regarding refund processing.",
-  },
-  {
-    icon: User,
-    title: "Account & Profile",
-    description:
-      "Update your details, manage preferences, and secure your account.",
-  },
-];
-
-const faqs = [
-  {
-    question: "How can I track my order?",
-    answer:
-      "You can track your order in real-time by going to the Orders tab and selecting your active order. From there, you'll see a live map with your rider's location and an estimated delivery time.",
-  },
-  {
-    question: "What are the delivery charges?",
-    answer:
-      "Delivery charges vary based on distance and demand in your area. The exact delivery fee will always be displayed before checkout.",
-  },
-  {
-    question: "How do I apply a voucher?",
-    answer:
-      "Enter your voucher code during checkout and the discount will be automatically applied if the voucher is valid.",
-  },
-];
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function HelpCenterPage() {
+  const { t } = useTranslation();
   const [openFaq, setOpenFaq] = useState<number>(0);
+
+  const contactItems = [
+    {
+      icon: MessageSquare,
+      title: t("liveChat"),
+      description: t("realTimeSupport"),
+      action: t("startConversation"),
+    },
+    {
+      icon: Mail,
+      title: t("emailUs"),
+      description: "contact@deligo.com",
+      action: t("sendEmail"),
+    },
+    {
+      icon: Phone,
+      title: t("callUs"),
+      description: "+351 920 136 680",
+      action: t("callSupport"),
+    },
+  ];
+  const categories = [
+    {
+      icon: HelpCircle,
+      title: t("generalFaqs"),
+      description: t("generalFaqsDescription"),
+    },
+    {
+      icon: ShoppingBag,
+      title: t("orderIssues"),
+      description: t("orderIssuesDescription"),
+    },
+    {
+      icon: CreditCard,
+      title: t("paymentsRefunds"),
+      description: t("paymentsRefundsDescription"),
+    },
+    {
+      icon: User,
+      title: t("accountProfile"),
+      description: t("accountProfileDescription"),
+    },
+  ];
+  const faqs = [
+    {
+      question: t("faqTrackOrderQuestion"),
+      answer: t("faqTrackOrderAnswer"),
+    },
+    {
+      question: t("faqDeliveryChargesQuestion"),
+      answer: t("faqDeliveryChargesAnswer"),
+    },
+    {
+      question: t("faqVoucherQuestion"),
+      answer: t("faqVoucherAnswer"),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
@@ -89,12 +82,11 @@ export default function HelpCenterPage() {
         {/* Header */}
         <section className="mb-14 text-center">
           <h1 className="text-3xl font-bold text-[#191c1d] md:text-4xl">
-            Help Center
+            {t("helpCenter")}
           </h1>
 
           <p className="mx-auto mt-3 max-w-xl text-sm text-[#6b7280] md:text-base">
-            How can we help you today? Search our help articles or get in touch
-            with our support team.
+            {t("helpCenterDescription")}
           </p>
 
           {/* Search */}
@@ -103,7 +95,7 @@ export default function HelpCenterPage() {
 
             <input
               type="text"
-              placeholder="Search for articles, topics, keywords..."
+              placeholder={t("searchHelpPlaceholder")}
               className="h-14 w-full rounded-2xl border border-[#e5e7eb] bg-white pl-14 pr-4 text-sm shadow-sm outline-none transition-all focus:border-[#d81b60]"
             />
           </div>
@@ -112,17 +104,16 @@ export default function HelpCenterPage() {
           <div className="relative mt-10 overflow-hidden rounded-3xl bg-[#d81b60] p-6 text-left text-white shadow-lg md:flex md:items-center md:justify-between md:p-10">
             <div className="relative z-10 max-w-2xl">
               <h2 className="text-xl font-bold md:text-2xl">
-                Need immediate help?
+                {t("needImmediateHelp")}
               </h2>
 
               <p className="mt-3 text-sm text-white/90 md:text-base">
-                Our dedicated support team is available 24/7 to assist with your
-                active orders and deliveries. We are here whenever you need us.
+                {t("needImmediateHelpDescription")}
               </p>
             </div>
 
             <button className="relative z-10 mt-5 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#d81b60] transition hover:scale-105 md:mt-0">
-              Chat with us now
+              {t("chatWithUsNow")}
             </button>
 
             <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
@@ -133,11 +124,11 @@ export default function HelpCenterPage() {
         <section className="mb-16">
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold text-[#191c1d]">
-              Get in touch
+              {t("getInTouch")}
             </h2>
 
             <p className="mt-2 text-sm text-[#6b7280]">
-              Prefer reaching out directly? We are just a click away.
+              {t("getInTouchDescription")}
             </p>
           </div>
 
@@ -175,7 +166,7 @@ export default function HelpCenterPage() {
         {/* Categories */}
         <section className="mb-16">
           <h2 className="mb-6 text-xl font-bold text-[#191c1d]">
-            Browse by Category
+            {t("browseByCategory")}
           </h2>
 
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -208,11 +199,11 @@ export default function HelpCenterPage() {
         <section className="mx-auto max-w-4xl">
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold text-[#191c1d]">
-              Popular Questions
+              {t("popularQuestions")}
             </h2>
 
             <p className="mt-2 text-sm text-[#6b7280]">
-              Quick answers to things you ask us the most.
+              {t("popularQuestionsDescription")}
             </p>
           </div>
 
@@ -226,9 +217,7 @@ export default function HelpCenterPage() {
                   className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
                 >
                   <button
-                    onClick={() =>
-                      setOpenFaq(isOpen ? -1 : index)
-                    }
+                    onClick={() => setOpenFaq(isOpen ? -1 : index)}
                     className="flex w-full items-center justify-between px-6 py-5 text-left"
                   >
                     <span className="font-medium text-[#191c1d]">

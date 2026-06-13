@@ -459,6 +459,67 @@ const en = {
   upcomingCountries: "Upcoming Countries",
 
   upcoming: "Upcoming",
+
+  helpCenterDescription:
+    "How can we help you today? Search our help articles or get in touch with our support team.",
+
+  searchHelpPlaceholder: "Search for articles, topics, keywords...",
+
+  needImmediateHelp: "Need immediate help?",
+
+  needImmediateHelpDescription:
+    "Our dedicated support team is available 24/7 to assist with your active orders and deliveries. We are here whenever you need us.",
+
+  chatWithUsNow: "Chat with us now",
+
+  getInTouch: "Get in touch",
+
+  getInTouchDescription:
+    "Prefer reaching out directly? We are just a click away.",
+
+  liveChat: "Live Chat",
+  realTimeSupport: "Real-time support",
+  startConversation: "Start conversation",
+
+  emailUs: "Email Us",
+  sendEmail: "Send email",
+
+  callUs: "Call Us",
+  callSupport: "Call support",
+
+  browseByCategory: "Browse by Category",
+
+  generalFaqs: "General FAQs",
+  generalFaqsDescription:
+    "Find answers to common questions about tracking, delivery times, and more.",
+
+  orderIssues: "Order Issues",
+  orderIssuesDescription:
+    "Problems with your current order? Learn how to track, modify, or report errors.",
+
+  paymentsRefunds: "Payments & Refunds",
+  paymentsRefundsDescription:
+    "Billing queries, voucher issues, and everything regarding refund processing.",
+
+  accountProfile: "Account & Profile",
+  accountProfileDescription:
+    "Update your details, manage preferences, and secure your account.",
+
+  popularQuestions: "Popular Questions",
+
+  popularQuestionsDescription: "Quick answers to things you ask us the most.",
+
+  faqTrackOrderQuestion: "How can I track my order?",
+  faqTrackOrderAnswer:
+    "You can track your order in real-time by going to the Orders tab and selecting your active order. From there, you'll see a live map with your rider's location and an estimated delivery time.",
+
+  faqDeliveryChargesQuestion: "What are the delivery charges?",
+  faqDeliveryChargesAnswer:
+    "Delivery charges vary based on distance and demand in your area. The exact delivery fee will always be displayed before checkout.",
+
+  faqVoucherQuestion: "How do I apply a voucher?",
+  faqVoucherAnswer:
+    "Enter your voucher code during checkout and the discount will be automatically applied if the voucher is valid.",
 };
 
 export default en;

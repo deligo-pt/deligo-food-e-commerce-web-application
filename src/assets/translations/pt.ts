@@ -478,6 +478,68 @@ const pt = {
   upcomingCountries: "Próximos Países",
 
   upcoming: "Em Breve",
+
+  helpCenterDescription:
+    "Como podemos ajudá-lo hoje? Pesquise nos nossos artigos de ajuda ou entre em contacto com a nossa equipa de suporte.",
+
+  searchHelpPlaceholder: "Pesquisar artigos, tópicos, palavras-chave...",
+
+  needImmediateHelp: "Precisa de ajuda imediata?",
+
+  needImmediateHelpDescription:
+    "A nossa equipa de suporte dedicada está disponível 24 horas por dia, 7 dias por semana, para ajudar com os seus pedidos e entregas. Estamos aqui sempre que precisar.",
+
+  chatWithUsNow: "Fale connosco agora",
+
+  getInTouch: "Entre em contacto",
+
+  getInTouchDescription:
+    "Prefere falar diretamente connosco? Estamos apenas a um clique de distância.",
+
+  liveChat: "Chat ao Vivo",
+  realTimeSupport: "Suporte em tempo real",
+  startConversation: "Iniciar conversa",
+
+  emailUs: "Envie-nos um email",
+  sendEmail: "Enviar email",
+
+  callUs: "Ligue-nos",
+  callSupport: "Ligar para o suporte",
+
+  browseByCategory: "Navegar por Categoria",
+
+  generalFaqs: "Perguntas Frequentes",
+  generalFaqsDescription:
+    "Encontre respostas para perguntas comuns sobre rastreamento, tempos de entrega e muito mais.",
+
+  orderIssues: "Problemas com Pedidos",
+  orderIssuesDescription:
+    "Problemas com o seu pedido atual? Saiba como acompanhar, modificar ou reportar erros.",
+
+  paymentsRefunds: "Pagamentos e Reembolsos",
+  paymentsRefundsDescription:
+    "Questões de faturação, vouchers e tudo relacionado com o processamento de reembolsos.",
+
+  accountProfile: "Conta e Perfil",
+  accountProfileDescription:
+    "Atualize os seus dados, gere preferências e mantenha a sua conta segura.",
+
+  popularQuestions: "Perguntas Populares",
+
+  popularQuestionsDescription:
+    "Respostas rápidas para as perguntas que mais recebemos.",
+
+  faqTrackOrderQuestion: "Como posso acompanhar o meu pedido?",
+  faqTrackOrderAnswer:
+    "Pode acompanhar o seu pedido em tempo real acedendo ao separador Pedidos e selecionando o seu pedido ativo. A partir daí verá um mapa em direto com a localização do estafeta e o tempo estimado de entrega.",
+
+  faqDeliveryChargesQuestion: "Quais são os custos de entrega?",
+  faqDeliveryChargesAnswer:
+    "Os custos de entrega variam consoante a distância e a procura na sua área. O valor exato será sempre apresentado antes da finalização da compra.",
+
+  faqVoucherQuestion: "Como aplico um voucher?",
+  faqVoucherAnswer:
+    "Introduza o código do voucher durante o checkout e o desconto será aplicado automaticamente se o voucher for válido.",
 };
 
 export default pt;
