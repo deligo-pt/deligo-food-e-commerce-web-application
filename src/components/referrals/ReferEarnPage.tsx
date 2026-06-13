@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Gift, Copy, Share2, Clock3, Users, Wallet, Check } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import ReferEarnSkeleton from "./ReferEarnSkeleton";
 
 interface ReferralResponse {
   success: boolean;
@@ -97,13 +98,7 @@ export default function ReferEarnPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-lg font-medium text-slate-600">
-          {t("loadingReferralData")}
-        </p>
-      </div>
-    );
+    return <ReferEarnSkeleton />;
   }
 
   if (error) {
