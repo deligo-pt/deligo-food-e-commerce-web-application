@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Clock3, Ticket } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import VouchersSkeleton from "./VouchersSkeleton";
 
 type Offer = {
   _id: string;
@@ -102,15 +103,19 @@ export default function VouchersPageContent() {
     }
   };
 
+  if (loading) {
+    return <VouchersSkeleton />;
+  }
+
   return (
     <section className="w-full bg-[#f8f9fa] px-8 py-12">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="mb-2 text-[32px] font-bold text-[#191c1d]">{t("vouchers")}</h1>
+        <h1 className="mb-2 text-[32px] font-bold text-[#191c1d]">
+          {t("vouchers")}
+        </h1>
 
-        <p className="text-[#5a4044]">
-          {t("vouchersDescription")}
-        </p>
+        <p className="text-[#5a4044]">{t("vouchersDescription")}</p>
       </div>
 
       {/* Tabs */}
@@ -139,9 +144,6 @@ export default function VouchersPageContent() {
           )}
         </button>
       </div>
-
-      {/* Loading */}
-      {loading && <div className="py-20 text-center">{t("loadingOffers")}</div>}
 
       {/* Error */}
       {!loading && error && (
