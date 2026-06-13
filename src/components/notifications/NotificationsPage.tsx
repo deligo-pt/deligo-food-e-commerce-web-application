@@ -12,6 +12,7 @@ import {
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
 import Link from "next/link";
+import NotificationsSkeleton from "./NotificationsSkeleton";
 
 interface NotificationData {
   orderId?: string;
@@ -160,11 +161,7 @@ export default function NotificationsPage() {
   const promosCount = notifications.filter((n) => n.type === "PROMO").length;
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f6f6f7] flex items-center justify-center">
-        <div className="text-[#c1005b]">{t("loadingNotifications")}</div>
-      </div>
-    );
+    return <NotificationsSkeleton />;
   }
 
   if (error) {
