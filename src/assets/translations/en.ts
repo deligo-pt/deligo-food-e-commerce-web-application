@@ -451,6 +451,14 @@ const en = {
     "You both receive rewards automatically after a successful referral.",
 
   loadingReferralData: "Loading referral data...",
+  selectCountry: "Select Country",
+
+  selectCountryDescription:
+    "Choose your location to start ordering the best food near you.",
+
+  upcomingCountries: "Upcoming Countries",
+
+  upcoming: "Upcoming",
 };
 
 export default en;

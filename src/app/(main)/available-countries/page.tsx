@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 function CountryFlag({
   countryCode,
@@ -35,23 +36,22 @@ const upcomingCountries = [
 ];
 
 export default function SelectCountryPage() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-[#f7f7f7] px-4 py-10">
       <div className="mx-auto max-w-md">
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-slate-900">
-            Select Country
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-900">{t("selectCountry")}</h1>
           <p className="mt-2 text-sm text-slate-500">
-            Choose your location to start ordering the best food near you.
+            {t("selectCountryDescription")}
           </p>
         </div>
 
         {/* Available */}
         <div className="mb-8">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-            Available Countries
+            {t("availableCountries")}
           </p>
 
           <button className="flex w-full items-center justify-between rounded-2xl bg-white px-5 py-5 shadow-sm transition hover:shadow-md">
@@ -75,7 +75,7 @@ export default function SelectCountryPage() {
         {/* Upcoming */}
         <div>
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-            Upcoming Countries
+            {t("upcomingCountries")}
           </p>
 
           <div className="space-y-3">
@@ -99,7 +99,7 @@ export default function SelectCountryPage() {
 
                 <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
                   <span className="h-2 w-2 rounded-full bg-green-500" />
-                  Upcoming
+                  {t("upcoming")}
                 </span>
               </div>
             ))}

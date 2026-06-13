@@ -470,6 +470,14 @@ const pt = {
   loadingReferralData: "A carregar dados de referência...",
 
   notAvailable: "N/D",
+  selectCountry: "Selecionar País",
+
+  selectCountryDescription:
+    "Escolha a sua localização para começar a encomendar a melhor comida perto de si.",
+
+  upcomingCountries: "Próximos Países",
+
+  upcoming: "Em Breve",
 };
 
 export default pt;
