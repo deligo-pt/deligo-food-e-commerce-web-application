@@ -324,7 +324,27 @@ const en = {
 
   optional: "optional",
   noAddressSaved: "No address saved",
-  
+
+  manageAccountInfo: "Manage your account information and preferences",
+
+  basicInformation: "Basic Information",
+
+  searchAddressPlaceholder: "Search for your address...",
+
+  labelAs: "Label as",
+
+  houseApartmentFloorPlaceholder: "e.g. 123, 4th Floor, Door B",
+
+  cancel: "Cancel",
+
+  uploadingImage: "Uploading image...",
+  saveChanges: "Save Changes",
+  sendOtp: "Send OTP",
+  sending: "Sending...",
+  otp: "OTP",
+  verify: "Verify",
+  verifying: "Verifying...",
+  mobilePlaceholder: "+1234567890",
 };
 
 export default en;

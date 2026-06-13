@@ -342,6 +342,28 @@ const pt = {
   optional: "opcional",
 
   noAddressSaved: "Nenhum endereço guardado",
+
+  manageAccountInfo: "Gerencie as informações e preferências da sua conta",
+
+  basicInformation: "Informação Básica",
+
+  searchAddressPlaceholder: "Pesquise o seu endereço...",
+
+  labelAs: "Identificar como",
+
+  houseApartmentFloorPlaceholder: "ex. 123, 4º Andar, Porta B",
+
+  cancel: "Cancelar",
+
+  uploadingImage: "A carregar imagem...",
+
+  saveChanges: "Guardar Alterações",
+  sendOtp: "Enviar OTP",
+  sending: "A enviar...",
+  otp: "OTP",
+  verify: "Verificar",
+  verifying: "A verificar...",
+  mobilePlaceholder: "+1234567890",
 };
 
 export default pt;
