@@ -311,6 +311,20 @@ const en = {
   accountSettings: "Account Settings",
   helpCenter: "Help Center",
   availableCountries: "Available Countries",
+
+  myProfile: "My Profile",
+  viewAccountDetails: "View your account details",
+
+  firstName: "First Name",
+  lastName: "Last Name",
+  emailAddress: "Email Address",
+  mobileNumber: "Mobile Number",
+  nifTaxId: "NIF / Tax ID",
+  deliveryAddress: "Delivery Address",
+
+  optional: "optional",
+  noAddressSaved: "No address saved",
+  
 };
 
 export default en;

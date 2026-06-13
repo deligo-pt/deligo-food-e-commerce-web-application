@@ -328,6 +328,20 @@ const pt = {
   availableCountries: "Países Disponíveis",
 
   version: "Versão",
+
+  myProfile: "O Meu Perfil",
+  viewAccountDetails: "Ver os detalhes da sua conta",
+
+  firstName: "Primeiro Nome",
+  lastName: "Apelido",
+  emailAddress: "Endereço de Email",
+  mobileNumber: "Número de Telemóvel",
+  nifTaxId: "NIF / ID Fiscal",
+  deliveryAddress: "Endereço de Entrega",
+
+  optional: "opcional",
+
+  noAddressSaved: "Nenhum endereço guardado",
 };
 
 export default pt;

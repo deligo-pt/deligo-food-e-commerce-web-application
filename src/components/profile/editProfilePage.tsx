@@ -7,6 +7,7 @@ import { FileText, Mail, MapPin, Pencil, Phone, User } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
 import Link from "next/link";
 import EditProfileSkeleton from "./EditProfileSkeleton";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ProfileData {
   name: { firstName: string; lastName: string };
@@ -17,6 +18,7 @@ interface ProfileData {
 }
 
 export default function EditProfilePage() {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,8 +73,11 @@ export default function EditProfilePage() {
     <section className="bg-[#f8f9fa] py-10">
       <div className="mx-auto max-w-5xl px-4">
         <div className="mb-6 flex items-center gap-2 text-xs text-[#5a4044]">
-          <span>Home</span> <span>›</span> <span>Settings</span> <span>›</span>
-          <span className="font-semibold text-[#191c1d]">Edit Profile</span>
+          <span>{t("home")}</span>
+          <span>{t("settings")}</span>
+          <span className="font-semibold text-[#191c1d]">
+            {t("editProfile")}
+          </span>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-[#e3bdc3] bg-white shadow-sm">
@@ -93,10 +98,11 @@ export default function EditProfilePage() {
                 </div>
               </div>
               <h1 className="mt-5 text-3xl font-bold text-[#191c1d]">
-                My Profile
+                {t("myProfile")}
               </h1>
+
               <p className="mt-1 text-sm text-[#5a4044]">
-                View your account details
+                {t("viewAccountDetails")}
               </p>
             </div>
           </div>
@@ -104,49 +110,52 @@ export default function EditProfilePage() {
           <div className="p-6 md:p-10">
             <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
               <InputField
-                label="First Name"
+                label={t("firstName")}
                 icon={<User size={18} />}
                 value={formData.firstName}
                 readOnly
                 required
               />
               <InputField
-                label="Last Name"
+                label={t("lastName")}
                 icon={<User size={18} />}
                 value={formData.lastName}
                 readOnly
                 optional
+                optionalText={t("optional")}
               />
               <InputField
-                label="Email Address"
+                label={t("emailAddress")}
                 icon={<Mail size={18} />}
                 type="email"
                 value={formData.email}
                 readOnly
               />
               <InputField
-                label="Mobile Number"
+                label={t("mobileNumber")}
                 icon={<Phone size={18} />}
                 type="tel"
                 value={formData.mobile}
                 readOnly
                 optional
-                placeholder="Not provided"
+                optionalText={t("optional")}
+                placeholder={t("notProvided")}
               />
               <InputField
-                label="NIF / Tax ID"
+                label={t("nifTaxId")}
                 icon={<FileText size={18} />}
                 value={formData.nif}
                 readOnly
                 optional
+                optionalText={t("optional")}
               />
               <div className="md:col-span-2">
                 <InputField
-                  label="Delivery Address"
+                  label={t("deliveryAddress")}
                   icon={<MapPin size={18} />}
                   value={formData.address}
                   readOnly
-                  placeholder="No address saved"
+                  placeholder={t("noAddressSaved")}
                 />
               </div>
             </div>
@@ -155,7 +164,7 @@ export default function EditProfilePage() {
               <div className="flex justify-end">
                 <Link href="/edit-profile-form">
                   <button className="flex items-center justify-center gap-2 rounded-xl bg-[#b0004a] px-10 py-3 font-semibold text-white hover:bg-[#90003b]">
-                    Edit Profile <Pencil size={18} />
+                    {t("editProfile")} <Pencil size={18} />
                   </button>
                 </Link>
               </div>
@@ -166,7 +175,6 @@ export default function EditProfilePage() {
     </section>
   );
 }
-
 
 function ErrorState({ message }: { message: string }) {
   return (
@@ -186,13 +194,16 @@ function InputField({
   type = "text",
   required,
   optional,
+  optionalText,
   placeholder,
 }: any) {
   return (
     <div>
       <label className="mb-2 block text-sm font-medium text-[#5a4044]">
         {label} {required && <span className="text-[#b0004a]">*</span>}
-        {optional && <span className="text-xs text-gray-400"> (optional)</span>}
+        {optional && (
+          <span className="text-xs text-gray-400"> ({optionalText})</span>
+        )}
       </label>
       <div className="flex h-14 items-center rounded-xl border border-[#e3bdc3] bg-white px-4">
         {icon}
