@@ -299,6 +299,35 @@ const pt = {
     "Preparado na hora com ingredientes premium.",
 
   addToCart: "Adicionar ao Carrinho",
+  editProfile: "Editar Perfil",
+  vouchers: "Vouchers",
+  rewardPoints: "Pontos de Recompensa",
+
+  deligoPro: "DeliGo Pro",
+  deligoProDescription:
+    "Desbloqueie entregas gratuitas e ofertas exclusivas em todos os pedidos.",
+  learnMore: "Saber Mais",
+
+  ordersAndPayments: "Pedidos e Pagamentos",
+  preferencesAndMore: "Preferências e Mais",
+
+  ordersDescription: "Veja e acompanhe os seus pedidos atuais e anteriores",
+
+  paymentMethods: "Métodos de Pagamento",
+  paymentMethodsDescription:
+    "Gerencie os seus cartões e contas de pagamento guardados",
+
+  referrals: "Referências",
+  referralsDescription: "Ganhe recompensas ao convidar amigos para o DeliGo",
+
+  savedAddresses: "Endereços Guardados",
+  favoriteOrders: "Pedidos Favoritos",
+
+  accountSettings: "Definições da Conta",
+  helpCenter: "Centro de Ajuda",
+  availableCountries: "Países Disponíveis",
+
+  version: "Versão",
 };
 
 export default pt;

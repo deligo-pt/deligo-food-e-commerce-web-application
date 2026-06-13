@@ -285,6 +285,32 @@ const en = {
     "Freshly prepared with premium ingredients.",
 
   addToCart: "Add To Cart",
+  editProfile: "Edit Profile",
+  vouchers: "Vouchers",
+  rewardPoints: "Reward Points",
+
+  deligoPro: "DeliGo Pro",
+  deligoProDescription:
+    "Unlock free delivery and exclusive deals on every order.",
+  learnMore: "Learn More",
+
+  ordersAndPayments: "Orders & Payments",
+  preferencesAndMore: "Preferences & More",
+
+  version: "Version",
+  ordersDescription: "View and track your current or past orders",
+
+  paymentMethods: "Payment Methods",
+  paymentMethodsDescription: "Manage your saved cards and payment accounts",
+
+  referrals: "Referrals",
+  referralsDescription: "Earn rewards by inviting your friends to DeliGo",
+
+  savedAddresses: "Saved Addresses",
+  favoriteOrders: "Favorite Orders",
+  accountSettings: "Account Settings",
+  helpCenter: "Help Center",
+  availableCountries: "Available Countries",
 };
 
 export default en;
