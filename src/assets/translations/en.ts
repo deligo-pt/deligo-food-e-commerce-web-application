@@ -559,6 +559,23 @@ const en = {
   primary: "PRIMARY",
 
   noSavedAddressesFound: "No saved addresses found.",
+
+  vouchersDescription: "Save more on your favorite meals with DeliGo vouchers.",
+  available: "Available",
+  expired: "Expired",
+  loadingOffers: "Loading offers...",
+  noExpiredVouchers: "No expired vouchers",
+  noExpiredVouchersDescription:
+    "All your used or timed-out vouchers will appear here. Currently, you are all caught up!",
+  noAvailableVouchers: "No available vouchers.",
+  copied: "Copied",
+  copy: "Copy",
+  termsAndConditionsApply: "T&C Apply",
+  failedToCopyCode: "Failed to copy code",
+  failedToLoadOffers: "Failed to load offers",
+  expiresInOneDay: "Expires in 1 day",
+  expiresIn: "Expires in",
+  days: "days",
 };
 
 export default en;

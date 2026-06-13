@@ -580,6 +580,23 @@ const pt = {
   primary: "PRINCIPAL",
 
   noSavedAddressesFound: "Nenhuma morada guardada encontrada.",
+  vouchersDescription:
+    "Poupe mais nas suas refeições favoritas com os vouchers DeliGo.",
+  available: "Disponíveis",
+  expired: "Expirado",
+  loadingOffers: "A carregar ofertas...",
+  noExpiredVouchers: "Sem vouchers expirados",
+  noExpiredVouchersDescription:
+    "Todos os vouchers utilizados ou expirados aparecerão aqui. Neste momento está tudo em dia!",
+  noAvailableVouchers: "Não existem vouchers disponíveis.",
+  copied: "Copiado",
+  copy: "Copiar",
+  termsAndConditionsApply: "Aplicam-se T&C",
+  failedToCopyCode: "Falha ao copiar o código",
+  failedToLoadOffers: "Falha ao carregar ofertas",
+  expiresInOneDay: "Expira em 1 dia",
+  expiresIn: "Expira em",
+  days: "dias",
 };
 
 export default pt;
