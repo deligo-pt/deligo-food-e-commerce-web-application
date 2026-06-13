@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/apiClient";
 import OrderCard from "./OrderCard";
 import OrdersPageSkeleton from "./OrdersPageSkeleton";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function OrdersPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"ongoing" | "history">("ongoing");
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,10 +49,12 @@ export default function OrdersPage() {
     <section className="min-h-screen bg-[#f8f9fa] py-8">
       <div className="mx-auto max-w-5xl px-4 md:px-8">
         <div className="mb-8">
-          <h1 className="text-[32px] font-bold text-[#191c1d]">My Orders</h1>
+          <h1 className="text-[32px] font-bold text-[#191c1d]">
+            {t("myOrders")}
+          </h1>
 
           <p className="mt-1 text-sm text-[#5a4044]">
-            Track your active orders and view your order history.
+            {t("trackOrdersDescription")}
           </p>
         </div>
 
@@ -61,7 +65,7 @@ export default function OrdersPage() {
               activeTab === "ongoing" ? "text-[#b0004a]" : "text-[#5a4044]"
             }`}
           >
-            Ongoing
+            {t("ongoing")}
             {activeTab === "ongoing" && (
               <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#b0004a]" />
             )}
@@ -73,7 +77,7 @@ export default function OrdersPage() {
               activeTab === "history" ? "text-[#b0004a]" : "text-[#5a4044]"
             }`}
           >
-            History
+            {t("history")}
             {activeTab === "history" && (
               <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#b0004a]" />
             )}
@@ -84,7 +88,7 @@ export default function OrdersPage() {
           <div className="space-y-6">
             {ongoingOrders.length === 0 ? (
               <div className="flex h-75 items-center justify-center rounded-xl bg-white">
-                <p className="text-[#5a4044]">No ongoing orders</p>
+                <p className="text-[#5a4044]">{t("noOngoingOrders")}</p>
               </div>
             ) : (
               ongoingOrders.map((order) => (
@@ -109,8 +113,8 @@ export default function OrdersPage() {
                   progress={order.orderStatus === "ACCEPTED" ? 65 : 15}
                   progressText={
                     order.orderStatus === "ACCEPTED"
-                      ? "Chef is preparing your meal"
-                      : "Waiting for restaurant confirmation"
+                      ? t("chefPreparingMeal")
+                      : t("waitingRestaurantConfirmation")
                   }
                 />
               ))
@@ -120,9 +124,7 @@ export default function OrdersPage() {
           <div className="space-y-6">
             {historyOrders.length === 0 ? (
               <div className="flex h-75 items-center justify-center rounded-xl bg-white">
-                <p className="text-[#5a4044]">
-                  Your previous orders will appear here
-                </p>
+                <p className="text-[#5a4044]">{t("previousOrdersMessage")}</p>
               </div>
             ) : (
               historyOrders.map((order) => (
@@ -143,7 +145,7 @@ export default function OrdersPage() {
                     )
                     .join(", ")}
                   progress={100}
-                  progressText="Delivered"
+                  progressText={t("delivered")}
                 />
               ))
             )}

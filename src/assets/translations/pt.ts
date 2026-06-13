@@ -364,6 +364,24 @@ const pt = {
   verify: "Verificar",
   verifying: "A verificar...",
   mobilePlaceholder: "+1234567890",
+  myOrders: "Os Meus Pedidos",
+
+  trackOrdersDescription:
+    "Acompanhe os seus pedidos ativos e veja o histórico de pedidos.",
+
+  ongoing: "Em Curso",
+  history: "Histórico",
+
+  noOngoingOrders: "Sem pedidos em curso",
+
+  previousOrdersMessage: "Os seus pedidos anteriores aparecerão aqui",
+
+  chefPreparingMeal: "O chef está a preparar a sua refeição",
+
+  waitingRestaurantConfirmation: "A aguardar confirmação do restaurante",
+
+  accepted: "Aceite",
+  pending: "Pendente",
 };
 
 export default pt;

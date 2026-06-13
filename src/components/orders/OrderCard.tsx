@@ -3,6 +3,7 @@
 import { CheckCircle, Clock3, UtensilsCrossed } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface OrderCardProps {
   restaurant: string;
@@ -27,6 +28,7 @@ export default function OrderCard({
   progressText,
   image,
 }: OrderCardProps) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
       {/* Header */}
@@ -46,7 +48,9 @@ export default function OrderCard({
             <h3 className="font-semibold text-[#191c1d]">{restaurant}</h3>
 
             <div className="mt-1 flex items-center gap-2 text-[11px] text-[#5a4044]">
-              <span>Order #{orderId}</span>
+              <span>
+                {t("order")} #{orderId}
+              </span>
               <span>•</span>
               <span>{date}</span>
             </div>
@@ -59,12 +63,12 @@ export default function OrderCard({
           {status === "accepted" ? (
             <div className="flex items-center gap-1 rounded-full bg-pink-50 px-2 py-1 text-xs text-[#b0004a]">
               <CheckCircle size={12} />
-              Accepted
+              {t("accepted")}
             </div>
           ) : (
             <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">
               <Clock3 size={12} />
-              Pending
+              {t("pending")}
             </div>
           )}
         </div>
@@ -108,7 +112,7 @@ export default function OrderCard({
           href={`/orders/track-order/${orderId}`}
           className="block w-full rounded-lg bg-[#b0004a] py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
         >
-          Track Order
+          {t("trackOrder")}
         </Link>
       </div>
     </div>

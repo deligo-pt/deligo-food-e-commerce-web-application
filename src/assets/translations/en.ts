@@ -345,6 +345,25 @@ const en = {
   verify: "Verify",
   verifying: "Verifying...",
   mobilePlaceholder: "+1234567890",
+  myOrders: "My Orders",
+
+  trackOrdersDescription:
+    "Track your active orders and view your order history.",
+
+  ongoing: "Ongoing",
+  history: "History",
+
+  noOngoingOrders: "No ongoing orders",
+
+  previousOrdersMessage: "Your previous orders will appear here",
+
+  chefPreparingMeal: "Chef is preparing your meal",
+
+  waitingRestaurantConfirmation: "Waiting for restaurant confirmation",
+ 
+  accepted: "Accepted",
+  pending: "Pending",
+
 };
 
 export default en;
