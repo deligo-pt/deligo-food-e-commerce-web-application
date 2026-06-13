@@ -540,6 +540,40 @@ const pt = {
   faqVoucherQuestion: "Como aplico um voucher?",
   faqVoucherAnswer:
     "Introduza o código do voucher durante o checkout e o desconto será aplicado automaticamente se o voucher for válido.",
+
+  settingsDescription:
+    "Gerencie a experiência da aplicação, detalhes da conta e preferências.",
+
+  appSettings: "Definições da Aplicação",
+
+  darkMode: "Modo Escuro",
+  darkModeDescription: "Ajustar a aparência da aplicação",
+
+  notificationsDescription: "Ativar atualizações de pedidos e promoções",
+
+  locationServices: "Serviços de Localização",
+  locationServicesDescription:
+    "Para deteção mais rápida do endereço de entrega",
+
+  language: "Idioma",
+
+  orderPreferences: "Preferências de Pedido",
+
+  defaultDeliveryTime: "Tempo de Entrega Padrão",
+  asap: "O mais rápido possível",
+
+  dietaryPreferences: "Preferências Alimentares",
+  noneSet: "Nenhuma definida",
+
+  legal: "Legal",
+
+  termsOfService: "Termos de Serviço",
+  privacyPolicy: "Política de Privacidade",
+
+  about: "Sobre",
+
+  deleteAccount: "Eliminar Conta",
+  deleteAccountDescription: "Eliminar permanentemente a sua conta",
 };
 
 export default pt;

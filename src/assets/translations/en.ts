@@ -520,6 +520,39 @@ const en = {
   faqVoucherQuestion: "How do I apply a voucher?",
   faqVoucherAnswer:
     "Enter your voucher code during checkout and the discount will be automatically applied if the voucher is valid.",
+
+  settingsDescription:
+    "Manage your app experience, account details, and preferences.",
+
+  appSettings: "App Settings",
+
+  darkMode: "Dark Mode",
+  darkModeDescription: "Adjust app appearance",
+
+  notificationsDescription: "Enable order updates and promos",
+
+  locationServices: "Location Services",
+  locationServicesDescription: "For faster delivery address detection",
+
+  language: "Language",
+
+  orderPreferences: "Order Preferences",
+
+  defaultDeliveryTime: "Default Delivery Time",
+  asap: "ASAP",
+
+  dietaryPreferences: "Dietary Preferences",
+  noneSet: "None set",
+
+  legal: "Legal",
+
+  termsOfService: "Terms of Service",
+  privacyPolicy: "Privacy Policy",
+
+  about: "About",
+
+  deleteAccount: "Delete Account",
+  deleteAccountDescription: "Permanently delete your account",
 };
 
 export default en;

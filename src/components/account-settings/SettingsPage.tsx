@@ -12,8 +12,10 @@ import {
   ExternalLink,
   Trash2,
 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [locationServices, setLocationServices] = useState(true);
@@ -23,9 +25,11 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-5xl px-4 py-8 md:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-3xl font-bold text-neutral-900">Settings</h1>
+          <h1 className="text-3xl font-bold text-neutral-900">
+            {t("settings")}
+          </h1>
           <p className="mt-2 text-sm text-neutral-500">
-            Manage your app experience, account details, and preferences.
+            {t("settingsDescription")}
           </p>
         </div>
 
@@ -33,37 +37,37 @@ export default function SettingsPage() {
           {/* App Settings */}
           <section>
             <h2 className="mb-4 px-1 text-lg font-semibold text-neutral-900">
-              App Settings
+              {t("appSettings")}
             </h2>
 
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
               <ToggleRow
                 icon={<Moon size={22} />}
-                title="Dark Mode"
-                description="Adjust app appearance"
+                title={t("darkMode")}
+                description={t("darkModeDescription")}
                 checked={darkMode}
                 onChange={() => setDarkMode(!darkMode)}
               />
 
               <ToggleRow
                 icon={<Bell size={22} />}
-                title="Notifications"
-                description="Enable order updates and promos"
+                title={t("notifications")}
+                description={t("notificationsDescription")}
                 checked={notifications}
                 onChange={() => setNotifications(!notifications)}
               />
 
               <ToggleRow
                 icon={<MapPin size={22} />}
-                title="Location Services"
-                description="For faster delivery address detection"
+                title={t("locationServices")}
+                description={t("locationServicesDescription")}
                 checked={locationServices}
                 onChange={() => setLocationServices(!locationServices)}
               />
 
               <LinkRow
                 icon={<Languages size={22} />}
-                title="Language"
+                title={t("language")}
                 description="English"
               />
             </div>
@@ -72,20 +76,20 @@ export default function SettingsPage() {
           {/* Order Preferences */}
           <section>
             <h2 className="mb-4 px-1 text-lg font-semibold text-neutral-900">
-              Order Preferences
+              {t("orderPreferences")}
             </h2>
 
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
               <LinkRow
                 icon={<Clock3 size={22} />}
-                title="Default Delivery Time"
-                description="ASAP"
+                title={t("defaultDeliveryTime")}
+                description={t("asap")}
               />
 
               <LinkRow
                 icon={<UtensilsCrossed size={22} />}
-                title="Dietary Preferences"
-                description="None set"
+                title={t("dietaryPreferences")}
+                description={t("noneSet")}
                 isLast
               />
             </div>
@@ -94,15 +98,17 @@ export default function SettingsPage() {
           {/* Legal */}
           <section>
             <h2 className="mb-4 px-1 text-lg font-semibold text-neutral-900">
-              Legal
+              {t("legal")}
             </h2>
 
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-              <ExternalRow title="Terms of Service" />
-              <ExternalRow title="Privacy Policy" />
+              <ExternalRow title={t("termsOfService")} />
+              <ExternalRow title={t("privacyPolicy")} />
 
               <div className="flex items-center justify-between px-5 py-5">
-                <span className="font-medium text-neutral-900">About</span>
+                <span className="font-medium text-neutral-900">
+                  {t("about")}
+                </span>
 
                 <span className="text-xs text-neutral-500">Version 1.0.0</span>
               </div>
@@ -112,7 +118,7 @@ export default function SettingsPage() {
           {/* Account */}
           <section>
             <h2 className="mb-4 px-1 text-lg font-semibold text-neutral-900">
-              Account
+              {t("account")}
             </h2>
 
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
@@ -122,10 +128,12 @@ export default function SettingsPage() {
                 </div>
 
                 <div>
-                  <p className="font-semibold text-red-600">Delete Account</p>
+                  <p className="font-semibold text-red-600">
+                    {t("deleteAccount")}
+                  </p>
 
                   <p className="text-xs text-neutral-500">
-                    Permanently delete your account
+                    {t("deleteAccountDescription")}
                   </p>
                 </div>
               </button>
