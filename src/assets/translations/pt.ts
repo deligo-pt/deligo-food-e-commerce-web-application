@@ -597,6 +597,48 @@ const pt = {
   expiresInOneDay: "Expira em 1 dia",
   expiresIn: "Expira em",
   days: "dias",
+  loginFastReliable:
+    "Entrega de comida rápida e confiável com uma experiência de login simples.",
+  welcomeBack: "Bem-vindo de volta",
+  loginOrCreateAccount: "Entrar ou criar uma conta",
+
+  mobile: "Telemóvel",
+
+  enterOtp: "Introduza o OTP",
+
+  selectCountryCode: "Selecionar código do país",
+  chooseCountryAndDialCode: "Escolha o seu país e código de marcação",
+
+  enterReferralCode: "Introduza o código de referência",
+
+  haveReferralCode: "Tem um código de referência?",
+
+  sendingOtp: "A enviar OTP...",
+
+  changeDetails: "Alterar dados",
+
+  verifyOtp: "Verificar OTP",
+  verifyingOtp: "A verificar...",
+
+  resendOtp: "Reenviar OTP",
+  resendingOtp: "A reenviar OTP...",
+
+  otpSentTo: "OTP enviado para",
+
+  byContinuingAgree: "Ao continuar, concorda com os nossos",
+
+  selectLanguage: "Selecionar idioma",
+
+  english: "Inglês",
+  portuguese: "Português",
+
+  deviceLimitExceeded: "Limite de dispositivos excedido",
+  deviceLimitExceededDescription:
+    "Atingiu o número máximo de dispositivos permitidos. Pretende remover uma sessão existente e iniciar sessão neste dispositivo?",
+
+  removeSession: "Remover",
+  removeReferralCode: "Remove",
+  portugues: "Português",
 };
 
 export default pt;

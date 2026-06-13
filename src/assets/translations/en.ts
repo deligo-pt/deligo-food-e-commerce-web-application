@@ -576,6 +576,49 @@ const en = {
   expiresInOneDay: "Expires in 1 day",
   expiresIn: "Expires in",
   days: "days",
+  loginFastReliable:
+    "Fast, reliable food delivery with a simple sign-in experience.",
+  welcomeBack: "Welcome Back",
+  loginOrCreateAccount: "Login or create an account",
+
+  mobile: "Mobile",
+
+  enterOtp: "Enter OTP",
+
+  selectCountryCode: "Select country code",
+  chooseCountryAndDialCode: "Choose your country and dial code",
+
+  enterReferralCode: "Enter referral code",
+
+  haveReferralCode: "Have a referral code?",
+
+  sendingOtp: "Sending OTP...",
+
+  changeDetails: "Change details",
+
+  verifyOtp: "Verify OTP",
+  verifyingOtp: "Verifying...",
+
+  resendOtp: "Resend OTP",
+  resendingOtp: "Resending OTP...",
+
+  otpSentTo: "OTP sent to",
+
+  byContinuingAgree: "By continuing, you agree to our",
+
+  selectLanguage: "Select Language",
+
+  english: "English",
+  portuguese: "Português",
+
+  deviceLimitExceeded: "Device Limit Exceeded",
+  deviceLimitExceededDescription:
+    "You have reached your maximum device limit. Do you want to remove an existing session and log in here?",
+
+  removeSession: "Remove",
+  removeReferralCode: "Remove",
+  portugues: "Português",
+  
 };
 
 export default en;
