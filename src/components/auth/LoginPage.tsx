@@ -17,6 +17,7 @@ import Image from "next/image";
 import { COUNTRY_OPTIONS, type CountryOption } from "../../data/countryCodes";
 import { useLoginFlow } from "../../hooks/useLoginFlow";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useStore } from "@/stores/translationStore";
 
 function CountryFlag({
   countryCode,
@@ -84,13 +85,14 @@ function ClearSessionModal({
 
 export default function LoginPage() {
   const { t } = useTranslation();
+  const lang = useStore((state) => state.lang);
+  const setLang = useStore((state) => state.setLang);
   const {
     mode,
     step,
     showReferral,
     showLanguageModal,
     showCountryMenu,
-    language,
     selectedCountry,
     email,
     mobileNumber,
@@ -101,14 +103,12 @@ export default function LoginPage() {
     isResendingOtp,
     errorMessage,
     successMessage,
-    languageLabel,
     loginHint,
     loginIdentifier,
     showDeviceLimitModal,
     setShowReferral,
     setShowLanguageModal,
     setShowCountryMenu,
-    setLanguage,
     setSelectedCountry,
     setEmail,
     setMobileNumber,
@@ -452,7 +452,7 @@ export default function LoginPage() {
                   className="inline-flex items-center gap-2 rounded-full bg-[#f5f5f5] px-5 py-3 text-[15px] font-medium text-[#616161] shadow-[0_1px_0_rgba(0,0,0,0.02)]"
                 >
                   <Globe size={18} />
-                  {languageLabel}
+                  {lang === "pt" ? "Português" : "English"}
                   <ChevronDown size={16} />
                 </button>
               </div>
@@ -495,12 +495,12 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setLanguage("english");
+                  setLang("en");
                   setShowLanguageModal(false);
                 }}
                 className={[
                   "flex w-full items-center justify-between rounded-3xl border px-5 py-5 text-left transition-all",
-                  language === "english"
+                  lang === "en"
                     ? "border-[#d7357c] bg-[#fff4f8]"
                     : "border-[#f0f0f0] bg-[#fafafa]",
                 ].join(" ")}
@@ -511,19 +511,19 @@ export default function LoginPage() {
                     {t("english")}
                   </span>
                 </div>
-                {language === "english" ? (
+                {lang === "en" ? (
                   <Check size={28} className="text-[#d7357c]" />
                 ) : null}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setLanguage("portugues");
+                  setLang("pt");
                   setShowLanguageModal(false);
                 }}
                 className={[
                   "flex w-full items-center justify-between rounded-3xl border px-5 py-5 text-left transition-all",
-                  language === "portugues"
+                  lang === "pt"
                     ? "border-[#d7357c] bg-[#fff4f8]"
                     : "border-[#f0f0f0] bg-[#fafafa]",
                 ].join(" ")}
@@ -534,7 +534,7 @@ export default function LoginPage() {
                     {t("portugues")}
                   </span>
                 </div>
-                {language === "portugues" ? (
+                {lang === "pt" ? (
                   <Check size={28} className="text-[#d7357c]" />
                 ) : null}
               </button>
