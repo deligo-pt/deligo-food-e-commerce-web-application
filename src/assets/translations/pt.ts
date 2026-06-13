@@ -382,6 +382,50 @@ const pt = {
 
   accepted: "Aceite",
   pending: "Pendente",
+  loadingMap: "A carregar mapa...",
+
+  restaurant: "Restaurante",
+
+  restaurantPlaceholder: "Restaurante",
+  locationPlaceholder: "Localização",
+
+  restaurantAddressPending:
+    "O endereço do restaurante aparecerá após a confirmação do pedido",
+
+  restaurantAddressComingSoon: "Endereço disponível em breve",
+
+  items: "Itens",
+
+  billSummary: "Resumo da Fatura",
+
+  totalAmount: "Valor Total",
+
+  orderStatus: "Estado do Pedido",
+
+  support: "Suporte",
+
+  inProgress: "Em Progresso",
+
+  orderPending: "Pedido Pendente",
+  waitingRestaurantResponse: "A aguardar resposta do restaurante",
+
+  orderAccepted: "Pedido Aceite",
+  restaurantAcceptedOrder: "O restaurante aceitou o seu pedido",
+
+  preparing: "Preparação",
+  restaurantPreparingMeal: "O restaurante está a preparar a sua refeição",
+
+  readyForPickup: "Pronto para Recolha",
+  orderReadyForPickup: "O seu pedido está pronto para recolha",
+
+  pickedUp: "Recolhido",
+  riderPickedUpOrder: "O estafeta recolheu o seu pedido",
+
+  onTheWay: "A Caminho",
+  riderHeadingLocation: "O estafeta está a caminho da sua localização",
+
+  orderDelivered: "O pedido foi entregue",
+  paid: "PAGO"
 };
 
 export default pt;

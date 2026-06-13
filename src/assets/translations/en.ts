@@ -360,10 +360,56 @@ const en = {
   chefPreparingMeal: "Chef is preparing your meal",
 
   waitingRestaurantConfirmation: "Waiting for restaurant confirmation",
- 
+
   accepted: "Accepted",
   pending: "Pending",
+  loadingMap: "Loading map...",
 
+  restaurant: "Restaurant",
+
+  restaurantPlaceholder: "Restaurant",
+  locationPlaceholder: "Location",
+
+  restaurantAddressPending:
+    "Restaurant address will appear after order confirmation",
+
+  restaurantAddressComingSoon: "Address coming soon",
+
+  items: "Items",
+
+  billSummary: "Bill Summary",
+
+  totalAmount: "Total Amount",
+
+  orderStatus: "Order Status",
+
+  support: "Support",
+
+  inProgress: "In Progress",
+
+  orderPending: "Order Pending",
+  waitingRestaurantResponse: "Waiting for restaurant response",
+
+  orderAccepted: "Order Accepted",
+  restaurantAcceptedOrder: "Restaurant accepted your order",
+
+  preparing: "Preparing",
+  restaurantPreparingMeal: "Restaurant is preparing your meal",
+
+  readyForPickup: "Ready for Pickup",
+  orderReadyForPickup: "Your order is ready for pickup",
+
+  pickedUp: "Picked Up",
+  riderPickedUpOrder: "Rider has picked up your order",
+
+  onTheWay: "On the way",
+  riderHeadingLocation: "Rider is heading to your location",
+
+  orderDelivered: "Order has been delivered",
+
+  notAvailable: "N/A",
+
+  paid: "PAID",
 };
 
 export default en;
