@@ -445,6 +445,31 @@ const pt = {
 
   paymentInfoSecure:
     "As suas informações de pagamento estão encriptadas e seguras",
+  yourReferralCode: "O Seu Código de Referência",
+
+  shareCode: "Partilhar Código",
+
+  pendingInvites: "Convites Pendentes",
+  friendsReferred: "Amigos Indicados",
+  rewardsEarned: "Recompensas Ganhas",
+
+  howItWorks: "Como Funciona",
+
+  shareYourCode: "Partilhe o Seu Código",
+  shareYourCodeDescription:
+    "Envie o seu código de referência para amigos e familiares através das redes sociais, email ou mensagem.",
+
+  theySignUp: "Eles Registam-se",
+  theySignUpDescription:
+    "O seu amigo cria uma nova conta utilizando o seu código de referência durante o registo.",
+
+  bothGetRewards: "Ambos Recebem Recompensas",
+  bothGetRewardsDescription:
+    "Ambos recebem recompensas automaticamente após uma referência bem-sucedida.",
+
+  loadingReferralData: "A carregar dados de referência...",
+
+  notAvailable: "N/D",
 };
 
 export default pt;

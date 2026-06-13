@@ -428,6 +428,29 @@ const en = {
   confirmPaymentMethod: "Confirm Payment Method",
 
   paymentInfoSecure: "Your payment information is encrypted and secure",
+  yourReferralCode: "Your Referral Code",
+
+  shareCode: "Share Code",
+
+  pendingInvites: "Pending Invites",
+  friendsReferred: "Friends Referred",
+  rewardsEarned: "Rewards Earned",
+
+  howItWorks: "How It Works",
+
+  shareYourCode: "Share Your Code",
+  shareYourCodeDescription:
+    "Send your referral code to friends and family through social media, email or text.",
+
+  theySignUp: "They Sign Up",
+  theySignUpDescription:
+    "Your friend creates a new account using your unique referral code during registration.",
+
+  bothGetRewards: "Both Get Rewards",
+  bothGetRewardsDescription:
+    "You both receive rewards automatically after a successful referral.",
+
+  loadingReferralData: "Loading referral data...",
 };
 
 export default en;
