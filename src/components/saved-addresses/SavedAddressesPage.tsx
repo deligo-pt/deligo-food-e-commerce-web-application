@@ -7,6 +7,7 @@ import { ArrowLeft, RefreshCw, Home, Pencil, Trash2, Plus } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
+import SavedAddressesSkeleton from "./SavedAddressesSkeleton";
 
 interface DeliveryAddress {
   _id: string;
@@ -100,13 +101,8 @@ export default function SavedAddressesPage() {
       window.removeEventListener("focus", handleFocus);
     };
   }, []);
-
   if (loading) {
-    return (
-      <div className="flex min-h-100 items-center justify-center">
-        {t("loadingAddresses")}
-      </div>
-    );
+    return <SavedAddressesSkeleton />;
   }
 
   if (error) {
@@ -126,7 +122,9 @@ export default function SavedAddressesPage() {
             <ArrowLeft className="h-5 w-5 text-black" />
           </button>
 
-          <h1 className="text-3xl font-bold text-black">{t("savedAddresses")}</h1>
+          <h1 className="text-3xl font-bold text-black">
+            {t("savedAddresses")}
+          </h1>
         </div>
 
         <button onClick={fetchAddresses}>
