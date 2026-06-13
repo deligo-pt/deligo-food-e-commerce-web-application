@@ -16,8 +16,16 @@ import {
 import Image from "next/image";
 import { COUNTRY_OPTIONS, type CountryOption } from "../../data/countryCodes";
 import { useLoginFlow } from "../../hooks/useLoginFlow";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useStore } from "@/stores/translationStore";
 
-function CountryFlag({ countryCode, name }: { countryCode: string; name: string }) {
+function CountryFlag({
+  countryCode,
+  name,
+}: {
+  countryCode: string;
+  name: string;
+}) {
   return (
     <Image
       src={`https://flagcdn.com/w40/${countryCode}.png`}
@@ -33,20 +41,23 @@ function ClearSessionModal({
   open,
   onOpenChange,
   onRemove,
+  t,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRemove: () => void;
+  t: (key: string) => string;
 }) {
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h3 className="text-2xl font-bold text-[#191c1d]">Device Limit Exceeded</h3>
+        <h3 className="text-2xl font-bold text-[#191c1d]">
+          {t("deviceLimitExceeded")}
+        </h3>
         <p className="mt-2 text-[15px] text-[#5a4044]">
-          You have reached your maximum device limit. Do you want to remove an
-          existing session and log in here?
+          {t("deviceLimitExceededDescription")}
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -54,7 +65,7 @@ function ClearSessionModal({
             onClick={() => onOpenChange(false)}
             className="rounded-full border border-[#e3bdc3] px-5 py-2 text-[15px] font-medium text-[#5a4044] hover:bg-gray-50"
           >
-            Cancel
+            {t("cancel")}
           </button>
           <button
             type="button"
@@ -64,7 +75,7 @@ function ClearSessionModal({
             }}
             className="rounded-full bg-[#b0004a] px-5 py-2 text-[15px] font-medium text-white shadow-sm hover:bg-[#8a0038]"
           >
-            Remove
+            {t("removeSession")}
           </button>
         </div>
       </div>
@@ -73,13 +84,15 @@ function ClearSessionModal({
 }
 
 export default function LoginPage() {
+  const { t } = useTranslation();
+  const lang = useStore((state) => state.lang);
+  const setLang = useStore((state) => state.setLang);
   const {
     mode,
     step,
     showReferral,
     showLanguageModal,
     showCountryMenu,
-    language,
     selectedCountry,
     email,
     mobileNumber,
@@ -90,14 +103,12 @@ export default function LoginPage() {
     isResendingOtp,
     errorMessage,
     successMessage,
-    languageLabel,
     loginHint,
     loginIdentifier,
     showDeviceLimitModal,
     setShowReferral,
     setShowLanguageModal,
     setShowCountryMenu,
-    setLanguage,
     setSelectedCountry,
     setEmail,
     setMobileNumber,
@@ -131,7 +142,7 @@ export default function LoginPage() {
               DeliGo
             </h1>
             <p className="mt-4 text-[15px] leading-6 text-white/90 sm:text-[16px]">
-              Fast, reliable food delivery with a simple sign-in experience.
+              {t("loginFastReliable")}
             </p>
           </div>
         </div>
@@ -140,10 +151,10 @@ export default function LoginPage() {
           <div className="flex w-full flex-col">
             <div>
               <h2 className="text-[30px] font-extrabold leading-tight tracking-[-0.03em] text-[#242424] sm:text-[34px] lg:text-[38px]">
-                Welcome Back
+                {t("welcomeBack")}
               </h2>
               <p className="mt-4 text-[16px] leading-7 text-[#8b8b8b] sm:text-[17px]">
-                Login or create an account
+                {t("loginOrCreateAccount")}
               </p>
             </div>
 
@@ -153,13 +164,19 @@ export default function LoginPage() {
                 onClick={() => changeMode("mobile")}
                 className="relative pb-4 text-[18px] font-semibold transition-colors sm:text-[20px]"
               >
-                <span className={mode === "mobile" ? "text-[#d7357c]" : "text-[#707070]"}>
-                  Mobile
+                <span
+                  className={
+                    mode === "mobile" ? "text-[#d7357c]" : "text-[#707070]"
+                  }
+                >
+                  {t("mobile")}
                 </span>
                 <span
                   className={[
                     "absolute -bottom-px left-0 h-0.5 rounded-full transition-all duration-300",
-                    mode === "mobile" ? "w-full bg-[#d7357c]" : "w-0 bg-transparent",
+                    mode === "mobile"
+                      ? "w-full bg-[#d7357c]"
+                      : "w-0 bg-transparent",
                   ].join(" ")}
                 />
               </button>
@@ -169,20 +186,28 @@ export default function LoginPage() {
                 onClick={() => changeMode("email")}
                 className="relative pb-4 text-[18px] font-semibold transition-colors sm:text-[20px]"
               >
-                <span className={mode === "email" ? "text-[#d7357c]" : "text-[#707070]"}>
-                  Email
+                <span
+                  className={
+                    mode === "email" ? "text-[#d7357c]" : "text-[#707070]"
+                  }
+                >
+                  {t("email")}
                 </span>
                 <span
                   className={[
                     "absolute -bottom-px right-0 h-0.5 rounded-full transition-all duration-300",
-                    mode === "email" ? "w-full bg-[#d7357c]" : "w-0 bg-transparent",
+                    mode === "email"
+                      ? "w-full bg-[#d7357c]"
+                      : "w-0 bg-transparent",
                   ].join(" ")}
                 />
               </button>
             </div>
 
             <div className="mt-8 space-y-5 sm:mt-10">
-              <p className="text-[15px] leading-6 text-[#6e6e6e] sm:text-[16px]">{loginHint}</p>
+              <p className="text-[15px] leading-6 text-[#6e6e6e] sm:text-[16px]">
+                {loginHint}
+              </p>
 
               {errorMessage ? (
                 <div className="rounded-2xl border border-[#ffd4dc] bg-[#fff4f7] px-4 py-3 text-[14px] font-medium text-[#b81f57]">
@@ -202,12 +227,21 @@ export default function LoginPage() {
                     <div className="flex items-center gap-3 sm:gap-4">
                       <button
                         type="button"
-                        onClick={() => setShowCountryMenu((currentValue) => !currentValue)}
+                        onClick={() =>
+                          setShowCountryMenu((currentValue) => !currentValue)
+                        }
                         className="flex items-center gap-2 pr-3 text-[15px] font-medium text-[#3f3f3f] transition-colors hover:text-[#d7357c] sm:text-[16px]"
                       >
-                        <CountryFlag countryCode={selectedCountry.flagCode} name={selectedCountry.name} />
+                        <CountryFlag
+                          countryCode={selectedCountry.flagCode}
+                          name={selectedCountry.name}
+                        />
                         <span>{selectedCountry.dialCode}</span>
-                        <ChevronDown size={16} strokeWidth={2.6} className="text-[#767676]" />
+                        <ChevronDown
+                          size={16}
+                          strokeWidth={2.6}
+                          className="text-[#767676]"
+                        />
                       </button>
                       <div className="h-7 w-px bg-[#dedede]" />
                       <div className="flex flex-1 items-center gap-3">
@@ -216,8 +250,10 @@ export default function LoginPage() {
                           type="tel"
                           inputMode="tel"
                           value={mobileNumber}
-                          onChange={(event) => setMobileNumber(event.target.value)}
-                          placeholder="Mobile Number"
+                          onChange={(event) =>
+                            setMobileNumber(event.target.value)
+                          }
+                          placeholder={t("mobileNumber")}
                           className="w-full border-0 bg-transparent text-[16px] text-[#5f5f5f] outline-none placeholder:text-[#8c8c8c] sm:text-[17px]"
                         />
                       </div>
@@ -229,7 +265,7 @@ export default function LoginPage() {
                         type="email"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
-                        placeholder="Email Address"
+                        placeholder={t("emailAddress")}
                         className="w-full border-0 bg-transparent text-[16px] text-[#5f5f5f] outline-none placeholder:text-[#8c8c8c] sm:text-[17px]"
                       />
                     </div>
@@ -242,8 +278,12 @@ export default function LoginPage() {
                       inputMode="numeric"
                       autoComplete="one-time-code"
                       value={otp}
-                      onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                      placeholder="Enter OTP"
+                      onChange={(event) =>
+                        setOtp(
+                          event.target.value.replace(/\D/g, "").slice(0, 6),
+                        )
+                      }
+                      placeholder={t("enterOtp")}
                       className="w-full border-0 bg-transparent text-[16px] text-[#5f5f5f] outline-none placeholder:text-[#8c8c8c] sm:text-[17px]"
                     />
                   </div>
@@ -253,10 +293,10 @@ export default function LoginPage() {
                   <div className="absolute left-4 top-[calc(100%-0.25rem)] z-20 mt-3 w-[calc(100%-2rem)] max-w-80 overflow-hidden rounded-3xl border border-[#e7e7e7] bg-white shadow-[0_24px_60px_rgba(16,24,40,0.18)]">
                     <div className="border-b border-[#efefef] px-4 py-3">
                       <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#a0a0a0]">
-                        Select country code
+                        {t("selectCountryCode")}
                       </p>
                       <p className="mt-1 text-[15px] text-[#5d5d5d]">
-                        Choose your country and dial code
+                        {t("chooseCountryAndDialCode")}
                       </p>
                     </div>
                     <div className="max-h-72 overflow-y-auto p-2">
@@ -270,19 +310,28 @@ export default function LoginPage() {
                           }}
                           className={[
                             "flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left transition-colors",
-                            selectedCountry.dialCode === country.dialCode && selectedCountry.name === country.name
+                            selectedCountry.dialCode === country.dialCode &&
+                            selectedCountry.name === country.name
                               ? "bg-[#fff4f8] text-[#d7357c]"
                               : "text-[#2f2f2f] hover:bg-[#fafafa]",
                           ].join(" ")}
                         >
                           <div className="flex items-center gap-3">
-                            <CountryFlag countryCode={country.flagCode} name={country.name} />
+                            <CountryFlag
+                              countryCode={country.flagCode}
+                              name={country.name}
+                            />
                             <div className="flex flex-col">
-                              <span className="text-[15px] font-medium">{country.name}</span>
-                              <span className="text-[13px] text-[#7d7d7d]">{country.dialCode}</span>
+                              <span className="text-[15px] font-medium">
+                                {country.name}
+                              </span>
+                              <span className="text-[13px] text-[#7d7d7d]">
+                                {country.dialCode}
+                              </span>
                             </div>
                           </div>
-                          {selectedCountry.dialCode === country.dialCode && selectedCountry.name === country.name ? (
+                          {selectedCountry.dialCode === country.dialCode &&
+                          selectedCountry.name === country.name ? (
                             <Check size={18} className="text-[#d7357c]" />
                           ) : null}
                         </button>
@@ -300,7 +349,7 @@ export default function LoginPage() {
                       type="text"
                       value={referralCode}
                       onChange={(event) => setReferralCode(event.target.value)}
-                      placeholder="Enter referral code"
+                      placeholder={t("enterReferralCode")}
                       className="w-full border-0 bg-transparent text-[16px] text-[#5f5f5f] outline-none placeholder:text-[#8c8c8c] sm:text-[17px]"
                     />
                   </div>
@@ -315,7 +364,7 @@ export default function LoginPage() {
                     className="inline-flex items-center gap-2 text-[15px] font-medium text-[#6f6f6f] transition-colors hover:text-[#d7357c]"
                   >
                     <CircleX size={18} />
-                    Remove
+                    {t("removeReferralCode")}
                   </button>
                 ) : (
                   <button
@@ -323,7 +372,7 @@ export default function LoginPage() {
                     onClick={() => setShowReferral(true)}
                     className="text-[15px] font-medium text-[#d7357c] transition-colors hover:opacity-80"
                   >
-                    Have a referral code?
+                    {t("haveReferralCode")}
                   </button>
                 )}
               </div>
@@ -338,10 +387,10 @@ export default function LoginPage() {
                   {isSendingOtp ? (
                     <span className="inline-flex items-center gap-2">
                       <LoaderCircle size={18} className="animate-spin" />
-                      Sending OTP...
+                      {t("sendingOtp")}
                     </span>
                   ) : (
-                    "Send OTP"
+                    t("sendOtp")
                   )}
                 </button>
               ) : (
@@ -352,7 +401,7 @@ export default function LoginPage() {
                     className="mt-1 inline-flex h-14 items-center justify-center gap-2 rounded-4xl border border-[#e1e1e1] bg-white text-[16px] font-semibold text-[#3f3f3f] transition-colors hover:bg-[#fafafa] sm:text-[17px]"
                   >
                     <ArrowLeft size={18} />
-                    Change details
+                    {t("changeDetails")}
                   </button>
                   <button
                     type="button"
@@ -363,10 +412,10 @@ export default function LoginPage() {
                     {isVerifyingOtp ? (
                       <span className="inline-flex items-center gap-2">
                         <LoaderCircle size={18} className="animate-spin" />
-                        Verifying...
+                        {t("verifyingOtp")}
                       </span>
                     ) : (
-                      "Verify OTP"
+                      t("verifyOtp")
                     )}
                   </button>
                 </div>
@@ -383,14 +432,15 @@ export default function LoginPage() {
                     {isResendingOtp ? (
                       <span className="inline-flex items-center gap-2">
                         <LoaderCircle size={16} className="animate-spin" />
-                        Resending OTP...
+                        {t("resendingOtp")}
                       </span>
                     ) : (
-                      "Resend OTP"
+                      t("resendOtp")
                     )}
                   </button>
                   <p className="text-[14px] text-[#7a7a7a]">
-                    OTP sent to {loginIdentifier?.email ?? loginIdentifier?.contactNumber}
+                    {t("otpSentTo")}{" "}
+                    {loginIdentifier?.email ?? loginIdentifier?.contactNumber}
                   </p>
                 </div>
               ) : null}
@@ -402,21 +452,21 @@ export default function LoginPage() {
                   className="inline-flex items-center gap-2 rounded-full bg-[#f5f5f5] px-5 py-3 text-[15px] font-medium text-[#616161] shadow-[0_1px_0_rgba(0,0,0,0.02)]"
                 >
                   <Globe size={18} />
-                  {languageLabel}
+                  {lang === "pt" ? "Português" : "English"}
                   <ChevronDown size={16} />
                 </button>
               </div>
 
               <p className="pt-6 text-center text-[15px] leading-7 text-[#696969] sm:text-[16px]">
-                By continuing, you agree to our
+                {t("byContinuingAgree")}
               </p>
               <p className="-mt-1 text-center text-[15px] font-semibold leading-7 text-[#d7357c] sm:text-[16px]">
                 <Link href="#" className="transition-opacity hover:opacity-80">
-                  Terms of Service
+                  {t("termsOfService")}
                 </Link>
                 <span className="text-[#696969]"> &amp; </span>
                 <Link href="#" className="transition-opacity hover:opacity-80">
-                  Privacy Policy
+                  {t("privacyPolicy")}
                 </Link>
               </p>
             </div>
@@ -429,7 +479,7 @@ export default function LoginPage() {
           <div className="w-full max-w-140 rounded-[28px] bg-white p-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:p-8">
             <div className="flex items-center justify-between gap-4">
               <h3 className="text-[28px] font-extrabold tracking-[-0.03em] text-[#252525] sm:text-[34px]">
-                Select Language
+                {t("selectLanguage")}
               </h3>
               <button
                 type="button"
@@ -445,12 +495,12 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setLanguage("english");
+                  setLang("en");
                   setShowLanguageModal(false);
                 }}
                 className={[
                   "flex w-full items-center justify-between rounded-3xl border px-5 py-5 text-left transition-all",
-                  language === "english"
+                  lang === "en"
                     ? "border-[#d7357c] bg-[#fff4f8]"
                     : "border-[#f0f0f0] bg-[#fafafa]",
                 ].join(" ")}
@@ -458,20 +508,22 @@ export default function LoginPage() {
                 <div className="flex items-center gap-4">
                   <span className="text-[34px] leading-none">🇬🇧</span>
                   <span className="text-[24px] font-semibold tracking-[-0.02em] text-[#2f2f2f]">
-                    English
+                    {t("english")}
                   </span>
                 </div>
-                {language === "english" ? <Check size={28} className="text-[#d7357c]" /> : null}
+                {lang === "en" ? (
+                  <Check size={28} className="text-[#d7357c]" />
+                ) : null}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setLanguage("portugues");
+                  setLang("pt");
                   setShowLanguageModal(false);
                 }}
                 className={[
                   "flex w-full items-center justify-between rounded-3xl border px-5 py-5 text-left transition-all",
-                  language === "portugues"
+                  lang === "pt"
                     ? "border-[#d7357c] bg-[#fff4f8]"
                     : "border-[#f0f0f0] bg-[#fafafa]",
                 ].join(" ")}
@@ -479,10 +531,12 @@ export default function LoginPage() {
                 <div className="flex items-center gap-4">
                   <span className="text-[34px] leading-none">🇵🇹</span>
                   <span className="text-[24px] font-semibold tracking-[-0.02em] text-[#2f2f2f]">
-                    Português
+                    {t("portugues")}
                   </span>
                 </div>
-                {language === "portugues" ? <Check size={28} className="text-[#d7357c]" /> : null}
+                {lang === "pt" ? (
+                  <Check size={28} className="text-[#d7357c]" />
+                ) : null}
               </button>
             </div>
           </div>
@@ -494,6 +548,7 @@ export default function LoginPage() {
         open={showDeviceLimitModal}
         onOpenChange={() => {}}
         onRemove={clearSessionAndRetry}
+        t={t}
       />
     </main>
   );

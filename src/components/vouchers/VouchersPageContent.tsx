@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Clock3, Ticket } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { useTranslation } from "@/hooks/useTranslation";
+import VouchersSkeleton from "./VouchersSkeleton";
 
 type Offer = {
   _id: string;
@@ -23,6 +25,7 @@ type OffersResponse = {
 };
 
 export default function VouchersPageContent() {
+  const { t } = useTranslation();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -100,15 +103,19 @@ export default function VouchersPageContent() {
     }
   };
 
+  if (loading) {
+    return <VouchersSkeleton />;
+  }
+
   return (
     <section className="w-full bg-[#f8f9fa] px-8 py-12">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="mb-2 text-[32px] font-bold text-[#191c1d]">Vouchers</h1>
+        <h1 className="mb-2 text-[32px] font-bold text-[#191c1d]">
+          {t("vouchers")}
+        </h1>
 
-        <p className="text-[#5a4044]">
-          Save more on your favorite meals with DeliGo vouchers.
-        </p>
+        <p className="text-[#5a4044]">{t("vouchersDescription")}</p>
       </div>
 
       {/* Tabs */}
@@ -119,7 +126,7 @@ export default function VouchersPageContent() {
             activeTab === "available" ? "text-[#b0004a]" : "text-[#5a4044]"
           }`}
         >
-          Available
+          {t("available")}
           {activeTab === "available" && (
             <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#b0004a]" />
           )}
@@ -131,20 +138,17 @@ export default function VouchersPageContent() {
             activeTab === "expired" ? "text-[#b0004a]" : "text-[#5a4044]"
           }`}
         >
-          Expired
+          {t("expired")}
           {activeTab === "expired" && (
             <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#b0004a]" />
           )}
         </button>
       </div>
 
-      {/* Loading */}
-      {loading && <div className="py-20 text-center">Loading offers...</div>}
-
       {/* Error */}
       {!loading && error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-600">
-          {error}
+          {t("voucherError")}
         </div>
       )}
 
@@ -159,12 +163,11 @@ export default function VouchersPageContent() {
             </div>
 
             <h2 className="mb-2 text-2xl font-semibold text-[#191c1d]">
-              No expired vouchers
+              {t("noExpiredVouchers")}
             </h2>
 
             <p className="max-w-sm text-[#5a4044]">
-              All your used or timed-out vouchers will appear here. Currently,
-              you are all caught up!
+              {t("expiredVouchersDescription")}
             </p>
           </div>
         )}
@@ -175,7 +178,7 @@ export default function VouchersPageContent() {
         activeTab === "available" &&
         availableOffers.length === 0 && (
           <div className="rounded-xl bg-white p-10 text-center">
-            No available vouchers.
+            {t("noAvailableVouchers")}
           </div>
         )}
 
@@ -212,7 +215,7 @@ export default function VouchersPageContent() {
                   onClick={() => handleCopy(offer.code)}
                   className="rounded-lg bg-[#b0004a] px-4 py-2 text-sm font-semibold text-white hover:bg-[#d81b60]"
                 >
-                  {copiedCode === offer.code ? "Copied" : "Copy"}
+                  {copiedCode === offer.code ? t("copied") : t("copy")}
                 </button>
               </div>
 
@@ -223,7 +226,7 @@ export default function VouchersPageContent() {
                 </div>
 
                 <button className="text-xs text-[#b0004a] hover:underline">
-                  T&C Apply
+                  {t("termsAndConditions")}
                 </button>
               </div>
             </div>

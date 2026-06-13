@@ -285,6 +285,340 @@ const en = {
     "Freshly prepared with premium ingredients.",
 
   addToCart: "Add To Cart",
+  editProfile: "Edit Profile",
+  vouchers: "Vouchers",
+  rewardPoints: "Reward Points",
+
+  deligoPro: "DeliGo Pro",
+  deligoProDescription:
+    "Unlock free delivery and exclusive deals on every order.",
+  learnMore: "Learn More",
+
+  ordersAndPayments: "Orders & Payments",
+  preferencesAndMore: "Preferences & More",
+
+  version: "Version",
+  ordersDescription: "View and track your current or past orders",
+
+  paymentMethods: "Payment Methods",
+  paymentMethodsDescription: "Manage your saved cards and payment accounts",
+
+  referrals: "Referrals",
+  referralsDescription: "Earn rewards by inviting your friends to DeliGo",
+
+  savedAddresses: "Saved Addresses",
+  favoriteOrders: "Favorite Orders",
+  accountSettings: "Account Settings",
+  helpCenter: "Help Center",
+  availableCountries: "Available Countries",
+
+  myProfile: "My Profile",
+  viewAccountDetails: "View your account details",
+
+  firstName: "First Name",
+  lastName: "Last Name",
+  emailAddress: "Email Address",
+  mobileNumber: "Mobile Number",
+  nifTaxId: "NIF / Tax ID",
+  deliveryAddress: "Delivery Address",
+
+  optional: "optional",
+  noAddressSaved: "No address saved",
+
+  manageAccountInfo: "Manage your account information and preferences",
+
+  basicInformation: "Basic Information",
+
+  searchAddressPlaceholder: "Search for your address...",
+
+  labelAs: "Label as",
+
+  houseApartmentFloorPlaceholder: "e.g. 123, 4th Floor, Door B",
+
+  cancel: "Cancel",
+
+  uploadingImage: "Uploading image...",
+  saveChanges: "Save Changes",
+  sendOtp: "Send OTP",
+  sending: "Sending...",
+  otp: "OTP",
+  verify: "Verify",
+  verifying: "Verifying...",
+  mobilePlaceholder: "+1234567890",
+  myOrders: "My Orders",
+
+  trackOrdersDescription:
+    "Track your active orders and view your order history.",
+
+  ongoing: "Ongoing",
+  history: "History",
+
+  noOngoingOrders: "No ongoing orders",
+
+  previousOrdersMessage: "Your previous orders will appear here",
+
+  chefPreparingMeal: "Chef is preparing your meal",
+
+  waitingRestaurantConfirmation: "Waiting for restaurant confirmation",
+
+  accepted: "Accepted",
+  pending: "Pending",
+  loadingMap: "Loading map...",
+
+  restaurant: "Restaurant",
+
+  restaurantPlaceholder: "Restaurant",
+  locationPlaceholder: "Location",
+
+  restaurantAddressPending:
+    "Restaurant address will appear after order confirmation",
+
+  restaurantAddressComingSoon: "Address coming soon",
+
+  items: "Items",
+
+  billSummary: "Bill Summary",
+
+  totalAmount: "Total Amount",
+
+  orderStatus: "Order Status",
+
+  support: "Support",
+
+  inProgress: "In Progress",
+
+  orderPending: "Order Pending",
+  waitingRestaurantResponse: "Waiting for restaurant response",
+
+  orderAccepted: "Order Accepted",
+  restaurantAcceptedOrder: "Restaurant accepted your order",
+
+  preparing: "Preparing",
+  restaurantPreparingMeal: "Restaurant is preparing your meal",
+
+  readyForPickup: "Ready for Pickup",
+  orderReadyForPickup: "Your order is ready for pickup",
+
+  pickedUp: "Picked Up",
+  riderPickedUpOrder: "Rider has picked up your order",
+
+  onTheWay: "On the way",
+  riderHeadingLocation: "Rider is heading to your location",
+
+  orderDelivered: "Order has been delivered",
+
+  notAvailable: "N/A",
+
+  paid: "PAID",
+
+  creditDebitCard: "Credit/Debit Card",
+  visaMastercardMaestro: "Visa, Mastercard, Maestro",
+
+  mbway: "MB WAY",
+  fastMobilePayment: "Fast mobile payment",
+
+  applePay: "Apple Pay",
+  oneTapCheckout: "One-tap checkout",
+
+  otherMethods: "Other Methods",
+  paypalGooglePayEtc: "PayPal, Google Pay, etc.",
+
+  recommended: "Recommended",
+
+  confirmPaymentMethod: "Confirm Payment Method",
+
+  paymentInfoSecure: "Your payment information is encrypted and secure",
+  yourReferralCode: "Your Referral Code",
+
+  shareCode: "Share Code",
+
+  pendingInvites: "Pending Invites",
+  friendsReferred: "Friends Referred",
+  rewardsEarned: "Rewards Earned",
+
+  howItWorks: "How It Works",
+
+  shareYourCode: "Share Your Code",
+  shareYourCodeDescription:
+    "Send your referral code to friends and family through social media, email or text.",
+
+  theySignUp: "They Sign Up",
+  theySignUpDescription:
+    "Your friend creates a new account using your unique referral code during registration.",
+
+  bothGetRewards: "Both Get Rewards",
+  bothGetRewardsDescription:
+    "You both receive rewards automatically after a successful referral.",
+
+  loadingReferralData: "Loading referral data...",
+  selectCountry: "Select Country",
+
+  selectCountryDescription:
+    "Choose your location to start ordering the best food near you.",
+
+  upcomingCountries: "Upcoming Countries",
+
+  upcoming: "Upcoming",
+
+  helpCenterDescription:
+    "How can we help you today? Search our help articles or get in touch with our support team.",
+
+  searchHelpPlaceholder: "Search for articles, topics, keywords...",
+
+  needImmediateHelp: "Need immediate help?",
+
+  needImmediateHelpDescription:
+    "Our dedicated support team is available 24/7 to assist with your active orders and deliveries. We are here whenever you need us.",
+
+  chatWithUsNow: "Chat with us now",
+
+  getInTouch: "Get in touch",
+
+  getInTouchDescription:
+    "Prefer reaching out directly? We are just a click away.",
+
+  liveChat: "Live Chat",
+  realTimeSupport: "Real-time support",
+  startConversation: "Start conversation",
+
+  emailUs: "Email Us",
+  sendEmail: "Send email",
+
+  callUs: "Call Us",
+  callSupport: "Call support",
+
+  browseByCategory: "Browse by Category",
+
+  generalFaqs: "General FAQs",
+  generalFaqsDescription:
+    "Find answers to common questions about tracking, delivery times, and more.",
+
+  orderIssues: "Order Issues",
+  orderIssuesDescription:
+    "Problems with your current order? Learn how to track, modify, or report errors.",
+
+  paymentsRefunds: "Payments & Refunds",
+  paymentsRefundsDescription:
+    "Billing queries, voucher issues, and everything regarding refund processing.",
+
+  accountProfile: "Account & Profile",
+  accountProfileDescription:
+    "Update your details, manage preferences, and secure your account.",
+
+  popularQuestions: "Popular Questions",
+
+  popularQuestionsDescription: "Quick answers to things you ask us the most.",
+
+  faqTrackOrderQuestion: "How can I track my order?",
+  faqTrackOrderAnswer:
+    "You can track your order in real-time by going to the Orders tab and selecting your active order. From there, you'll see a live map with your rider's location and an estimated delivery time.",
+
+  faqDeliveryChargesQuestion: "What are the delivery charges?",
+  faqDeliveryChargesAnswer:
+    "Delivery charges vary based on distance and demand in your area. The exact delivery fee will always be displayed before checkout.",
+
+  faqVoucherQuestion: "How do I apply a voucher?",
+  faqVoucherAnswer:
+    "Enter your voucher code during checkout and the discount will be automatically applied if the voucher is valid.",
+
+  settingsDescription:
+    "Manage your app experience, account details, and preferences.",
+
+  appSettings: "App Settings",
+
+  darkMode: "Dark Mode",
+  darkModeDescription: "Adjust app appearance",
+
+  notificationsDescription: "Enable order updates and promos",
+
+  locationServices: "Location Services",
+  locationServicesDescription: "For faster delivery address detection",
+
+  language: "Language",
+
+  orderPreferences: "Order Preferences",
+
+  defaultDeliveryTime: "Default Delivery Time",
+  asap: "ASAP",
+
+  dietaryPreferences: "Dietary Preferences",
+  noneSet: "None set",
+
+  legal: "Legal",
+
+  termsOfService: "Terms of Service",
+  privacyPolicy: "Privacy Policy",
+
+  about: "About",
+
+  deleteAccount: "Delete Account",
+  deleteAccountDescription: "Permanently delete your account",
+
+  loadingAddresses: "Loading addresses...",
+
+  primary: "PRIMARY",
+
+  noSavedAddressesFound: "No saved addresses found.",
+
+  vouchersDescription: "Save more on your favorite meals with DeliGo vouchers.",
+  available: "Available",
+  expired: "Expired",
+  loadingOffers: "Loading offers...",
+  noExpiredVouchers: "No expired vouchers",
+  noExpiredVouchersDescription:
+    "All your used or timed-out vouchers will appear here. Currently, you are all caught up!",
+  noAvailableVouchers: "No available vouchers.",
+  copied: "Copied",
+  copy: "Copy",
+  termsAndConditionsApply: "T&C Apply",
+  failedToCopyCode: "Failed to copy code",
+  failedToLoadOffers: "Failed to load offers",
+  expiresInOneDay: "Expires in 1 day",
+  expiresIn: "Expires in",
+  days: "days",
+  loginFastReliable:
+    "Fast, reliable food delivery with a simple sign-in experience.",
+  welcomeBack: "Welcome Back",
+  loginOrCreateAccount: "Login or create an account",
+
+  mobile: "Mobile",
+
+  enterOtp: "Enter OTP",
+
+  selectCountryCode: "Select country code",
+  chooseCountryAndDialCode: "Choose your country and dial code",
+
+  enterReferralCode: "Enter referral code",
+
+  haveReferralCode: "Have a referral code?",
+
+  sendingOtp: "Sending OTP...",
+
+  changeDetails: "Change details",
+
+  verifyOtp: "Verify OTP",
+  verifyingOtp: "Verifying...",
+
+  resendOtp: "Resend OTP",
+  resendingOtp: "Resending OTP...",
+
+  otpSentTo: "OTP sent to",
+
+  byContinuingAgree: "By continuing, you agree to our",
+
+  selectLanguage: "Select Language",
+
+  english: "English",
+  portuguese: "Português",
+
+  deviceLimitExceeded: "Device Limit Exceeded",
+  deviceLimitExceededDescription:
+    "You have reached your maximum device limit. Do you want to remove an existing session and log in here?",
+
+  removeSession: "Remove",
+  removeReferralCode: "Remove",
+  portugues: "Português",
+  
 };
 
 export default en;

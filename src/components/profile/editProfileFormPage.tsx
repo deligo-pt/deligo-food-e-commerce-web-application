@@ -16,6 +16,7 @@ import LocationPicker from "@/components/profile/locationPicker";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
 import EditProfileFormSkeleton from "./EditProfileFormSkeleton";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ProfileData {
   userId: string;
@@ -38,6 +39,7 @@ interface ProfileData {
 }
 
 export default function EditProfileFormPage() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
@@ -255,7 +257,9 @@ export default function EditProfileFormPage() {
     setSendingMobileOtp(true);
     setError(null);
     try {
-      await apiClient.patch("/profile/send-otp", { contactNumber: mobileNumber });
+      await apiClient.patch("/profile/send-otp", {
+        contactNumber: mobileNumber,
+      });
       setMobileOtpSent(true);
       setSuccess("OTP sent to your new mobile number");
     } catch (err) {
@@ -309,7 +313,9 @@ export default function EditProfileFormPage() {
         try {
           uploadedPhotoUrl = await uploadProfilePhoto(selectedFile);
         } catch (uploadErr) {
-          setError(getApiErrorMessage(uploadErr, "Failed to upload profile photo"));
+          setError(
+            getApiErrorMessage(uploadErr, "Failed to upload profile photo"),
+          );
           setSubmitting(false);
           setImageUploading(false);
           return;
@@ -377,9 +383,9 @@ export default function EditProfileFormPage() {
     <section className="bg-[#f8f9fa] py-8">
       <div className="mx-auto max-w-250 px-4">
         <div className="mb-6 flex items-center gap-2 text-sm text-[#5a4044]">
-          <span>Home</span> <span>&gt;</span> <span>Account</span>{" "}
-          <span>&gt;</span>
-          <span className="font-bold text-[#b0004a]">Edit Profile</span>
+          <span>{t("home")}</span>
+          <span>{t("account")}</span>
+          <span>{t("editProfile")}</span>
         </div>
 
         <div className="overflow-hidden rounded-xl border border-[#e3bdc3] bg-white shadow-sm">
@@ -417,24 +423,23 @@ export default function EditProfileFormPage() {
                 </button>
               )}
             </div>
-            <h1 className="mt-6 text-2xl font-bold text-[#191c1d]">
-              Edit Profile
-            </h1>
-            <p className="text-[#5a4044]">
-              Manage your account information and preferences
-            </p>
+            <h1>{t("editProfile")}</h1>
+
+            <p>{t("manageAccountInfo")}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-10 p-8 md:p-12">
             {/* Basic Information */}
             <section className="space-y-6">
               <div className="flex items-center gap-3">
-                <h2 className="text-xl font-semibold">Basic Information</h2>
+                <h2 className="text-xl font-semibold">
+                  {t("basicInformation")}
+                </h2>
               </div>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                    First Name *
+                    {t("firstName")} *
                   </label>
                   <input
                     type="text"
@@ -445,7 +450,7 @@ export default function EditProfileFormPage() {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                    Last Name (optional)
+                    {t("lastName")} ({t("optional")})
                   </label>
                   <input
                     type="text"
@@ -458,7 +463,7 @@ export default function EditProfileFormPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                    Email Address
+                    {t("emailAddress")}
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -474,13 +479,13 @@ export default function EditProfileFormPage() {
                         disabled={sendingEmailOtp || email === originalEmail}
                         className="whitespace-nowrap rounded bg-[#b0004a] px-4 py-2 text-white disabled:opacity-50"
                       >
-                        {sendingEmailOtp ? "Sending..." : "Send OTP"}
+                        {sendingEmailOtp ? t("sending") : t("sendOtp")}
                       </button>
                     ) : (
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          placeholder="OTP"
+                          placeholder={t("otp")}
                           value={emailOtp}
                           onChange={(e) => setEmailOtp(e.target.value)}
                           className="w-24 rounded border border-[#e3bdc3] px-2 py-2 text-center outline-none focus:border-[#b0004a]"
@@ -491,7 +496,7 @@ export default function EditProfileFormPage() {
                           disabled={verifyingEmail}
                           className="whitespace-nowrap rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50"
                         >
-                          {verifyingEmail ? "Verifying..." : "Verify"}
+                          {verifyingEmail ? t("verifying") : t("verify")}
                         </button>
                       </div>
                     )}
@@ -499,12 +504,12 @@ export default function EditProfileFormPage() {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                    Mobile Number *
+                    {t("mobileNumber")} *
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="tel"
-                      placeholder="+1234567890"
+                      placeholder={t("mobilePlaceholder")}
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}
                       className="flex-1 rounded border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
@@ -513,16 +518,18 @@ export default function EditProfileFormPage() {
                       <button
                         type="button"
                         onClick={handleSendMobileOtp}
-                        disabled={sendingMobileOtp || mobileNumber === originalMobile}
+                        disabled={
+                          sendingMobileOtp || mobileNumber === originalMobile
+                        }
                         className="whitespace-nowrap rounded bg-[#b0004a] px-4 py-2 text-white disabled:opacity-50"
                       >
-                        {sendingMobileOtp ? "Sending..." : "Send OTP"}
+                        {sendingMobileOtp ? t("sending") : t("sendOtp")}
                       </button>
                     ) : (
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          placeholder="OTP"
+                          placeholder={t("otp")}
                           value={mobileOtp}
                           onChange={(e) => setMobileOtp(e.target.value)}
                           className="w-24 rounded border border-[#e3bdc3] px-2 py-2 text-center outline-none focus:border-[#b0004a]"
@@ -533,7 +540,7 @@ export default function EditProfileFormPage() {
                           disabled={verifyingMobile}
                           className="whitespace-nowrap rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50"
                         >
-                          {verifyingMobile ? "Verifying..." : "Verify"}
+                          {verifyingMobile ? t("verifying") : t("verify")}
                         </button>
                       </div>
                     )}
@@ -542,7 +549,7 @@ export default function EditProfileFormPage() {
               </div>
               <div className="max-w-md">
                 <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                  NIF / Tax ID
+                  {t("nifTaxId")}
                 </label>
                 <input
                   type="text"
@@ -559,10 +566,12 @@ export default function EditProfileFormPage() {
                 <div>
                   <div className="flex items-center gap-3">
                     <MapPin className="text-[#b0004a]" />
-                    <h2 className="text-xl font-semibold">Delivery Address</h2>
+                    <h2 className="text-xl font-semibold">
+                      {t("deliveryAddress")}
+                    </h2>
                   </div>
                   <p className="ml-9 text-sm text-[#5a4044]">
-                    Confirm Location
+                    {t("confirmLocation")}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -571,14 +580,14 @@ export default function EditProfileFormPage() {
                     onClick={handleUseGPS}
                     className="flex items-center gap-2 rounded border border-[#b0004a] bg-[#b0004a]/10 px-4 py-2 text-[#b0004a]"
                   >
-                    <LocateFixed size={18} /> Use GPS
+                    <LocateFixed size={18} /> {t("useGps")}
                   </button>
                   <button
                     type="button"
                     onClick={handleFullMap}
                     className="flex items-center gap-2 rounded border border-[#e3bdc3] px-4 py-2"
                   >
-                    <Map size={18} /> Full Map
+                    <Map size={18} /> {t("fullMap")}
                   </button>
                 </div>
               </div>
@@ -590,7 +599,7 @@ export default function EditProfileFormPage() {
                 />
                 <input
                   id="autocomplete"
-                  placeholder="Search for your address..."
+                  placeholder={t("searchAddressPlaceholder")}
                   className="w-full rounded-full border border-[#e3bdc3] px-12 py-4 outline-none focus:border-[#b0004a]"
                 />
               </div>
@@ -610,7 +619,7 @@ export default function EditProfileFormPage() {
                 </div>
                 <div>
                   <p className="text-xs font-bold tracking-widest text-green-700">
-                    LOCATION CONFIRMED
+                    {t("locationConfirmed")}
                   </p>
                   <p className="font-medium text-green-900">
                     {street}, {city}, {postalCode}
@@ -620,7 +629,7 @@ export default function EditProfileFormPage() {
 
               <div>
                 <label className="mb-3 block text-sm font-medium text-[#5a4044]">
-                  Label as *
+                  {t("labelAs")} *
                 </label>
                 <div className="flex gap-3">
                   {["Home", "Work", "Other"].map((label) => (
@@ -647,7 +656,7 @@ export default function EditProfileFormPage() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                    Street Address *
+                    {t("streetAddress")} *
                   </label>
                   <input
                     type="text"
@@ -658,11 +667,11 @@ export default function EditProfileFormPage() {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                    House / Apartment / Floor
+                    {t("houseApartmentFloor")}
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. 123, 4th Floor, Door B"
+                    placeholder={t("houseApartmentFloorPlaceholder")}
                     value={houseDetail}
                     onChange={(e) => setHouseDetail(e.target.value)}
                     className="w-full rounded border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
@@ -672,7 +681,7 @@ export default function EditProfileFormPage() {
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                    City *
+                    {t("city")} *
                   </label>
                   <input
                     type="text"
@@ -683,7 +692,7 @@ export default function EditProfileFormPage() {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                    Postal Code *
+                    {t("postalCode")} *
                   </label>
                   <input
                     type="text"
@@ -694,7 +703,7 @@ export default function EditProfileFormPage() {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                    State / Region *
+                    {t("stateRegion")} *
                   </label>
                   <input
                     type="text"
@@ -705,7 +714,7 @@ export default function EditProfileFormPage() {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-                    Country *
+                    {t("country")} *
                   </label>
                   <input
                     type="text"
@@ -723,14 +732,18 @@ export default function EditProfileFormPage() {
                 onClick={() => window.history.back()}
                 className="px-8 py-3 font-bold text-[#b0004a]"
               >
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 type="submit"
                 disabled={submitting || imageUploading}
                 className="rounded bg-[#b0004a] px-12 py-3 font-bold text-white shadow-lg disabled:opacity-50"
               >
-                {imageUploading ? "Uploading image..." : submitting ? "Saving..." : "Save Changes"}
+                {imageUploading
+                  ? t("uploadingImage")
+                  : submitting
+                    ? t("saving")
+                    : t("saveChanges")}
               </button>
             </div>
 

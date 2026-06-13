@@ -20,6 +20,7 @@ import { useParams } from "next/navigation";
 import { apiClient } from "@/lib/apiClient";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // Google Maps component
 function OrderMap({
@@ -31,6 +32,7 @@ function OrderMap({
   longitude?: number;
   address: string;
 }) {
+  const { t } = useTranslation();
   const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
@@ -67,7 +69,7 @@ function OrderMap({
       <div id="track-order-map" className="w-full h-full" />
       {!mapLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="animate-pulse text-gray-400">Loading map...</div>
+          <div className="animate-pulse text-gray-400">{t("loadingMap")}</div>
         </div>
       )}
       <div className="absolute top-6 left-6 flex flex-col gap-3">
@@ -80,56 +82,57 @@ function OrderMap({
 }
 
 // Timeline steps based on orderStatus
-function getOrderStep(orderStatus: string) {
+function getOrderStep(orderStatus: string, t: (key: string) => string) {
   const steps = [
     {
       key: "PENDING",
-      label: "Order Pending",
-      description: "Waiting for restaurant response",
+      label: t("orderPending"),
+      description: t("waitingRestaurantResponse"),
       icon: Check,
     },
     {
       key: "ACCEPTED",
-      label: "Order Accepted",
-      description: "Restaurant accepted your order",
+      label: t("orderAccepted"),
+      description: t("restaurantAcceptedOrder"),
       icon: CheckCircle,
     },
     {
       key: "PREPARING",
-      label: "Preparing",
-      description: "Restaurant is preparing your meal",
+      label: t("preparing"),
+      description: t("restaurantPreparingMeal"),
       icon: Utensils,
     },
     {
       key: "READY_FOR_PICKUP",
-      label: "Ready for Pickup",
-      description: "Your order is ready for pickup",
+      label: t("readyForPickup"),
+      description: t("orderReadyForPickup"),
       icon: CheckSquare,
     },
     {
       key: "PICKED_UP",
-      label: "Picked Up",
-      description: "Rider has picked up your order",
+      label: t("pickedUp"),
+      description: t("riderPickedUpOrder"),
       icon: Bike,
     },
     {
       key: "ON_THE_WAY",
-      label: "On the way",
-      description: "Rider is heading to your location",
+      label: t("onTheWay"),
+      description: t("riderIsHeadingToYourLocation"),
       icon: Navigation,
     },
     {
       key: "DELIVERED",
-      label: "Delivered",
-      description: "Order has been delivered",
+      label: t("delivered"),
+      description: t("orderHasBeenDelivered"),
       icon: CheckCheck,
     },
   ];
-  const currentIndex = steps.findIndex((step) => step.key === orderStatus);
+  const currentIndex = steps.findIndex((step: any) => step.key === orderStatus);
   return { steps, currentIndex: currentIndex === -1 ? 0 : currentIndex };
 }
 
 export default function TrackOrder() {
+  const { t } = useTranslation();
   const { orderId } = useParams<{ orderId: string }>();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -231,8 +234,8 @@ export default function TrackOrder() {
         .filter(Boolean)
         .join(", ")
     : order.orderStatus === "PENDING"
-      ? "Restaurant address will appear after order confirmation"
-      : "Address coming soon";
+      ? t("restaurantAddressPending")
+      : t("restaurantAddressComingSoon");
 
   // Order items and calculations
   const items = order.items || [];
@@ -246,7 +249,7 @@ export default function TrackOrder() {
   const deliveryFee = order.delivery?.totalDeliveryCharge || 0;
   const tax = order.orderCalculation?.totalTaxAmount || 0;
 
-  const { steps, currentIndex } = getOrderStep(order.orderStatus);
+  const { steps, currentIndex } = getOrderStep(order.orderStatus, t);
 
   return (
     <main className="bg-[#f8f9fa] text-[#191c1d] min-h-screen font-sans overflow-x-hidden">
@@ -268,10 +271,10 @@ export default function TrackOrder() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-[#5a4044] tracking-wide">
-                    Restaurant
+                    {t("restaurant")}
                   </p>
                   <h3 className="text-xl font-bold text-[#191c1d]">
-                    {vendorName || "Restaurant"}
+                    {vendorName || t("restaurant")}
                   </h3>
                   <p className="text-sm font-semibold text-[#5a4044] leading-relaxed">
                     {restaurantAddress}
@@ -284,13 +287,13 @@ export default function TrackOrder() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-[#5a4044]">
-                    Delivery to
+                    {t("deliveryTo")}
                   </p>
                   <h3 className="text-xl font-bold text-[#191c1d]">
-                    {deliveryAddress?.city || "Location"}
+                    {deliveryAddress?.city || t("location")}
                   </h3>
                   <p className="text-sm font-semibold text-[#5a4044]">
-                    {addressString || "Address not provided"}
+                    {addressString || t("addressNotProvided")}
                   </p>
                 </div>
               </div>
@@ -304,7 +307,7 @@ export default function TrackOrder() {
                     <ShoppingBag className="w-5 h-5 text-[#b0004a]" />
                   </div>
                   <h4 className="text-sm font-semibold text-[#5a4044]">
-                    items ({totalItems})
+                    {t("items")} ({totalItems})
                   </h4>
                 </div>
                 <div className="space-y-2">
@@ -334,25 +337,25 @@ export default function TrackOrder() {
                     <Receipt className="w-5 h-5 text-[#b70052]" />
                   </div>
                   <h4 className="text-sm font-semibold text-[#5a4044] uppercase tracking-wider">
-                    Bill Summary
+                    {t("billSummary")}
                   </h4>
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between text-[#5a4044]">
-                    <span>Subtotal</span>
+                    <span>{t("subtotal")}</span>
                     <span>€{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-[#5a4044]">
-                    <span>Delivery fee</span>
+                    <span>{t("deliveryFee")}</span>
                     <span>€{deliveryFee.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-[#5a4044]">
-                    <span>Tax</span>
+                    <span>{t("tax")}</span>
                     <span>€{tax.toFixed(2)}</span>
                   </div>
                   <div className="pt-4 mt-2 border-t border-[#e3bdc3] flex justify-between items-center">
                     <span className="text-2xl font-extrabold text-[#191c1d]">
-                      Total Amount
+                      {t("totalAmount")}
                     </span>
                     <span className="text-2xl font-extrabold text-[#b70052]">
                       €{grandTotal.toFixed(2)}
@@ -362,14 +365,14 @@ export default function TrackOrder() {
                 <div className="mt-6 bg-[#edeeef] p-4 rounded-2xl flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold text-[#5a4044]">
-                      Payment method
+                      {t("paymentMethod")}
                     </span>
                     <span className="text-[#191c1d] font-extrabold">
-                      {order.paymentMethod || "N/A"}
+                      {order.paymentMethod || t("notAvailable")}
                     </span>
                   </div>
                   <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full border border-green-200">
-                    {order.paymentStatus || "PAID"}
+                    {order.paymentStatus || t("paid")}
                   </span>
                 </div>
               </div>
@@ -381,7 +384,7 @@ export default function TrackOrder() {
             <div className="flex justify-between items-start mb-8">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#191c1d]">
-                  Order Status
+                  {t("orderStatus")}
                 </h2>
                 <div className="flex items-center gap-2 mt-1 text-[#5a4044] text-xs font-semibold">
                   <span className="font-bold">{order.orderId}</span>
@@ -392,13 +395,13 @@ export default function TrackOrder() {
               <Link href="/help-center">
                 <button className="bg-[#b0004a] text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg hover:opacity-90 transition-all active:scale-95">
                   <Headphones className="w-4 h-4" />
-                  <span className="font-bold">Support</span>
+                  <span className="font-bold">{t("support")}</span>
                 </button>
               </Link>
             </div>
 
             <div className="relative space-y-0 px-2">
-              {steps.map((step, idx) => {
+              {steps.map((step: any, idx: number) => {
                 const isCompleted = idx < currentIndex;
                 const isCurrent = idx === currentIndex;
                 const Icon = step.icon;
@@ -441,7 +444,7 @@ export default function TrackOrder() {
                       {isCurrent && (
                         <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] text-[#b0004a] rounded-full text-xs font-bold">
                           <span className="w-1.5 h-1.5 bg-[#b0004a] rounded-full animate-pulse" />
-                          inProgress
+                          {t("inProgress")}
                         </span>
                       )}
                     </div>

@@ -32,6 +32,7 @@ import Cookies from "js-cookie";
 import Image from "next/image";
 import Link from "next/link";
 import ProfilePageSkeleton from "./profilePageSkeleton";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Offer {
   _id: string;
@@ -70,39 +71,66 @@ interface ProfileData {
   updatedAt: string;
 }
 
-const orderItems = [
-  {
-    title: "Orders",
-    description: "View and track your current or past orders",
-    icon: Receipt,
-  },
-  {
-    title: "Payment Methods",
-    description: "Manage your saved cards and payment accounts",
-    icon: CreditCard,
-  },
-  {
-    title: "Referrals",
-    description: "Earn rewards by inviting your friends to DeliGo",
-    icon: UserPlus,
-  },
-];
-
-const settingItems = [
-  { title: "Saved Addresses", icon: MapPin },
-  { title: "Favorite Orders", icon: Heart },
-  { title: "Notifications", icon: Bell },
-  { title: "Account Settings", icon: Settings },
-  { title: "Help Center", icon: HelpCircle },
-  { title: "Available Countries", icon: Globe },
-];
-
 export default function AccountPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [voucherCount, setVoucherCount] = useState(0);
+
+  const orderItems = [
+    {
+      title: t("orders"),
+      description: t("ordersDescription"),
+      icon: Receipt,
+      path: "/orders",
+    },
+    {
+      title: t("paymentMethods"),
+      description: t("paymentMethodsDescription"),
+      icon: CreditCard,
+      path: "/payment-methods",
+    },
+    {
+      title: t("referrals"),
+      description: t("referralsDescription"),
+      icon: UserPlus,
+      path: "/referrals",
+    },
+  ];
+  const settingItems = [
+    {
+      title: t("savedAddresses"),
+      icon: MapPin,
+      path: "/saved-addresses",
+    },
+    {
+      title: t("favoriteOrders"),
+      icon: Heart,
+      path: "/favorite-orders",
+    },
+    {
+      title: t("notifications"),
+      icon: Bell,
+      path: "/notifications",
+    },
+    {
+      title: t("accountSettings"),
+      icon: Settings,
+      path: "/account-settings",
+    },
+    {
+      title: t("helpCenter"),
+      icon: HelpCircle,
+      path: "/help-center",
+    },
+    {
+      title: t("availableCountries"),
+      icon: Globe,
+      path: "/available-countries",
+    },
+  ];
 
   useEffect(() => {
     const token = getAccessToken();
@@ -212,7 +240,7 @@ export default function AccountPage() {
                   {" "}
                   <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#c1005a] py-3 font-medium text-white transition hover:bg-[#a6004d]">
                     <Edit size={16} />
-                    Edit Profile
+                    {t("editProfile")}
                   </button>
                 </Link>
               </div>
@@ -224,14 +252,14 @@ export default function AccountPage() {
                 <div className="rounded-xl bg-white p-5 text-center shadow-sm transition hover:shadow-md cursor-pointer">
                   <Ticket className="mx-auto mb-2 text-[#c1005a]" />
                   <h3 className="font-bold">{voucherCount}</h3>
-                  <p className="text-sm text-gray-500">Vouchers</p>
+                  <p className="text-sm text-gray-500">{t("vouchers")}</p>
                 </div>
               </Link>
 
               <div className="rounded-xl bg-white p-5 text-center shadow-sm">
                 <Gift className="mx-auto mb-2 text-[#c1005a]" />
                 <h3 className="font-bold">125</h3>
-                <p className="text-sm text-gray-500">Reward Points</p>
+                <p className="text-sm text-gray-500">{t("rewardPoints")}</p>
               </div>
             </div>
 
@@ -239,14 +267,14 @@ export default function AccountPage() {
             <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-[#c1005a] to-pink-500 p-6 text-white">
               <Star className="absolute -bottom-6 -right-6 h-28 w-28 opacity-10" />
 
-              <h3 className="text-2xl font-bold">DeliGo Pro</h3>
+              <h3 className="text-2xl font-bold">{t("deligoPro")}</h3>
 
               <p className="mt-2 text-sm text-white/90">
-                Unlock free delivery and exclusive deals on every order.
+                {t("deligoProDescription")}
               </p>
 
               <button className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-medium text-[#c1005a]">
-                Learn More
+                {t("learnMore")}
               </button>
             </div>
           </div>
@@ -255,27 +283,14 @@ export default function AccountPage() {
           <div className="space-y-6">
             <div>
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Orders & Payments
+                {t("ordersAndPayments")}
               </h3>
 
               <div className="overflow-hidden rounded-xl bg-white shadow-sm">
                 {orderItems.map((item, index) => {
                   const Icon = item.icon;
 
-                  const getPath = (title: string) => {
-                    switch (title) {
-                      case "Orders":
-                        return "/orders";
-                      case "Payment Methods":
-                        return "/payment-methods";
-                      case "Referrals":
-                        return "/referrals";
-                      default:
-                        return null;
-                    }
-                  };
-
-                  const path = getPath(item.title);
+                  const path = item.path;
                   const content = (
                     <div
                       className={`flex cursor-pointer items-center justify-between p-5 hover:bg-gray-50 ${
@@ -312,33 +327,14 @@ export default function AccountPage() {
 
             <div>
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Preferences & More
+                {t("preferencesAndMore")}
               </h3>
 
               <div className="grid gap-4 md:grid-cols-2">
                 {settingItems.map((item) => {
                   const Icon = item.icon;
 
-                  const getPath = (title: string) => {
-                    switch (title) {
-                      case "Saved Addresses":
-                        return "/saved-addresses";
-                      case "Favorite Orders":
-                        return "/favorite-orders";
-                      case "Notifications":
-                        return "/notifications";
-                      case "Account Settings":
-                        return "/account-settings";
-                      case "Help Center":
-                        return "/help-center";
-                      case "Available Countries":
-                        return "/available-countries";
-                      default:
-                        return null;
-                    }
-                  };
-
-                  const path = getPath(item.title);
+                  const path = item.path;
                   const content = (
                     <div className="flex cursor-pointer items-center justify-between rounded-xl bg-white p-5 shadow-sm transition hover:shadow-md">
                       <div className="flex items-center gap-3">
@@ -369,10 +365,10 @@ export default function AccountPage() {
               className="flex items-center gap-2 rounded-xl border border-red-200 bg-white px-6 py-3 font-medium text-red-500 shadow-sm"
             >
               <LogOut size={18} />
-              Logout
+              {t("logout")}
             </button>
 
-            <p className="text-xs text-gray-400">Version 1.0.0</p>
+            <p className="text-xs text-gray-400">{t("version")} 1.0.0</p>
           </div>
         </div>
       </div>

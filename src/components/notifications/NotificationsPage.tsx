@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import Link from "next/link";
+import NotificationsSkeleton from "./NotificationsSkeleton";
 
 interface NotificationData {
   orderId?: string;
@@ -159,11 +161,7 @@ export default function NotificationsPage() {
   const promosCount = notifications.filter((n) => n.type === "PROMO").length;
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f6f6f7] flex items-center justify-center">
-        <div className="text-[#c1005b]">{t("loadingNotifications")}</div>
-      </div>
-    );
+    return <NotificationsSkeleton />;
   }
 
   if (error) {
@@ -352,19 +350,23 @@ export default function NotificationsPage() {
                     {/* Conditional actions based on type */}
                     {notification.type === "ORDER" &&
                       notification.data?.orderId && (
-                        <button
-                          className="mt-4 rounded-md bg-[#c1005b] px-5 py-2 text-sm font-medium text-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // TODO: navigate to order tracking page
-                            console.log(
-                              "Track order:",
-                              notification.data.orderId,
-                            );
-                          }}
+                        <Link
+                          href={`/orders/track-order/${notification.data.orderId}`}
                         >
-                          {t("trackOrder")}
-                        </button>
+                          <button
+                            className="mt-4 rounded-md bg-[#c1005b] px-5 py-2 text-sm font-medium text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // TODO: navigate to order tracking page
+                              console.log(
+                                "Track order:",
+                                notification.data.orderId,
+                              );
+                            }}
+                          >
+                            {t("trackOrder")}
+                          </button>
+                        </Link>
                       )}
 
                     {notification.type === "DELIVERED" && (
