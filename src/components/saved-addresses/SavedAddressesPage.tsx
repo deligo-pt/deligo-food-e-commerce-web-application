@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, RefreshCw, Home, Pencil, Trash2, Plus } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface DeliveryAddress {
   _id: string;
@@ -28,6 +29,7 @@ interface ProfileResponse {
 }
 
 export default function SavedAddressesPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [addresses, setAddresses] = useState<DeliveryAddress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +104,7 @@ export default function SavedAddressesPage() {
   if (loading) {
     return (
       <div className="flex min-h-100 items-center justify-center">
-        Loading addresses...
+        {t("loadingAddresses")}
       </div>
     );
   }
@@ -124,7 +126,7 @@ export default function SavedAddressesPage() {
             <ArrowLeft className="h-5 w-5 text-black" />
           </button>
 
-          <h1 className="text-3xl font-bold text-black">Saved Addresses</h1>
+          <h1 className="text-3xl font-bold text-black">{t("savedAddresses")}</h1>
         </div>
 
         <button onClick={fetchAddresses}>
@@ -179,7 +181,7 @@ export default function SavedAddressesPage() {
 
                   {isPrimary && (
                     <span className="rounded bg-[#C2185B] px-1.5 py-1px text-[9px] font-semibold text-white">
-                      PRIMARY
+                      {t("primary")}
                     </span>
                   )}
                 </div>
@@ -218,7 +220,7 @@ export default function SavedAddressesPage() {
 
         {addresses.length === 0 && (
           <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-            No saved addresses found.
+            {t("noSavedAddressesFound")}
           </div>
         )}
 
@@ -227,7 +229,7 @@ export default function SavedAddressesPage() {
           <button className="flex h-24 w-full items-center justify-center gap-3 rounded-xl border border-dashed border-[#C2185B] text-[#C2185B]">
             <Plus className="h-5 w-5" />
 
-            <span className="text-base font-medium">Add New Address</span>
+            <span className="text-base font-medium">{t("addNewAddress")}</span>
           </button>
         </Link>
       </div>

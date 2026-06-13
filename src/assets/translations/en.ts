@@ -553,6 +553,12 @@ const en = {
 
   deleteAccount: "Delete Account",
   deleteAccountDescription: "Permanently delete your account",
+
+  loadingAddresses: "Loading addresses...",
+
+  primary: "PRIMARY",
+
+  noSavedAddressesFound: "No saved addresses found.",
 };
 
 export default en;

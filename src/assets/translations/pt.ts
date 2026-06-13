@@ -574,6 +574,12 @@ const pt = {
 
   deleteAccount: "Eliminar Conta",
   deleteAccountDescription: "Eliminar permanentemente a sua conta",
+
+  loadingAddresses: "A carregar moradas...",
+
+  primary: "PRINCIPAL",
+
+  noSavedAddressesFound: "Nenhuma morada guardada encontrada.",
 };
 
 export default pt;
