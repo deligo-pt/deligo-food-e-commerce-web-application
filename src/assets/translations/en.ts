@@ -915,6 +915,36 @@ const en = {
   security_q6: "How can I stay updated about DeliGo?",
   security_a6:
     "Visit our website, follow our social media channels, or subscribe to our updates and newsletters.",
+  contactPageTitle: "Contact DeliGo",
+  contactPageSubtitle:
+    "We'd love to hear from you. Whether you have a question, need support, want to partner with us, or simply want to learn more about DeliGo, our team is here to help.",
+
+  // Contact Cards
+  contactCallTitle: "Call Us",
+  contactCallDetail1: "+351 21 757 0184",
+  contactCallDetail2: "+351 920 136 680",
+  contactEmailTitle: "Email Us",
+  contactEmailDetail1: "contact@deligo.pt",
+  contactEmailDetail2: "geral@deligo.pt",
+  contactVisitTitle: "Visit Us",
+  contactVisitDetail1: "Rua Joaquim Agostinho 16C",
+  contactVisitDetail2: "1750-126 Lisbon, Portugal",
+  contactWebsiteTitle: "Website",
+  contactWebsiteDetail1: "www.deligo.pt",
+
+  // Location Section
+  contactLocationTitle: "Visit Our Office",
+  contactLocationDescription:
+    "Located in Lisbon, Portugal, DeliGo is building the future of delivery, logistics, mobility, and digital commerce.",
+  contactAddressLine1: "Rua Joaquim Agostinho 16C",
+  contactAddressLine2: "1750-126 Lisbon, Portugal",
+  contactEmailButton: "Email Us",
+  contactWhatsAppButton: "WhatsApp Us",
+
+  // CTA Section
+  contactCtaTitle: "Need Help?",
+  contactCtaDescription:
+    "Our team is ready to assist you with any questions, support requests, partnerships, or business inquiries.",
 };
 
 export default en;

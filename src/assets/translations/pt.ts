@@ -909,6 +909,36 @@ const pt = {
   security_q6: "Como posso ficar a par das novidades da DeliGo?",
   security_a6:
     "Pode consultar o nosso website oficial, acompanhar as nossas redes sociais ativas ou subscrever diretamente a nossa newsletter e comunicações de novidades.",
+  contactPageTitle: "Contacte a DeliGo",
+  contactPageSubtitle:
+    "Adoraríamos saber a sua opinião. Quer tenha uma pergunta, precise de apoio, queira tornar-se parceiro ou simplesmente saber mais sobre a DeliGo, a nossa equipa está aqui para ajudar.",
+
+  // Contact Cards
+  contactCallTitle: "Ligue-nos",
+  contactCallDetail1: "+351 21 757 0184",
+  contactCallDetail2: "+351 920 136 680",
+  contactEmailTitle: "Envie-nos um Email",
+  contactEmailDetail1: "contact@deligo.pt",
+  contactEmailDetail2: "geral@deligo.pt",
+  contactVisitTitle: "Visite-nos",
+  contactVisitDetail1: "Rua Joaquim Agostinho 16C",
+  contactVisitDetail2: "1750-126 Lisboa, Portugal",
+  contactWebsiteTitle: "Website",
+  contactWebsiteDetail1: "www.deligo.pt",
+
+  // Location Section
+  contactLocationTitle: "Visite o Nosso Escritório",
+  contactLocationDescription:
+    "Localizada em Lisboa, Portugal, a DeliGo está a construir o futuro das entregas, logística, mobilidade e comércio digital.",
+  contactAddressLine1: "Rua Joaquim Agostinho 16C",
+  contactAddressLine2: "1750-126 Lisboa, Portugal",
+  contactEmailButton: "Enviar Email",
+  contactWhatsAppButton: "WhatsApp",
+
+  // CTA Section
+  contactCtaTitle: "Precisa de Ajuda?",
+  contactCtaDescription:
+    "A nossa equipa está pronta para o ajudar com perguntas, pedidos de apoio, parcerias ou questões comerciais.",
 };
 
 export default pt;
