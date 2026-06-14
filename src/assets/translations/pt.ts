@@ -1126,6 +1126,54 @@ const pt = {
   privacyRights3: "Receber uma cópia portátil dos seus dados.",
   privacyRights4:
     "Apresentar uma reclamação à sua autoridade local de proteção de dados.",
+  // Terms Page
+  termsHeroTitle: "Termos e Condições",
+  termsIntroTitle: "Termos e Condições do Cliente",
+  termsIntroDescription:
+    "Ao utilizar os produtos e serviços da DeliGo como cliente, concorda com os termos aplicáveis abaixo. Escolha uma categoria para ver os termos detalhados desse produto.",
+  termsCategoriesHeading: "Categorias",
+  termsCustomerSectionTitle: "Termos e Condições do Cliente",
+  termsCustomerSectionDescription:
+    "Leia atentamente estes termos. Eles regem a sua utilização dos serviços da DeliGo como cliente.",
+  termsContactSupportHelper:
+    "Tem perguntas? Contacte a nossa equipa de apoio a qualquer momento.",
+  termsContactSupportButton: "Contactar Suporte",
+
+  // Category names
+  categoryRides: "Viagens",
+  categoryMicromobility: "Micromobilidade",
+  categoryDeliGoDrive: "DeliGo Drive",
+  categoryDelivery: "Entregas",
+  categoryInsurance: "Seguro",
+  categoryDeliGoBusiness: "DeliGo Empresas",
+  categoryVendors: "Fornecedores",
+  categoryOther: "Outros",
+
+  // Term cards
+  termAccountRegistrationTitle: "Registo de Conta",
+  termAccountRegistrationText:
+    "Para utilizar os serviços DeliGo, deve criar uma conta precisa. É responsável por manter a confidencialidade das suas credenciais de acesso. A DeliGo reserva-se o direito de suspender contas com informações falsas.",
+  termPaymentsFeesTitle: "Pagamentos e Taxas",
+  termPaymentsFeesText:
+    "Todos os pagamentos são processados de forma segura. Ao utilizar a DeliGo, concorda em pagar todas as taxas associadas às suas encomendas, viagens ou entregas. A DeliGo pode cobrar uma taxa de serviço, que será claramente apresentada antes do checkout.",
+  termCancellationsRefundsTitle: "Cancelamentos e Reembolsos",
+  termCancellationsRefundsText:
+    "As políticas de cancelamento variam consoante o serviço (viagens, comida, etc.). Os reembolsos são emitidos a critério da DeliGo com base nas circunstâncias específicas. Reveja a política de cancelamento antes de confirmar uma encomenda.",
+  termDeliveryStandardsTitle: "Padrões de Entrega e Serviço",
+  termDeliveryStandardsText:
+    "A DeliGo esforça-se por fornecer serviços atempados e precisos. No entanto, não somos responsáveis por atrasos causados por condições meteorológicas, trânsito ou outros eventos de força maior. Os tempos de entrega estimados não são garantidos.",
+  termProhibitedConductTitle: "Conduta Proibida",
+  termProhibitedConductText:
+    "Concorda em não utilizar indevidamente os serviços DeliGo, incluindo fraude, assédio ou violação de quaisquer leis. A DeliGo pode terminar a sua conta por tal comportamento sem aviso prévio.",
+  termPrivacyTitle: "Privacidade e Proteção de Dados",
+  termPrivacyText:
+    "Os seus dados pessoais são tratados de acordo com a nossa Política de Privacidade e leis aplicáveis (RGPD). A DeliGo nunca venderá os seus dados a terceiros sem o seu consentimento explícito.",
+  termDisputeResolutionTitle: "Resolução de Litígios",
+  termDisputeResolutionText:
+    "Quaisquer litígios serão primeiramente tentados ser resolvidos amigavelmente através do suporte DeliGo. Se não forem resolvidos, os litígios estarão sujeitos às leis de Portugal e à jurisdição exclusiva dos seus tribunais.",
+  termAmendmentsTitle: "Alterações",
+  termAmendmentsText:
+    "A DeliGo pode atualizar estes Termos periodicamente. A utilização continuada da plataforma após alterações constitui aceitação. Será notificado de alterações materiais por email ou notificação na aplicação.",
 };
 
 export default pt;

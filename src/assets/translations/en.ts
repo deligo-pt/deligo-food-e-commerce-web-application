@@ -1130,6 +1130,54 @@ const en = {
   privacyRights3: "Receive a portable copy of your data.",
   privacyRights4:
     "Lodge a complaint with your local data protection authority.",
+  // Terms Page
+  termsHeroTitle: "Terms and Conditions",
+  termsIntroTitle: "Customer Terms & Conditions",
+  termsIntroDescription:
+    "By using DeliGo products and services as a customer, you agree to the applicable terms below. Choose a category to view the detailed terms for that product.",
+  termsCategoriesHeading: "Categories",
+  termsCustomerSectionTitle: "Customer Terms & Conditions",
+  termsCustomerSectionDescription:
+    "Please read these terms carefully. They govern your use of DeliGo services as a customer.",
+  termsContactSupportHelper:
+    "Have questions? Contact our support team anytime.",
+  termsContactSupportButton: "Contact Support",
+
+  // Category names
+  categoryRides: "Rides",
+  categoryMicromobility: "Micromobility",
+  categoryDeliGoDrive: "DeliGo Drive",
+  categoryDelivery: "Delivery",
+  categoryInsurance: "Insurance",
+  categoryDeliGoBusiness: "DeliGo Business",
+  categoryVendors: "Vendors",
+  categoryOther: "Other",
+
+  // Term cards
+  termAccountRegistrationTitle: "Account Registration",
+  termAccountRegistrationText:
+    "To use DeliGo services, you must create an accurate account. You are responsible for maintaining the confidentiality of your login credentials. DeliGo reserves the right to suspend accounts with false information.",
+  termPaymentsFeesTitle: "Payments & Fees",
+  termPaymentsFeesText:
+    "All payments are processed securely. By using DeliGo, you agree to pay all fees associated with your orders, rides, or deliveries. DeliGo may charge a service fee, which will be clearly shown before checkout.",
+  termCancellationsRefundsTitle: "Cancellations & Refunds",
+  termCancellationsRefundsText:
+    "Cancellation policies vary by service (rides, food, etc.). Refunds are issued at DeliGo's discretion based on the specific circumstances. Please review the cancellation policy before confirming an order.",
+  termDeliveryStandardsTitle: "Delivery & Service Standards",
+  termDeliveryStandardsText:
+    "DeliGo strives to provide timely and accurate services. However, we are not liable for delays caused by weather, traffic, or other force majeure events. Estimated delivery times are not guaranteed.",
+  termProhibitedConductTitle: "Prohibited Conduct",
+  termProhibitedConductText:
+    "You agree not to misuse DeliGo services, including fraud, harassment, or violating any laws. DeliGo may terminate your account for such behavior without prior notice.",
+  termPrivacyTitle: "Privacy & Data Protection",
+  termPrivacyText:
+    "Your personal data is handled according to our Privacy Policy and applicable laws (GDPR). DeliGo will never sell your data to third parties without your explicit consent.",
+  termDisputeResolutionTitle: "Dispute Resolution",
+  termDisputeResolutionText:
+    "Any disputes shall first be attempted to be resolved amicably through DeliGo support. If unresolved, disputes will be subject to the laws of Portugal and exclusive jurisdiction of its courts.",
+  termAmendmentsTitle: "Amendments",
+  termAmendmentsText:
+    "DeliGo may update these Terms from time to time. Continued use of the platform after changes constitutes acceptance. You will be notified of material changes via email or in-app notification.",
 };
 
 export default en;
