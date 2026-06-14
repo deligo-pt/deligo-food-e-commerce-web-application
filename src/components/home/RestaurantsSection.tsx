@@ -11,6 +11,8 @@ import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
 import { useProductCategoryStore } from "@/stores/productCategoryStore";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
+import { X } from "lucide-react";
 
 interface Vendor {
   userId: string;
@@ -151,11 +153,15 @@ export default function RestaurantsSection() {
   );
   const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
   const { coords: userCoords, loading: userLoading } = useUserAddress();
-  const { selectedCategory: selectedBusinessCategory } =
-    useBusinessCategoryStore();
+  // const { selectedCategory: selectedBusinessCategory } =
+  //   useBusinessCategoryStore();
+  const {
+    selectedCategory: selectedBusinessCategory,
+    setSelectedCategory: setSelectedBusinessCategory,
+  } = useBusinessCategoryStore();
   const { selectedCategory: selectedProductCategory } =
     useProductCategoryStore();
-
+  const { selectedCuisines, toggleCuisine } = useCuisineFilterStore();
   useEffect(() => {
     const fetchVendors = async () => {
       try {
@@ -178,11 +184,8 @@ export default function RestaurantsSection() {
     if (!allVendors.length) return [];
 
     let filtered = allVendors;
-    if (!selectedBusinessCategory) {
-      filtered = filtered.filter(
-        (vendor) => vendor.businessDetails.businessType === "RESTAURANT",
-      );
-    } else {
+
+    if (selectedBusinessCategory) {
       filtered = filtered.filter(
         (vendor) =>
           vendor.businessDetails.businessType === selectedBusinessCategory.name,
@@ -196,9 +199,21 @@ export default function RestaurantsSection() {
         ),
       );
     }
+    if (selectedCuisines.length > 0) {
+      filtered = filtered.filter((vendor) =>
+        selectedCuisines.includes(
+          vendor.businessDetails.restaurantCuisineType || "",
+        ),
+      );
+    }
 
     return filtered;
-  }, [allVendors, selectedBusinessCategory, selectedProductCategory]);
+  }, [
+    allVendors,
+    selectedBusinessCategory,
+    selectedProductCategory,
+    selectedCuisines,
+  ]);
 
   const estimateDeliveryTime = useCallback(
     async (vendor: Vendor) => {
@@ -326,6 +341,30 @@ export default function RestaurantsSection() {
             {t("viewAll")} <ChevronRight size={20} />
           </Link>
         </div>
+        {(selectedBusinessCategory || selectedCuisines.length > 0) && (
+          <div className="mb-6 flex flex-wrap gap-2">
+            {selectedBusinessCategory && (
+              <button
+                onClick={() => setSelectedBusinessCategory(null)}
+                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+              >
+                {selectedBusinessCategory.name}
+                <X size={16} />
+              </button>
+            )}
+
+            {selectedCuisines.map((cuisine) => (
+              <button
+                key={cuisine}
+                onClick={() => toggleCuisine(cuisine)}
+                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+              >
+                {cuisine}
+                <X size={16} />
+              </button>
+            ))}
+          </div>
+        )}
         <div className="py-12 text-center text-gray-500">
           {selectedProductCategory
             ? `${t("noVendorsFoundFor")} "${selectedProductCategory.name}"`
@@ -348,6 +387,30 @@ export default function RestaurantsSection() {
           {t("viewAll")} <ChevronRight size={20} />
         </Link>
       </div>
+      {(selectedBusinessCategory || selectedCuisines.length > 0) && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          {selectedBusinessCategory && (
+            <button
+              onClick={() => setSelectedBusinessCategory(null)}
+              className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+            >
+              {selectedBusinessCategory.name}
+              <X size={16} />
+            </button>
+          )}
+
+          {selectedCuisines.map((cuisine) => (
+            <button
+              key={cuisine}
+              onClick={() => toggleCuisine(cuisine)}
+              className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+            >
+              {cuisine}
+              <X size={16} />
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
         {filteredVendors.map((vendor) => {
