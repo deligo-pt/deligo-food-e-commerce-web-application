@@ -12,6 +12,7 @@ import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
 import { useProductCategoryStore } from "@/stores/productCategoryStore";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
+import { useLocationStore } from "@/stores/locationStore";
 import { X } from "lucide-react";
 
 interface Vendor {
@@ -153,6 +154,7 @@ export default function RestaurantsSection() {
   );
   const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
   const { coords: userCoords, loading: userLoading } = useUserAddress();
+  const { coords: geoCoords, permissionStatus } = useLocationStore();
   // const { selectedCategory: selectedBusinessCategory } =
   //   useBusinessCategoryStore();
   const {
@@ -166,12 +168,27 @@ export default function RestaurantsSection() {
     setSelectedCategory: setSelectedProductCategory,
   } = useProductCategoryStore();
   const { selectedCuisines, toggleCuisine } = useCuisineFilterStore();
+
   useEffect(() => {
+    if (permissionStatus === "loading") return;
+
     const fetchVendors = async () => {
       try {
         setLoading(true);
         setError("");
-        const response = await apiClient.get("/vendors/customer");
+
+        let response;
+        if (geoCoords) {
+          response = await apiClient.get("/vendors/nearby/open", {
+            params: {
+              latitude: geoCoords.latitude,
+              longitude: geoCoords.longitude,
+            },
+          });
+        } else {
+          response = await apiClient.get("/vendors/customer");
+        }
+
         console.log("Vendor Response:", response.data);
         setAllVendors(response.data?.data || []);
       } catch (err) {
@@ -182,7 +199,7 @@ export default function RestaurantsSection() {
       }
     };
     fetchVendors();
-  }, []);
+  }, [geoCoords, permissionStatus]);
 
   const filteredVendors = useMemo(() => {
     if (!allVendors.length) return [];
@@ -221,7 +238,11 @@ export default function RestaurantsSection() {
 
   const estimateDeliveryTime = useCallback(
     async (vendor: Vendor) => {
-      if (!userCoords) {
+      const activeCoords = geoCoords
+        ? { lat: geoCoords.latitude, lng: geoCoords.longitude }
+        : userCoords;
+
+      if (!activeCoords) {
         setDeliveryTimes((prev) => ({
           ...prev,
           [vendor.userId]: "Under 10 min",
@@ -239,7 +260,7 @@ export default function RestaurantsSection() {
 
       setLoadingTimes((prev) => ({ ...prev, [vendor.userId]: true }));
       try {
-        const url = `/api/distance-matrix?originLat=${vendorCoords.lat}&originLng=${vendorCoords.lng}&destLat=${userCoords.lat}&destLng=${userCoords.lng}`;
+        const url = `/api/distance-matrix?originLat=${vendorCoords.lat}&originLng=${vendorCoords.lng}&destLat=${activeCoords.lat}&destLng=${activeCoords.lng}`;
         const res = await fetch(url);
         const data = await res.json();
 
@@ -259,8 +280,8 @@ export default function RestaurantsSection() {
         const distance = getDistanceKm(
           vendorCoords.lat,
           vendorCoords.lng,
-          userCoords.lat,
-          userCoords.lng,
+          activeCoords.lat,
+          activeCoords.lng,
         );
         const estimatedMinutes = Math.round((distance / 30) * 60);
         const timeStr =
@@ -278,14 +299,14 @@ export default function RestaurantsSection() {
         setLoadingTimes((prev) => ({ ...prev, [vendor.userId]: false }));
       }
     },
-    [userCoords],
+    [userCoords, geoCoords],
   );
 
   useEffect(() => {
     if (!userLoading && filteredVendors.length > 0) {
       filteredVendors.forEach((vendor) => estimateDeliveryTime(vendor));
     }
-  }, [userCoords, userLoading, filteredVendors, estimateDeliveryTime]);
+  }, [userCoords, geoCoords, userLoading, filteredVendors, estimateDeliveryTime]);
 
   const isPageLoading = loading || userLoading;
 

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import VendorCard, { Vendor } from "./VendorCard";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useLocationStore } from "@/stores/locationStore";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -58,16 +59,30 @@ export default function VendorsGrid() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { coords: geoCoords, permissionStatus } = useLocationStore();
 
   useEffect(() => {
+    if (permissionStatus === "loading") return;
+
     const fetchVendors = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const response = await apiClient.get<VendorsResponse>(
-          `/vendors/customer?page=${page}&limit=${ITEMS_PER_PAGE}`,
-        );
+        let url = `/vendors/customer?page=${page}&limit=${ITEMS_PER_PAGE}`;
+        let params: Record<string, string | number> = {};
+
+        if (geoCoords) {
+          url = "/vendors/nearby/open";
+          params = {
+            page,
+            limit: ITEMS_PER_PAGE,
+            latitude: geoCoords.latitude,
+            longitude: geoCoords.longitude,
+          };
+        }
+
+        const response = await apiClient.get<VendorsResponse>(url, { params });
 
         setVendors(response.data.data || []);
         setTotalPages(response.data.meta?.totalPage || 1);
@@ -86,7 +101,7 @@ export default function VendorsGrid() {
     };
 
     fetchVendors();
-  }, [page]);
+  }, [page, geoCoords, permissionStatus]);
   if (loading) {
     return (
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">

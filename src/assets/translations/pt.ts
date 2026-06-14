@@ -1,5 +1,9 @@
 const pt = {
   addAddress: "Adicionar Endereço",
+  locationPromptTitle: "Permitir Acesso à Localização",
+  locationPromptDescription: "Descubra os melhores restaurantes, lojas locais e obtenha tempos de entrega precisos na sua área.",
+  shareLocation: "Partilhar Localização",
+  notNow: "Agora Não",
 
   searchPlaceholder: "Pesquisar lojas, restaurantes ou cozinhas...",
 

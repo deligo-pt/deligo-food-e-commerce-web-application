@@ -8,11 +8,10 @@ export const useTranslation = () => {
   const setLang = useStore((state) => state.setLang);
 
   const t = (key: string): string => {
-    return (
-      translations[lang]?.[key as keyof (typeof translations)["en"]] ||
-      translations.en[key as keyof (typeof translations)["en"]] ||
-      key
-    );
+    const dict = (translations[lang] as unknown) as Record<string, unknown> | undefined;
+    const fallbackDict = (translations.en as unknown) as Record<string, unknown>;
+    const value = dict?.[key] ?? fallbackDict[key] ?? key;
+    return typeof value === "string" ? value : key;
   };
 
   const i18n = {

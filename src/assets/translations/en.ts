@@ -1,5 +1,9 @@
 const en = {
   addAddress: "Add Address",
+  locationPromptTitle: "Allow Location Access",
+  locationPromptDescription: "Discover the best restaurants, local stores, and get accurate delivery times in your area.",
+  shareLocation: "Share Location",
+  notNow: "Not Now",
 
   searchPlaceholder: "Search stores, restaurants, or cuisines...",
 
