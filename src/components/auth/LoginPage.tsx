@@ -461,11 +461,11 @@ export default function LoginPage() {
                 {t("byContinuingAgree")}
               </p>
               <p className="-mt-1 text-center text-[15px] font-semibold leading-7 text-[#d7357c] sm:text-[16px]">
-                <Link href="#" className="transition-opacity hover:opacity-80">
+                <Link href="/terms" className="transition-opacity hover:opacity-80">
                   {t("termsOfService")}
                 </Link>
                 <span className="text-[#696969]"> &amp; </span>
-                <Link href="#" className="transition-opacity hover:opacity-80">
+                <Link href="/privacy" className="transition-opacity hover:opacity-80">
                   {t("privacyPolicy")}
                 </Link>
               </p>
