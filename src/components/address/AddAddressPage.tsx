@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Toaster, toast } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "./AddressForm";
-import { fetchUserProfile, updateLiveLocation } from "@/services/addressApi";
+import { fetchUserProfile } from "@/services/addressApi";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
@@ -25,24 +25,21 @@ export default function AddAddressPage() {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [initialAddress, setInitialAddress] = useState<any>(null);
   const [searchValue, setSearchValue] = useState("");
-  const [updatingLocation, setUpdatingLocation] = useState(false);
 
   // For new address: populate coordinates from browser geolocation
   useEffect(() => {
     if (!isEditMode) {
-      // Prefer coordinates already in the store (already granted)
       if (geoCoords) {
         setCoordinates({ lat: geoCoords.latitude, lng: geoCoords.longitude });
         return;
       }
-      // Fallback: request fresh position directly
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
           () => {
-            // If denied or unavailable, keep null so the map uses its own resolved center
+            // Fallback – map will use its default center
           },
-          { enableHighAccuracy: true, timeout: 10000 },
+          { enableHighAccuracy: true, timeout: 10000 }
         );
       }
     }
@@ -58,14 +55,14 @@ export default function AddAddressPage() {
 
           if (isEditMode && addressId) {
             const address = userData.deliveryAddresses?.find(
-              (a: any) => a._id === addressId,
+              (a: any) => a._id === addressId
             );
             if (address) {
               setCoordinates({ lat: address.latitude, lng: address.longitude });
               setInitialAddress(address);
             }
           } else {
-            // For new address: also try currentSessionLocation as another fallback
+            // New address: optionally use currentSessionLocation as fallback
             if (!geoCoords) {
               const loc = userData.currentSessionLocation?.coordinates;
               if (loc?.length === 2) {
@@ -92,39 +89,16 @@ export default function AddAddressPage() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       (err) => {
         console.error(err);
         toast.error("Could not get your location");
-      },
+      }
     );
   };
 
   const handleFullMap = () => {
-    document
-      .getElementById("map-section")
-      ?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleUpdateLocation = async () => {
-    if (!userId) {
-      toast.error("User not loaded");
-      return;
-    }
-    if (!coordinates) {
-      toast.error("Location not yet detected. Please wait or use GPS.");
-      return;
-    }
-    setUpdatingLocation(true);
-    try {
-      await updateLiveLocation(userId, coordinates.lat, coordinates.lng);
-      toast.success("Live location updated!");
-    } catch (err: any) {
-      toast.error(err.message || "Update failed");
-    } finally {
-      setUpdatingLocation(false);
-    }
+    document.getElementById("map-section")?.scrollIntoView({ behavior: "smooth" });
   };
 
   if (loading)
@@ -211,27 +185,17 @@ export default function AddAddressPage() {
                 )}
               </div>
 
-              <button
-                onClick={handleUpdateLocation}
-                disabled={updatingLocation}
-                className="mb-4 w-full rounded-xl bg-[#b0004a] py-4 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-              >
-                {updatingLocation ? t("updating") : t("updateLocation")}
-              </button>
-
+              {/* Status Card */}
               <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
                 <CheckCircle className="mt-0.5 text-green-600" size={20} />
                 <div>
                   <p className="font-bold text-green-800">
-                    {t("locationConfirmed")}
+                    {coordinates ? t("locationConfirmed") : "Waiting for location..."}
                   </p>
-                  {coordinates ? (
+                  {coordinates && (
                     <p className="text-sm text-green-700">
-                      Lat: {coordinates.lat.toFixed(6)} | Lng:{" "}
-                      {coordinates.lng.toFixed(6)}
+                      Lat: {coordinates.lat.toFixed(6)} | Lng: {coordinates.lng.toFixed(6)}
                     </p>
-                  ) : (
-                    <p className="text-sm text-green-500">Waiting for location…</p>
                   )}
                 </div>
               </div>
@@ -246,6 +210,8 @@ export default function AddAddressPage() {
               isEditMode={isEditMode}
               userId={userId}
               addressId={addressId || undefined}
+              onSuccess={() => router.push('/saved-addresses')}
+
             />
           </div>
         </div>

@@ -46,6 +46,42 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const { vendorCount, fetchCart } = useCartStore();
 
+  // Fetch profile and update address text
+  const fetchProfile = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      const res = await apiClient.get("/profile");
+      const profile = res.data?.data;
+
+      const primaryAddress = profile?.deliveryAddresses?.find(
+        (addr: any) => addr.addressType === "PRIMARY",
+      );
+
+      const firstAddress = profile?.deliveryAddresses?.[0];
+      const address =
+        primaryAddress?.street || firstAddress?.street || "Add Address";
+      setAddressText(address);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      setAddressText("Add Address");
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchProfile();
+    }
+  }, [isLoggedIn, pathname, fetchProfile]);
+
+  useEffect(() => {
+    const handleAddressUpdate = () => {
+      if (isLoggedIn) fetchProfile();
+    };
+    window.addEventListener("addressUpdated", handleAddressUpdate);
+    return () =>
+      window.removeEventListener("addressUpdated", handleAddressUpdate);
+  }, [isLoggedIn, fetchProfile]);
+
   const handleSearch = useCallback(() => {
     if (localSearchTerm.trim()) {
       router.push(`/search?q=${encodeURIComponent(localSearchTerm.trim())}`);
@@ -120,26 +156,6 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await apiClient.get("/profile");
-        const profile = res.data?.data;
-        const address =
-          profile?.address?.street ||
-          profile?.deliveryAddresses?.[0]?.street ||
-          "Add Address";
-        setAddressText(address);
-      } catch (error) {
-        console.error("Failed to fetch profile:", error);
-      }
-    };
-
-    if (isLoggedIn) {
-      fetchProfile();
-    }
-  }, [isLoggedIn]);
-
-  useEffect(() => {
     if (!isLoggedIn) {
       setUnreadCount(0);
       return;
@@ -170,6 +186,7 @@ export default function Navbar() {
       fetchCart();
     }
   }, [isLoggedIn, pathname, fetchCart]);
+
   const handleLogout = () => {
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
@@ -198,8 +215,7 @@ export default function Navbar() {
               height={40}
               priority
             />
-
-            <span className="text-[20px] font-black  md:text-[24px]">
+            <span className="text-[20px] font-black md:text-[24px]">
               DeliGo
             </span>
           </Link>

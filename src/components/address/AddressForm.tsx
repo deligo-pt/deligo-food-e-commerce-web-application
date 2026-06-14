@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -5,11 +6,7 @@
 import { Building2, Globe, Home, MapPin, Navigation, Save } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Toaster, toast } from "sonner";
-import {
-  addDeliveryAddress,
-  updateDeliveryAddress,
-  updateLiveLocation,
-} from "@/services/addressApi";
+import { updateLiveLocation } from "@/services/addressApi";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface AddressFormProps {
@@ -17,7 +14,7 @@ interface AddressFormProps {
   initialAddress?: any;
   isEditMode?: boolean;
   userId?: string;
-  addressId?: string;
+  addressId?: string; // kept for potential future use, but not sent to API
   onSuccess?: () => void;
 }
 
@@ -26,12 +23,11 @@ export default function AddressForm({
   initialAddress,
   isEditMode = false,
   userId,
-  addressId,
   onSuccess,
 }: AddressFormProps) {
   const { t } = useTranslation();
   const [addressType, setAddressType] = useState<"home" | "work" | "other">(
-    "home",
+    "home"
   );
   const [formData, setFormData] = useState({
     street: "",
@@ -40,10 +36,11 @@ export default function AddressForm({
     state: "",
     country: "",
     postalCode: "",
+    notes: "",
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  // Initialize from initialAddress (edit mode) only when it changes
+  // Initialize from initialAddress (edit mode)
   useEffect(() => {
     if (!initialAddress) return;
     setFormData({
@@ -53,19 +50,20 @@ export default function AddressForm({
       state: initialAddress.state || "",
       country: initialAddress.country || "",
       postalCode: initialAddress.postalCode || "",
+      notes: initialAddress.notes || "",
     });
     if (initialAddress.addressType) {
       setAddressType(
         initialAddress.addressType === "OFFICE"
           ? "work"
           : initialAddress.addressType === "OTHER"
-            ? "other"
-            : "home",
+          ? "other"
+          : "home"
       );
     }
   }, [initialAddress]);
 
-  // Reverse geocode when coordinates change (map moved or GPS used)
+  // Reverse geocode when coordinates change
   useEffect(() => {
     if (!coordinates) return;
     if (!window.google?.maps) return;
@@ -90,18 +88,18 @@ export default function AddressForm({
         });
         setFormData((prev) => ({
           ...prev,
-          street: street,
-          city: city,
-          state: state,
-          country: country,
-          postalCode: postalCode,
+          street: street || prev.street,
+          city: city || prev.city,
+          state: state || prev.state,
+          country: country || prev.country,
+          postalCode: postalCode || prev.postalCode,
         }));
-      },
+      }
     );
   }, [coordinates]);
 
   const mapAddressTypeToBackend = (
-    type: string,
+    type: string
   ): "HOME" | "OFFICE" | "OTHER" => {
     if (type === "home") return "HOME";
     if (type === "work") return "OFFICE";
@@ -120,44 +118,35 @@ export default function AddressForm({
 
     setIsSaving(true);
     try {
-      await updateLiveLocation(userId, coordinates.lat, coordinates.lng);
+      // Send all data to update-live-location endpoint
       const payload = {
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
+        geoAccuracy: 10,
+        isMocked: false,
         street: formData.street,
-        detailedAddress: formData.detailedAddress,
         city: formData.city,
         state: formData.state,
         country: formData.country,
         postalCode: formData.postalCode,
-        longitude: coordinates.lng,
-        latitude: coordinates.lat,
-        geoAccuracy: 5,
-        addressType: mapAddressTypeToBackend(addressType),
+        detailedAddress: formData.detailedAddress,
+        notes: formData.notes,
+        // Note: addressType is not sent here because backend uses "PRIMARY"
+        // for this endpoint. The type selected is for visual only.
       };
-      if (isEditMode && addressId) {
-        await updateDeliveryAddress(addressId, payload);
-      } else {
-        await addDeliveryAddress(payload);
-      }
+
+      await updateLiveLocation(userId, payload);
 
       toast.success(
         isEditMode
-          ? "Address updated successfully!"
-          : "Address added successfully!",
+          ? "Primary address updated successfully!"
+          : "Primary address saved successfully!"
       );
       onSuccess?.();
     } catch (error: any) {
-      if (error.response && error.response.data) {
-        console.error(
-          "Server error response data:",
-          JSON.stringify(error.response.data, null, 2),
-        );
-      } else {
-        console.error("Unexpected error:", error);
-      }
       const serverMessage = error.response?.data?.message || error.message;
       toast.error(
-        serverMessage ||
-          "Failed to save address. Please check the console for details.",
+        serverMessage || "Failed to save address. Please try again."
       );
     } finally {
       setIsSaving(false);
@@ -176,7 +165,7 @@ export default function AddressForm({
         </p>
       </div>
 
-      {/* Address Label */}
+      {/* Address Label (visual only – endpoint always sets PRIMARY) */}
       <div className="mb-8">
         <label className="mb-4 block text-sm font-semibold text-[#191c1d]">
           {t("labelAddressAs")}
@@ -200,6 +189,9 @@ export default function AddressForm({
             </button>
           ))}
         </div>
+        <p className="mt-2 text-xs text-gray-500">
+          Note: This address will be saved as PRIMARY.
+        </p>
       </div>
 
       {/* Street + Detailed */}
@@ -250,7 +242,6 @@ export default function AddressForm({
             type="text"
             value={formData.city}
             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            // placeholder="Enter city"
             placeholder={t("enterCity")}
             className="h-14 w-full rounded-xl border border-[#e3bdc3] px-4 outline-none focus:border-[#b0004a]"
           />
@@ -305,6 +296,20 @@ export default function AddressForm({
         </div>
       </div>
 
+      {/* Notes (optional) */}
+      <div className="mb-8">
+        <label className="mb-2 block text-sm font-medium text-[#191c1d]">
+          Delivery Notes (optional)
+        </label>
+        <textarea
+          value={formData.notes}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          placeholder="e.g., Ring the bell, leave at reception, etc."
+          rows={2}
+          className="w-full rounded-xl border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
+        />
+      </div>
+
       {/* Coordinates Card */}
       <div className="mb-8 rounded-2xl border border-[#e3bdc3] bg-[#fafafa] p-5">
         <div className="mb-4 flex items-center gap-2">
@@ -342,8 +347,8 @@ export default function AddressForm({
         {isSaving
           ? t("saving")
           : isEditMode
-            ? t("updateAddress")
-            : t("saveAddress")}
+          ? t("updateAddress")
+          : t("saveAddress")}
       </button>
     </div>
   );
