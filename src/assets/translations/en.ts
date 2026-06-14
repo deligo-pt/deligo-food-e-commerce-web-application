@@ -1178,6 +1178,23 @@ const en = {
   termAmendmentsTitle: "Amendments",
   termAmendmentsText:
     "DeliGo may update these Terms from time to time. Continued use of the platform after changes constitutes acceptance. You will be notified of material changes via email or in-app notification.",
+  filter: "Filter",
+  clearAll: "Clear all",
+
+  cuisinePortugueseFood: "Portuguese Food",
+  cuisineSushi: "Sushi",
+  cuisineKebab: "Kebab",
+  cuisineBarbecue: "Barbecue",
+  cuisineIndianFood: "Indian Food",
+  cuisineItalianFood: "Italian Food",
+  cuisineVegetarianFood: "Vegetarian Food",
+  cuisineThaiFood: "Thai Food",
+  cuisineJapaneseFood: "Japanese Food",
+  cuisineRamen: "Ramen",
+  cuisineSeafood: "Seafood",
+  cuisineBurger: "Burger",
+  cuisineHalal: "Halal",
+  cuisineOthers: "Others",
 };
 
 export default en;

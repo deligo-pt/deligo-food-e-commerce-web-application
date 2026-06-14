@@ -1174,6 +1174,23 @@ const pt = {
   termAmendmentsTitle: "Alterações",
   termAmendmentsText:
     "A DeliGo pode atualizar estes Termos periodicamente. A utilização continuada da plataforma após alterações constitui aceitação. Será notificado de alterações materiais por email ou notificação na aplicação.",
+  filter: "Filtro",
+  clearAll: "Limpar tudo",
+
+  cuisinePortugueseFood: "Comida Portuguesa",
+  cuisineSushi: "Sushi",
+  cuisineKebab: "Kebab",
+  cuisineBarbecue: "Churrasco",
+  cuisineIndianFood: "Comida Indiana",
+  cuisineItalianFood: "Comida Italiana",
+  cuisineVegetarianFood: "Comida Vegetariana",
+  cuisineThaiFood: "Comida Tailandesa",
+  cuisineJapaneseFood: "Comida Japonesa",
+  cuisineRamen: "Ramen",
+  cuisineSeafood: "Marisco",
+  cuisineBurger: "Hambúrguer",
+  cuisineHalal: "Halal",
+  cuisineOthers: "Outros",
 };
 
 export default pt;
