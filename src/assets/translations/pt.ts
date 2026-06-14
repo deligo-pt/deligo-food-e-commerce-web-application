@@ -639,6 +639,22 @@ const pt = {
   removeSession: "Remover",
   removeReferralCode: "Remove",
   portugues: "Português",
+  footerDescription:
+    "Levamos satisfação até à sua porta, um pedido de cada vez. A forma mais rápida e fiável de obter tudo o que precisa de lojas e restaurantes locais.",
+
+  company: "Empresa",
+  aboutUs: "Sobre Nós",
+  partnerWithUs: "Seja Nosso Parceiro",
+  fleetManager: "Gestor de Frota",
+
+  contactUs: "Contacte-nos",
+  faqs: "Perguntas Frequentes",
+
+  getTheApp: "Obtenha a App",
+  mobileExperience:
+    "Desfrute da experiência completa no seu dispositivo móvel.",
+
+  allRightsReserved: "Todos os direitos reservados.",
 };
 
 export default pt;

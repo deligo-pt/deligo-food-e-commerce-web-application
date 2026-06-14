@@ -618,7 +618,21 @@ const en = {
   removeSession: "Remove",
   removeReferralCode: "Remove",
   portugues: "Português",
-  
+  footerDescription:
+    "Delivering delight to your doorstep, one order at a time. The most reliable and fastest way to get everything you need from local stores and restaurants.",
+
+  company: "Company",
+  aboutUs: "About Us",
+  partnerWithUs: "Partner with us",
+  fleetManager: "Fleet Manager",
+
+  contactUs: "Contact Us",
+  faqs: "FAQs",
+
+  getTheApp: "Get the app",
+  mobileExperience: "Enjoy the full experience on your mobile device.",
+
+  allRightsReserved: "All rights reserved.",
 };
 
 export default en;

@@ -1,5 +1,8 @@
+"use client"
+
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // Custom Facebook Icon
 const FacebookIcon = ({ size = 24 }: { size?: number }) => (
@@ -70,12 +73,12 @@ const TiktokIcon = ({ size = 24 }: { size?: number }) => (
   </svg>
 );
 
-const supportLinks = [
-  { label: "Contact Us", href: "/contact-us" },
-  { label: "FAQs", href: "/faqs" },
-];
-
 export default function Footer() {
+  const { t } = useTranslation();
+  const supportLinks = [
+    { label: t("contactUs"), href: "/contact-us" },
+    { label: t("faqs"), href: "/faqs" },
+  ];
   const currentYear = new Date().getFullYear();
 
   return (
@@ -88,9 +91,7 @@ export default function Footer() {
           </span>
 
           <p className="text-[18px] leading-7 text-[#5a4044]">
-            Delivering delight to your doorstep, one order at a time. The most
-            reliable and fastest way to get everything you need from local
-            stores and restaurants.
+            {t("footerDescription")}
           </p>
 
           {/* Social Media Links */}
@@ -137,14 +138,14 @@ export default function Footer() {
         {/* Company */}
         <div className="md:col-span-2">
           <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d]">
-            Company
+            {t("company")}
           </h4>
           <nav className="flex flex-col gap-5">
             <Link
               href="/about-us"
               className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
             >
-              About Us
+              {t("aboutUs")}
             </Link>
             <a
               href="https://vendor-food.deligo.pt/"
@@ -152,7 +153,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
             >
-              Partner with us
+              {t("partnerWithUs")}
             </a>
             <a
               href="https://fleet-food.deligo.pt/"
@@ -160,13 +161,13 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
             >
-              Fleet Manager
+              {t("fleetManager")}
             </a>
             <Link
               href="/delete-account"
               className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
             >
-              Delete Account
+              {t("deleteAccount")}
             </Link>
           </nav>
         </div>
@@ -174,7 +175,7 @@ export default function Footer() {
         {/* Support */}
         <div className="md:col-span-2">
           <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d]">
-            Support
+            {t("support")}
           </h4>
           <nav className="flex flex-col gap-5">
             {supportLinks.map(({ label, href }) => (
@@ -192,10 +193,10 @@ export default function Footer() {
         {/* App Store Badges using Next.js Image with consistent size */}
         <div className="md:col-span-4">
           <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d]">
-            Get the app
+            {t("getTheApp")}
           </h4>
           <p className="mb-6 text-[16px] leading-6 text-[#5a4044]">
-            Enjoy the full experience on your mobile device.
+            {t("mobileExperience")}
           </p>
           <div className="flex flex-col gap-4">
             <a
@@ -238,20 +239,20 @@ export default function Footer() {
       {/* Bottom */}
       <div className="flex w-full flex-col items-center justify-between gap-6 text-[14px] leading-5 text-[#5a4044] md:flex-row">
         <div>
-          © {currentYear} DeliGo PIXELMIRACLE, LDA. All rights reserved.
+          © {currentYear} DeliGo PIXELMIRACLE, LDA. {t("allRightsReserved")}
         </div>
         <div className="flex flex-wrap justify-center gap-8">
           <Link
             href="/privacy"
             className="transition-colors hover:text-[#b0004a]"
           >
-            Privacy Policy
+            {t("privacyPolicy")}
           </Link>
           <Link
             href="/terms"
             className="transition-colors hover:text-[#b0004a]"
           >
-            Terms of Service
+            {t("termsOfService")}
           </Link>
         </div>
       </div>
