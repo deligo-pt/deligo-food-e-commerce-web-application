@@ -760,6 +760,161 @@ const en = {
   fleetManagementSolutions: "Fleet Management Solutions",
 
   deligoRideMobilityPlatform: "DeliGo Ride Mobility Platform",
+  faqTitle: "Frequently Asked Questions",
+
+  faqSubtitle: "Everything you need to know about the DeliGo Ecosystem",
+
+  searchFaqs: "Search FAQs...",
+
+  generalQuestions: "General Questions",
+
+  customerFaqs: "Customer FAQs",
+
+  merchantFaqs: "Merchant FAQs",
+
+  driverPartnerFaqs: "Driver & Delivery Partner FAQs",
+
+  rideFleetManagement: "Ride & Fleet Management",
+
+  securityPrivacyInnovation: "Security, Privacy & Innovation",
+
+  questionsLabel: "Questions",
+
+  deligoTagline: "DeliGo – Delivering Convenience, Empowering Communities.",
+
+  // Hero & Search
+
+  faqSearchPlaceholder: "Search your question...",
+  faqQuestions: "questions",
+  contactTitle: "Contact Us",
+
+  // Category Titles
+
+  driverFaqs: "Driver & Delivery Partner FAQs",
+  rideFleetFaqs: "Ride & Fleet Management",
+  securityInnovationFaqs: "Security, Privacy & Innovation",
+
+  // Contact details
+  website: "www.deligo.pt",
+
+  whatsapp: "+351 920 136 680",
+
+  tagline: "DeliGo – Delivering Convenience, Empowering Communities.",
+
+  // General FAQs (5 items)
+  general_q1: "What is DeliGo?",
+  general_a1:
+    "DeliGo is a technology-driven platform that offers food delivery, grocery delivery, courier services, logistics solutions, fleet management, and mobility services through a single digital ecosystem.",
+  general_q2: "Where does DeliGo operate?",
+  general_a2:
+    "DeliGo is headquartered in Lisbon, Portugal, and aims to expand its services across Portugal and other European markets.",
+  general_q3: "How do I create a DeliGo account?",
+  general_a3:
+    "You can register through the DeliGo mobile app or website using your email address or mobile number.",
+  general_q4: "Is DeliGo available 24/7?",
+  general_a4:
+    "Service availability depends on your location and merchant operating hours. Some services may be available 24/7.",
+  general_q5: "Is DeliGo available on Android and iOS?",
+  general_a5: "Yes, DeliGo is available on both Android and iOS platforms.",
+
+  // Customer FAQs (7 items)
+  customer_q1: "How can I place an order?",
+  customer_a1:
+    "Browse available restaurants, stores, or services, add items to your cart, select a delivery address, and complete your payment.",
+  customer_q2: "How can I track my order?",
+  customer_a2:
+    "You can track your order in real time through the DeliGo app or website from pickup to delivery.",
+  customer_q3: "What payment methods are accepted?",
+  customer_a3:
+    "DeliGo accepts debit cards, credit cards, digital wallets, and other secure online payment methods.",
+  customer_q4: "Can I schedule an order for later?",
+  customer_a4:
+    "Yes. Customers can place scheduled orders for future delivery based on merchant availability.",
+  customer_q5: "Can I cancel my order?",
+  customer_a5:
+    "Orders can be canceled before preparation or dispatch, subject to the cancellation policy.",
+  customer_q6: "What if my order is missing items?",
+  customer_a6:
+    "Contact DeliGo Support immediately through the app, website, WhatsApp, or email for assistance.",
+  customer_q7: "How do I request a refund?",
+  customer_a7:
+    "Refund requests can be submitted through customer support and will be reviewed according to our refund policy.",
+
+  // Merchant FAQs (6 items)
+  merchant_q1: "How can my business join DeliGo?",
+  merchant_a1:
+    "Simply register through the Merchant Portal and complete the onboarding and verification process.",
+  merchant_q2: "What types of businesses can partner with DeliGo?",
+  merchant_a2:
+    "Restaurants, supermarkets, grocery stores, pharmacies, bakeries, florists, retail stores, and many other local businesses.",
+  merchant_q3: "Does DeliGo charge commission fees?",
+  merchant_a3:
+    "Yes. Commission structures vary depending on partnership agreements and service categories.",
+  merchant_q4: "How do merchants receive payments?",
+  merchant_a4:
+    "Payments are securely processed and transferred according to the agreed settlement schedule.",
+  merchant_q5: "Can merchants manage orders online?",
+  merchant_a5:
+    "Yes. Merchants receive access to a dedicated dashboard for order management, sales tracking, analytics, and reports.",
+  merchant_q6: "Does DeliGo help promote my business?",
+  merchant_a6:
+    "Yes. DeliGo offers marketing campaigns, featured listings, promotions, and digital visibility opportunities.",
+
+  // Driver FAQs (5 items)
+  driver_q1: "How can I become a delivery partner?",
+  driver_a1:
+    "You can apply through the DeliGo Driver App or website and complete the required verification process.",
+  driver_q2: "What documents are required?",
+  driver_a2:
+    "Requirements may include identification documents, driving license, vehicle documents, insurance, and work authorization.",
+  driver_q3: "Can I work part-time?",
+  driver_a3:
+    "Yes. DeliGo offers flexible earning opportunities for both full-time and part-time partners.",
+  driver_q4: "How are drivers paid?",
+  driver_a4:
+    "Payments are transferred directly to the registered bank account according to the payment cycle.",
+  driver_q5: "Can I choose my own working hours?",
+  driver_a5:
+    "Yes. Delivery partners can choose flexible schedules based on availability.",
+
+  // Ride & Fleet FAQs (6 items)
+  ride_q1: "What is DeliGo Ride?",
+  ride_a1:
+    "DeliGo Ride is an upcoming ride-hailing service that connects passengers with licensed drivers through a secure mobile platform.",
+  ride_q2: "Will DeliGo Ride offer airport transfers?",
+  ride_a2: "Yes. Airport transfers and scheduled rides will be available.",
+  ride_q3: "How will passenger safety be ensured?",
+  ride_a3:
+    "Safety features include driver verification, GPS tracking, ride monitoring, emergency assistance, and customer support.",
+  ride_q4: "What is DeliGo Fleet Management?",
+  ride_a4:
+    "A smart platform designed to help businesses manage vehicles, drivers, routes, performance, and operational efficiency.",
+  ride_q5: "Who can use DeliGo Fleet Management?",
+  ride_a5:
+    "Logistics companies, transportation providers, delivery businesses, and enterprise fleets.",
+  ride_q6: "Does DeliGo provide vehicle tracking?",
+  ride_a6:
+    "Yes. Real-time vehicle tracking and performance monitoring are available through the fleet dashboard.",
+
+  // Security & Innovation FAQs (6 items)
+  security_q1: "Is my personal information secure?",
+  security_a1:
+    "Yes. DeliGo follows industry-standard security practices and data protection regulations.",
+  security_q2: "Are online payments secure?",
+  security_a2:
+    "Absolutely. All transactions are encrypted and processed through secure payment gateways.",
+  security_q3: "Does DeliGo share customer information?",
+  security_a3:
+    "No. Customer data is protected and handled according to our Privacy Policy and applicable laws.",
+  security_q4: "What future services will DeliGo introduce?",
+  security_a4:
+    "Future services include DeliGo Ride, electric mobility solutions, advanced logistics services, fleet technology, and AI-powered delivery optimization.",
+  security_q5: "What makes DeliGo different?",
+  security_a5:
+    "DeliGo combines delivery, logistics, mobility, and fleet management services into one integrated platform, creating a complete ecosystem for customers and businesses.",
+  security_q6: "How can I stay updated about DeliGo?",
+  security_a6:
+    "Visit our website, follow our social media channels, or subscribe to our updates and newsletters.",
 };
 
 export default en;

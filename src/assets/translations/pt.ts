@@ -771,6 +771,144 @@ const pt = {
   lastMileLogistics: "Logística de Última Milha (Last-Mile)",
   fleetManagementSolutions: "Soluções de Gestão de Frotas",
   deligoRideMobilityPlatform: "Plataforma de Mobilidade DeliGo Ride",
+
+  // Hero & Search
+  faqTitle: "Perguntas Frequentes",
+  faqSubtitle: "Tudo o que precisa de saber sobre a DeliGo",
+  faqSearchPlaceholder: "Pesquise a sua pergunta...",
+  faqQuestions: "perguntas",
+  contactTitle: "Contacte-nos",
+
+  // Category Titles
+  generalQuestions: "Questões Gerais",
+  customerFaqs: "FAQs para Clientes",
+  merchantFaqs: "FAQs para Parceiros Comerciais",
+  driverFaqs: "FAQs para Estafetas e Motoristas",
+  rideFleetFaqs: "DeliGo Ride & Gestão de Frotas",
+  securityInnovationFaqs: "Segurança, Privacidade e Inovação",
+
+  // Contact details
+  website: "www.deligo.pt",
+  whatsapp: "+351 920 136 680",
+
+  tagline: "DeliGo – A sua comida favorita, entregue à sua porta.",
+
+  // General FAQs (5 items)
+  general_q1: "O que é a DeliGo?",
+  general_a1:
+    "A DeliGo é uma plataforma tecnológica que oferece entrega de comida, entrega de compras de supermercado, serviços de estafeta, soluções de logística, gestão de frotas e serviços de mobilidade através de um único ecossistema digital.",
+  general_q2: "Onde opera a DeliGo?",
+  general_a2:
+    "A DeliGo está sediada em Lisboa, Portugal, e tem como objetivo expandir os seus serviços por todo o território nacional e por outros mercados europeus.",
+  general_q3: "Como posso criar uma conta DeliGo?",
+  general_a3:
+    "Pode registrar-se através da aplicação móvel ou do website da DeliGo utilizando o seu endereço de e-mail ou número de telemóvel.",
+  general_q4: "A DeliGo está disponível 24 horas por dia, 7 dias por semana?",
+  general_a4:
+    "A disponibilidade do serviço depende da sua localização e do horário de funcionamento dos estabelecimentos parceiros. Alguns serviços poderão estar disponíveis 24/7.",
+  general_q5: "A DeliGo está disponível para Android e iOS?",
+  general_a5:
+    "Sim, a aplicação DeliGo está disponível tanto para as plataformas Android como iOS.",
+
+  // Customer FAQs (7 items)
+  customer_q1: "Como posso fazer um pedido?",
+  customer_a1:
+    "Explore os restaurantes, lojas ou serviços disponíveis na sua zona, adicione os artigos ao carrinho, selecione a morada de entrega e conclua o pagamento de forma segura.",
+  customer_q2: "Como posso acompanhar o meu pedido?",
+  customer_a2:
+    "Pode acompanhar o progresso e o percurso do seu pedido em tempo real através da aplicação ou do website da DeliGo, desde o momento da recolha até à entrega na sua porta.",
+  customer_q3: "Quais são os métodos de pagamento aceites?",
+  customer_a3:
+    "A DeliGo aceita cartões de débito, cartões de crédito, carteiras digitais e outros métodos de pagamento online seguros.",
+  customer_q4: "Posso agendar um pedido para mais tarde?",
+  customer_a4:
+    "Sim. Os clientes podem efetuar pedidos agendados para uma entrega futura, dependendo da disponibilidade do estabelecimento parceiro.",
+  customer_q5: "Posso cancelar o meu pedido?",
+  customer_a5:
+    "Os pedidos podem ser cancelados antes do início da sua preparação ou da recolha para envio, estando sujeitos à nossa política de cancelamento.",
+  customer_q6: "O que devo fazer se faltarem artigos no meu pedido?",
+  customer_a6:
+    "Entre em contacto imediato com o Suporte ao Cliente da DeliGo através da aplicação, website, WhatsApp ou e-mail para receber assistência rápida.",
+  customer_q7: "Como posso solicitar um reembolso?",
+  customer_a7:
+    "Os pedidos de reembolso podem ser submetidos através do canal de suporte ao cliente e serão analisados detalhadamente de acordo com a nossa política de reembolsos.",
+
+  // Merchant FAQs (6 items)
+  merchant_q1: "Como pode a minha empresa juntar-se à DeliGo?",
+  merchant_a1:
+    "Basta registar-se através do Portal do Parceiro e concluir o processo de integração e verificação documental.",
+  merchant_q2: "Que tipos de negócios podem fazer parceria com a DeliGo?",
+  merchant_a2:
+    "Restaurantes, supermercados, mercearias, farmácias, pastelarias, floristas, lojas de retalho e muitos outros negócios locais.",
+  merchant_q3: "A DeliGo cobra taxas de comissão?",
+  merchant_a3:
+    "Sim. As estruturas de comissão variam consoante os acordos de parceria estabelecidos e as respetivas categorias de serviço.",
+  merchant_q4: "Como é que os parceiros recebem os pagamentos?",
+  merchant_a4:
+    "Os pagamentos são processados de forma totalmente segura e transferidos de acordo com o calendário de liquidação previamente acordado.",
+  merchant_q5: "Os parceiros podem gerir os pedidos online?",
+  merchant_a5:
+    "Sim. Os parceiros comerciais têm acesso a um painel de controlo dedicado para a gestão de pedidos, acompanhamento de vendas, métricas analíticas e relatórios de desempenho.",
+  merchant_q6: "A DeliGo ajuda a promover o meu negócio?",
+  merchant_a6:
+    "Sim. A DeliGo disponibiliza campanhas de marketing, listagens em destaque, promoções sazonais e ferramentas para aumentar a visibilidade digital da sua marca.",
+
+  // Driver FAQs (5 items)
+  driver_q1: "Como posso tornar-me um estafeta parceiro?",
+  driver_a1:
+    "Pode submeter a sua candidatura através da App DeliGo Driver ou do nosso website e concluir o processo de verificação de requisitos obrigatórios.",
+  driver_q2: "Quais são os documentos necessários?",
+  driver_a2:
+    "Os requisitos podem incluir documentos de identificação pessoal (CC/Passaporte), carta de condução válida, documentação do veículo, seguro de responsabilidade civil e autorização de trabalho em vigor.",
+  driver_q3: "Posso colaborar em regime de part-time?",
+  driver_a3:
+    "Sim. A DeliGo oferece total flexibilidade para que possa obter rendimentos tanto em regime de tempo inteiro (full-time) como de tempo parcial (part-time).",
+  driver_q4: "Como são pagos os estafetas?",
+  driver_a4:
+    "Os ganhos acumulados são transferidos diretamente para a conta bancária registada de acordo com o ciclo de pagamentos regular da plataforma.",
+  driver_q5: "Posso escolher o meu próprio horário de trabalho?",
+  driver_a5:
+    "Sim. Os estafetas e parceiros de entrega têm total autonomia para escolher os seus horários e períodos de atividade com base na sua própria disponibilidade.",
+
+  // Ride & Fleet FAQs (6 items)
+  ride_q1: "O que é o DeliGo Ride?",
+  ride_a1:
+    "O DeliGo Ride é o próximo serviço de transporte de passageiros (ride-hailing) que ligará utilizadores a motoristas licenciados através de uma plataforma móvel totalmente segura.",
+  ride_q2: "O DeliGo Ride disponibilizará transfers de e para o aeroporto?",
+  ride_a2:
+    "Sim. Estarão disponíveis serviços de transfer para o aeroporto, bem como viagens e trajetos programados sob agendamento prévio.",
+  ride_q3: "Como será garantida a segurança dos passageiros?",
+  ride_a3:
+    "As medidas de segurança integradas incluem a verificação rigorosa de motoristas, acompanhamento de viagens por GPS em tempo real, monitorização contínua de rotas, botão de assistência de emergência e suporte dedicado.",
+  ride_q4: "O que é a Gestão de Frotas DeliGo (Fleet Management)?",
+  ride_a4:
+    "É uma plataforma inteligente concebida especificamente para apoiar empresas na gestão avançada de veículos, motoristas, otimização de rotas, controlo de desempenho e eficiência operacional.",
+  ride_q5: "Quem pode utilizar a Gestão de Frotas DeliGo?",
+  ride_a5:
+    "Empresas de logística, fornecedores de transportes, operadores de distribuição urbana e frotas corporativas/empresariais de qualquer dimensão.",
+  ride_q6: "A DeliGo disponibiliza a localização e rastreamento de veículos?",
+  ride_a6:
+    "Sim. O rastreamento de veículos por GPS em tempo real e os relatórios analíticos de desempenho da condução estão totalmente disponíveis através do dashboard de gestão de frotas.",
+
+  // Security & Innovation FAQs (6 items)
+  security_q1: "Os meus dados pessoais estão seguros?",
+  security_a1:
+    "Sim. A DeliGo cumpre rigorosamente os padrões de segurança mais elevados da indústria informática e as regulamentações vigentes de proteção de dados (RGPD).",
+  security_q2: "Os pagamentos online na vossa plataforma são seguros?",
+  security_a2:
+    "Absolutamente. Todas as transações financeiras são encriptadas de ponta a ponta e processadas através de gateways de pagamento internacionais certificadas.",
+  security_q3: "A DeliGo partilha dados com terceiros sem autorização?",
+  security_a3:
+    "Não. Os dados dos nossos clientes, parceiros e motoristas são protegidos e tratados exclusivamente em conformidade com a nossa Política de Privacidade e a legislação aplicável.",
+  security_q4: "Quais os próximos serviços que a DeliGo planeia introduzir?",
+  security_a4:
+    "Os planos futuros incluem o lançamento global do DeliGo Ride, a integração de soluções avançadas de mobilidade elétrica, novos serviços de logística personalizada, tecnologias preditivas de frota e otimização de rotas de entrega baseada em Inteligência Artificial (IA).",
+  security_q5: "O que diferencia a DeliGo da concorrência?",
+  security_a5:
+    "A DeliGo distingue-se por unificar as vertentes de entregas instantâneas, logística comercial, mobilidade e gestão inteligente de frotas numa única plataforma digital centralizada, criando um ecossistema completo para pessoas e empresas.",
+  security_q6: "Como posso ficar a par das novidades da DeliGo?",
+  security_a6:
+    "Pode consultar o nosso website oficial, acompanhar as nossas redes sociais ativas ou subscrever diretamente a nossa newsletter e comunicações de novidades.",
 };
 
 export default pt;
