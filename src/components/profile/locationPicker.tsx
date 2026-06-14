@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useLocationStore } from "@/stores/locationStore";
 
 declare global {
   interface Window {
@@ -38,14 +39,32 @@ export default function LocationPicker({
   const markerRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
 
-  const [coordinates, setCoordinates] = useState(defaultCenter);
+  const { coords: geoCoords } = useLocationStore();
+
+  const resolvedCenter = useMemo(() => {
+    if (
+      defaultCenter &&
+      (defaultCenter.lat !== 23.8103 || defaultCenter.lng !== 90.4125)
+    ) {
+      return defaultCenter;
+    }
+    if (geoCoords) {
+      return {
+        lat: geoCoords.latitude,
+        lng: geoCoords.longitude,
+      };
+    }
+    return defaultCenter;
+  }, [defaultCenter, geoCoords]);
+
+  const [coordinates, setCoordinates] = useState(resolvedCenter);
 
   useEffect(() => {
     const initMap = () => {
       if (!mapRef.current) return;
 
       const map = new window.google.maps.Map(mapRef.current, {
-        center: defaultCenter,
+        center: resolvedCenter,
         zoom: 15,
         mapTypeControl: false,
         streetViewControl: false,
@@ -55,7 +74,7 @@ export default function LocationPicker({
       mapInstanceRef.current = map;
 
       markerRef.current = new window.google.maps.Marker({
-        position: defaultCenter,
+        position: resolvedCenter,
         map,
         draggable: true,
       });
@@ -114,12 +133,16 @@ export default function LocationPicker({
   useEffect(() => {
     if (!markerRef.current || !mapInstanceRef.current) return;
 
-    markerRef.current.setPosition(defaultCenter);
+    markerRef.current.setPosition(resolvedCenter);
 
-    mapInstanceRef.current.setCenter(defaultCenter);
+    mapInstanceRef.current.setCenter(resolvedCenter);
 
-    setCoordinates(defaultCenter);
-  }, [defaultCenter]);
+    setCoordinates(resolvedCenter);
+
+    if (resolvedCenter.lat !== defaultCenter.lat || resolvedCenter.lng !== defaultCenter.lng) {
+      onCoordinatesChange?.(resolvedCenter.lat, resolvedCenter.lng);
+    }
+  }, [resolvedCenter]);
   useEffect(() => {
   if (!searchValue || !window.google?.maps) return;
 

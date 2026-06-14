@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -9,6 +10,7 @@ import AddressForm from "./AddressForm";
 import { fetchUserProfile, updateLiveLocation } from "@/services/addressApi";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useLocationStore } from "@/stores/locationStore";
 
 export default function AddAddressPage() {
   const { t } = useTranslation();
@@ -16,16 +18,35 @@ export default function AddAddressPage() {
   const searchParams = useSearchParams();
   const addressId = searchParams.get("addressId");
   const isEditMode = !!addressId;
+  const { coords: geoCoords } = useLocationStore();
 
   const [userId, setUserId] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [coordinates, setCoordinates] = useState({
-    lat: 23.8103,
-    lng: 90.4125,
-  });
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [initialAddress, setInitialAddress] = useState<any>(null);
   const [searchValue, setSearchValue] = useState("");
   const [updatingLocation, setUpdatingLocation] = useState(false);
+
+  // For new address: populate coordinates from browser geolocation
+  useEffect(() => {
+    if (!isEditMode) {
+      // Prefer coordinates already in the store (already granted)
+      if (geoCoords) {
+        setCoordinates({ lat: geoCoords.latitude, lng: geoCoords.longitude });
+        return;
+      }
+      // Fallback: request fresh position directly
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => {
+            // If denied or unavailable, keep null so the map uses its own resolved center
+          },
+          { enableHighAccuracy: true, timeout: 10000 },
+        );
+      }
+    }
+  }, [isEditMode, geoCoords]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -44,9 +65,14 @@ export default function AddAddressPage() {
               setInitialAddress(address);
             }
           } else {
-            const loc = userData.currentSessionLocation?.coordinates;
-            if (loc?.length === 2) {
-              setCoordinates({ lat: loc[1], lng: loc[0] });
+            // For new address: also try currentSessionLocation as another fallback
+            if (!geoCoords) {
+              const loc = userData.currentSessionLocation?.coordinates;
+              if (loc?.length === 2) {
+                setCoordinates((prev) =>
+                  prev ? prev : { lat: loc[1], lng: loc[0] }
+                );
+              }
             }
           }
         }
@@ -58,7 +84,7 @@ export default function AddAddressPage() {
       }
     };
     loadProfile();
-  }, [addressId, isEditMode]);
+  }, [addressId, isEditMode, geoCoords]);
 
   const handleUseGPS = () => {
     if (!navigator.geolocation) {
@@ -84,6 +110,10 @@ export default function AddAddressPage() {
   const handleUpdateLocation = async () => {
     if (!userId) {
       toast.error("User not loaded");
+      return;
+    }
+    if (!coordinates) {
+      toast.error("Location not yet detected. Please wait or use GPS.");
       return;
     }
     setUpdatingLocation(true);
@@ -163,13 +193,22 @@ export default function AddAddressPage() {
               </div>
 
               <div id="map-section" className="mb-6">
-                <LocationPicker
-                  defaultCenter={coordinates}
-                  searchValue={searchValue}
-                  onCoordinatesChange={(lat, lng) =>
-                    setCoordinates({ lat, lng })
-                  }
-                />
+                {coordinates ? (
+                  <LocationPicker
+                    defaultCenter={coordinates}
+                    searchValue={searchValue}
+                    onCoordinatesChange={(lat, lng) =>
+                      setCoordinates({ lat, lng })
+                    }
+                  />
+                ) : (
+                  <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50">
+                    <div className="flex flex-col items-center gap-3 text-gray-400">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
+                      <p className="text-sm">Detecting your location…</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button
@@ -186,10 +225,14 @@ export default function AddAddressPage() {
                   <p className="font-bold text-green-800">
                     {t("locationConfirmed")}
                   </p>
-                  <p className="text-sm text-green-700">
-                    Lat: {coordinates.lat.toFixed(6)} | Lng:{" "}
-                    {coordinates.lng.toFixed(6)}
-                  </p>
+                  {coordinates ? (
+                    <p className="text-sm text-green-700">
+                      Lat: {coordinates.lat.toFixed(6)} | Lng:{" "}
+                      {coordinates.lng.toFixed(6)}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-green-500">Waiting for location…</p>
+                  )}
                 </div>
               </div>
             </div>

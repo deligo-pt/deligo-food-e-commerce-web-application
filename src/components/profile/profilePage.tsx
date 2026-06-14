@@ -13,7 +13,7 @@ import {
   CreditCard,
   UserPlus,
   MapPin,
-  Heart,
+  // Heart,
   Bell,
   Settings,
   HelpCircle,
@@ -70,6 +70,11 @@ interface ProfileData {
   createdAt: string;
   updatedAt: string;
 }
+interface PointsResponse {
+  currentPoints: number;
+  totalEarned: number;
+  totalSpent: number;
+}
 
 export default function AccountPage() {
   const router = useRouter();
@@ -78,6 +83,7 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [voucherCount, setVoucherCount] = useState(0);
+  const [rewardPoints, setRewardPoints] = useState(0);
 
   const orderItems = [
     {
@@ -105,11 +111,11 @@ export default function AccountPage() {
       icon: MapPin,
       path: "/saved-addresses",
     },
-    {
-      title: t("favoriteOrders"),
-      icon: Heart,
-      path: "/favorite-orders",
-    },
+    // {
+    //   title: t("favoriteOrders"),
+    //   icon: Heart,
+    //   path: "/favorite-orders",
+    // },
     {
       title: t("notifications"),
       icon: Bell,
@@ -154,6 +160,20 @@ export default function AccountPage() {
         console.error("Failed to fetch vouchers", error);
       }
     };
+    const fetchRewardPoints = async () => {
+      try {
+        const response = await apiClient.get<{
+          success: boolean;
+          data: PointsResponse;
+        }>("/points/my-points");
+
+        const points = response.data?.data?.currentPoints || 0;
+
+        setRewardPoints(points);
+      } catch (error) {
+        console.error("Failed to fetch reward points", error);
+      }
+    };
     const fetchProfile = async () => {
       try {
         const response = await apiClient.get<{
@@ -175,6 +195,7 @@ export default function AccountPage() {
 
     fetchProfile();
     fetchVoucherCount();
+    fetchRewardPoints();
   }, [router]);
 
   const handleLogout = () => {
@@ -258,7 +279,7 @@ export default function AccountPage() {
 
               <div className="rounded-xl bg-white p-5 text-center shadow-sm">
                 <Gift className="mx-auto mb-2 text-[#c1005a]" />
-                <h3 className="font-bold">125</h3>
+                <h3 className="font-bold">{rewardPoints}</h3>
                 <p className="text-sm text-gray-500">{t("rewardPoints")}</p>
               </div>
             </div>

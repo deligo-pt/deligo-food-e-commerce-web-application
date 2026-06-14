@@ -5,8 +5,12 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
-import { useBusinessCategoryStore, BusinessCategory } from "@/stores/businessCategoryStore";
+import {
+  useBusinessCategoryStore,
+  BusinessCategory,
+} from "@/stores/businessCategoryStore";
 import { useTranslation } from "@/hooks/useTranslation";
+import RestaurantFilterModal from "./RestaurantFilterModal";
 type ApiResponse = {
   success: boolean;
   message: string;
@@ -27,6 +31,8 @@ export default function ShopSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { selectedCategory, setSelectedCategory } = useBusinessCategoryStore();
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -43,28 +49,40 @@ export default function ShopSection() {
       }
 
       try {
-        const response = await apiClient.get<ApiResponse>("/categories/businessCategory", {
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const response = await apiClient.get<ApiResponse>(
+          "/categories/businessCategory",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
 
         const payload = response.data;
         const activeCategories = (payload.data?.data ?? []).filter(
-          (cat) => cat.isActive && !cat.isDeleted
+          (cat) => cat.isActive && !cat.isDeleted,
         );
 
         if (alive) {
           setCategories(activeCategories);
-          
+
           // Set default selected category to RESTAURANT if none is selected
-          if (!selectedCategory && activeCategories.length > 0) {
-            const restaurantCategory = activeCategories.find(cat => cat.name === "RESTAURANT");
+          if (
+            !hasInitialized &&
+            !selectedCategory &&
+            activeCategories.length > 0
+          ) {
+            const restaurantCategory = activeCategories.find(
+              (cat) => cat.name === "RESTAURANT",
+            );
+
             if (restaurantCategory) {
               setSelectedCategory(restaurantCategory);
             } else {
               setSelectedCategory(activeCategories[0]);
             }
+
+            setHasInitialized(true);
           }
           setError(null);
         }
@@ -82,7 +100,7 @@ export default function ShopSection() {
     return () => {
       alive = false;
     };
-  }, [selectedCategory, setSelectedCategory]);
+  }, [selectedCategory, setSelectedCategory, hasInitialized]);
   if (loading) {
     return (
       <section>
@@ -113,10 +131,14 @@ export default function ShopSection() {
     return (
       <section>
         <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">{t("shopOnDeligo")}</h2>
+          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+            {t("shopOnDeligo")}
+          </h2>
         </div>
         <div className="flex h-64 items-center justify-center">
-          <div className="text-red-500">{error || t("noShopCategoriesAvailable")}</div>
+          <div className="text-red-500">
+            {error || t("noShopCategoriesAvailable")}
+          </div>
         </div>
       </section>
     );
@@ -125,7 +147,18 @@ export default function ShopSection() {
   return (
     <section>
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">{t("shopOnDeligo")}</h2>
+        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+          {t("shopOnDeligo")}
+        </h2>
+
+        {selectedCategory?.name === "RESTAURANT" && (
+          <button
+            onClick={() => setShowFilterModal(true)}
+            className="rounded-full border border-[#ffd9de] px-6 py-3 text-[#b0004a]"
+          >
+            {t("filter")}
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:gap-6">
@@ -139,9 +172,11 @@ export default function ShopSection() {
                 group flex cursor-pointer items-center gap-10 rounded-4xl 
                 bg-[#ffffff] p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] 
                 transition-all duration-300 hover:shadow-2xl
-                ${isActive 
-                  ? 'border-2 border-[#b0004a] shadow-lg' 
-                  : 'border-2 border-transparent hover:border-[#ffd9de]'}
+                ${
+                  isActive
+                    ? "border-2 border-[#b0004a] shadow-lg"
+                    : "border-2 border-transparent hover:border-[#ffd9de]"
+                }
               `}
             >
               <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-3xl bg-gray-100 shadow-inner transition-transform duration-500 group-hover:scale-105">
@@ -175,6 +210,11 @@ export default function ShopSection() {
           );
         })}
       </div>
+
+      <RestaurantFilterModal
+        open={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+      />
     </section>
   );
 }

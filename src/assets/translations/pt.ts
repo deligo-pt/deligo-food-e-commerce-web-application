@@ -1,5 +1,9 @@
 const pt = {
   addAddress: "Adicionar Endereço",
+  locationPromptTitle: "Permitir Acesso à Localização",
+  locationPromptDescription: "Descubra os melhores restaurantes, lojas locais e obtenha tempos de entrega precisos na sua área.",
+  shareLocation: "Partilhar Localização",
+  notNow: "Agora Não",
 
   searchPlaceholder: "Pesquisar lojas, restaurantes ou cozinhas...",
 
@@ -639,6 +643,558 @@ const pt = {
   removeSession: "Remover",
   removeReferralCode: "Remove",
   portugues: "Português",
+  footerDescription:
+    "Levamos satisfação até à sua porta, um pedido de cada vez. A forma mais rápida e fiável de obter tudo o que precisa de lojas e restaurantes locais.",
+
+  company: "Empresa",
+  aboutUs: "Sobre Nós",
+  partnerWithUs: "Seja Nosso Parceiro",
+  fleetManager: "Gestor de Frota",
+
+  contactUs: "Contacte-nos",
+  faqs: "Perguntas Frequentes",
+
+  getTheApp: "Obtenha a App",
+  mobileExperience:
+    "Desfrute da experiência completa no seu dispositivo móvel.",
+
+  allRightsReserved: "Todos os direitos reservados.",
+  aboutDeligo: "Sobre a DeliGo",
+
+  aboutHeroSubtitle: "Entregando Conveniência, Conectando Comunidades",
+
+  aboutParagraph1:
+    "A DeliGo é uma plataforma digital de última geração que reúne entrega de comida, compras de supermercado, serviços de estafeta, soluções logísticas e futuros serviços de mobilidade num único ecossistema robusto. Estamos empenhados em transformar a forma como as pessoas, as empresas e as comunidades se conectam, fornecendo serviços rápidos, fiáveis e impulsionados pela tecnologia em todo o território de Portugal e além-fronteiras.",
+
+  aboutParagraph2:
+    "Mais do que uma empresa de entregas, a DeliGo é uma plataforma tecnológica desenvolvida para resolver os desafios do quotidiano. Quer se trate de entregar uma refeição em poucos minutos, ajudar os comerciantes locais a alcançar mais clientes, apoiar empresas com soluções logísticas ou criar novas oportunidades de rendimento para motoristas e parceiros de entrega, a DeliGo foi desenhada para facilitar a vida e tornar os negócios mais eficientes.",
+
+  aboutParagraph3:
+    "A nossa plataforma combina inovação, logística inteligente, acompanhamento em tempo real, pagamentos digitais seguros e um serviço focado no cliente para garantir uma experiência fluida a todos os que utilizam a DeliGo.",
+
+  whatMakesDeligoDifferent: "O Que Torna a DeliGo Diferente?",
+
+  allInOneServiceEcosystem: "Ecossistema de Serviços Integrados (Tudo-em-Um)",
+
+  comprehensiveSuite:
+    "Uma gama completa de serviços integrados para o dia a dia, adaptados às necessidades modernas:",
+
+  technologyDrivenOperations: "Operações Impulsionadas pela Tecnologia",
+
+  technologyDrivenOperationsDescription:
+    "Software avançado e automatização que ajudam a otimizar as entregas, as rotas, o desempenho dos motoristas e a experiência global do cliente.",
+  empoweringLocalBusinesses: "Capacitação do Comércio Local",
+  empoweringLocalBusinessesDescription:
+    "Ajudamos restaurantes, supermercados, farmácias, retalhistas e comerciantes locais a aumentar as suas vendas através da transformação digital e de um maior alcance de clientes.",
+
+  realTimeVisibility: "Visibilidade em Tempo Real",
+  realTimeVisibilityDescription:
+    "Os clientes e as empresas podem acompanhar as encomendas, as entregas e as operações da frota em tempo real.",
+
+  flexibleEarningOpportunities: "Oportunidades Flexíveis de Rendimento",
+  flexibleEarningOpportunitiesDescription:
+    "A DeliGo cria oportunidades de rendimento para parceiros de entrega, motoristas, proprietários de frotas e prestadores de serviços independentes.",
+
+  smartLogisticsNetwork: "Rede Logística Inteligente",
+  smartLogisticsNetworkDescription:
+    "Os nossos sistemas inteligentes de despacho e otimização de rotas reduzem os tempos de entrega e aumentam a eficiência operacional.",
+
+  businessGrowthPartner: "Parceiro de Crescimento de Negócios",
+  businessGrowthPartnerDescription:
+    "Fornecemos aos comerciantes e clientes empresariais ferramentas robustas, análises de dados, suporte de marketing e soluções logísticas para os ajudar a escalar.",
+
+  customerCentricInnovation: "Inovação Centrada no Cliente",
+  customerCentricInnovationDescription:
+    "Cada funcionalidade que desenvolvemos foi pensada para melhorar a conveniência, a fiabilidade, a acessibilidade económica e a satisfação do utilizador.",
+
+  dataDrivenDecisionMaking: "Tomada de Decisão Baseada em Dados",
+  dataDrivenDecisionMakingDescription:
+    "A nossa plataforma utiliza dados analíticos e indicadores de desempenho para melhorar continuamente a qualidade do serviço e a eficiência operacional.",
+
+  scalableInfrastructure: "Infraestrutura Escalável",
+  scalableInfrastructureDescription:
+    "A DeliGo foi construída com uma arquitetura tecnológica moderna, capaz de suportar uma rápida expansão em múltiplas cidades e países.",
+
+  sustainabilityCommitment: "Compromisso com a Sustentabilidade",
+  sustainabilityCommitmentDescription:
+    "Estamos empenhados em apoiar operações de entrega ambientalmente responsáveis e a futura adoção de soluções de mobilidade elétrica.",
+
+  communityImpact: "Impacto Comunitário",
+  communityImpactDescription:
+    "Ao conectar clientes, comerciantes e prestadores de serviços, a DeliGo ajuda a fortalecer as economias locais e a criar oportunidades económicas duradouras.",
+  ourVision: "A Nossa Visão",
+
+  ourVisionDescription:
+    "Tornarmo-nos num dos ecossistemas de entrega, logística e mobilidade mais fiáveis e inovadores da Europa, criando conexões mais inteligentes entre pessoas, empresas e comunidades.",
+
+  ourCoreValues: "Os Nossos Valores Clicares",
+
+  ourMission: "A Nossa Missão",
+
+  innovation: "Inovação",
+  innovationDescription:
+    "Desenvolver continuamente soluções mais inteligentes.",
+
+  reliability: "Fiabilidade",
+  reliabilityDescription: "Cumprir as nossas promessas em cada entrega.",
+
+  integrity: "Integridade",
+  integrityDescription:
+    "Construir confiança através da transparência e responsabilidade.",
+
+  customerSuccess: "Sucesso do Cliente",
+  customerSuccessDescription:
+    "Colocar os clientes no centro de tudo o que fazemos.",
+
+  excellence: "Excelência",
+  excellenceDescription:
+    "Procurar os mais elevados padrões no serviço e nas operações.",
+
+  sustainability: "Sustentabilidade",
+  sustainabilityDescription:
+    "Apoiar o crescimento responsável e a consciência ambiental.",
+
+  missionItem1: "Simplificar o quotidiano através da tecnologia.",
+  missionItem2: "Proporcionar experiências excecionais aos clientes.",
+  missionItem3:
+    "Capacitar os negócios locais a prosperarem no ambiente digital.",
+  missionItem4: "Criar oportunidades sustentáveis de rendimento.",
+  missionItem5: "Construir uma rede logística fiável e inteligente.",
+  missionItem6: "Impulsionar a inovação em serviços de mobilidade e entrega.",
+  missionItem7: "Expandir nos mercados europeus com soluções escaláveis.",
+
+  deligoPromise: "A PROMESSA DELIGO",
+
+  deligoPromiseTagline: "Rápido. Fiável. Conectado.",
+
+  deligoPromiseDescription:
+    "Na DeliGo, não entregamos apenas produtos. Entregamos conveniência, oportunidade, crescimento e conexões significativas que melhoram a vida quotidiana. O nosso objetivo é ser a plataforma em que as pessoas confiam sempre que precisam de algo entregue, transportado ou conectado.",
+  foodDelivery: "Entrega de Comida",
+  groceryDelivery: "Entrega de Supermercado e Mercearia",
+  courierParcelServices: "Serviços de Estafeta e Encomendas",
+  lastMileLogistics: "Logística de Última Milha (Last-Mile)",
+  fleetManagementSolutions: "Soluções de Gestão de Frotas",
+  deligoRideMobilityPlatform: "Plataforma de Mobilidade DeliGo Ride",
+
+  // Hero & Search
+  faqTitle: "Perguntas Frequentes",
+  faqSubtitle: "Tudo o que precisa de saber sobre a DeliGo",
+  faqSearchPlaceholder: "Pesquise a sua pergunta...",
+  faqQuestions: "perguntas",
+  contactTitle: "Contacte-nos",
+
+  // Category Titles
+  generalQuestions: "Questões Gerais",
+  customerFaqs: "FAQs para Clientes",
+  merchantFaqs: "FAQs para Parceiros Comerciais",
+  driverFaqs: "FAQs para Estafetas e Motoristas",
+  rideFleetFaqs: "DeliGo Ride & Gestão de Frotas",
+  securityInnovationFaqs: "Segurança, Privacidade e Inovação",
+
+  // Contact details
+  website: "www.deligo.pt",
+  whatsapp: "+351 920 136 680",
+
+  tagline: "DeliGo – A sua comida favorita, entregue à sua porta.",
+
+  // General FAQs (5 items)
+  general_q1: "O que é a DeliGo?",
+  general_a1:
+    "A DeliGo é uma plataforma tecnológica que oferece entrega de comida, entrega de compras de supermercado, serviços de estafeta, soluções de logística, gestão de frotas e serviços de mobilidade através de um único ecossistema digital.",
+  general_q2: "Onde opera a DeliGo?",
+  general_a2:
+    "A DeliGo está sediada em Lisboa, Portugal, e tem como objetivo expandir os seus serviços por todo o território nacional e por outros mercados europeus.",
+  general_q3: "Como posso criar uma conta DeliGo?",
+  general_a3:
+    "Pode registrar-se através da aplicação móvel ou do website da DeliGo utilizando o seu endereço de e-mail ou número de telemóvel.",
+  general_q4: "A DeliGo está disponível 24 horas por dia, 7 dias por semana?",
+  general_a4:
+    "A disponibilidade do serviço depende da sua localização e do horário de funcionamento dos estabelecimentos parceiros. Alguns serviços poderão estar disponíveis 24/7.",
+  general_q5: "A DeliGo está disponível para Android e iOS?",
+  general_a5:
+    "Sim, a aplicação DeliGo está disponível tanto para as plataformas Android como iOS.",
+
+  // Customer FAQs (7 items)
+  customer_q1: "Como posso fazer um pedido?",
+  customer_a1:
+    "Explore os restaurantes, lojas ou serviços disponíveis na sua zona, adicione os artigos ao carrinho, selecione a morada de entrega e conclua o pagamento de forma segura.",
+  customer_q2: "Como posso acompanhar o meu pedido?",
+  customer_a2:
+    "Pode acompanhar o progresso e o percurso do seu pedido em tempo real através da aplicação ou do website da DeliGo, desde o momento da recolha até à entrega na sua porta.",
+  customer_q3: "Quais são os métodos de pagamento aceites?",
+  customer_a3:
+    "A DeliGo aceita cartões de débito, cartões de crédito, carteiras digitais e outros métodos de pagamento online seguros.",
+  customer_q4: "Posso agendar um pedido para mais tarde?",
+  customer_a4:
+    "Sim. Os clientes podem efetuar pedidos agendados para uma entrega futura, dependendo da disponibilidade do estabelecimento parceiro.",
+  customer_q5: "Posso cancelar o meu pedido?",
+  customer_a5:
+    "Os pedidos podem ser cancelados antes do início da sua preparação ou da recolha para envio, estando sujeitos à nossa política de cancelamento.",
+  customer_q6: "O que devo fazer se faltarem artigos no meu pedido?",
+  customer_a6:
+    "Entre em contacto imediato com o Suporte ao Cliente da DeliGo através da aplicação, website, WhatsApp ou e-mail para receber assistência rápida.",
+  customer_q7: "Como posso solicitar um reembolso?",
+  customer_a7:
+    "Os pedidos de reembolso podem ser submetidos através do canal de suporte ao cliente e serão analisados detalhadamente de acordo com a nossa política de reembolsos.",
+
+  // Merchant FAQs (6 items)
+  merchant_q1: "Como pode a minha empresa juntar-se à DeliGo?",
+  merchant_a1:
+    "Basta registar-se através do Portal do Parceiro e concluir o processo de integração e verificação documental.",
+  merchant_q2: "Que tipos de negócios podem fazer parceria com a DeliGo?",
+  merchant_a2:
+    "Restaurantes, supermercados, mercearias, farmácias, pastelarias, floristas, lojas de retalho e muitos outros negócios locais.",
+  merchant_q3: "A DeliGo cobra taxas de comissão?",
+  merchant_a3:
+    "Sim. As estruturas de comissão variam consoante os acordos de parceria estabelecidos e as respetivas categorias de serviço.",
+  merchant_q4: "Como é que os parceiros recebem os pagamentos?",
+  merchant_a4:
+    "Os pagamentos são processados de forma totalmente segura e transferidos de acordo com o calendário de liquidação previamente acordado.",
+  merchant_q5: "Os parceiros podem gerir os pedidos online?",
+  merchant_a5:
+    "Sim. Os parceiros comerciais têm acesso a um painel de controlo dedicado para a gestão de pedidos, acompanhamento de vendas, métricas analíticas e relatórios de desempenho.",
+  merchant_q6: "A DeliGo ajuda a promover o meu negócio?",
+  merchant_a6:
+    "Sim. A DeliGo disponibiliza campanhas de marketing, listagens em destaque, promoções sazonais e ferramentas para aumentar a visibilidade digital da sua marca.",
+
+  // Driver FAQs (5 items)
+  driver_q1: "Como posso tornar-me um estafeta parceiro?",
+  driver_a1:
+    "Pode submeter a sua candidatura através da App DeliGo Driver ou do nosso website e concluir o processo de verificação de requisitos obrigatórios.",
+  driver_q2: "Quais são os documentos necessários?",
+  driver_a2:
+    "Os requisitos podem incluir documentos de identificação pessoal (CC/Passaporte), carta de condução válida, documentação do veículo, seguro de responsabilidade civil e autorização de trabalho em vigor.",
+  driver_q3: "Posso colaborar em regime de part-time?",
+  driver_a3:
+    "Sim. A DeliGo oferece total flexibilidade para que possa obter rendimentos tanto em regime de tempo inteiro (full-time) como de tempo parcial (part-time).",
+  driver_q4: "Como são pagos os estafetas?",
+  driver_a4:
+    "Os ganhos acumulados são transferidos diretamente para a conta bancária registada de acordo com o ciclo de pagamentos regular da plataforma.",
+  driver_q5: "Posso escolher o meu próprio horário de trabalho?",
+  driver_a5:
+    "Sim. Os estafetas e parceiros de entrega têm total autonomia para escolher os seus horários e períodos de atividade com base na sua própria disponibilidade.",
+
+  // Ride & Fleet FAQs (6 items)
+  ride_q1: "O que é o DeliGo Ride?",
+  ride_a1:
+    "O DeliGo Ride é o próximo serviço de transporte de passageiros (ride-hailing) que ligará utilizadores a motoristas licenciados através de uma plataforma móvel totalmente segura.",
+  ride_q2: "O DeliGo Ride disponibilizará transfers de e para o aeroporto?",
+  ride_a2:
+    "Sim. Estarão disponíveis serviços de transfer para o aeroporto, bem como viagens e trajetos programados sob agendamento prévio.",
+  ride_q3: "Como será garantida a segurança dos passageiros?",
+  ride_a3:
+    "As medidas de segurança integradas incluem a verificação rigorosa de motoristas, acompanhamento de viagens por GPS em tempo real, monitorização contínua de rotas, botão de assistência de emergência e suporte dedicado.",
+  ride_q4: "O que é a Gestão de Frotas DeliGo (Fleet Management)?",
+  ride_a4:
+    "É uma plataforma inteligente concebida especificamente para apoiar empresas na gestão avançada de veículos, motoristas, otimização de rotas, controlo de desempenho e eficiência operacional.",
+  ride_q5: "Quem pode utilizar a Gestão de Frotas DeliGo?",
+  ride_a5:
+    "Empresas de logística, fornecedores de transportes, operadores de distribuição urbana e frotas corporativas/empresariais de qualquer dimensão.",
+  ride_q6: "A DeliGo disponibiliza a localização e rastreamento de veículos?",
+  ride_a6:
+    "Sim. O rastreamento de veículos por GPS em tempo real e os relatórios analíticos de desempenho da condução estão totalmente disponíveis através do dashboard de gestão de frotas.",
+
+  // Security & Innovation FAQs (6 items)
+  security_q1: "Os meus dados pessoais estão seguros?",
+  security_a1:
+    "Sim. A DeliGo cumpre rigorosamente os padrões de segurança mais elevados da indústria informática e as regulamentações vigentes de proteção de dados (RGPD).",
+  security_q2: "Os pagamentos online na vossa plataforma são seguros?",
+  security_a2:
+    "Absolutamente. Todas as transações financeiras são encriptadas de ponta a ponta e processadas através de gateways de pagamento internacionais certificadas.",
+  security_q3: "A DeliGo partilha dados com terceiros sem autorização?",
+  security_a3:
+    "Não. Os dados dos nossos clientes, parceiros e motoristas são protegidos e tratados exclusivamente em conformidade com a nossa Política de Privacidade e a legislação aplicável.",
+  security_q4: "Quais os próximos serviços que a DeliGo planeia introduzir?",
+  security_a4:
+    "Os planos futuros incluem o lançamento global do DeliGo Ride, a integração de soluções avançadas de mobilidade elétrica, novos serviços de logística personalizada, tecnologias preditivas de frota e otimização de rotas de entrega baseada em Inteligência Artificial (IA).",
+  security_q5: "O que diferencia a DeliGo da concorrência?",
+  security_a5:
+    "A DeliGo distingue-se por unificar as vertentes de entregas instantâneas, logística comercial, mobilidade e gestão inteligente de frotas numa única plataforma digital centralizada, criando um ecossistema completo para pessoas e empresas.",
+  security_q6: "Como posso ficar a par das novidades da DeliGo?",
+  security_a6:
+    "Pode consultar o nosso website oficial, acompanhar as nossas redes sociais ativas ou subscrever diretamente a nossa newsletter e comunicações de novidades.",
+  contactPageTitle: "Contacte a DeliGo",
+  contactPageSubtitle:
+    "Adoraríamos saber a sua opinião. Quer tenha uma pergunta, precise de apoio, queira tornar-se parceiro ou simplesmente saber mais sobre a DeliGo, a nossa equipa está aqui para ajudar.",
+
+  // Contact Cards
+  contactCallTitle: "Ligue-nos",
+  contactCallDetail1: "+351 21 757 0184",
+  contactCallDetail2: "+351 920 136 680",
+  contactEmailTitle: "Envie-nos um Email",
+  contactEmailDetail1: "contact@deligo.pt",
+  contactEmailDetail2: "geral@deligo.pt",
+  contactVisitTitle: "Visite-nos",
+  contactVisitDetail1: "Rua Joaquim Agostinho 16C",
+  contactVisitDetail2: "1750-126 Lisboa, Portugal",
+  contactWebsiteTitle: "Website",
+  contactWebsiteDetail1: "www.deligo.pt",
+
+  // Location Section
+  contactLocationTitle: "Visite o Nosso Escritório",
+  contactLocationDescription:
+    "Localizada em Lisboa, Portugal, a DeliGo está a construir o futuro das entregas, logística, mobilidade e comércio digital.",
+  contactAddressLine1: "Rua Joaquim Agostinho 16C",
+  contactAddressLine2: "1750-126 Lisboa, Portugal",
+  contactEmailButton: "Enviar Email",
+  contactWhatsAppButton: "WhatsApp",
+
+  // CTA Section
+  contactCtaTitle: "Precisa de Ajuda?",
+  contactCtaDescription:
+    "A nossa equipa está pronta para o ajudar com perguntas, pedidos de apoio, parcerias ou questões comerciais.",
+
+  privacyHeroTitle: "Política de Privacidade",
+  privacyHeroDescription:
+    'Esta Política de Privacidade explica como a DeliGo ("DeliGo", "nós", "nos" ou "nosso") recolhe, usa, divulga e protege as suas informações quando utiliza os nossos websites, aplicações e serviços.',
+
+  // Sidebar / Nav links
+  privacyNavWhoWeAre: "Quem somos",
+  privacyNavDataCollect: "Dados recolhidos",
+  privacyNavHowWeUse: "Como usamos",
+  privacyNavLegalBases: "Bases legais",
+  privacyNavSharing: "Partilha",
+  privacyNavCookies: "Cookies",
+  privacyNavRetention: "Retenção",
+  privacyNavRights: "Os seus direitos",
+  privacyNavSecurity: "Segurança",
+  privacyNavInternational: "Transferências internacionais",
+  privacyNavChildren: "Crianças",
+  privacyNavChanges: "Alterações",
+  privacyNavDeletion: "Eliminar conta",
+  privacyNavContact: "Contacte-nos",
+
+  // Section: Who we are
+  privacyWhoWeAreTitle: "1) Quem somos",
+  privacyWhoWeAreText:
+    'A DeliGo LDA é a responsável pelo tratamento de dados pessoais processados através dos nossos websites, aplicações e plataformas (coletivamente, os "Serviços"). Sede: [adicionar endereço da empresa]. Contacto: info@deligoeu.com. Se aceder à DeliGo através de um parceiro empresarial ou de frota, esse parceiro pode ser um controlador independente para o seu próprio processamento.',
+
+  // Section: Data we collect
+  privacyDataCollectTitle: "2) Dados que recolhemos",
+  privacyDataYouProvideTitle: "Informação que fornece",
+  privacyDataYouProvideItems: [
+    "Detalhes da conta (nome, email, telefone, palavra-passe).",
+    "Dados de perfil e verificação (identificação, licença TVDE/condutor, documentos do veículo, informações de comerciante/empresa).",
+    "Moradas, instruções de entrega, mensagens de suporte, avaliações.",
+    "Detalhes de pagamento (tokenizados pelos nossos processadores de pagamento; não armazenamos números de cartão completos).",
+  ],
+  privacyDataAutoTitle: "Informação que recolhemos automaticamente",
+  privacyDataAutoItems: [
+    "Dados de dispositivo e registo (IP, navegador, versão do SO, versão da app, timestamps, registos de falhas).",
+    "Dados de utilização (páginas visualizadas, funcionalidades utilizadas, URLs de referência, atribuição de campanhas).",
+    "Localização aproximada ou precisa quando permite serviços de localização (para viagens/entregas).",
+    "Cookies, pixels e tecnologias semelhantes (ver Cookies).",
+  ],
+  privacyDataThirdPartyNote:
+    "Podemos também receber dados de terceiros (por exemplo, serviços de verificação de identidade, fornecedores de pagamento, parceiros de frota ou empresariais) quando legal.",
+
+  // Section: How we use
+  privacyHowUseTitle: "3) Como utilizamos as suas informações",
+  privacyHowUseItems: [
+    "Fornecer e operar os Serviços (criação de conta, encomendas, viagens, entregas, pagamentos).",
+    "Verificar identidade, elegibilidade e conformidade (ex., integração de motoristas/comerciantes).",
+    "Processar pagamentos, prevenir fraudes e garantir a segurança da plataforma.",
+    "Comunicar consigo (mensagens de serviço, suporte, atualizações de políticas, marketing com consentimento quando necessário).",
+    "Melhorar e personalizar os Serviços, análises e monitorização de desempenho.",
+    "Cumprir obrigações legais e aplicar os nossos Termos.",
+  ],
+
+  // Section: Legal bases
+  privacyLegalBasesTitle: "4) Bases legais para o processamento (RGPD/UE)",
+  privacyLegalBasesItems: [
+    "Contrato: Para fornecer os Serviços que solicita (ex., viagens, entregas, conta e pagamentos).",
+    "Interesses legítimos: Segurança da plataforma, prevenção de fraudes, análises, melhoria do produto, marketing direto limitado.",
+    "Consentimento: Onde necessário para marketing, cookies/análises ou partilha de localização precisa.",
+    "Obrigação legal: Requisitos fiscais, contabilísticos, regulatórios e de segurança.",
+  ],
+
+  // Section: Sharing
+  privacySharingTitle: "5) Quando partilhamos as suas informações",
+  privacySharingItems: [
+    "Fornecedores de serviços (subcontratantes): Alojamento na nuvem, análises, ferramentas de suporte ao cliente, verificação de identidade e processadores de pagamento — vinculados por contratos para proteger os seus dados.",
+    "Partes da transação: Motoristas, estafetas, comerciantes, administradores de frota ou empresa para cumprir a sua encomenda/viagem.",
+    "Legal e segurança: Autoridades policiais, reguladores, ou para proteger direitos, segurança e propriedade.",
+    "Eventos corporativos: Em fusões, aquisições ou reorganização, com aviso razoável.",
+  ],
+
+  // Section: Cookies
+  privacyCookiesTitle: "6) Cookies e tecnologias semelhantes",
+  privacyCookiesText:
+    "Utilizamos cookies essenciais para o funcionamento do nosso site, e cookies opcionais de análise/marketing para compreender a utilização e melhorar o desempenho. Pode controlar os cookies não essenciais através do nosso banner de cookies ou das definições do seu navegador. Bloquear alguns cookies pode afetar a funcionalidade.",
+
+  // Section: Retention
+  privacyRetentionTitle: "7) Retenção de dados",
+  privacyRetentionText:
+    "Mantemos os dados pessoais apenas enquanto necessário para os fins descritos acima — tipicamente durante a vida da sua conta e por um período exigido por lei (ex., fiscal e contabilístico). Quando os dados já não são necessários, são eliminados ou anonimizados de forma segura.",
+
+  // Section: Security
+  privacySecurityTitle: "8) Segurança",
+  privacySecurityText:
+    "Implementamos salvaguardas administrativas, técnicas e físicas (encriptação em trânsito, controlos de acesso, registos, menor privilégio, revisões regulares). Nenhum método de transmissão ou armazenamento é 100% seguro; trabalhamos continuamente para melhorar as nossas proteções.",
+
+  // Section: International transfers
+  privacyInternationalTitle: "9) Transferências internacionais de dados",
+  privacyInternationalText:
+    "Quando os dados são transferidos para fora do EEE/Reino Unido, utilizamos mecanismos de transferência legais, como as Cláusulas Contratuais Tipo da Comissão Europeia e salvaguardas adicionais conforme apropriado.",
+
+  // Section: Your rights
+  privacyRightsTitle: "10) Os seus direitos de privacidade",
+  privacyRightsLead: "Dependendo da sua localização, pode ter o direito de:",
+  privacyRightsItems: [
+    "Aceder, corrigir ou eliminar os seus dados pessoais.",
+    "Opor-se ou restringir determinados processamentos e retirar o consentimento quando nos baseamos no consentimento.",
+    "Receber uma cópia portátil dos seus dados.",
+    "Apresentar uma reclamação à sua autoridade local de proteção de dados.",
+  ],
+  privacyRightsContact:
+    "Para exercer os seus direitos, contacte-nos em privacy@deligoeu.com. Podemos precisar de verificar a sua identidade.",
+
+  // Section: Account Deletion
+  privacyDeletionTitle: "11) Eliminação de Conta",
+  privacyDeletionText:
+    "Tem o direito de solicitar a eliminação da sua conta DeliGo e dos dados pessoais associados. Após a eliminação da conta, poderá perder o acesso a serviços, histórico e informações armazenadas.",
+  privacyDeletionRequestText:
+    "Para solicitar a eliminação da conta, visite a nossa página dedicada:",
+  privacyDeletionButton: "Solicitar Eliminação de Conta",
+  privacyDeletionNote:
+    "Nota: Alguns dados podem ser retidos para fins legais, fiscais ou regulamentares.",
+
+  // Section: Children
+  privacyChildrenTitle: "12) Privacidade de crianças",
+  privacyChildrenText:
+    "Os nossos serviços não são destinados a menores de 16 anos. Não recolhemos conscientemente dados pessoais de crianças. Se acreditar que uma criança nos forneceu dados, contacte-nos para os remover.",
+
+  // Section: Changes
+  privacyChangesTitle: "13) Alterações a esta política",
+  privacyChangesText:
+    'Podemos atualizar esta Política de Privacidade periodicamente. Publicaremos a versão atualizada nesta página e ajustaremos a data de "Última atualização" acima. Alterações significativas podem ser notificadas por email ou através de aviso na aplicação.',
+  privacyChangesDataProtectionTitle: "Autoridade de Proteção de Dados",
+  privacyChangesDataProtectionText:
+    "Se estiver no EEE, pode contactar a sua autoridade local. Em Portugal: Comissão Nacional de Proteção de Dados (CNPD).",
+  // Data you provide (4 items)
+  privacyDataYouProvide1:
+    "Detalhes da conta (nome, email, telefone, palavra-passe).",
+  privacyDataYouProvide2:
+    "Dados de perfil e verificação (identificação, licença TVDE/condutor, documentos do veículo, informações de comerciante/empresa).",
+  privacyDataYouProvide3:
+    "Moradas, instruções de entrega, mensagens de suporte, avaliações.",
+  privacyDataYouProvide4:
+    "Detalhes de pagamento (tokenizados pelos nossos processadores de pagamento; não armazenamos números de cartão completos).",
+
+  // Data auto (4 items)
+  privacyDataAuto1:
+    "Dados de dispositivo e registo (IP, navegador, versão do SO, versão da app, timestamps, registos de falhas).",
+  privacyDataAuto2:
+    "Dados de utilização (páginas visualizadas, funcionalidades utilizadas, URLs de referência, atribuição de campanhas).",
+  privacyDataAuto3:
+    "Localização aproximada ou precisa quando permite serviços de localização (para viagens/entregas).",
+  privacyDataAuto4: "Cookies, pixels e tecnologias semelhantes (ver Cookies).",
+
+  // How we use (6 items)
+  privacyHowUse1:
+    "Fornecer e operar os Serviços (criação de conta, encomendas, viagens, entregas, pagamentos).",
+  privacyHowUse2:
+    "Verificar identidade, elegibilidade e conformidade (ex., integração de motoristas/comerciantes).",
+  privacyHowUse3:
+    "Processar pagamentos, prevenir fraudes e garantir a segurança da plataforma.",
+  privacyHowUse4:
+    "Comunicar consigo (mensagens de serviço, suporte, atualizações de políticas, marketing com consentimento quando necessário).",
+  privacyHowUse5:
+    "Melhorar e personalizar os Serviços, análises e monitorização de desempenho.",
+  privacyHowUse6: "Cumprir obrigações legais e aplicar os nossos Termos.",
+
+  // Legal bases (4 items)
+  privacyLegalBases1:
+    "Contrato: Para fornecer os Serviços que solicita (ex., viagens, entregas, conta e pagamentos).",
+  privacyLegalBases2:
+    "Interesses legítimos: Segurança da plataforma, prevenção de fraudes, análises, melhoria do produto, marketing direto limitado.",
+  privacyLegalBases3:
+    "Consentimento: Onde necessário para marketing, cookies/análises ou partilha de localização precisa.",
+  privacyLegalBases4:
+    "Obrigação legal: Requisitos fiscais, contabilísticos, regulatórios e de segurança.",
+
+  // Sharing (4 items)
+  privacySharing1:
+    "Fornecedores de serviços (subcontratantes): Alojamento na nuvem, análises, ferramentas de suporte ao cliente, verificação de identidade e processadores de pagamento — vinculados por contratos para proteger os seus dados.",
+  privacySharing2:
+    "Partes da transação: Motoristas, estafetas, comerciantes, administradores de frota ou empresa para cumprir a sua encomenda/viagem.",
+  privacySharing3:
+    "Legal e segurança: Autoridades policiais, reguladores, ou para proteger direitos, segurança e propriedade.",
+  privacySharing4:
+    "Eventos corporativos: Em fusões, aquisições ou reorganização, com aviso razoável.",
+
+  // Your rights (4 items)
+  privacyRights1: "Aceder, corrigir ou eliminar os seus dados pessoais.",
+  privacyRights2:
+    "Opor-se ou restringir determinados processamentos e retirar o consentimento quando nos baseamos no consentimento.",
+  privacyRights3: "Receber uma cópia portátil dos seus dados.",
+  privacyRights4:
+    "Apresentar uma reclamação à sua autoridade local de proteção de dados.",
+  // Terms Page
+  termsHeroTitle: "Termos e Condições",
+  termsIntroTitle: "Termos e Condições do Cliente",
+  termsIntroDescription:
+    "Ao utilizar os produtos e serviços da DeliGo como cliente, concorda com os termos aplicáveis abaixo. Escolha uma categoria para ver os termos detalhados desse produto.",
+  termsCategoriesHeading: "Categorias",
+  termsCustomerSectionTitle: "Termos e Condições do Cliente",
+  termsCustomerSectionDescription:
+    "Leia atentamente estes termos. Eles regem a sua utilização dos serviços da DeliGo como cliente.",
+  termsContactSupportHelper:
+    "Tem perguntas? Contacte a nossa equipa de apoio a qualquer momento.",
+  termsContactSupportButton: "Contactar Suporte",
+
+  // Category names
+  categoryRides: "Viagens",
+  categoryMicromobility: "Micromobilidade",
+  categoryDeliGoDrive: "DeliGo Drive",
+  categoryDelivery: "Entregas",
+  categoryInsurance: "Seguro",
+  categoryDeliGoBusiness: "DeliGo Empresas",
+  categoryVendors: "Fornecedores",
+  categoryOther: "Outros",
+
+  // Term cards
+  termAccountRegistrationTitle: "Registo de Conta",
+  termAccountRegistrationText:
+    "Para utilizar os serviços DeliGo, deve criar uma conta precisa. É responsável por manter a confidencialidade das suas credenciais de acesso. A DeliGo reserva-se o direito de suspender contas com informações falsas.",
+  termPaymentsFeesTitle: "Pagamentos e Taxas",
+  termPaymentsFeesText:
+    "Todos os pagamentos são processados de forma segura. Ao utilizar a DeliGo, concorda em pagar todas as taxas associadas às suas encomendas, viagens ou entregas. A DeliGo pode cobrar uma taxa de serviço, que será claramente apresentada antes do checkout.",
+  termCancellationsRefundsTitle: "Cancelamentos e Reembolsos",
+  termCancellationsRefundsText:
+    "As políticas de cancelamento variam consoante o serviço (viagens, comida, etc.). Os reembolsos são emitidos a critério da DeliGo com base nas circunstâncias específicas. Reveja a política de cancelamento antes de confirmar uma encomenda.",
+  termDeliveryStandardsTitle: "Padrões de Entrega e Serviço",
+  termDeliveryStandardsText:
+    "A DeliGo esforça-se por fornecer serviços atempados e precisos. No entanto, não somos responsáveis por atrasos causados por condições meteorológicas, trânsito ou outros eventos de força maior. Os tempos de entrega estimados não são garantidos.",
+  termProhibitedConductTitle: "Conduta Proibida",
+  termProhibitedConductText:
+    "Concorda em não utilizar indevidamente os serviços DeliGo, incluindo fraude, assédio ou violação de quaisquer leis. A DeliGo pode terminar a sua conta por tal comportamento sem aviso prévio.",
+  termPrivacyTitle: "Privacidade e Proteção de Dados",
+  termPrivacyText:
+    "Os seus dados pessoais são tratados de acordo com a nossa Política de Privacidade e leis aplicáveis (RGPD). A DeliGo nunca venderá os seus dados a terceiros sem o seu consentimento explícito.",
+  termDisputeResolutionTitle: "Resolução de Litígios",
+  termDisputeResolutionText:
+    "Quaisquer litígios serão primeiramente tentados ser resolvidos amigavelmente através do suporte DeliGo. Se não forem resolvidos, os litígios estarão sujeitos às leis de Portugal e à jurisdição exclusiva dos seus tribunais.",
+  termAmendmentsTitle: "Alterações",
+  termAmendmentsText:
+    "A DeliGo pode atualizar estes Termos periodicamente. A utilização continuada da plataforma após alterações constitui aceitação. Será notificado de alterações materiais por email ou notificação na aplicação.",
+  filter: "Filtro",
+  clearAll: "Limpar tudo",
+
+  cuisinePortugueseFood: "Comida Portuguesa",
+  cuisineSushi: "Sushi",
+  cuisineKebab: "Kebab",
+  cuisineBarbecue: "Churrasco",
+  cuisineIndianFood: "Comida Indiana",
+  cuisineItalianFood: "Comida Italiana",
+  cuisineVegetarianFood: "Comida Vegetariana",
+  cuisineThaiFood: "Comida Tailandesa",
+  cuisineJapaneseFood: "Comida Japonesa",
+  cuisineRamen: "Ramen",
+  cuisineSeafood: "Marisco",
+  cuisineBurger: "Hambúrguer",
+  cuisineHalal: "Halal",
+  cuisineOthers: "Outros",
 };
 
 export default pt;

@@ -13,7 +13,7 @@ import {
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface AddressFormProps {
-  coordinates: { lat: number; lng: number };
+  coordinates: { lat: number; lng: number } | null;
   initialAddress?: any;
   isEditMode?: boolean;
   userId?: string;
@@ -67,6 +67,7 @@ export default function AddressForm({
 
   // Reverse geocode when coordinates change (map moved or GPS used)
   useEffect(() => {
+    if (!coordinates) return;
     if (!window.google?.maps) return;
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode(
@@ -110,6 +111,10 @@ export default function AddressForm({
   const handleSave = async () => {
     if (!userId) {
       toast.error("User not loaded. Please refresh.");
+      return;
+    }
+    if (!coordinates) {
+      toast.error("Location not detected yet. Please wait or use GPS.");
       return;
     }
 
@@ -314,7 +319,7 @@ export default function AddressForm({
               {t("latitude")}
             </p>
             <p className="rounded-lg bg-white px-4 py-3 font-mono text-sm">
-              {coordinates.lat.toFixed(6)}
+              {coordinates ? coordinates.lat.toFixed(6) : "—"}
             </p>
           </div>
           <div>
@@ -322,7 +327,7 @@ export default function AddressForm({
               {t("longitude")}
             </p>
             <p className="rounded-lg bg-white px-4 py-3 font-mono text-sm">
-              {coordinates.lng.toFixed(6)}
+              {coordinates ? coordinates.lng.toFixed(6) : "—"}
             </p>
           </div>
         </div>
