@@ -190,11 +190,18 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-[#b0004a] text-white transition-all duration-300 dark:bg-[#d81b60]">
       <div className="flex w-full items-center justify-between px-4 py-4 lg:px-16">
         <div className="flex items-center gap-8">
-          <Link
-            href="/"
-            className="text-[20px] font-black leading-7 md:text-[24px]"
-          >
-            DeliGo
+          <Link href="/" className="flex items-center gap-1">
+            <Image
+              src="/deligoLogo.png"
+              alt="DeliGo Logo"
+              width={40}
+              height={40}
+              priority
+            />
+
+            <span className="text-[20px] font-black  md:text-[24px]">
+              DeliGo
+            </span>
           </Link>
 
           <Link href="/add-address">

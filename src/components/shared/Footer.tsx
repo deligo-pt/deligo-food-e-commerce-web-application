@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -86,9 +86,19 @@ export default function Footer() {
       <div className="mb-20 grid w-full grid-cols-1 gap-16 md:grid-cols-12">
         {/* Brand */}
         <div className="md:col-span-4">
-          <span className="mb-8 block text-[40px] font-black text-[#b0004a]">
-            DeliGo
-          </span>
+          <Link href="/" className="flex items-center gap-1 mb-8">
+            <Image
+              src="/deligoLogo.png"
+              alt="DeliGo Logo"
+              width={50}
+              height={50}
+              priority
+            />
+
+            <span className=" block text-[40px] font-black text-[#b0004a]">
+              DeliGo
+            </span>
+          </Link>
 
           <p className="text-[18px] leading-7 text-[#5a4044]">
             {t("footerDescription")}
