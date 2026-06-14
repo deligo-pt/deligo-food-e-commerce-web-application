@@ -633,6 +633,133 @@ const en = {
   mobileExperience: "Enjoy the full experience on your mobile device.",
 
   allRightsReserved: "All rights reserved.",
+
+  aboutDeligo: "About DeliGo",
+
+  aboutHeroSubtitle: "Delivering Convenience, Connecting Communities",
+
+  aboutParagraph1:
+    "DeliGo is a next-generation digital platform that brings together food delivery, grocery shopping, courier services, logistics solutions, and future mobility services into one powerful ecosystem. We are committed to transforming how people, businesses, and communities connect by providing fast, reliable, and technology-driven services across Portugal and beyond.",
+
+  aboutParagraph2:
+    "More than a delivery company, DeliGo is a technology platform built to solve everyday challenges. Whether it's delivering a meal within minutes, helping local merchants reach more customers, supporting businesses with logistics solutions, or creating new earning opportunities for drivers and delivery partners, DeliGo is designed to make life easier and business more efficient.",
+
+  aboutParagraph3:
+    "Our platform combines innovation, intelligent logistics, real-time tracking, secure digital payments, and customer-focused service to ensure a seamless experience for everyone who uses DeliGo.",
+
+  whatMakesDeligoDifferent: "What Makes DeliGo Different?",
+
+  allInOneServiceEcosystem: "All-in-One Service Ecosystem",
+
+  comprehensiveSuite:
+    "A comprehensive suite of integrated everyday services tailored for modern needs:",
+
+  technologyDrivenOperations: "Technology-Driven Operations",
+
+  technologyDrivenOperationsDescription:
+    "Advanced software and automation help optimize deliveries, routes, driver performance, and customer experiences.",
+  empoweringLocalBusinesses: "Empowering Local Businesses",
+  empoweringLocalBusinessesDescription:
+    "We help restaurants, supermarkets, pharmacies, retailers, and local merchants grow their sales through digital transformation and wider customer reach.",
+
+  realTimeVisibility: "Real-Time Visibility",
+  realTimeVisibilityDescription:
+    "Customers and businesses can track orders, deliveries, and fleet operations in real time.",
+
+  flexibleEarningOpportunities: "Flexible Earning Opportunities",
+  flexibleEarningOpportunitiesDescription:
+    "DeliGo creates income opportunities for delivery partners, drivers, fleet owners, and independent contractors.",
+
+  smartLogisticsNetwork: "Smart Logistics Network",
+  smartLogisticsNetworkDescription:
+    "Our intelligent dispatch and route optimization systems reduce delivery times and improve efficiency.",
+
+  businessGrowthPartner: "Business Growth Partner",
+  businessGrowthPartnerDescription:
+    "We provide merchants and enterprise clients with powerful tools, analytics, marketing support, and logistics solutions to help them scale.",
+
+  customerCentricInnovation: "Customer-Centric Innovation",
+  customerCentricInnovationDescription:
+    "Every feature we build is designed to improve convenience, reliability, affordability, and user satisfaction.",
+
+  dataDrivenDecisionMaking: "Data-Driven Decision Making",
+  dataDrivenDecisionMakingDescription:
+    "Our platform uses analytics and performance insights to continuously improve service quality and operational efficiency.",
+
+  scalableInfrastructure: "Scalable Infrastructure",
+  scalableInfrastructureDescription:
+    "DeliGo is built with a modern technology architecture capable of supporting rapid expansion across multiple cities and countries.",
+
+  sustainabilityCommitment: "Sustainability Commitment",
+  sustainabilityCommitmentDescription:
+    "We are committed to supporting environmentally responsible delivery operations and the future adoption of electric mobility solutions.",
+
+  communityImpact: "Community Impact",
+  communityImpactDescription:
+    "By connecting customers, merchants, and service providers, DeliGo helps strengthen local economies and create long-term economic opportunities.",
+  ourVision: "Our Vision",
+
+  ourVisionDescription:
+    "To become one of Europe's most trusted and innovative delivery, logistics, and mobility ecosystems, creating smarter connections between people, businesses, and communities.",
+
+  ourCoreValues: "Our Core Values",
+
+  ourMission: "Our Mission",
+
+  innovation: "Innovation",
+  innovationDescription: "Continuously developing smarter solutions.",
+
+  reliability: "Reliability",
+  reliabilityDescription: "Delivering on our promises every time.",
+
+  integrity: "Integrity",
+  integrityDescription:
+    "Building trust through transparency and accountability.",
+
+  customerSuccess: "Customer Success",
+  customerSuccessDescription:
+    "Putting customers at the center of everything we do.",
+
+  excellence: "Excellence",
+  excellenceDescription:
+    "Striving for the highest standards in service and operations.",
+
+  sustainability: "Sustainability",
+  sustainabilityDescription:
+    "Supporting responsible growth and environmental awareness.",
+
+  missionItem1: "Simplify everyday life through technology.",
+
+  missionItem2: "Deliver exceptional customer experiences.",
+
+  missionItem3: "Empower local businesses to thrive digitally.",
+
+  missionItem4: "Create sustainable earning opportunities.",
+
+  missionItem5: "Build a reliable and intelligent logistics network.",
+
+  missionItem6: "Drive innovation in mobility and delivery services.",
+
+  missionItem7: "Expand across European markets with scalable solutions.",
+
+  deligoPromise: "DELIGO PROMISE",
+
+  deligoPromiseTagline: "Fast. Reliable. Connected.",
+
+  deligoPromiseDescription:
+    "At DeliGo, we don't just deliver products. We deliver convenience, opportunity, growth, and meaningful connections that improve everyday life. Our goal is to become the platform people trust whenever they need something delivered, transported, or connected.",
+
+  foodDelivery: "Food Delivery",
+
+  groceryDelivery: "Grocery Delivery",
+
+  courierParcelServices: "Courier & Parcel Services",
+
+  lastMileLogistics: "Last-Mile Logistics",
+
+  fleetManagementSolutions: "Fleet Management Solutions",
+
+  deligoRideMobilityPlatform: "DeliGo Ride Mobility Platform",
 };
 
 export default en;

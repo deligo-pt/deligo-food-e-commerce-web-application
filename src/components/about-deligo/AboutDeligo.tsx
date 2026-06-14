@@ -1,6 +1,6 @@
-/* eslint-disable react/no-unescaped-entities */
 "use client";
 
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   Bike,
   Building2,
@@ -18,113 +18,104 @@ import {
 import Image from "next/image";
 
 export default function AboutDeliGo() {
+  const { t } = useTranslation();
   const services = [
-    "Food Delivery",
-    "Grocery Delivery",
-    "Courier & Parcel Services",
-    "Last-Mile Logistics",
-    "Fleet Management Solutions",
-    "DeliGo Ride Mobility Platform",
+    t("foodDelivery"),
+    t("groceryDelivery"),
+    t("courierParcelServices"),
+    t("lastMileLogistics"),
+    t("fleetManagementSolutions"),
+    t("deligoRideMobilityPlatform"),
   ];
 
   const advantages = [
     {
       icon: <Store className="h-6 w-6" />,
-      title: "Empowering Local Businesses",
-      description:
-        "Helping restaurants, supermarkets, pharmacies, retailers, and local merchants grow through digital transformation.",
+      title: t("empoweringLocalBusinesses"),
+      description: t("empoweringLocalBusinessesDescription"),
     },
     {
       icon: <Clock3 className="h-6 w-6" />,
-      title: "Real-Time Visibility",
-      description:
-        "Track orders, deliveries, and fleet operations in real time.",
+      title: t("realTimeVisibility"),
+      description: t("realTimeVisibilityDescription"),
     },
     {
       icon: <Users className="h-6 w-6" />,
-      title: "Flexible Earning Opportunities",
-      description:
-        "Income opportunities for delivery partners, drivers, fleet owners, and contractors.",
+      title: t("flexibleEarningOpportunities"),
+      description: t("flexibleEarningOpportunitiesDescription"),
     },
     {
       icon: <Truck className="h-6 w-6" />,
-      title: "Smart Logistics Network",
-      description:
-        "Intelligent dispatch and route optimization systems improve efficiency.",
+      title: t("smartLogisticsNetwork"),
+      description: t("smartLogisticsNetworkDescription"),
     },
     {
       icon: <ChartColumn className="h-6 w-6" />,
-      title: "Business Growth Partner",
-      description:
-        "Powerful tools, analytics, marketing support, and logistics solutions.",
+      title: t("businessGrowthPartner"),
+      description: t("businessGrowthPartnerDescription"),
     },
     {
       icon: <Zap className="h-6 w-6" />,
-      title: "Customer-Centric Innovation",
-      description:
-        "Every feature is built around convenience, reliability, and satisfaction.",
+      title: t("customerCentricInnovation"),
+      description: t("customerCentricInnovationDescription"),
     },
     {
       icon: <Building2 className="h-6 w-6" />,
-      title: "Data-Driven Decision Making",
-      description:
-        "Analytics and insights continuously improve operational performance.",
+      title: t("dataDrivenDecisionMaking"),
+      description: t("dataDrivenDecisionMakingDescription"),
     },
     {
       icon: <Package className="h-6 w-6" />,
-      title: "Scalable Infrastructure",
-      description:
-        "Built to support rapid expansion across cities and countries.",
+      title: t("scalableInfrastructure"),
+      description: t("scalableInfrastructureDescription"),
     },
     {
       icon: <Leaf className="h-6 w-6" />,
-      title: "Sustainability Commitment",
-      description:
-        "Supporting environmentally responsible delivery operations.",
+      title: t("sustainabilityCommitment"),
+      description: t("sustainabilityCommitmentDescription"),
     },
     {
       icon: <Handshake className="h-6 w-6" />,
-      title: "Community Impact",
-      description:
-        "Strengthening local economies through meaningful connections.",
+      title: t("communityImpact"),
+      description: t("communityImpactDescription"),
     },
   ];
 
   const values = [
     {
-      title: "Innovation",
-      text: "Continuously developing smarter solutions.",
+      title: t("innovation"),
+      text: t("innovationDescription"),
     },
     {
-      title: "Reliability",
-      text: "Delivering on our promises every time.",
+      title: t("reliability"),
+      text: t("reliabilityDescription"),
     },
     {
-      title: "Integrity",
-      text: "Building trust through transparency and accountability.",
+      title: t("integrity"),
+      text: t("integrityDescription"),
     },
     {
-      title: "Customer Success",
-      text: "Putting customers at the center of everything we do.",
+      title: t("customerSuccess"),
+      text: t("customerSuccessDescription"),
     },
     {
-      title: "Excellence",
-      text: "Striving for the highest standards in service and operations.",
+      title: t("excellence"),
+      text: t("excellenceDescription"),
     },
     {
-      title: "Sustainability",
-      text: "Supporting responsible growth and environmental awareness.",
+      title: t("sustainability"),
+      text: t("sustainabilityDescription"),
     },
   ];
 
   const missionItems = [
-    "Simplify everyday life through technology.",
-    "Deliver exceptional customer experiences.",
-    "Empower local businesses to thrive digitally.",
-    "Create sustainable earning opportunities.",
-    "Build a reliable and intelligent logistics network.",
-    "Drive innovation in mobility and delivery services.",
-    "Expand across European markets with scalable solutions.",
+    t("missionItem1"),
+    t("missionItem2"),
+    t("missionItem3"),
+    t("missionItem4"),
+    t("missionItem5"),
+    t("missionItem6"),
+    t("missionItem7"),
   ];
 
   return (
@@ -140,10 +131,10 @@ export default function AboutDeliGo() {
             height={128}
           />
 
-          <h1 className="text-4xl font-bold md:text-6xl">About DeliGo</h1>
+          <h1 className="text-4xl font-bold md:text-6xl">{t("aboutDeligo")}</h1>
 
           <p className="mt-5 text-lg italic text-pink-100 md:text-2xl">
-            Delivering Convenience, Connecting Communities
+            {t("aboutHeroSubtitle")}
           </p>
         </div>
       </section>
@@ -152,29 +143,11 @@ export default function AboutDeliGo() {
       <section className="mx-auto max-w-7xl px-6 py-16">
         <div className="rounded-2xl border-l-4 border-[#e91e7f] bg-pink-50 p-8 md:p-10">
           <div className="space-y-6 text-lg leading-8 text-slate-700">
-            <p>
-              <strong>DeliGo</strong> is a next-generation digital platform that
-              brings together food delivery, grocery shopping, courier services,
-              logistics solutions, and future mobility services into one
-              powerful ecosystem. We are committed to transforming how people,
-              businesses, and communities connect by providing fast, reliable,
-              and technology-driven services across Portugal and beyond.
-            </p>
+            <p>{t("aboutParagraph1")}</p>
 
-            <p>
-              More than a delivery company, DeliGo is a technology platform
-              built to solve everyday challenges. Whether it's delivering a meal
-              within minutes, helping local merchants reach more customers,
-              supporting businesses with logistics solutions, or creating new
-              earning opportunities for drivers and delivery partners, DeliGo is
-              designed to make life easier and business more efficient.
-            </p>
+            <p>{t("aboutParagraph2")}</p>
 
-            <p>
-              Our platform combines innovation, intelligent logistics, real-time
-              tracking, secure digital payments, and customer-focused service to
-              ensure a seamless experience for everyone who uses DeliGo.
-            </p>
+            <p>{t("aboutParagraph3")}</p>
           </div>
         </div>
       </section>
@@ -182,7 +155,7 @@ export default function AboutDeliGo() {
       {/* DIFFERENT */}
       <section className="mx-auto max-w-7xl px-6 pb-16">
         <h2 className="mb-10 text-3xl font-bold text-[#e91e7f]">
-          What Makes DeliGo Different?
+          {t("whatMakesDeligoDifferent")}
         </h2>
 
         <div className="grid gap-8 lg:grid-cols-2">
@@ -190,14 +163,11 @@ export default function AboutDeliGo() {
             <div className="mb-4 flex items-center gap-3">
               <Package className="h-6 w-6 text-[#e91e7f]" />
               <h3 className="text-2xl font-bold text-[#e91e7f]">
-                All-in-One Service Ecosystem
+                {t("allInOneServiceEcosystem")}
               </h3>
             </div>
 
-            <p className="mb-6 text-slate-600">
-              A comprehensive suite of integrated everyday services tailored for
-              modern needs:
-            </p>
+            <p className="mb-6 text-slate-600">{t("comprehensiveSuite")}</p>
 
             <ul className="space-y-3">
               {services.map((service) => (
@@ -216,13 +186,12 @@ export default function AboutDeliGo() {
             <div className="mb-4 flex items-center gap-3">
               <Zap className="h-6 w-6 text-[#e91e7f]" />
               <h3 className="text-2xl font-bold text-[#e91e7f]">
-                Technology-Driven Operations
+                {t("technologyDrivenOperations")}
               </h3>
             </div>
 
             <p className="text-lg leading-8 text-slate-600">
-              Advanced software and automation help optimize deliveries, routes,
-              driver performance, and customer experiences.
+              {t("technologyDrivenOperationsDescription")}
             </p>
           </div>
         </div>
@@ -232,7 +201,7 @@ export default function AboutDeliGo() {
       <section className="bg-slate-50 py-16">
         <div className="mx-auto max-w-7xl px-6">
           <h2 className="mb-12 text-center text-3xl font-bold text-[#e91e7f]">
-            Delivering Convenience, Connecting Communities
+            {t("aboutHeroSubtitle")}
           </h2>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -257,18 +226,16 @@ export default function AboutDeliGo() {
         <div className="grid gap-12 lg:grid-cols-2">
           <div>
             <h2 className="mb-6 text-3xl font-bold text-[#e91e7f]">
-              Our Vision
+              {t("ourVision")}
             </h2>
 
             <p className="text-lg leading-8 text-slate-700">
-              To become one of Europe's most trusted and innovative delivery,
-              logistics, and mobility ecosystems, creating smarter connections
-              between people, businesses, and communities.
+              {t("ourVisionDescription")}
             </p>
 
             <div className="mt-12">
               <h2 className="mb-6 text-3xl font-bold text-[#e91e7f]">
-                Our Core Values
+                {t("ourCoreValues")}
               </h2>
 
               <div className="space-y-5">
@@ -286,7 +253,7 @@ export default function AboutDeliGo() {
 
           <div>
             <h2 className="mb-6 text-3xl font-bold text-[#e91e7f]">
-              Our Mission
+              {t("ourMission")}
             </h2>
 
             <ul className="space-y-4">
@@ -308,17 +275,14 @@ export default function AboutDeliGo() {
       {/* PROMISE */}
       <section className="mx-auto max-w-7xl px-6 pb-20">
         <div className="rounded-3xl bg-[#e91e7f] px-8 py-14 text-center text-white shadow-xl">
-          <h2 className="text-4xl font-bold uppercase">DeliGo Promise</h2>
+          <h2 className="text-4xl font-bold ">{t("deligoPromise")}</h2>
 
           <p className="mt-5 text-3xl font-bold italic">
-            "Fast. Reliable. Connected."
+            {t("deligoPromiseTagline")}
           </p>
 
           <p className="mx-auto mt-8 max-w-4xl text-lg leading-8 text-pink-100">
-            At DeliGo, we don't just deliver products. We deliver convenience,
-            opportunity, growth, and meaningful connections that improve
-            everyday life. Our goal is to become the platform people trust
-            whenever they need something delivered, transported, or connected.
+            {t("deligoPromiseDescription")}
           </p>
         </div>
       </section>
