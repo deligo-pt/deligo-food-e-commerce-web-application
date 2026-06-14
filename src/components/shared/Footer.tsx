@@ -253,9 +253,6 @@ export default function Footer() {
           >
             Terms of Service
           </Link>
-          <a href="#" className="transition-colors hover:text-[#b0004a]">
-            Cookie Settings
-          </a>
         </div>
       </div>
     </footer>
