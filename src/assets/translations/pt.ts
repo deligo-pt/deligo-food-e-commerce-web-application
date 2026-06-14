@@ -939,6 +939,193 @@ const pt = {
   contactCtaTitle: "Precisa de Ajuda?",
   contactCtaDescription:
     "A nossa equipa está pronta para o ajudar com perguntas, pedidos de apoio, parcerias ou questões comerciais.",
+
+  privacyHeroTitle: "Política de Privacidade",
+  privacyHeroDescription:
+    'Esta Política de Privacidade explica como a DeliGo ("DeliGo", "nós", "nos" ou "nosso") recolhe, usa, divulga e protege as suas informações quando utiliza os nossos websites, aplicações e serviços.',
+
+  // Sidebar / Nav links
+  privacyNavWhoWeAre: "Quem somos",
+  privacyNavDataCollect: "Dados recolhidos",
+  privacyNavHowWeUse: "Como usamos",
+  privacyNavLegalBases: "Bases legais",
+  privacyNavSharing: "Partilha",
+  privacyNavCookies: "Cookies",
+  privacyNavRetention: "Retenção",
+  privacyNavRights: "Os seus direitos",
+  privacyNavSecurity: "Segurança",
+  privacyNavInternational: "Transferências internacionais",
+  privacyNavChildren: "Crianças",
+  privacyNavChanges: "Alterações",
+  privacyNavDeletion: "Eliminar conta",
+  privacyNavContact: "Contacte-nos",
+
+  // Section: Who we are
+  privacyWhoWeAreTitle: "1) Quem somos",
+  privacyWhoWeAreText:
+    'A DeliGo LDA é a responsável pelo tratamento de dados pessoais processados através dos nossos websites, aplicações e plataformas (coletivamente, os "Serviços"). Sede: [adicionar endereço da empresa]. Contacto: info@deligoeu.com. Se aceder à DeliGo através de um parceiro empresarial ou de frota, esse parceiro pode ser um controlador independente para o seu próprio processamento.',
+
+  // Section: Data we collect
+  privacyDataCollectTitle: "2) Dados que recolhemos",
+  privacyDataYouProvideTitle: "Informação que fornece",
+  privacyDataYouProvideItems: [
+    "Detalhes da conta (nome, email, telefone, palavra-passe).",
+    "Dados de perfil e verificação (identificação, licença TVDE/condutor, documentos do veículo, informações de comerciante/empresa).",
+    "Moradas, instruções de entrega, mensagens de suporte, avaliações.",
+    "Detalhes de pagamento (tokenizados pelos nossos processadores de pagamento; não armazenamos números de cartão completos).",
+  ],
+  privacyDataAutoTitle: "Informação que recolhemos automaticamente",
+  privacyDataAutoItems: [
+    "Dados de dispositivo e registo (IP, navegador, versão do SO, versão da app, timestamps, registos de falhas).",
+    "Dados de utilização (páginas visualizadas, funcionalidades utilizadas, URLs de referência, atribuição de campanhas).",
+    "Localização aproximada ou precisa quando permite serviços de localização (para viagens/entregas).",
+    "Cookies, pixels e tecnologias semelhantes (ver Cookies).",
+  ],
+  privacyDataThirdPartyNote:
+    "Podemos também receber dados de terceiros (por exemplo, serviços de verificação de identidade, fornecedores de pagamento, parceiros de frota ou empresariais) quando legal.",
+
+  // Section: How we use
+  privacyHowUseTitle: "3) Como utilizamos as suas informações",
+  privacyHowUseItems: [
+    "Fornecer e operar os Serviços (criação de conta, encomendas, viagens, entregas, pagamentos).",
+    "Verificar identidade, elegibilidade e conformidade (ex., integração de motoristas/comerciantes).",
+    "Processar pagamentos, prevenir fraudes e garantir a segurança da plataforma.",
+    "Comunicar consigo (mensagens de serviço, suporte, atualizações de políticas, marketing com consentimento quando necessário).",
+    "Melhorar e personalizar os Serviços, análises e monitorização de desempenho.",
+    "Cumprir obrigações legais e aplicar os nossos Termos.",
+  ],
+
+  // Section: Legal bases
+  privacyLegalBasesTitle: "4) Bases legais para o processamento (RGPD/UE)",
+  privacyLegalBasesItems: [
+    "Contrato: Para fornecer os Serviços que solicita (ex., viagens, entregas, conta e pagamentos).",
+    "Interesses legítimos: Segurança da plataforma, prevenção de fraudes, análises, melhoria do produto, marketing direto limitado.",
+    "Consentimento: Onde necessário para marketing, cookies/análises ou partilha de localização precisa.",
+    "Obrigação legal: Requisitos fiscais, contabilísticos, regulatórios e de segurança.",
+  ],
+
+  // Section: Sharing
+  privacySharingTitle: "5) Quando partilhamos as suas informações",
+  privacySharingItems: [
+    "Fornecedores de serviços (subcontratantes): Alojamento na nuvem, análises, ferramentas de suporte ao cliente, verificação de identidade e processadores de pagamento — vinculados por contratos para proteger os seus dados.",
+    "Partes da transação: Motoristas, estafetas, comerciantes, administradores de frota ou empresa para cumprir a sua encomenda/viagem.",
+    "Legal e segurança: Autoridades policiais, reguladores, ou para proteger direitos, segurança e propriedade.",
+    "Eventos corporativos: Em fusões, aquisições ou reorganização, com aviso razoável.",
+  ],
+
+  // Section: Cookies
+  privacyCookiesTitle: "6) Cookies e tecnologias semelhantes",
+  privacyCookiesText:
+    "Utilizamos cookies essenciais para o funcionamento do nosso site, e cookies opcionais de análise/marketing para compreender a utilização e melhorar o desempenho. Pode controlar os cookies não essenciais através do nosso banner de cookies ou das definições do seu navegador. Bloquear alguns cookies pode afetar a funcionalidade.",
+
+  // Section: Retention
+  privacyRetentionTitle: "7) Retenção de dados",
+  privacyRetentionText:
+    "Mantemos os dados pessoais apenas enquanto necessário para os fins descritos acima — tipicamente durante a vida da sua conta e por um período exigido por lei (ex., fiscal e contabilístico). Quando os dados já não são necessários, são eliminados ou anonimizados de forma segura.",
+
+  // Section: Security
+  privacySecurityTitle: "8) Segurança",
+  privacySecurityText:
+    "Implementamos salvaguardas administrativas, técnicas e físicas (encriptação em trânsito, controlos de acesso, registos, menor privilégio, revisões regulares). Nenhum método de transmissão ou armazenamento é 100% seguro; trabalhamos continuamente para melhorar as nossas proteções.",
+
+  // Section: International transfers
+  privacyInternationalTitle: "9) Transferências internacionais de dados",
+  privacyInternationalText:
+    "Quando os dados são transferidos para fora do EEE/Reino Unido, utilizamos mecanismos de transferência legais, como as Cláusulas Contratuais Tipo da Comissão Europeia e salvaguardas adicionais conforme apropriado.",
+
+  // Section: Your rights
+  privacyRightsTitle: "10) Os seus direitos de privacidade",
+  privacyRightsLead: "Dependendo da sua localização, pode ter o direito de:",
+  privacyRightsItems: [
+    "Aceder, corrigir ou eliminar os seus dados pessoais.",
+    "Opor-se ou restringir determinados processamentos e retirar o consentimento quando nos baseamos no consentimento.",
+    "Receber uma cópia portátil dos seus dados.",
+    "Apresentar uma reclamação à sua autoridade local de proteção de dados.",
+  ],
+  privacyRightsContact:
+    "Para exercer os seus direitos, contacte-nos em privacy@deligoeu.com. Podemos precisar de verificar a sua identidade.",
+
+  // Section: Account Deletion
+  privacyDeletionTitle: "11) Eliminação de Conta",
+  privacyDeletionText:
+    "Tem o direito de solicitar a eliminação da sua conta DeliGo e dos dados pessoais associados. Após a eliminação da conta, poderá perder o acesso a serviços, histórico e informações armazenadas.",
+  privacyDeletionRequestText:
+    "Para solicitar a eliminação da conta, visite a nossa página dedicada:",
+  privacyDeletionButton: "Solicitar Eliminação de Conta",
+  privacyDeletionNote:
+    "Nota: Alguns dados podem ser retidos para fins legais, fiscais ou regulamentares.",
+
+  // Section: Children
+  privacyChildrenTitle: "12) Privacidade de crianças",
+  privacyChildrenText:
+    "Os nossos serviços não são destinados a menores de 16 anos. Não recolhemos conscientemente dados pessoais de crianças. Se acreditar que uma criança nos forneceu dados, contacte-nos para os remover.",
+
+  // Section: Changes
+  privacyChangesTitle: "13) Alterações a esta política",
+  privacyChangesText:
+    'Podemos atualizar esta Política de Privacidade periodicamente. Publicaremos a versão atualizada nesta página e ajustaremos a data de "Última atualização" acima. Alterações significativas podem ser notificadas por email ou através de aviso na aplicação.',
+  privacyChangesDataProtectionTitle: "Autoridade de Proteção de Dados",
+  privacyChangesDataProtectionText:
+    "Se estiver no EEE, pode contactar a sua autoridade local. Em Portugal: Comissão Nacional de Proteção de Dados (CNPD).",
+  // Data you provide (4 items)
+  privacyDataYouProvide1:
+    "Detalhes da conta (nome, email, telefone, palavra-passe).",
+  privacyDataYouProvide2:
+    "Dados de perfil e verificação (identificação, licença TVDE/condutor, documentos do veículo, informações de comerciante/empresa).",
+  privacyDataYouProvide3:
+    "Moradas, instruções de entrega, mensagens de suporte, avaliações.",
+  privacyDataYouProvide4:
+    "Detalhes de pagamento (tokenizados pelos nossos processadores de pagamento; não armazenamos números de cartão completos).",
+
+  // Data auto (4 items)
+  privacyDataAuto1:
+    "Dados de dispositivo e registo (IP, navegador, versão do SO, versão da app, timestamps, registos de falhas).",
+  privacyDataAuto2:
+    "Dados de utilização (páginas visualizadas, funcionalidades utilizadas, URLs de referência, atribuição de campanhas).",
+  privacyDataAuto3:
+    "Localização aproximada ou precisa quando permite serviços de localização (para viagens/entregas).",
+  privacyDataAuto4: "Cookies, pixels e tecnologias semelhantes (ver Cookies).",
+
+  // How we use (6 items)
+  privacyHowUse1:
+    "Fornecer e operar os Serviços (criação de conta, encomendas, viagens, entregas, pagamentos).",
+  privacyHowUse2:
+    "Verificar identidade, elegibilidade e conformidade (ex., integração de motoristas/comerciantes).",
+  privacyHowUse3:
+    "Processar pagamentos, prevenir fraudes e garantir a segurança da plataforma.",
+  privacyHowUse4:
+    "Comunicar consigo (mensagens de serviço, suporte, atualizações de políticas, marketing com consentimento quando necessário).",
+  privacyHowUse5:
+    "Melhorar e personalizar os Serviços, análises e monitorização de desempenho.",
+  privacyHowUse6: "Cumprir obrigações legais e aplicar os nossos Termos.",
+
+  // Legal bases (4 items)
+  privacyLegalBases1:
+    "Contrato: Para fornecer os Serviços que solicita (ex., viagens, entregas, conta e pagamentos).",
+  privacyLegalBases2:
+    "Interesses legítimos: Segurança da plataforma, prevenção de fraudes, análises, melhoria do produto, marketing direto limitado.",
+  privacyLegalBases3:
+    "Consentimento: Onde necessário para marketing, cookies/análises ou partilha de localização precisa.",
+  privacyLegalBases4:
+    "Obrigação legal: Requisitos fiscais, contabilísticos, regulatórios e de segurança.",
+
+  // Sharing (4 items)
+  privacySharing1:
+    "Fornecedores de serviços (subcontratantes): Alojamento na nuvem, análises, ferramentas de suporte ao cliente, verificação de identidade e processadores de pagamento — vinculados por contratos para proteger os seus dados.",
+  privacySharing2:
+    "Partes da transação: Motoristas, estafetas, comerciantes, administradores de frota ou empresa para cumprir a sua encomenda/viagem.",
+  privacySharing3:
+    "Legal e segurança: Autoridades policiais, reguladores, ou para proteger direitos, segurança e propriedade.",
+  privacySharing4:
+    "Eventos corporativos: Em fusões, aquisições ou reorganização, com aviso razoável.",
+
+  // Your rights (4 items)
+  privacyRights1: "Aceder, corrigir ou eliminar os seus dados pessoais.",
+  privacyRights2:
+    "Opor-se ou restringir determinados processamentos e retirar o consentimento quando nos baseamos no consentimento.",
+  privacyRights3: "Receber uma cópia portátil dos seus dados.",
+  privacyRights4:
+    "Apresentar uma reclamação à sua autoridade local de proteção de dados.",
 };
 
 export default pt;

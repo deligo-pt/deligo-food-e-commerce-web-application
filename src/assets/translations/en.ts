@@ -945,6 +945,191 @@ const en = {
   contactCtaTitle: "Need Help?",
   contactCtaDescription:
     "Our team is ready to assist you with any questions, support requests, partnerships, or business inquiries.",
+
+  privacyHeroTitle: "Privacy Policy",
+  privacyHeroDescription:
+    'This Privacy Policy explains how DeliGo ("DeliGo", "we", "us", or "our") collects, uses, discloses, and safeguards your information when you use our websites, apps, and services.',
+
+  // Sidebar / Nav links
+  privacyNavWhoWeAre: "Who we are",
+  privacyNavDataCollect: "Data we collect",
+  privacyNavHowWeUse: "How we use",
+  privacyNavLegalBases: "Legal bases",
+  privacyNavSharing: "Sharing",
+  privacyNavCookies: "Cookies",
+  privacyNavRetention: "Retention",
+  privacyNavRights: "Your rights",
+  privacyNavSecurity: "Security",
+  privacyNavInternational: "International transfers",
+  privacyNavChildren: "Children",
+  privacyNavChanges: "Changes",
+  privacyNavDeletion: "Delete Account",
+  privacyNavContact: "Contact us",
+
+  // Section: Who we are
+  privacyWhoWeAreTitle: "1) Who we are",
+  privacyWhoWeAreText:
+    'DeliGo LDA is the data controller for personal data processed via our websites, apps and platforms (collectively, the "Services"). Registered office: [add company address]. Contact: info@deligoeu.com. If you access DeliGo through a business or fleet partner, that partner may be an independent controller for its own processing.',
+
+  // Section: Data we collect
+  privacyDataCollectTitle: "2) Data we collect",
+  privacyDataYouProvideTitle: "Information you provide",
+  privacyDataYouProvideItems: [
+    "Account details (name, email, phone, password).",
+    "Profile and verification data (ID, TVDE/driver licence, vehicle docs, vendor/business info).",
+    "Addresses, delivery instructions, support messages, reviews.",
+    "Payment details (tokenized by our payment processors; we don't store full card numbers).",
+  ],
+  privacyDataAutoTitle: "Information we collect automatically",
+  privacyDataAutoItems: [
+    "Device and log data (IP, browser, OS version, app version, timestamps, crash logs).",
+    "Usage data (pages viewed, features used, referral URLs, campaign attribution).",
+    "Approximate or precise location when you allow location services (for rides/deliveries).",
+    "Cookies, pixels and similar technologies (see Cookies).",
+  ],
+  privacyDataThirdPartyNote:
+    "We may also receive data from third parties (e.g., identity verification services, payment providers, fleet or business partners) where lawful.",
+
+  // Section: How we use
+  privacyHowUseTitle: "3) How we use your information",
+  privacyHowUseItems: [
+    "Provide and operate the Services (account creation, orders, rides, deliveries, payouts).",
+    "Verify identity, eligibility and compliance (e.g., driver/vendor onboarding).",
+    "Process payments, prevent fraud and ensure platform safety.",
+    "Communicate with you (service messages, support, policy updates, marketing with consent where required).",
+    "Improve and personalize the Services, analytics and performance monitoring.",
+    "Comply with legal obligations and enforce our Terms.",
+  ],
+
+  // Section: Legal bases
+  privacyLegalBasesTitle: "4) Legal bases for processing (GDPR/EU)",
+  privacyLegalBasesItems: [
+    "Contract: To deliver the Services you request (e.g., rides, deliveries, account & payouts).",
+    "Legitimate interests: Platform safety, fraud prevention, analytics, product improvement, limited direct marketing.",
+    "Consent: Where required for marketing, cookies/analytics, or precise location sharing.",
+    "Legal obligation: Tax, accounting, regulatory, and safety requirements.",
+  ],
+
+  // Section: Sharing
+  privacySharingTitle: "5) When we share your information",
+  privacySharingItems: [
+    "Service providers (processors): Cloud hosting, analytics, customer support tools, ID verification, and payment processors—bound by contracts to protect your data.",
+    "Transaction parties: Drivers, couriers, vendors, fleet or business admins to fulfill your order/ride.",
+    "Legal and safety: Law enforcement, regulators, or to protect rights, safety and property.",
+    "Corporate events: In mergers, acquisitions or reorganization, with reasonable notice.",
+  ],
+
+  // Section: Cookies
+  privacyCookiesTitle: "6) Cookies & similar technologies",
+  privacyCookiesText:
+    "We use essential cookies to run our site, and optional analytics/marketing cookies to understand usage and improve performance. You can control non-essential cookies via our cookie banner or your browser settings. Blocking some cookies may affect functionality.",
+
+  // Section: Retention
+  privacyRetentionTitle: "7) Data retention",
+  privacyRetentionText:
+    "We keep personal data only as long as necessary for the purposes described above—typically for the life of your account and for a period required by law (e.g., tax and accounting). When data is no longer needed, we securely delete or anonymize it.",
+
+  // Section: Security
+  privacySecurityTitle: "8) Security",
+  privacySecurityText:
+    "We implement administrative, technical, and physical safeguards (encryption in transit, access controls, logging, least-privilege, regular reviews). No method of transmission or storage is 100% secure; we work continuously to enhance our protections.",
+
+  // Section: International transfers
+  privacyInternationalTitle: "9) International data transfers",
+  privacyInternationalText:
+    "Where data is transferred outside the EEA/UK, we use lawful transfer mechanisms such as the European Commission's Standard Contractual Clauses and additional safeguards as appropriate.",
+
+  // Section: Your rights
+  privacyRightsTitle: "10) Your privacy rights",
+  privacyRightsLead: "Depending on your location, you may have the right to:",
+  privacyRightsItems: [
+    "Access, correct, or delete your personal data.",
+    "Object to or restrict certain processing, and withdraw consent where we rely on consent.",
+    "Receive a portable copy of your data.",
+    "Lodge a complaint with your local data protection authority.",
+  ],
+  privacyRightsContact:
+    "To exercise rights, contact us at privacy@deligoeu.com. We may need to verify your identity.",
+
+  // Section: Account Deletion
+  privacyDeletionTitle: "11) Account Deletion",
+  privacyDeletionText:
+    "You have the right to request deletion of your DeliGo account and associated personal data. Once your account is deleted, you may lose access to services, history, and stored information.",
+  privacyDeletionRequestText:
+    "To request account deletion, please visit our dedicated page:",
+  privacyDeletionButton: "Request Account Deletion",
+  privacyDeletionNote:
+    "Note: Some data may be retained for legal, tax, or regulatory purposes.",
+
+  // Section: Children
+  privacyChildrenTitle: "12) Children’s privacy",
+  privacyChildrenText:
+    "Our Services are not intended for individuals under 16. We do not knowingly collect personal data from children. If you believe a child has provided us data, please contact us to remove it.",
+
+  // Section: Changes
+  privacyChangesTitle: "13) Changes to this policy",
+  privacyChangesText:
+    'We may update this Privacy Policy from time to time. We will post the updated version on this page and adjust the "Last updated" date above. Significant changes may be notified via email or in-app notice.',
+  privacyChangesDataProtectionTitle: "Data Protection Authority",
+  privacyChangesDataProtectionText:
+    "If you are in the EEA, you can contact your local authority. In Portugal: Comissão Nacional de Proteção de Dados (CNPD).",
+  // Data you provide (4 items)
+  privacyDataYouProvide1: "Account details (name, email, phone, password).",
+  privacyDataYouProvide2:
+    "Profile and verification data (ID, TVDE/driver licence, vehicle docs, vendor/business info).",
+  privacyDataYouProvide3:
+    "Addresses, delivery instructions, support messages, reviews.",
+  privacyDataYouProvide4:
+    "Payment details (tokenized by our payment processors; we don't store full card numbers).",
+
+  // Data auto (4 items)
+  privacyDataAuto1:
+    "Device and log data (IP, browser, OS version, app version, timestamps, crash logs).",
+  privacyDataAuto2:
+    "Usage data (pages viewed, features used, referral URLs, campaign attribution).",
+  privacyDataAuto3:
+    "Approximate or precise location when you allow location services (for rides/deliveries).",
+  privacyDataAuto4: "Cookies, pixels and similar technologies (see Cookies).",
+
+  // How we use (6 items)
+  privacyHowUse1:
+    "Provide and operate the Services (account creation, orders, rides, deliveries, payouts).",
+  privacyHowUse2:
+    "Verify identity, eligibility and compliance (e.g., driver/vendor onboarding).",
+  privacyHowUse3: "Process payments, prevent fraud and ensure platform safety.",
+  privacyHowUse4:
+    "Communicate with you (service messages, support, policy updates, marketing with consent where required).",
+  privacyHowUse5:
+    "Improve and personalize the Services, analytics and performance monitoring.",
+  privacyHowUse6: "Comply with legal obligations and enforce our Terms.",
+
+  // Legal bases (4 items)
+  privacyLegalBases1:
+    "Contract: To deliver the Services you request (e.g., rides, deliveries, account & payouts).",
+  privacyLegalBases2:
+    "Legitimate interests: Platform safety, fraud prevention, analytics, product improvement, limited direct marketing.",
+  privacyLegalBases3:
+    "Consent: Where required for marketing, cookies/analytics, or precise location sharing.",
+  privacyLegalBases4:
+    "Legal obligation: Tax, accounting, regulatory, and safety requirements.",
+
+  // Sharing (4 items)
+  privacySharing1:
+    "Service providers (processors): Cloud hosting, analytics, customer support tools, ID verification, and payment processors—bound by contracts to protect your data.",
+  privacySharing2:
+    "Transaction parties: Drivers, couriers, vendors, fleet or business admins to fulfill your order/ride.",
+  privacySharing3:
+    "Legal and safety: Law enforcement, regulators, or to protect rights, safety and property.",
+  privacySharing4:
+    "Corporate events: In mergers, acquisitions or reorganization, with reasonable notice.",
+
+  // Your rights (4 items)
+  privacyRights1: "Access, correct, or delete your personal data.",
+  privacyRights2:
+    "Object to or restrict certain processing, and withdraw consent where we rely on consent.",
+  privacyRights3: "Receive a portable copy of your data.",
+  privacyRights4:
+    "Lodge a complaint with your local data protection authority.",
 };
 
 export default en;
