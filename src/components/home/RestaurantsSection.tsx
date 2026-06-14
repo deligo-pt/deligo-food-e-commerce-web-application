@@ -159,8 +159,12 @@ export default function RestaurantsSection() {
     selectedCategory: selectedBusinessCategory,
     setSelectedCategory: setSelectedBusinessCategory,
   } = useBusinessCategoryStore();
-  const { selectedCategory: selectedProductCategory } =
-    useProductCategoryStore();
+  // const { selectedCategory: selectedProductCategory } =
+  //   useProductCategoryStore();
+  const {
+    selectedCategory: selectedProductCategory,
+    setSelectedCategory: setSelectedProductCategory,
+  } = useProductCategoryStore();
   const { selectedCuisines, toggleCuisine } = useCuisineFilterStore();
   useEffect(() => {
     const fetchVendors = async () => {
@@ -341,7 +345,9 @@ export default function RestaurantsSection() {
             {t("viewAll")} <ChevronRight size={20} />
           </Link>
         </div>
-        {(selectedBusinessCategory || selectedCuisines.length > 0) && (
+        {(selectedBusinessCategory ||
+          selectedProductCategory ||
+          selectedCuisines.length > 0) && (
           <div className="mb-6 flex flex-wrap gap-2">
             {selectedBusinessCategory && (
               <button
@@ -352,7 +358,15 @@ export default function RestaurantsSection() {
                 <X size={16} />
               </button>
             )}
-
+            {selectedProductCategory && (
+              <button
+                onClick={() => setSelectedProductCategory(null)}
+                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+              >
+                {selectedProductCategory.name}
+                <X size={16} />
+              </button>
+            )}
             {selectedCuisines.map((cuisine) => (
               <button
                 key={cuisine}
@@ -387,7 +401,9 @@ export default function RestaurantsSection() {
           {t("viewAll")} <ChevronRight size={20} />
         </Link>
       </div>
-      {(selectedBusinessCategory || selectedCuisines.length > 0) && (
+      {(selectedBusinessCategory ||
+        selectedProductCategory ||
+        selectedCuisines.length > 0) && (
         <div className="mb-6 flex flex-wrap gap-2">
           {selectedBusinessCategory && (
             <button
@@ -395,6 +411,16 @@ export default function RestaurantsSection() {
               className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
             >
               {selectedBusinessCategory.name}
+              <X size={16} />
+            </button>
+          )}
+
+          {selectedProductCategory && (
+            <button
+              onClick={() => setSelectedProductCategory(null)}
+              className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+            >
+              {selectedProductCategory.name}
               <X size={16} />
             </button>
           )}

@@ -31,8 +31,14 @@ export default function RestaurantFilterModal({ open, onClose }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/40">
-      <div className="max-h-[80vh] w-full rounded-t-4xl bg-white p-6">
+    <div
+      className="fixed inset-0 z-50 flex items-end bg-black/40"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[80vh] w-full rounded-t-4xl bg-white p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-[#191c1d]">Filter</h2>
