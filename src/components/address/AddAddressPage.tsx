@@ -9,92 +9,56 @@ import { Toaster, toast } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "./AddressForm";
 import { fetchUserProfile } from "@/services/addressApi";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
 import { getAccessToken } from "@/lib/authCookies";
 
-
 export default function AddAddressPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const addressId = searchParams.get("addressId");
-  const isEditMode = !!addressId;
   const { coords: geoCoords } = useLocationStore();
 
-  const [userId, setUserId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
-  const [initialAddress, setInitialAddress] = useState<any>(null);
   const [searchValue, setSearchValue] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // For new address: populate coordinates from browser geolocation
+  // Try GPS first, then session location as fallback
   useEffect(() => {
-    if (!isEditMode) {
-      if (geoCoords) {
-        setCoordinates({ lat: geoCoords.latitude, lng: geoCoords.longitude });
-        return;
-      }
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-          () => {
-            // Fallback – map will use its default center
-          },
-          { enableHighAccuracy: true, timeout: 10000 }
-        );
-      }
-    }
-  }, [isEditMode, geoCoords]);
-
-  useEffect(() => {
-    const token = getAccessToken();
-    setIsLoggedIn(!!token);
-
-    if (!token) {
-      // No token: skip profile fetch, user can still view the map/GPS
+    if (geoCoords) {
+      setCoordinates({ lat: geoCoords.latitude, lng: geoCoords.longitude });
       setLoading(false);
       return;
     }
-
-    const loadProfile = async () => {
-      try {
-        const res = await fetchUserProfile();
-        if (res.success && res.data) {
-          const userData = res.data;
-          setUserId(userData.userId);
-
-          if (isEditMode && addressId) {
-            const address = userData.deliveryAddresses?.find(
-              (a: any) => a._id === addressId
-            );
-            if (address) {
-              setCoordinates({ lat: address.latitude, lng: address.longitude });
-              setInitialAddress(address);
-            }
-          } else {
-            // New address: optionally use currentSessionLocation as fallback
-            if (!geoCoords) {
-              const loc = userData.currentSessionLocation?.coordinates;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setLoading(false);
+        },
+        async () => {
+          // GPS denied — try session location from profile
+          try {
+            const token = getAccessToken();
+            if (token) {
+              const res = await fetchUserProfile();
+              const loc = res.data?.currentSessionLocation?.coordinates;
               if (loc?.length === 2) {
-                setCoordinates((prev) =>
-                  prev ? prev : { lat: loc[1], lng: loc[0] }
-                );
+                setCoordinates({ lat: loc[1], lng: loc[0] });
               }
             }
+          } catch {
+            // silently ignore — map will use its own default center
+          } finally {
+            setLoading(false);
           }
-        }
-      } catch (error) {
-        console.error("Failed to load profile", error);
-        toast.error("Failed to load profile");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProfile();
-  }, [addressId, isEditMode, geoCoords]);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      setLoading(false);
+    }
+  }, [geoCoords]);
 
   const handleUseGPS = () => {
     if (!navigator.geolocation) {
@@ -103,10 +67,7 @@ export default function AddAddressPage() {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => {
-        console.error(err);
-        toast.error("Could not get your location");
-      }
+      () => toast.error("Could not get your location"),
     );
   };
 
@@ -117,7 +78,7 @@ export default function AddAddressPage() {
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
       </div>
     );
 
@@ -133,12 +94,12 @@ export default function AddAddressPage() {
             <ArrowLeft className="h-5 w-5 text-[#b0004a]" />
           </button>
           <h1 className="text-3xl font-bold text-[#191c1d]">
-            {isEditMode ? t("editAddress") : t("addNewAddress")}
+            {t("addNewAddress")}
           </h1>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left Panel */}
+          {/* Left Panel – Map */}
           <div className="lg:col-span-5">
             <div className="rounded-2xl bg-white p-6 shadow-sm">
               <div className="mb-6">
@@ -215,16 +176,12 @@ export default function AddAddressPage() {
             </div>
           </div>
 
-          {/* Right Panel */}
+          {/* Right Panel – Form */}
           <div className="lg:col-span-7">
             <AddressForm
               coordinates={coordinates}
-              initialAddress={initialAddress}
-              isEditMode={isEditMode}
-              userId={userId}
-              addressId={addressId || undefined}
-              onSuccess={() => router.push('/saved-addresses')}
-
+              isEditMode={false}
+              onSuccess={() => router.push("/saved-addresses")}
             />
           </div>
         </div>

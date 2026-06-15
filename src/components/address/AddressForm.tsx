@@ -6,7 +6,7 @@
 import { Building2, Globe, Home, MapPin, Navigation, Save } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Toaster, toast } from "sonner";
-import { updateLiveLocation } from "@/services/addressApi";
+import { addDeliveryAddress, updateLiveLocation } from "@/services/addressApi";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/authCookies";
@@ -15,8 +15,8 @@ interface AddressFormProps {
   coordinates: { lat: number; lng: number } | null;
   initialAddress?: any;
   isEditMode?: boolean;
-  userId?: string;
-  addressId?: string; // kept for potential future use, but not sent to API
+  userId?: string;        // required only for edit mode (PATCH)
+  addressId?: string;
   onSuccess?: () => void;
 }
 
@@ -118,10 +118,6 @@ export default function AddressForm({
       router.push("/login");
       return;
     }
-    if (!userId) {
-      toast.error("User not loaded. Please refresh.");
-      return;
-    }
     if (!coordinates) {
       toast.error("Location not detected yet. Please wait or use GPS.");
       return;
@@ -137,21 +133,42 @@ export default function AddressForm({
 
     setIsSaving(true);
     try {
-      const payload = {
-        latitude: coordinates.lat,
-        longitude: coordinates.lng,
-        geoAccuracy: 10,
-        isMocked: false,
-        street: formData.street.trim(),
-        city: formData.city.trim(),
-        state: formData.state.trim(),
-        country: formData.country.trim(),
-        postalCode: formData.postalCode.trim(),
-        detailedAddress: formData.detailedAddress.trim(),
-        notes: formData.notes.trim(),
-      };
-
-      await updateLiveLocation(userId, payload);
+      if (isEditMode) {
+        // PATCH — update live location + primary address
+        if (!userId) {
+          toast.error("User not loaded. Please refresh.");
+          setIsSaving(false);
+          return;
+        }
+        await updateLiveLocation(userId, {
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+          geoAccuracy: 10,
+          isMocked: false,
+          street: formData.street.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim(),
+          country: formData.country.trim(),
+          postalCode: formData.postalCode.trim(),
+          detailedAddress: formData.detailedAddress.trim(),
+          notes: formData.notes.trim(),
+        });
+      } else {
+        // POST — add new delivery address
+        await addDeliveryAddress({
+          street: formData.street.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim(),
+          country: formData.country.trim(),
+          postalCode: formData.postalCode.trim(),
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+          geoAccuracy: 10,
+          detailedAddress: formData.detailedAddress.trim(),
+          addressType: mapAddressTypeToBackend(addressType),
+          notes: formData.notes.trim(),
+        });
+      }
 
       // Notify navbar to refresh address text
       window.dispatchEvent(new Event("addressUpdated"));
@@ -159,14 +176,12 @@ export default function AddressForm({
       toast.success(
         isEditMode
           ? "Primary address updated successfully!"
-          : "Primary address saved successfully!"
+          : "Address added successfully!"
       );
       onSuccess?.();
     } catch (error: any) {
       const serverMessage = error.response?.data?.message || error.message;
-      toast.error(
-        serverMessage || "Failed to save address. Please try again."
-      );
+      toast.error(serverMessage || "Failed to save address. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -184,7 +199,7 @@ export default function AddressForm({
         </p>
       </div>
 
-      {/* Address Label (visual only – endpoint always sets PRIMARY) */}
+      {/* Address Type */}
       <div className="mb-8">
         <label className="mb-4 block text-sm font-semibold text-[#191c1d]">
           {t("labelAddressAs")}
@@ -207,9 +222,11 @@ export default function AddressForm({
             </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-gray-500">
-          Note: This address will be saved as PRIMARY.
-        </p>
+        {isEditMode && (
+          <p className="mt-2 text-xs text-gray-500">
+            Note: Edit mode updates the PRIMARY address regardless of type selected.
+          </p>
+        )}
       </div>
 
       {/* Street + Detailed */}

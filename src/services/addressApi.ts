@@ -14,7 +14,7 @@ export interface DeliveryAddressPayload {
   notes?: string;
 }
 
-// For updating live location + primary address
+// For updating live location + primary address (PATCH)
 export interface LiveLocationPayload {
   latitude: number;
   longitude: number;
@@ -34,7 +34,15 @@ export async function fetchUserProfile() {
   return response.data;
 }
 
-// Now updates both session location AND primary delivery address
+// POST /customers/add-delivery-address — adds a new delivery address
+export async function addDeliveryAddress(data: DeliveryAddressPayload) {
+  const response = await apiClient.post("/customers/add-delivery-address", {
+    deliveryAddress: data,
+  });
+  return response.data;
+}
+
+// PATCH /customers/:userId/update-live-location — updates session location + primary address
 export async function updateLiveLocation(
   userId: string,
   payload: LiveLocationPayload
@@ -43,14 +51,6 @@ export async function updateLiveLocation(
     `/customers/${userId}/update-live-location`,
     payload
   );
-  return response.data;
-}
-
-// These endpoints are kept for secondary addresses – not used in this page anymore
-export async function addDeliveryAddress(data: DeliveryAddressPayload) {
-  const response = await apiClient.post("/customers/add-delivery-address", {
-    deliveryAddress: data,
-  });
   return response.data;
 }
 
