@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -75,23 +77,47 @@ export default function VendorsGrid() {
         setError("");
 
         const token = getAccessToken();
+
+        // Step 1: fetch the active delivery address fresh from the API (no cache)
+        let activeCoords: { lat: number; lng: number } | null = null;
+        if (token) {
+          try {
+            const { data } = await apiClient.get("/profile");
+            const active = data?.data?.deliveryAddresses?.find(
+              (a: any) => a.isActive === true,
+            );
+            if (active?.latitude && active?.longitude) {
+              activeCoords = { lat: active.latitude, lng: active.longitude };
+            }
+          } catch {
+            // Profile fetch failed — fall through to GPS / default
+          }
+        }
+
+        // Step 2: pick the best coords
+        // Priority: active delivery address > browser GPS > default
+        const coords =
+          activeCoords ??
+          (geoCoords
+            ? { lat: geoCoords.latitude, lng: geoCoords.longitude }
+            : null);
+
         let url: string;
         let params: Record<string, string | number> = {};
 
-        if (geoCoords) {
-          // GPS available — always use open nearby endpoint
+        if (coords) {
           url = "/vendors/nearby/open";
           params = {
             page,
             limit: ITEMS_PER_PAGE,
-            latitude: geoCoords.latitude,
-            longitude: geoCoords.longitude,
+            latitude: coords.lat,
+            longitude: coords.lng,
           };
         } else if (token) {
-          // Logged in, no GPS — use authenticated customer endpoint
+          // Logged in, no coords — use authenticated customer endpoint
           url = `/vendors/customer?page=${page}&limit=${ITEMS_PER_PAGE}`;
         } else {
-          // Not logged in, no GPS — use open nearby with default Lisbon coords
+          // Not logged in, no coords — default Lisbon coords
           url = "/vendors/nearby/open";
           params = {
             page,
@@ -107,7 +133,6 @@ export default function VendorsGrid() {
         setTotalPages(response.data.meta?.totalPage || 1);
       } catch (error) {
         console.error("Failed to fetch vendors:", error);
-
         setError(
           getApiErrorMessage(
             error,

@@ -16,7 +16,6 @@ import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { X } from "lucide-react";
 
-
 interface Vendor {
   userId: string;
   businessDetails: {
@@ -111,64 +110,21 @@ function getVendorCoords(vendor: Vendor): { lat: number; lng: number } | null {
   return latitude && longitude ? { lat: latitude, lng: longitude } : null;
 }
 
-let cachedUserCoords: { lat: number; lng: number } | null = null;
-let userPromise: Promise<{ lat: number; lng: number } | null> | null = null;
-
-async function fetchUserPrimaryAddress() {
-  if (cachedUserCoords) return cachedUserCoords;
-  // Only fetch profile if user is authenticated
-  const token = getAccessToken();
-  if (!token) return null;
-  try {
-    const { data } = await apiClient.get("/profile");
-    const primary = data?.data?.deliveryAddresses?.find(
-      (a: any) => a.isActive === true,
-    );
-    if (primary?.latitude && primary?.longitude) {
-      cachedUserCoords = { lat: primary.latitude, lng: primary.longitude };
-    }
-    return cachedUserCoords;
-  } catch (error) {
-    console.error("Failed to fetch user address", error);
-    return null;
-  }
-}
-
-
-function useUserAddress() {
-  const [coords, setCoords] = useState(cachedUserCoords);
-  const [loading, setLoading] = useState(!cachedUserCoords);
-  useEffect(() => {
-    if (cachedUserCoords) {
-      setCoords(cachedUserCoords);
-      setLoading(false);
-      return;
-    }
-    if (!userPromise) userPromise = fetchUserPrimaryAddress();
-    userPromise.then(setCoords).finally(() => setLoading(false));
-  }, []);
-  return { coords, loading };
-}
-
 export default function RestaurantsSection() {
   const { t } = useTranslation();
   const [allVendors, setAllVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [deliveryTimes, setDeliveryTimes] = useState<Record<string, string>>(
-    {},
-  );
+  const [deliveryTimes, setDeliveryTimes] = useState<Record<string, string>>({});
   const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
-  const { coords: userCoords, loading: userLoading } = useUserAddress();
+  // Active delivery address coords — fetched fresh every time the component mounts (no caching)
+  const [activeAddressCoords, setActiveAddressCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   const { coords: geoCoords, permissionStatus } = useLocationStore();
-  // const { selectedCategory: selectedBusinessCategory } =
-  //   useBusinessCategoryStore();
   const {
     selectedCategory: selectedBusinessCategory,
     setSelectedCategory: setSelectedBusinessCategory,
   } = useBusinessCategoryStore();
-  // const { selectedCategory: selectedProductCategory } =
-  //   useProductCategoryStore();
   const {
     selectedCategory: selectedProductCategory,
     setSelectedCategory: setSelectedProductCategory,
@@ -184,29 +140,50 @@ export default function RestaurantsSection() {
         setError("");
 
         const token = getAccessToken();
-        let response;
-        if (geoCoords) {
-          // Always use open endpoint for nearby (no auth needed)
-          response = await apiClient.get("/vendors/nearby/open", {
-            params: {
-              latitude: geoCoords.latitude,
-              longitude: geoCoords.longitude,
-            },
-          });
-        } else if (token) {
-          // Authenticated fallback when no geo but user is logged in
-          response = await apiClient.get("/vendors/customer");
-        } else {
-          // Unauthenticated fallback: use open endpoint with default Lisbon coords
-          response = await apiClient.get("/vendors/nearby/open", {
-            params: {
-              latitude: 38.7298248,
-              longitude: -9.1475019,
-            },
-          });
+
+        // Step 1: always fetch the active delivery address fresh from the API (no cache)
+        let activeCoords: { lat: number; lng: number } | null = null;
+        if (token) {
+          try {
+            const { data } = await apiClient.get("/profile");
+            const active = data?.data?.deliveryAddresses?.find(
+              (a: any) => a.isActive === true,
+            );
+            if (active?.latitude && active?.longitude) {
+              activeCoords = { lat: active.latitude, lng: active.longitude };
+            }
+          } catch {
+            // Profile fetch failed — fall through to GPS / default
+          }
         }
 
-        console.log("Vendor Response:", response.data);
+        setActiveAddressCoords(activeCoords);
+
+        // Step 2: pick the best coords for vendor lookup
+        // Priority: active delivery address > browser GPS > default
+        const coords =
+          activeCoords ??
+          (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null);
+
+        if (coords) {
+          const response = await apiClient.get("/vendors/nearby/open", {
+            params: { latitude: coords.lat, longitude: coords.lng },
+          });
+          setAllVendors(response.data?.data || []);
+          return;
+        }
+
+        // Authenticated fallback — server uses session location
+        if (token) {
+          const response = await apiClient.get("/vendors/customer");
+          setAllVendors(response.data?.data || []);
+          return;
+        }
+
+        // Unauthenticated fallback — default Lisbon coords
+        const response = await apiClient.get("/vendors/nearby/open", {
+          params: { latitude: 38.7298248, longitude: -9.1475019 },
+        });
         setAllVendors(response.data?.data || []);
       } catch (err) {
         console.error("Failed to fetch vendors:", err);
@@ -215,9 +192,9 @@ export default function RestaurantsSection() {
         setLoading(false);
       }
     };
+
     fetchVendors();
   }, [geoCoords, permissionStatus]);
-
 
   const filteredVendors = useMemo(() => {
     if (!allVendors.length) return [];
@@ -256,29 +233,23 @@ export default function RestaurantsSection() {
 
   const estimateDeliveryTime = useCallback(
     async (vendor: Vendor) => {
-      const activeCoords = geoCoords
-        ? { lat: geoCoords.latitude, lng: geoCoords.longitude }
-        : userCoords;
+      const refCoords =
+        activeAddressCoords ??
+        (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null);
 
-      if (!activeCoords) {
-        setDeliveryTimes((prev) => ({
-          ...prev,
-          [vendor.userId]: "Under 10 min",
-        }));
+      if (!refCoords) {
+        setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: "Under 10 min" }));
         return;
       }
       const vendorCoords = getVendorCoords(vendor);
       if (!vendorCoords) {
-        setDeliveryTimes((prev) => ({
-          ...prev,
-          [vendor.userId]: "Under 10 min",
-        }));
+        setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: "Under 10 min" }));
         return;
       }
 
       setLoadingTimes((prev) => ({ ...prev, [vendor.userId]: true }));
       try {
-        const url = `/api/distance-matrix?originLat=${vendorCoords.lat}&originLng=${vendorCoords.lng}&destLat=${activeCoords.lat}&destLng=${activeCoords.lng}`;
+        const url = `/api/distance-matrix?originLat=${vendorCoords.lat}&originLng=${vendorCoords.lng}&destLat=${refCoords.lat}&destLng=${refCoords.lng}`;
         const res = await fetch(url);
         const data = await res.json();
 
@@ -298,8 +269,8 @@ export default function RestaurantsSection() {
         const distance = getDistanceKm(
           vendorCoords.lat,
           vendorCoords.lng,
-          activeCoords.lat,
-          activeCoords.lng,
+          refCoords.lat,
+          refCoords.lng,
         );
         const estimatedMinutes = Math.round((distance / 30) * 60);
         const timeStr =
@@ -309,26 +280,21 @@ export default function RestaurantsSection() {
         setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: timeStr }));
       } catch (err) {
         console.error("Time estimation error", err);
-        setDeliveryTimes((prev) => ({
-          ...prev,
-          [vendor.userId]: "Under 10 min",
-        }));
+        setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: "Under 10 min" }));
       } finally {
         setLoadingTimes((prev) => ({ ...prev, [vendor.userId]: false }));
       }
     },
-    [userCoords, geoCoords],
+    [activeAddressCoords, geoCoords],
   );
 
   useEffect(() => {
-    if (!userLoading && filteredVendors.length > 0) {
+    if (!loading && filteredVendors.length > 0) {
       filteredVendors.forEach((vendor) => estimateDeliveryTime(vendor));
     }
-  }, [userCoords, geoCoords, userLoading, filteredVendors, estimateDeliveryTime]);
+  }, [activeAddressCoords, geoCoords, loading, filteredVendors, estimateDeliveryTime]);
 
-  const isPageLoading = loading || userLoading;
-
-  if (isPageLoading) {
+  if (loading) {
     return (
       <section>
         <div className="mb-10 flex items-center justify-between">
