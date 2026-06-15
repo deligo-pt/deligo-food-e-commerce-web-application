@@ -8,12 +8,14 @@ import Link from "next/link";
 import { ChevronRight, Star, Heart, Truck, Check } from "lucide-react";
 
 import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
+import { getAccessToken } from "@/lib/authCookies";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
 import { useProductCategoryStore } from "@/stores/productCategoryStore";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { X } from "lucide-react";
+
 
 interface Vendor {
   userId: string;
@@ -114,6 +116,9 @@ let userPromise: Promise<{ lat: number; lng: number } | null> | null = null;
 
 async function fetchUserPrimaryAddress() {
   if (cachedUserCoords) return cachedUserCoords;
+  // Only fetch profile if user is authenticated
+  const token = getAccessToken();
+  if (!token) return null;
   try {
     const { data } = await apiClient.get("/profile");
     const primary = data?.data?.deliveryAddresses?.find(
@@ -128,6 +133,7 @@ async function fetchUserPrimaryAddress() {
     return null;
   }
 }
+
 
 function useUserAddress() {
   const [coords, setCoords] = useState(cachedUserCoords);
@@ -177,16 +183,27 @@ export default function RestaurantsSection() {
         setLoading(true);
         setError("");
 
+        const token = getAccessToken();
         let response;
         if (geoCoords) {
+          // Always use open endpoint for nearby (no auth needed)
           response = await apiClient.get("/vendors/nearby/open", {
             params: {
               latitude: geoCoords.latitude,
               longitude: geoCoords.longitude,
             },
           });
-        } else {
+        } else if (token) {
+          // Authenticated fallback when no geo but user is logged in
           response = await apiClient.get("/vendors/customer");
+        } else {
+          // Unauthenticated fallback: use open endpoint with default Lisbon coords
+          response = await apiClient.get("/vendors/nearby/open", {
+            params: {
+              latitude: 38.7298248,
+              longitude: -9.1475019,
+            },
+          });
         }
 
         console.log("Vendor Response:", response.data);
@@ -200,6 +217,7 @@ export default function RestaurantsSection() {
     };
     fetchVendors();
   }, [geoCoords, permissionStatus]);
+
 
   const filteredVendors = useMemo(() => {
     if (!allVendors.length) return [];

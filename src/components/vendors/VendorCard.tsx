@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Heart, Star, Truck, Check } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/apiClient";
+import { getAccessToken } from "@/lib/authCookies";
 
 export interface Vendor {
   id: string;
@@ -92,6 +93,9 @@ let userPromise: Promise<{ lat: number; lng: number } | null> | null = null;
 
 async function fetchUserPrimaryAddress() {
   if (cachedUserCoords) return cachedUserCoords;
+  // Only call profile API if user is authenticated
+  const token = getAccessToken();
+  if (!token) return null;
   try {
     const { data } = await apiClient.get("/profile");
     const primary = data?.data?.deliveryAddresses?.find((a: any) => a.isActive === true);

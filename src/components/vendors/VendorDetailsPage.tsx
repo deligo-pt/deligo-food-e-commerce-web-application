@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { Bike, Plus, Star } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { getAccessToken } from "@/lib/authCookies";
 import ProductDetailsModal from "./ProductDetailsModal";
 import VendorDetailsModal from "./VendorDetailsModal";
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
@@ -77,6 +78,9 @@ let userPromise: Promise<{ lat: number; lng: number } | null> | null = null;
 
 async function fetchUserPrimaryAddress() {
   if (cachedUserCoords) return cachedUserCoords;
+  // Only call profile API if user is authenticated
+  const token = getAccessToken();
+  if (!token) return null;
   try {
     const { data } = await apiClient.get("/profile");
     const primary = data?.data?.deliveryAddresses?.find(
@@ -173,19 +177,40 @@ export default function VendorDetailsPage({
   useEffect(() => {
     const fetchVendor = async () => {
       try {
-        let currentPage = 1;
+        const token = getAccessToken();
         let foundVendor: Vendor | null = null;
 
-        while (!foundVendor) {
-          const { data } = await apiClient.get(
-            `/vendors/customer?page=${currentPage}&limit=50`,
-          );
-          const vendors: Vendor[] = data.data;
-          if (vendors.length === 0) break;
-          foundVendor = vendors.find((v) => v.userId === vendorId) || null;
-          if (foundVendor) break;
-          if (currentPage >= (data.meta?.totalPage || 1)) break;
-          currentPage++;
+        if (token) {
+          // Authenticated: search paginated /vendors/customer
+          let currentPage = 1;
+          while (!foundVendor) {
+            const { data } = await apiClient.get(
+              `/vendors/customer?page=${currentPage}&limit=50`,
+            );
+            const vendors: Vendor[] = data.data;
+            if (vendors.length === 0) break;
+            foundVendor = vendors.find((v) => v.userId === vendorId) || null;
+            if (foundVendor) break;
+            if (currentPage >= (data.meta?.totalPage || 1)) break;
+            currentPage++;
+          }
+        } else {
+          // Unauthenticated: search the open nearby endpoint with default Lisbon coords
+          let currentPage = 1;
+          const { data: firstData } = await apiClient.get("/vendors/nearby/open", {
+            params: { page: 1, limit: 1, latitude: 38.7298248, longitude: -9.1475019 },
+          });
+          const totalPages = firstData.meta?.totalPage || 1;
+
+          while (!foundVendor && currentPage <= totalPages) {
+            const { data } = await apiClient.get("/vendors/nearby/open", {
+              params: { page: currentPage, limit: 50, latitude: 38.7298248, longitude: -9.1475019 },
+            });
+            const vendors: Vendor[] = data.data || [];
+            if (vendors.length === 0) break;
+            foundVendor = vendors.find((v) => v.userId === vendorId) || null;
+            currentPage++;
+          }
         }
 
         if (!foundVendor) throw new Error("Vendor not found");

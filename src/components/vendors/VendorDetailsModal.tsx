@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { getAccessToken } from "@/lib/authCookies";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface VendorDetailsModalProps {
@@ -73,9 +74,25 @@ export default function VendorDetailsModal({
       setLoading(true);
       setError(null);
       try {
-        const response = await apiClient.get(`/vendors/customer/${vendorId}`);
-        const vendor = response.data.data;
-        setVendorData(vendor);
+        const token = getAccessToken();
+        if (token) {
+          // Authenticated: use the direct customer endpoint
+          const response = await apiClient.get(`/vendors/customer/${vendorId}`);
+          setVendorData(response.data.data);
+        } else {
+          // Unauthenticated: find vendor from the open nearby endpoint
+          const { data: firstData } = await apiClient.get("/vendors/nearby/open", {
+            params: { page: 1, limit: 50, latitude: 38.7298248, longitude: -9.1475019 },
+          });
+          const vendors = firstData.data || [];
+          const found = vendors.find((v: { userId: string }) => v.userId === vendorId);
+          if (found) {
+            // Map the open-endpoint shape to VendorData shape
+            setVendorData(found);
+          } else {
+            setError("Vendor details not available.");
+          }
+        }
       } catch (err) {
         setError(getApiErrorMessage(err, "Failed to load vendor details"));
       } finally {

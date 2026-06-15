@@ -8,6 +8,8 @@ import { useState, useEffect } from "react";
 import { Toaster, toast } from "sonner";
 import { updateLiveLocation } from "@/services/addressApi";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useRouter } from "next/navigation";
+import { getAccessToken } from "@/lib/authCookies";
 
 interface AddressFormProps {
   coordinates: { lat: number; lng: number } | null;
@@ -26,6 +28,8 @@ export default function AddressForm({
   onSuccess,
 }: AddressFormProps) {
   const { t } = useTranslation();
+  const router = useRouter();
+  const isLoggedIn = !!getAccessToken();
   const [addressType, setAddressType] = useState<"home" | "work" | "other">(
     "home"
   );
@@ -107,6 +111,11 @@ export default function AddressForm({
   };
 
   const handleSave = async () => {
+    if (!getAccessToken()) {
+      toast.info("Please log in to save your address.");
+      router.push("/login");
+      return;
+    }
     if (!userId) {
       toast.error("User not loaded. Please refresh.");
       return;
@@ -338,13 +347,28 @@ export default function AddressForm({
         </div>
       </div>
 
+      {!isLoggedIn && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <strong>Not signed in.</strong> You can explore the map and pick a location, but you need to{" "}
+          <button
+            onClick={() => router.push("/login")}
+            className="font-semibold underline hover:text-amber-900"
+          >
+            log in
+          </button>{" "}
+          to save your address.
+        </div>
+      )}
+
       <button
         onClick={handleSave}
         disabled={isSaving}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#b0004a] py-4 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
       >
         <Save size={18} />
-        {isSaving
+        {!isLoggedIn
+          ? "Login to Save Address"
+          : isSaving
           ? t("saving")
           : isEditMode
           ? t("updateAddress")

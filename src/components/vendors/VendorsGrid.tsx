@@ -4,8 +4,13 @@ import { useEffect, useState } from "react";
 
 import VendorCard, { Vendor } from "./VendorCard";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { getAccessToken } from "@/lib/authCookies";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
+
+// Default Lisbon coordinates used as fallback when no GPS and no auth
+const DEFAULT_LATITUDE = 38.7298248;
+const DEFAULT_LONGITUDE = -9.1475019;
 
 const ITEMS_PER_PAGE = 10;
 
@@ -69,16 +74,30 @@ export default function VendorsGrid() {
         setLoading(true);
         setError("");
 
-        let url = `/vendors/customer?page=${page}&limit=${ITEMS_PER_PAGE}`;
+        const token = getAccessToken();
+        let url: string;
         let params: Record<string, string | number> = {};
 
         if (geoCoords) {
+          // GPS available — always use open nearby endpoint
           url = "/vendors/nearby/open";
           params = {
             page,
             limit: ITEMS_PER_PAGE,
             latitude: geoCoords.latitude,
             longitude: geoCoords.longitude,
+          };
+        } else if (token) {
+          // Logged in, no GPS — use authenticated customer endpoint
+          url = `/vendors/customer?page=${page}&limit=${ITEMS_PER_PAGE}`;
+        } else {
+          // Not logged in, no GPS — use open nearby with default Lisbon coords
+          url = "/vendors/nearby/open";
+          params = {
+            page,
+            limit: ITEMS_PER_PAGE,
+            latitude: DEFAULT_LATITUDE,
+            longitude: DEFAULT_LONGITUDE,
           };
         }
 

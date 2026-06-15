@@ -40,28 +40,32 @@ export default function ShopSection() {
     async function fetchBusinessCategories() {
       const token = getAccessToken();
 
-      if (!token) {
-        if (alive) {
-          setError(t("authTokenMissing"));
-          setLoading(false);
-        }
-        return;
-      }
-
       try {
-        const response = await apiClient.get<ApiResponse>(
-          "/categories/businessCategory",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
+        let activeCategories: BusinessCategory[] = [];
 
-        const payload = response.data;
-        const activeCategories = (payload.data?.data ?? []).filter(
-          (cat) => cat.isActive && !cat.isDeleted,
-        );
+        if (token) {
+          // Authenticated endpoint
+          const response = await apiClient.get<ApiResponse>(
+            "/categories/businessCategory",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+          const payload = response.data;
+          activeCategories = (payload.data?.data ?? []).filter(
+            (cat) => cat.isActive && !cat.isDeleted,
+          );
+        } else {
+          // Open (unauthenticated) endpoint — response shape: { data: [ ... ] }
+          const response = await apiClient.get<{ data: BusinessCategory[]; success: boolean }>(
+            "/categories/businessCategory/open",
+          );
+          activeCategories = (response.data?.data ?? []).filter(
+            (cat) => cat.isActive && !cat.isDeleted,
+          );
+        }
 
         if (alive) {
           setCategories(activeCategories);
@@ -101,6 +105,7 @@ export default function ShopSection() {
       alive = false;
     };
   }, [selectedCategory, setSelectedCategory, hasInitialized]);
+
   if (loading) {
     return (
       <section>

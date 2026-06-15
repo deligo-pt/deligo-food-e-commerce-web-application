@@ -24,7 +24,6 @@ export default function HeroSection() {
   const { t } = useTranslation();
   const [slides, setSlides] = useState<Sponsorship[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tokenMissing, setTokenMissing] = useState(false);
   const [error, setError] = useState(false);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -35,18 +34,14 @@ export default function HeroSection() {
     async function loadSponsorships() {
       const token = getAccessToken();
 
-      if (!token) {
-        if (alive) {
-          setTokenMissing(true);
-          setLoading(false);
-        }
-        return;
-      }
-
       try {
-        const response = await apiClient.get<SponsorshipResponse>("/sponsorships", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Use open endpoint when no token, otherwise use authenticated endpoint
+        const endpoint = token ? "/sponsorships" : "/sponsorships/open";
+        const config = token
+          ? { headers: { Authorization: `Bearer ${token}` } }
+          : {};
+
+        const response = await apiClient.get<SponsorshipResponse>(endpoint, config);
 
         const activeSlides = (response.data.data ?? []).filter(
           (slide) => slide.isActive && !slide.isDeleted && Boolean(slide.bannerImage)
@@ -55,7 +50,6 @@ export default function HeroSection() {
         if (alive) {
           setSlides(activeSlides);
           setError(false);
-          setTokenMissing(false);
         }
       } catch {
         if (alive) {
@@ -72,7 +66,8 @@ export default function HeroSection() {
     return () => {
       alive = false;
     };
-  }, []); 
+  }, []);
+
   useEffect(() => {
     if (!emblaApi) return;
     const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
@@ -87,11 +82,10 @@ export default function HeroSection() {
 
   const emptyStateMessage = useMemo(() => {
     if (loading) return t("loadingSponsorshipBanners");
-    if (tokenMissing) return t("authTokenMissing");
     if (error) return t("unableToLoadSponsorshipBanners");
     if (slides.length === 0) return t("noSponsorshipBannersAvailable");
     return t("browseLatestSponsorshipBanners");
-  }, [loading, tokenMissing, error, slides.length, t]);
+  }, [loading, error, slides.length, t]);
 
   const hasSlides = slides.length > 0;
 

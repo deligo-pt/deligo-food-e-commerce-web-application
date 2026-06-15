@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -11,6 +12,8 @@ import { fetchUserProfile } from "@/services/addressApi";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
+import { getAccessToken } from "@/lib/authCookies";
+
 
 export default function AddAddressPage() {
   const { t } = useTranslation();
@@ -25,6 +28,7 @@ export default function AddAddressPage() {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [initialAddress, setInitialAddress] = useState<any>(null);
   const [searchValue, setSearchValue] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // For new address: populate coordinates from browser geolocation
   useEffect(() => {
@@ -46,6 +50,15 @@ export default function AddAddressPage() {
   }, [isEditMode, geoCoords]);
 
   useEffect(() => {
+    const token = getAccessToken();
+    setIsLoggedIn(!!token);
+
+    if (!token) {
+      // No token: skip profile fetch, user can still view the map/GPS
+      setLoading(false);
+      return;
+    }
+
     const loadProfile = async () => {
       try {
         const res = await fetchUserProfile();

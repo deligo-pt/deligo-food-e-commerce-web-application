@@ -36,6 +36,19 @@ type ApiResponse = {
   };
 };
 
+// Open endpoint: meta at root level, data is a flat array
+type OpenApiResponse = {
+  success: boolean;
+  message: string;
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPage: number;
+  };
+  data: Category[];
+};
+
 export default function CategoriesSection() {
   const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -48,28 +61,41 @@ export default function CategoriesSection() {
 
     async function fetchInitialCategories() {
       const token = getAccessToken();
-      if (!token) {
-        if (alive) {
-          setErrorKey("authTokenMissing");
-          setLoading(false);
-        }
-        return;
-      }
 
       try {
-        const response = await apiClient.get<ApiResponse>(
-          "/categories/productCategory?page=1&limit=10",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        let activeCategories: Category[] = [];
 
-        const payload = response.data;
-        const activeCategories = (payload.data?.data ?? []).filter(
-          (cat) => cat.isActive && !cat.isDeleted
-        );
+        if (token) {
+          // Authenticated: two-step fetch to get ALL categories
+          const initialRes = await apiClient.get<ApiResponse>(
+            "/categories/productCategory?page=1&limit=1",
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          const total = initialRes.data.data.meta.total;
+
+          const response = await apiClient.get<ApiResponse>(
+            `/categories/productCategory?page=1&limit=${total}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          activeCategories = (response.data.data?.data ?? []).filter(
+            (cat) => cat.isActive && !cat.isDeleted
+          );
+        } else {
+          // Open endpoint — meta is at ROOT level, data is a flat array
+          // Step 1: get total count
+          const countRes = await apiClient.get<OpenApiResponse>(
+            "/categories/productCategory/open?page=1&limit=1"
+          );
+          const total = countRes.data.meta.total;
+
+          // Step 2: fetch all in one request
+          const response = await apiClient.get<OpenApiResponse>(
+            `/categories/productCategory/open?page=1&limit=${total}`
+          );
+          activeCategories = (response.data?.data ?? []).filter(
+            (cat) => cat.isActive && !cat.isDeleted
+          );
+        }
 
         if (alive) {
           setCategories(activeCategories);
@@ -87,7 +113,8 @@ export default function CategoriesSection() {
     return () => {
       alive = false;
     };
-  }, []); 
+  }, []);
+
 
   const handleCategoryClick = (category: Category) => {
     if (selectedCategory?._id === category._id) {
