@@ -34,6 +34,7 @@ export default function Navbar() {
   const router = useRouter();
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [addressText, setAddressText] = useState("Add Address");
+  const [primaryAddressId, setPrimaryAddressId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -53,14 +54,14 @@ export default function Navbar() {
       const res = await apiClient.get("/profile");
       const profile = res.data?.data;
 
-      const primaryAddress = profile?.deliveryAddresses?.find(
-        (addr: any) => addr.addressType === "PRIMARY",
+      const activeAddress = profile?.deliveryAddresses?.find(
+        (addr: any) => addr.isActive === true,
       );
 
       const firstAddress = profile?.deliveryAddresses?.[0];
-      const address =
-        primaryAddress?.street || firstAddress?.street || "Add Address";
-      setAddressText(address);
+      const resolved = activeAddress || firstAddress;
+      setAddressText(resolved?.street || "Add Address");
+      setPrimaryAddressId(resolved?._id || null);
     } catch (error) {
       console.error("Failed to fetch profile:", error);
       setAddressText("Add Address");
@@ -220,7 +221,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <Link href="/add-address">
+          <Link href={isLoggedIn && primaryAddressId ? `/edit-address/${primaryAddressId}` : "/add-address"}>
             <button className="hidden cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20 lg:flex">
               <MapPin size={20} />
               {addressText}

@@ -61,13 +61,14 @@ export default function AddressForm({
         initialAddress.addressType === "OFFICE"
           ? "work"
           : initialAddress.addressType === "OTHER"
-          ? "other"
-          : "home"
+            ? "other"
+            : "home"
       );
     }
   }, [initialAddress]);
 
   // Reverse geocode when coordinates change
+  // Only auto-fill fields that are still blank (don't overwrite pre-loaded edit data)
   useEffect(() => {
     if (!coordinates) return;
     if (!window.google?.maps) return;
@@ -92,11 +93,12 @@ export default function AddressForm({
         });
         setFormData((prev) => ({
           ...prev,
-          street: street || prev.street,
-          city: city || prev.city,
-          state: state || prev.state,
-          country: country || prev.country,
-          postalCode: postalCode || prev.postalCode,
+          // Only fill a field if it's currently empty
+          street: prev.street || street,
+          city: prev.city || city,
+          state: prev.state || state,
+          country: prev.country || country,
+          postalCode: prev.postalCode || postalCode,
         }));
       }
     );
@@ -124,27 +126,35 @@ export default function AddressForm({
       toast.error("Location not detected yet. Please wait or use GPS.");
       return;
     }
+    if (!formData.street.trim()) {
+      toast.error("Street address is required.");
+      return;
+    }
+    if (!formData.city.trim()) {
+      toast.error("City is required.");
+      return;
+    }
 
     setIsSaving(true);
     try {
-      // Send all data to update-live-location endpoint
       const payload = {
         latitude: coordinates.lat,
         longitude: coordinates.lng,
         geoAccuracy: 10,
         isMocked: false,
-        street: formData.street,
-        city: formData.city,
-        state: formData.state,
-        country: formData.country,
-        postalCode: formData.postalCode,
-        detailedAddress: formData.detailedAddress,
-        notes: formData.notes,
-        // Note: addressType is not sent here because backend uses "PRIMARY"
-        // for this endpoint. The type selected is for visual only.
+        street: formData.street.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim(),
+        country: formData.country.trim(),
+        postalCode: formData.postalCode.trim(),
+        detailedAddress: formData.detailedAddress.trim(),
+        notes: formData.notes.trim(),
       };
 
       await updateLiveLocation(userId, payload);
+
+      // Notify navbar to refresh address text
+      window.dispatchEvent(new Event("addressUpdated"));
 
       toast.success(
         isEditMode
@@ -185,11 +195,10 @@ export default function AddressForm({
               key={type}
               type="button"
               onClick={() => setAddressType(type)}
-              className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-medium transition ${
-                addressType === type
+              className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-medium transition ${addressType === type
                   ? "border-[#b0004a] bg-[#fff2f5] text-[#b0004a]"
                   : "border-[#e3bdc3] text-[#5a4044]"
-              }`}
+                }`}
             >
               {type === "home" && <Home size={18} />}
               {type === "work" && <Building2 size={18} />}
@@ -369,10 +378,10 @@ export default function AddressForm({
         {!isLoggedIn
           ? "Login to Save Address"
           : isSaving
-          ? t("saving")
-          : isEditMode
-          ? t("updateAddress")
-          : t("saveAddress")}
+            ? t("saving")
+            : isEditMode
+              ? t("updateAddress")
+              : t("saveAddress")}
       </button>
     </div>
   );

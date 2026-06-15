@@ -65,7 +65,15 @@ export default function EditProfileFormPage() {
     lat: 23.8103,
     lng: 90.4125,
   });
+  const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Debounce search so we only geocode after the user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchValue), 600);
+    return () => clearTimeout(timer);
+  }, [searchValue]);
 
   // OTP states
   const [originalEmail, setOriginalEmail] = useState("");
@@ -599,6 +607,8 @@ export default function EditProfileFormPage() {
                 />
                 <input
                   id="autocomplete"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
                   placeholder={t("searchAddressPlaceholder")}
                   className="w-full rounded-full border border-[#e3bdc3] px-12 py-4 outline-none focus:border-[#b0004a]"
                 />
@@ -606,10 +616,12 @@ export default function EditProfileFormPage() {
 
               <div id="map-section">
                 <LocationPicker
-                  onCoordinatesChange={(lat, lng) =>
-                    setCoordinates({ lat, lng })
-                  }
+                  onCoordinatesChange={(lat, lng) => {
+                    setCoordinates({ lat, lng });
+                    reverseGeocode(lat, lng);
+                  }}
                   defaultCenter={coordinates}
+                  searchValue={debouncedSearch}
                 />
               </div>
 
