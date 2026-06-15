@@ -646,7 +646,8 @@ const pt = {
   portugues: "Português",
   footerDescription:
     "𝗗𝗲𝗹𝗶𝗚𝗼 é 𝘂𝗺𝗮 𝗽𝗹𝗮𝘁𝗮𝗳𝗼𝗿𝗺𝗮 𝘁𝗲𝗰𝗻𝗼𝗹ó𝗴𝗶𝗰𝗮 𝗱𝗲 𝗺𝗲𝗿𝗰𝗮𝗱𝗼 𝗾𝘂𝗲 𝗹𝗶𝗴𝗮 𝗰𝗹𝗶𝗲𝗻𝘁𝗲𝘀, 𝗲𝘀𝘁𝗮𝗯𝗲𝗹𝗲𝗰𝗶𝗺𝗲𝗻𝘁𝗼𝘀 𝗰𝗼𝗺𝗲𝗿𝗰𝗶𝗮𝗶𝘀 𝗲 𝗲𝘀𝘁𝗮𝗳𝗲𝘁𝗮𝘀 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁𝗲𝘀.",
-
+  aboutSlogan:
+    "𝗗𝗲𝗹𝗶𝗚𝗼 é 𝘂𝗺𝗮 𝗽𝗹𝗮𝘁𝗮𝗳𝗼𝗿𝗺𝗮 𝘁𝗲𝗰𝗻𝗼𝗹ó𝗴𝗶𝗰𝗮 𝗱𝗲 𝗺𝗲𝗿𝗰𝗮𝗱𝗼 𝗾𝘂𝗲 𝗹𝗶𝗴𝗮 𝗰𝗹𝗶𝗲𝗻𝘁𝗲𝘀, 𝗲𝘀𝘁𝗮𝗯𝗲𝗹𝗲𝗰𝗶𝗺𝗲𝗻𝘁𝗼𝘀 𝗰𝗼𝗺𝗲𝗿𝗰𝗶𝗮𝗶𝘀 𝗲 𝗲𝘀𝘁𝗮𝗳𝗲𝘁𝗮𝘀 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁𝗲𝘀.",
   company: "Empresa",
   aboutUs: "Sobre Nós",
   partnerWithUs: "Seja Nosso Parceiro",
@@ -783,10 +784,6 @@ const pt = {
   // Category Titles
   rideFleetFaqs: "DeliGo Ride & Gestão de Frotas",
   securityInnovationFaqs: "Segurança, Privacidade e Inovação",
-
-  // Contact details
-  website: "www.deligo.pt",
-  whatsapp: "+351 920 136 680",
 
   tagline: "DeliGo – A sua comida favorita, entregue à sua porta.",
 
@@ -1159,7 +1156,8 @@ const pt = {
   customer_q6: "Posso cancelar uma encomenda?",
   customer_a6:
     "A disponibilidade de cancelamento depende das políticas do comerciante e do estado da encomenda no momento do pedido.",
-  customer_q7: "Quem devo contactar em caso de problemas com a qualidade do produto?",
+  customer_q7:
+    "Quem devo contactar em caso de problemas com a qualidade do produto?",
   customer_a7:
     "A qualidade, disponibilidade, preparação, embalagem e quaisquer preocupações relacionadas com o produto são da inteira responsabilidade do comerciante que fornece o produto.",
 
@@ -1218,7 +1216,119 @@ const pt = {
   liability_q3: "A DeliGo é responsável por litígios entre utilizadores?",
   liability_a3:
     "A DeliGo pode ajudar na resolução de litígios sempre que apropriado, mas não faz parte das transações entre clientes, comerciantes, prestadores de serviços ou estafetas.",
+  // Hero
+  aboutTitle: "Sobre a DeliGo",
+  aboutSubtitle: "Marketplace Digital Neutro & Ecossistema Super App",
 
+  // Technology Marketplace Model
+  techMarketplaceTitle: "1. Modelo de Marketplace Tecnológico",
+  techMarketplaceText:
+    "A DeliGo opera exclusivamente como um marketplace digital neutro, concebido para conectar de forma dinâmica clientes, comerciantes e estafetas independentes através de um ecossistema unificado de alto desempenho. Este modelo moderno estabelece uma estrutura aberta onde cada participante mantém total autonomia operacional, beneficiando em simultâneo da infraestrutura de rede partilhada.",
+
+  regulatoryClarificationTitle:
+    "Esclarecimento Regulamentar e Operacional Importante",
+  regulatoryClarificationText:
+    "A DeliGo não é um vendedor, retalhista, fornecedor de logística ou empresa de entregas. A plataforma não vende produtos próprios, não armazena inventário nem fornece serviços de transporte de forma direta. Em vez disso, atua estritamente como um intermediário digital que facilita transações comerciais seguras e eficientes, ligando de forma direta as partes independentes do mercado.",
+
+  // Multi-Service Super App
+  superAppTitle: "2. Ecossistema de Super App Multi-Serviço",
+  superAppIntro:
+    "A plataforma DeliGo foi desenvolvida de raiz para escalar além da logística tradicional, evoluindo para uma plataforma centralizada de serviços do quotidiano no mercado europeu:",
+  superAppServices: [
+    "Entrega de Refeições (Food Delivery): Interfaces de menu interativas e redes dinâmicas de restauração local.",
+    "Entrega de Mercearias e Supermercado: Gestão de grandes volumes de produtos, janelas de sincronização de stock em tempo real e comércio de proximidade.",
+    "Entrega de Farmácia: Processos operacionais seguros e adaptados para o fornecimento de produtos de saúde e bem-estar essenciais.",
+    "Serviços de Estafeta e Encomendas: Motores de solicitação rápidos para envios diretos ponto a ponto.",
+    "Logística de Última Milha e Gestão de Frotas: Infraestruturas de rotas escaláveis e customizadas para parceiros empresariais.",
+    "Serviços de Transporte de Passageiros (Ride-Hailing): Tecnologia de mobilidade urbana sob procura para simplificar as deslocações diárias.",
+  ],
+  superAppFooter: "Uma única aplicação. Múltiplas soluções para o dia a dia.",
+
+  // Merchant Empowerment
+  merchantTitle: "3. Capacitação de Comerciantes",
+  merchantBullets: [
+    "Criação intuitiva e personalização de montras digitais.",
+    "Sistemas robustos de gestão de encomendas e painéis operacionais.",
+    "Análise de dados de negócio e relatórios de desempenho detalhados.",
+    "Ferramentas de marketing na aplicação e mecânicas de promoção.",
+    "Módulos de interação e fidelização direta de clientes.",
+  ],
+
+  // Independent Courier Framework
+  courierTitle: "4. Capacitação de Estafetas Independentes",
+  courierBullets: [
+    "Controlo absoluto de horários e gestão autónoma do estado de atividade.",
+    "Definição personalizada de zonas de entrega e corredores geográficos preferenciais.",
+    "Modelos de ganhos flexíveis alinhados com as necessidades individuais.",
+  ],
+
+  // Advanced Technology Infrastructure
+  advancedTechTitle: "5. Infraestrutura Tecnológica Avançada",
+
+  aiSmartMatching: "Correspondência Inteligente Baseada em IA (Smart Matching)",
+  aiSmartMatchingText:
+    "Através de modelos preditivos de inteligência artificial, a DeliGo mapeia a procura dos clientes em tempo real, cruzando-a com a capacidade dos comerciantes e a localização exata dos estafetas independentes disponíveis. Esta otimização automática reduz os tempos de espera, otimiza as rotas e maximiza a fluidez operacional do ecossistema.",
+
+  realTimeTransparency: "Arquitetura de Transparência em Tempo Real",
+  realTimeTransparencyText:
+    "A confiança mútua é assegurada na plataforma através da monitorização contínua de todas as variáveis do pedido. Todos os intervenientes têm acesso a notificações instantâneas, mapas em tempo real com a deslocação dos estafetas e registos digitais de transações totalmente seguros e auditáveis.",
+
+  dataIntelligence: "Inteligência de Mercado de Dados",
+  dataIntelligenceText:
+    "Ao converter os dados operacionais da plataforma em relatórios estratégicos e anonimizados, a DeliGo apoia os comerciantes parceiros na identificação de tendências de consumo, gestão de stock e otimização da rentabilidade a longo prazo.",
+
+  // Scalability, Sustainability & Security
+  scalabilityTitle: "6. Escalabilidade, Sustentabilidade e Segurança",
+
+  expansionStrategy: "Modelo de Expansão Europeia",
+  expansionStrategyText:
+    "Desenvolvida com base numa arquitetura de nuvem escalável, a DeliGo está preparada para uma rápida implementação em diversas áreas metropolitanas além-fronteiras, adaptando-se com facilidade às legislações locais e mantendo um padrão de excelência contínuo.",
+
+  sustainableInfra: "Infraestrutura Digital Sustentável",
+  sustainableInfraText:
+    "A responsabilidade ecológica está integrada nos algoritmos de rota da plataforma. Ao implementar sistemas inteligentes de agrupamento de pedidos, a DeliGo minimiza a pegada de carbono, reduz deslocações desnecessárias e prioriza meios de transporte sustentáveis e a adoção de mobilidade elétrica.",
+
+  secureProtocols: "Protocolos de Segurança Digital",
+  secureProtocolsText:
+    "A proteção total do utilizador é garantida em cada ponto de contacto através de gateways de pagamento encriptadas, sistemas rigorosos de verificação de identidade, controlos estritos de privacidade de dados e algoritmos de prevenção contra a fraude.",
+
+  // Corporate Contacts
+  contactsTitle: "Contactos Corporativos e Comunicação",
+  website: "Website Oficial: www.deligo.pt",
+  supportEmail: "E-mail de Suporte: contact@deligo.pt",
+  headquarters:
+    "Endereço da Sede: Rua Joaquim Agostinho 16C, 1750-126 Lisboa, Portugal",
+  whatsapp: "WhatsApp Corporativo: +351 920 136 680",
+  telephone: "Telefone Fixo: +351 217 570 184",
+
+  superAppService1:
+    "Entrega de Refeições (Food Delivery): Interfaces de menu interativas e redes dinâmicas de restauração local.",
+  superAppService2:
+    "Entrega de Mercearias e Supermercado: Gestão de grandes volumes de produtos, janelas de sincronização de stock em tempo real e comércio de proximidade.",
+  superAppService3:
+    "Entrega de Farmácia: Processos operacionais seguros e adaptados para o fornecimento de produtos de saúde e bem-estar essenciais.",
+  superAppService4:
+    "Serviços de Estafeta e Encomendas: Motores de solicitação rápidos para envios diretos ponto a ponto.",
+  superAppService5:
+    "Logística de Última Milha e Gestão de Frotas: Infraestruturas de rotas escaláveis e customizadas para parceiros empresariais.",
+  superAppService6:
+    "Serviços de Transporte de Passageiros (Ride-Hailing): Tecnologia de mobilidade urbana sob procura para simplificar as deslocações diárias.",
+
+  merchantBullet1: "Criação intuitiva e personalização de montras digitais.",
+  merchantBullet2:
+    "Sistemas robustos de gestão de encomendas e painéis operacionais.",
+  merchantBullet3:
+    "Análise de dados de negócio e relatórios de desempenho detalhados.",
+  merchantBullet4:
+    "Ferramentas de marketing na aplicação e mecânicas de promoção.",
+  merchantBullet5: "Módulos de interação e fidelização direta de clientes.",
+
+  courierBullet1:
+    "Controlo absoluto de horários e gestão autónoma do estado de atividade.",
+  courierBullet2:
+    "Definição personalizada de zonas de entrega e corredores geográficos preferenciais.",
+  courierBullet3:
+    "Modelos de ganhos flexíveis alinhados com as necessidades individuais.",
 };
 
 export default pt;

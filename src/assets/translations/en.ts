@@ -625,7 +625,8 @@ const en = {
   portugues: "Português",
   footerDescription:
     "𝗗𝗲𝗹𝗶𝗚𝗼 𝗶𝘀 𝗮 𝘁𝗲𝗰𝗵𝗻𝗼𝗹𝗼𝗴𝘆 𝗺𝗮𝗿𝗸𝗲𝘁𝗽𝗹𝗮𝗰𝗲 𝗽𝗹𝗮𝘁𝗳𝗼𝗿𝗺 𝘁𝗵𝗮𝘁 𝗰𝗼𝗻𝗻𝗲𝗰𝘁𝘀 𝗰𝘂𝘀𝘁𝗼𝗺𝗲𝗿𝘀, 𝗺𝗲𝗿𝗰𝗵𝗮𝗻𝘁𝘀, 𝗮𝗻𝗱 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁 𝗰𝗼𝘂𝗿𝗶𝗲𝗿𝘀.",
-
+  aboutSlogan:
+    "𝗗𝗲𝗹𝗶𝗚𝗼 𝗶𝘀 𝗮 𝘁𝗲𝗰𝗵𝗻𝗼𝗹𝗼𝗴𝘆 𝗺𝗮𝗿𝗸𝗲𝘁𝗽𝗹𝗮𝗰𝗲 𝗽𝗹𝗮𝘁𝗳𝗼𝗿𝗺 𝘁𝗵𝗮𝘁 𝗰𝗼𝗻𝗻𝗲𝗰𝘁𝘀 𝗰𝘂𝘀𝘁𝗼𝗺𝗲𝗿𝘀, 𝗺𝗲𝗿𝗰𝗵𝗮𝗻𝘁𝘀, 𝗮𝗻𝗱 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁 𝗰𝗼𝘂𝗿𝗶𝗲𝗿𝘀.",
   company: "Company",
   aboutUs: "About Us",
   partnerWithUs: "Partner with us",
@@ -786,11 +787,6 @@ const en = {
 
   rideFleetFaqs: "Ride & Fleet Management",
   securityInnovationFaqs: "Security, Privacy & Innovation",
-
-  // Contact details
-  website: "www.deligo.pt",
-
-  whatsapp: "+351 920 136 680",
 
   tagline: "DeliGo – Delivering Convenience, Empowering Communities.",
 
@@ -1218,6 +1214,122 @@ const en = {
   liability_q3: "Is DeliGo responsible for disputes between users?",
   liability_a3:
     "DeliGo may assist with dispute resolution where appropriate but is not a party to transactions between customers, merchants, service providers, or couriers.",
+  // Hero
+  aboutTitle: "About DeliGo",
+  aboutSubtitle: "Neutral Digital Marketplace & Super App Ecosystem",
+
+  // Technology Marketplace Model
+  techMarketplaceTitle: "1. Technology Marketplace Model",
+  techMarketplaceText:
+    "DeliGo operates exclusively as a neutral digital marketplace designed to dynamically connect independent customers, merchants, and self-employed couriers through a unified, high-performance ecosystem. This modern model establishes an open framework where every participant retains structural autonomy while benefiting from the shared network infrastructure.",
+
+  regulatoryClarificationTitle:
+    "Important Regulatory and Operational Clarification",
+  regulatoryClarificationText:
+    "DeliGo is not a seller, retailer, logistics provider, or delivery contractor. The platform does not sell corporate products, stock inventory, or provide transport services directly. Instead, it functions strictly as a digital intermediary that facilitates secure, high-efficiency commercial transactions and real-time handshakes between independent marketplace parties.",
+
+  // Multi-Service Super App
+  superAppTitle: "2. Multi-Service Super App Architecture",
+  superAppIntro:
+    "The DeliGo platform is natively engineered to scale seamlessly beyond traditional logistics, evolving into a centralized everyday multi-service ecosystem across European markets:",
+  superAppServices: [
+    "Food Delivery: Dynamic interactive menu interfaces and localized restaurant marketplace networks.",
+    "Grocery Delivery: High-volume item curation, inventory sync windows, and neighborhood retail options.",
+    "Pharmacy Delivery: Secure operational pipelines tailored for essential personal care and medical fulfillment.",
+    "Courier & Parcel Services: Dedicated peer-to-peer and point-to-point courier request engines.",
+    "Last-Mile Logistics & Fleet Management: Scalable routing infrastructures customized for enterprise fleet partners.",
+    "Ride-Hailing Services & Mobility: On-demand urban transit technology designed to simplify inner-city navigation.",
+  ],
+  superAppFooter: "One unified app interface. Multiple everyday solutions.",
+
+  // Merchant Empowerment
+  merchantTitle: "3. Merchant Empowerment Toolkit",
+  merchantBullets: [
+    "Intuitive digital storefront creation and branding tools.",
+    "Robust order management and operational tracking panels.",
+    "Advanced business analytics and behavior dashboard frameworks.",
+    "In-app marketing, promotional execution, and visibility mechanics.",
+    "Direct customer engagement and loyalty maximization modules.",
+  ],
+
+  // Independent Courier Framework
+  courierTitle: "4. Independent Courier Framework",
+  courierBullets: [
+    "Autonomous schedule control and dynamic active-status settings.",
+    "Full preference settings for localized delivery areas and neighborhood corridors.",
+    "Flexible earning models aligned with independent lifestyle requirements.",
+  ],
+
+  // Advanced Technology Infrastructure
+  advancedTechTitle: "5. Advanced Technology Infrastructure",
+
+  aiSmartMatching: "AI-Powered Smart Matching Engine",
+  aiSmartMatchingText:
+    "Using predictive machine learning models, DeliGo mathematically maps customer demand metrics against current merchant capacities and optimal courier geolocations. This automated optimization minimizes terminal wait times, optimizes delivery path length, and drives marketplace operational velocity.",
+
+  realTimeTransparency: "Real-Time Transparency Architecture",
+  realTimeTransparencyText:
+    "Full behavioral trust is achieved across the platform ecosystem through the real-time tracking of every active order variable. Stakeholders receive instant notifications, fluid map updates reflecting courier movements, and cryptographically sound, unalterable digital transactional ledgers.",
+
+  dataIntelligence: "Data-Driven Marketplace Intelligence",
+  dataIntelligenceText:
+    "By transforming raw platform signals into actionable, anonymized market intelligence datasets, DeliGo assists partner merchants in identifying macro trends, managing localized inventory levels, and securing data-driven long-term profitability.",
+
+  // Scalability, Sustainability & Security
+  scalabilityTitle: "6. Scalability, Sustainability & Security",
+
+  expansionStrategy: "European Expansion Strategy",
+  expansionStrategyText:
+    "Built upon a microservices cloud architecture, DeliGo is optimized for immediate deployment across diverse cross-border metropolitan regions, allowing for swift adaptation to localized legal frameworks while maintaining standardized, high-caliber platform performance.",
+
+  sustainableInfra: "Sustainable Digital Infrastructure",
+  sustainableInfraText:
+    "Environmental conscientiousness is explicitly coded into platform route planning. By deploying smart multi-order routing algorithms, DeliGo effectively minimizes carbon overheads, truncates unnecessary travel distances, and prioritizes alternative energy transportation modes and electric mobility integration.",
+
+  secureProtocols: "Secure Digital Marketplace Protocols",
+  secureProtocolsText:
+    "Complete platform protection is engineered across every touchpoint through standard encrypted payment checkouts, secure independent identity validation protocols, layered data privacy controls, and proactive fraud prevention algorithms.",
+
+  // Corporate Contacts
+  contactsTitle: "Corporate Contacts & Communications",
+  website: "Official Website: www.deligo.pt",
+  supportEmail: "Corporate Support Email: contact@deligo.pt",
+  headquarters:
+    "Headquarters Address: Rua Joaquim Agostinho 16C, 1750-126 Lisboa, Portugal",
+  whatsapp: "Corporate WhatsApp: +351 920 136 680",
+  telephone: "Office Telephone: +351 217 570 184",
+
+  // 2. Multi-Service Super App Architecture
+  superAppService1:
+    "Food Delivery: Dynamic interactive menu interfaces and localized restaurant marketplace networks.",
+  superAppService2:
+    "Grocery Delivery: High-volume item curation, inventory sync windows, and neighborhood retail options.",
+  superAppService3:
+    "Pharmacy Delivery: Secure operational pipelines tailored for essential personal care and medical fulfillment.",
+  superAppService4:
+    "Courier & Parcel Services: Dedicated peer-to-peer and point-to-point courier request engines.",
+  superAppService5:
+    "Last-Mile Logistics & Fleet Management: Scalable routing infrastructures customized for enterprise fleet partners.",
+  superAppService6:
+    "Ride-Hailing Services & Mobility: On-demand urban transit technology designed to simplify inner-city navigation.",
+
+  // 3. Merchant Empowerment Toolkit
+  merchantBullet1: "Intuitive digital storefront creation and branding tools.",
+  merchantBullet2: "Robust order management and operational tracking panels.",
+  merchantBullet3:
+    "Advanced business analytics and behavior dashboard frameworks.",
+  merchantBullet4:
+    "In-app marketing, promotional execution, and visibility mechanics.",
+  merchantBullet5:
+    "Direct customer engagement and loyalty maximization modules.",
+
+  // 4. Independent Courier Framework
+  courierBullet1:
+    "Autonomous schedule control and dynamic active-status settings.",
+  courierBullet2:
+    "Full preference settings for localized delivery areas and neighborhood corridors.",
+  courierBullet3:
+    "Flexible earning models aligned with independent lifestyle requirements.",
 };
 
 export default en;
