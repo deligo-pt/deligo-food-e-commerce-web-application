@@ -1,7 +1,8 @@
 const pt = {
   addAddress: "Adicionar Endereço",
   locationPromptTitle: "Permitir Acesso à Localização",
-  locationPromptDescription: "Descubra os melhores restaurantes, lojas locais e obtenha tempos de entrega precisos na sua área.",
+  locationPromptDescription:
+    "Descubra os melhores restaurantes, lojas locais e obtenha tempos de entrega precisos na sua área.",
   shareLocation: "Partilhar Localização",
   notNow: "Agora Não",
 
@@ -644,7 +645,7 @@ const pt = {
   removeReferralCode: "Remove",
   portugues: "Português",
   footerDescription:
-    "Levamos satisfação até à sua porta, um pedido de cada vez. A forma mais rápida e fiável de obter tudo o que precisa de lojas e restaurantes locais.",
+    "𝗗𝗲𝗹𝗶𝗚𝗼 é 𝘂𝗺𝗮 𝗽𝗹𝗮𝘁𝗮𝗳𝗼𝗿𝗺𝗮 𝘁𝗲𝗰𝗻𝗼𝗹ó𝗴𝗶𝗰𝗮 𝗱𝗲 𝗺𝗲𝗿𝗰𝗮𝗱𝗼 𝗾𝘂𝗲 𝗹𝗶𝗴𝗮 𝗰𝗹𝗶𝗲𝗻𝘁𝗲𝘀, 𝗲𝘀𝘁𝗮𝗯𝗲𝗹𝗲𝗰𝗶𝗺𝗲𝗻𝘁𝗼𝘀 𝗰𝗼𝗺𝗲𝗿𝗰𝗶𝗮𝗶𝘀 𝗲 𝗲𝘀𝘁𝗮𝗳𝗲𝘁𝗮𝘀 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁𝗲𝘀.",
 
   company: "Empresa",
   aboutUs: "Sobre Nós",

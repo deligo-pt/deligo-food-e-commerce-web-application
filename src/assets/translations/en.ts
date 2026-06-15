@@ -1,7 +1,8 @@
 const en = {
   addAddress: "Add Address",
   locationPromptTitle: "Allow Location Access",
-  locationPromptDescription: "Discover the best restaurants, local stores, and get accurate delivery times in your area.",
+  locationPromptDescription:
+    "Discover the best restaurants, local stores, and get accurate delivery times in your area.",
   shareLocation: "Share Location",
   notNow: "Not Now",
 
@@ -623,7 +624,7 @@ const en = {
   removeReferralCode: "Remove",
   portugues: "Português",
   footerDescription:
-    "Delivering delight to your doorstep, one order at a time. The most reliable and fastest way to get everything you need from local stores and restaurants.",
+    "𝗗𝗲𝗹𝗶𝗚𝗼 𝗶𝘀 𝗮 𝘁𝗲𝗰𝗵𝗻𝗼𝗹𝗼𝗴𝘆 𝗺𝗮𝗿𝗸𝗲𝘁𝗽𝗹𝗮𝗰𝗲 𝗽𝗹𝗮𝘁𝗳𝗼𝗿𝗺 𝘁𝗵𝗮𝘁 𝗰𝗼𝗻𝗻𝗲𝗰𝘁𝘀 𝗰𝘂𝘀𝘁𝗼𝗺𝗲𝗿𝘀, 𝗺𝗲𝗿𝗰𝗵𝗮𝗻𝘁𝘀, 𝗮𝗻𝗱 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁 𝗰𝗼𝘂𝗿𝗶𝗲𝗿𝘀.",
 
   company: "Company",
   aboutUs: "About Us",
