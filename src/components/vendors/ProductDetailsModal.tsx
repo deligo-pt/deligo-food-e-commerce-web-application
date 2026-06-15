@@ -13,8 +13,10 @@ import {
   Circle,
   CheckCircle,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { getAccessToken } from "@/lib/authCookies";
 import { useCartStore } from "@/stores/cartStore";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -65,6 +67,7 @@ export default function ProductDetailsModal({
   productId,
 }: ProductDetailsModalProps) {
   const { t } = useTranslation();
+  const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -82,8 +85,16 @@ export default function ProductDetailsModal({
       setLoading(true);
       setError("");
       try {
-        const { data } = await apiClient.get(`/products/${productId}`);
-        setProduct(data.data);
+        const token = getAccessToken();
+        if (token) {
+          // Authenticated: use protected endpoint
+          const { data } = await apiClient.get(`/products/${productId}`);
+          setProduct(data.data);
+        } else {
+          // Unauthenticated: use open public endpoint
+          const { data } = await apiClient.get(`/products/open/${productId}`);
+          setProduct(data.data);
+        }
         setQuantity(1);
         setSelectedOption(null);
       } catch (err) {
@@ -139,6 +150,15 @@ export default function ProductDetailsModal({
 
   const handleAddToCart = async () => {
     if (!product) return;
+
+    // Redirect guests to login
+    const token = getAccessToken();
+    if (!token) {
+      toast.error("Please log in to add items to your cart.");
+      onClose();
+      router.push("/login");
+      return;
+    }
 
     setCartLoading(true);
 

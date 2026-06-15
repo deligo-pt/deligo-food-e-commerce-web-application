@@ -80,18 +80,9 @@ export default function VendorDetailsModal({
           const response = await apiClient.get(`/vendors/customer/${vendorId}`);
           setVendorData(response.data.data);
         } else {
-          // Unauthenticated: find vendor from the open nearby endpoint
-          const { data: firstData } = await apiClient.get("/vendors/nearby/open", {
-            params: { page: 1, limit: 50, latitude: 38.7298248, longitude: -9.1475019 },
-          });
-          const vendors = firstData.data || [];
-          const found = vendors.find((v: { userId: string }) => v.userId === vendorId);
-          if (found) {
-            // Map the open-endpoint shape to VendorData shape
-            setVendorData(found);
-          } else {
-            setError("Vendor details not available.");
-          }
+          // Unauthenticated: use the dedicated open single-vendor endpoint
+          const response = await apiClient.get(`/vendors/nearby/open/${vendorId}`);
+          setVendorData(response.data.data);
         }
       } catch (err) {
         setError(getApiErrorMessage(err, "Failed to load vendor details"));

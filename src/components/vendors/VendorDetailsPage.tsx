@@ -113,6 +113,7 @@ function useUserAddress() {
 
 interface Vendor {
   id: string;
+  _id?: string; // returned by open endpoint instead of id
   userId: string;
   businessDetails: {
     businessName: string;
@@ -178,10 +179,10 @@ export default function VendorDetailsPage({
     const fetchVendor = async () => {
       try {
         const token = getAccessToken();
-        let foundVendor: Vendor | null = null;
 
         if (token) {
           // Authenticated: search paginated /vendors/customer
+          let foundVendor: Vendor | null = null;
           let currentPage = 1;
           while (!foundVendor) {
             const { data } = await apiClient.get(
@@ -194,27 +195,18 @@ export default function VendorDetailsPage({
             if (currentPage >= (data.meta?.totalPage || 1)) break;
             currentPage++;
           }
+          if (!foundVendor) throw new Error("Vendor not found");
+          setVendor(foundVendor);
         } else {
-          // Unauthenticated: search the open nearby endpoint with default Lisbon coords
-          let currentPage = 1;
-          const { data: firstData } = await apiClient.get("/vendors/nearby/open", {
-            params: { page: 1, limit: 1, latitude: 38.7298248, longitude: -9.1475019 },
-          });
-          const totalPages = firstData.meta?.totalPage || 1;
-
-          while (!foundVendor && currentPage <= totalPages) {
-            const { data } = await apiClient.get("/vendors/nearby/open", {
-              params: { page: currentPage, limit: 50, latitude: 38.7298248, longitude: -9.1475019 },
-            });
-            const vendors: Vendor[] = data.data || [];
-            if (vendors.length === 0) break;
-            foundVendor = vendors.find((v) => v.userId === vendorId) || null;
-            currentPage++;
-          }
+          // Unauthenticated: use the dedicated open single-vendor endpoint
+          const { data } = await apiClient.get(
+            `/vendors/nearby/open/${vendorId}`,
+          );
+          const raw = data.data;
+          // Normalize _id → id so downstream (product fetch, etc.) works uniformly
+          const vendor: Vendor = { ...raw, id: raw.id ?? raw._id ?? "" };
+          setVendor(vendor);
         }
-
-        if (!foundVendor) throw new Error("Vendor not found");
-        setVendor(foundVendor);
       } catch (err) {
         setError(getApiErrorMessage(err));
       } finally {
@@ -230,10 +222,27 @@ export default function VendorDetailsPage({
     const fetchProducts = async () => {
       try {
         setProductsLoading(true);
-        const { data } = await apiClient.get(
-          `/products?vendorId=${vendor.id}&limit=100`,
-        );
-        setProducts(data.data || []);
+        const token = getAccessToken();
+
+        if (token) {
+          // Authenticated: use protected endpoint
+          const { data } = await apiClient.get(
+            `/products?vendorId=${vendor.id}&limit=100`,
+          );
+          setProducts(data.data || []);
+        } else {
+          // Unauthenticated: use open public endpoint
+          // Step 1: get total count for this vendor
+          const countRes = await apiClient.get(
+            `/products/open?vendorId=${vendor.id}&page=1&limit=1`,
+          );
+          const total = countRes.data.meta?.total || 10;
+          // Step 2: fetch all products in one request
+          const { data } = await apiClient.get(
+            `/products/open?vendorId=${vendor.id}&page=1&limit=${total}`,
+          );
+          setProducts(data.data || []);
+        }
       } catch (err) {
         setProductsError(getApiErrorMessage(err, "Unable to load menu"));
       } finally {
@@ -320,14 +329,34 @@ export default function VendorDetailsPage({
     );
   }
 
-  const heroImage = vendor.storePhoto?.[0] || "/placeholder-store.jpg";
+  const productVendorPhoto =
+    (products[0] as any)?.vendorId?.documents?.storePhoto?.[0];
+  const heroImage =
+    vendor.storePhoto?.[0] || productVendorPhoto || "/placeholder-store.jpg";
+
   const displayTime = loadingTime
     ? "Calculating..."
     : estimatedTime || "Under 10 min";
 
   const vendorCategoryNames =
     vendor.availableCategories?.map((cat) => cat.name) || [];
-  const categories = ["All", "POPULAR", ...vendorCategoryNames];
+  const productCategoryNames =
+    vendorCategoryNames.length === 0
+      ? [
+          ...new Set(
+            products
+              .map((p) => p.category?.name)
+              .filter((n): n is string => !!n),
+          ),
+        ]
+      : [];
+  const categories = [
+    "All",
+    "POPULAR",
+    ...(vendorCategoryNames.length > 0
+      ? vendorCategoryNames
+      : productCategoryNames),
+  ];
 
   const filteredProducts = products.filter((product) => {
     if (selectedCategory === "All" || selectedCategory === "POPULAR")
