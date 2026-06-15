@@ -1,22 +1,21 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { Building2, Globe, Home, MapPin, Navigation, Save } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Toaster, toast } from "sonner";
-import {
-  addDeliveryAddress,
-  updateDeliveryAddress,
-  updateLiveLocation,
-} from "@/services/addressApi";
+import { addDeliveryAddress, updateLiveLocation } from "@/services/addressApi";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useRouter } from "next/navigation";
+import { getAccessToken } from "@/lib/authCookies";
 
 interface AddressFormProps {
   coordinates: { lat: number; lng: number } | null;
   initialAddress?: any;
   isEditMode?: boolean;
-  userId?: string;
+  userId?: string;        // required only for edit mode (PATCH)
   addressId?: string;
   onSuccess?: () => void;
 }
@@ -26,12 +25,13 @@ export default function AddressForm({
   initialAddress,
   isEditMode = false,
   userId,
-  addressId,
   onSuccess,
 }: AddressFormProps) {
   const { t } = useTranslation();
+  const router = useRouter();
+  const isLoggedIn = !!getAccessToken();
   const [addressType, setAddressType] = useState<"home" | "work" | "other">(
-    "home",
+    "home"
   );
   const [formData, setFormData] = useState({
     street: "",
@@ -40,10 +40,16 @@ export default function AddressForm({
     state: "",
     country: "",
     postalCode: "",
+    notes: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  // Tracks whether the initial address data has been loaded into the form.
+  // The geocode effect skips the very first coordinate change (which comes from
+  // EditAddressPage calling setCoordinates with the saved lat/lng) so it doesn't
+  // clobber the form data we just loaded from the API.
+  const hasInitializedRef = useRef(false);
 
-  // Initialize from initialAddress (edit mode) only when it changes
+  // Initialize from initialAddress (edit mode)
   useEffect(() => {
     if (!initialAddress) return;
     setFormData({
@@ -53,6 +59,7 @@ export default function AddressForm({
       state: initialAddress.state || "",
       country: initialAddress.country || "",
       postalCode: initialAddress.postalCode || "",
+      notes: initialAddress.notes || "",
     });
     if (initialAddress.addressType) {
       setAddressType(
@@ -60,48 +67,67 @@ export default function AddressForm({
           ? "work"
           : initialAddress.addressType === "OTHER"
             ? "other"
-            : "home",
+            : "home"
       );
     }
+    // Mark that the form is populated — geocode effect can now safely replace fields
+    hasInitializedRef.current = true;
   }, [initialAddress]);
 
-  // Reverse geocode when coordinates change (map moved or GPS used)
+  // Reverse geocode whenever the map position changes.
+  //
+  // Skip the very first fire in edit mode (the coordinate comes from the saved address
+  // and the initialAddress effect already populated the form). After that — whether
+  // add or edit — always replace all 5 geocoded fields with whatever the geocoder
+  // returns, clearing any field the geocoder has no value for.
   useEffect(() => {
     if (!coordinates) return;
     if (!window.google?.maps) return;
+
+    // In edit mode, skip until initialAddress has been loaded into the form
+    if (initialAddress && !hasInitializedRef.current) return;
+
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode(
       { location: { lat: coordinates.lat, lng: coordinates.lng } },
       (results: any[], status: any) => {
         if (status !== "OK" || !results?.length) return;
         const comps = results[0].address_components;
+
+        // Extract every component we care about (empty string = not present)
         let street = "",
           city = "",
           state = "",
           country = "",
           postalCode = "";
+
         comps.forEach((c: any) => {
+          // Street: prefer "route"; fall back to "sublocality_level_1" for areas without named roads
           if (c.types.includes("route")) street = c.long_name;
+          else if (!street && c.types.includes("sublocality_level_1"))
+            street = c.long_name;
           if (c.types.includes("locality")) city = c.long_name;
           if (c.types.includes("administrative_area_level_1"))
             state = c.long_name;
           if (c.types.includes("country")) country = c.long_name;
           if (c.types.includes("postal_code")) postalCode = c.long_name;
         });
+
+        // Always replace all geocoded fields — clear any that the geocoder didn't return
         setFormData((prev) => ({
           ...prev,
-          street: street,
-          city: city,
-          state: state,
-          country: country,
-          postalCode: postalCode,
+          street,
+          city,
+          state,
+          country,
+          postalCode,
         }));
-      },
+      }
     );
-  }, [coordinates]);
+  }, [coordinates, initialAddress]);
 
   const mapAddressTypeToBackend = (
-    type: string,
+    type: string
   ): "HOME" | "OFFICE" | "OTHER" => {
     if (type === "home") return "HOME";
     if (type === "work") return "OFFICE";
@@ -109,56 +135,75 @@ export default function AddressForm({
   };
 
   const handleSave = async () => {
-    if (!userId) {
-      toast.error("User not loaded. Please refresh.");
+    if (!getAccessToken()) {
+      toast.info("Please log in to save your address.");
+      router.push("/login");
       return;
     }
     if (!coordinates) {
       toast.error("Location not detected yet. Please wait or use GPS.");
       return;
     }
+    if (!formData.street.trim()) {
+      toast.error("Street address is required.");
+      return;
+    }
+    if (!formData.city.trim()) {
+      toast.error("City is required.");
+      return;
+    }
 
     setIsSaving(true);
     try {
-      await updateLiveLocation(userId, coordinates.lat, coordinates.lng);
-      const payload = {
-        street: formData.street,
-        detailedAddress: formData.detailedAddress,
-        city: formData.city,
-        state: formData.state,
-        country: formData.country,
-        postalCode: formData.postalCode,
-        longitude: coordinates.lng,
-        latitude: coordinates.lat,
-        geoAccuracy: 5,
-        addressType: mapAddressTypeToBackend(addressType),
-      };
-      if (isEditMode && addressId) {
-        await updateDeliveryAddress(addressId, payload);
+      if (isEditMode) {
+        // PATCH — update live location + primary address
+        if (!userId) {
+          toast.error("User not loaded. Please refresh.");
+          setIsSaving(false);
+          return;
+        }
+        await updateLiveLocation(userId, {
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+          geoAccuracy: 10,
+          isMocked: false,
+          street: formData.street.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim(),
+          country: formData.country.trim(),
+          postalCode: formData.postalCode.trim(),
+          detailedAddress: formData.detailedAddress.trim(),
+          notes: formData.notes.trim(),
+        });
       } else {
-        await addDeliveryAddress(payload);
+        // POST — add new delivery address
+        await addDeliveryAddress({
+          street: formData.street.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim(),
+          country: formData.country.trim(),
+          postalCode: formData.postalCode.trim(),
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+          geoAccuracy: 10,
+          detailedAddress: formData.detailedAddress.trim(),
+          addressType: mapAddressTypeToBackend(addressType),
+          notes: formData.notes.trim(),
+        });
       }
+
+      // Notify navbar to refresh address text
+      window.dispatchEvent(new Event("addressUpdated"));
 
       toast.success(
         isEditMode
-          ? "Address updated successfully!"
-          : "Address added successfully!",
+          ? "Primary address updated successfully!"
+          : "Address added successfully!"
       );
       onSuccess?.();
     } catch (error: any) {
-      if (error.response && error.response.data) {
-        console.error(
-          "Server error response data:",
-          JSON.stringify(error.response.data, null, 2),
-        );
-      } else {
-        console.error("Unexpected error:", error);
-      }
       const serverMessage = error.response?.data?.message || error.message;
-      toast.error(
-        serverMessage ||
-          "Failed to save address. Please check the console for details.",
-      );
+      toast.error(serverMessage || "Failed to save address. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -176,7 +221,7 @@ export default function AddressForm({
         </p>
       </div>
 
-      {/* Address Label */}
+      {/* Address Type */}
       <div className="mb-8">
         <label className="mb-4 block text-sm font-semibold text-[#191c1d]">
           {t("labelAddressAs")}
@@ -187,11 +232,10 @@ export default function AddressForm({
               key={type}
               type="button"
               onClick={() => setAddressType(type)}
-              className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-medium transition ${
-                addressType === type
+              className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-medium transition ${addressType === type
                   ? "border-[#b0004a] bg-[#fff2f5] text-[#b0004a]"
                   : "border-[#e3bdc3] text-[#5a4044]"
-              }`}
+                }`}
             >
               {type === "home" && <Home size={18} />}
               {type === "work" && <Building2 size={18} />}
@@ -200,6 +244,11 @@ export default function AddressForm({
             </button>
           ))}
         </div>
+        {isEditMode && (
+          <p className="mt-2 text-xs text-gray-500">
+            Note: Edit mode updates the PRIMARY address regardless of type selected.
+          </p>
+        )}
       </div>
 
       {/* Street + Detailed */}
@@ -250,7 +299,6 @@ export default function AddressForm({
             type="text"
             value={formData.city}
             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            // placeholder="Enter city"
             placeholder={t("enterCity")}
             className="h-14 w-full rounded-xl border border-[#e3bdc3] px-4 outline-none focus:border-[#b0004a]"
           />
@@ -305,6 +353,20 @@ export default function AddressForm({
         </div>
       </div>
 
+      {/* Notes (optional) */}
+      <div className="mb-8">
+        <label className="mb-2 block text-sm font-medium text-[#191c1d]">
+          Delivery Notes (optional)
+        </label>
+        <textarea
+          value={formData.notes}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          placeholder="e.g., Ring the bell, leave at reception, etc."
+          rows={2}
+          className="w-full rounded-xl border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
+        />
+      </div>
+
       {/* Coordinates Card */}
       <div className="mb-8 rounded-2xl border border-[#e3bdc3] bg-[#fafafa] p-5">
         <div className="mb-4 flex items-center gap-2">
@@ -333,17 +395,32 @@ export default function AddressForm({
         </div>
       </div>
 
+      {!isLoggedIn && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <strong>Not signed in.</strong> You can explore the map and pick a location, but you need to{" "}
+          <button
+            onClick={() => router.push("/login")}
+            className="font-semibold underline hover:text-amber-900"
+          >
+            log in
+          </button>{" "}
+          to save your address.
+        </div>
+      )}
+
       <button
         onClick={handleSave}
         disabled={isSaving}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#b0004a] py-4 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
       >
         <Save size={18} />
-        {isSaving
-          ? t("saving")
-          : isEditMode
-            ? t("updateAddress")
-            : t("saveAddress")}
+        {!isLoggedIn
+          ? "Login to Save Address"
+          : isSaving
+            ? t("saving")
+            : isEditMode
+              ? t("updateAddress")
+              : t("saveAddress")}
       </button>
     </div>
   );

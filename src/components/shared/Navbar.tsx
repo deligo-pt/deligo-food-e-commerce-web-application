@@ -34,6 +34,7 @@ export default function Navbar() {
   const router = useRouter();
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [addressText, setAddressText] = useState("Add Address");
+  const [primaryAddressId, setPrimaryAddressId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -45,6 +46,42 @@ export default function Navbar() {
 
   const [unreadCount, setUnreadCount] = useState(0);
   const { vendorCount, fetchCart } = useCartStore();
+
+  // Fetch profile and update address text
+  const fetchProfile = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      const res = await apiClient.get("/profile");
+      const profile = res.data?.data;
+
+      const activeAddress = profile?.deliveryAddresses?.find(
+        (addr: any) => addr.isActive === true,
+      );
+
+      const firstAddress = profile?.deliveryAddresses?.[0];
+      const resolved = activeAddress || firstAddress;
+      setAddressText(resolved?.street || "Add Address");
+      setPrimaryAddressId(resolved?._id || null);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      setAddressText("Add Address");
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchProfile();
+    }
+  }, [isLoggedIn, pathname, fetchProfile]);
+
+  useEffect(() => {
+    const handleAddressUpdate = () => {
+      if (isLoggedIn) fetchProfile();
+    };
+    window.addEventListener("addressUpdated", handleAddressUpdate);
+    return () =>
+      window.removeEventListener("addressUpdated", handleAddressUpdate);
+  }, [isLoggedIn, fetchProfile]);
 
   const handleSearch = useCallback(() => {
     if (localSearchTerm.trim()) {
@@ -120,26 +157,6 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await apiClient.get("/profile");
-        const profile = res.data?.data;
-        const address =
-          profile?.address?.street ||
-          profile?.deliveryAddresses?.[0]?.street ||
-          "Add Address";
-        setAddressText(address);
-      } catch (error) {
-        console.error("Failed to fetch profile:", error);
-      }
-    };
-
-    if (isLoggedIn) {
-      fetchProfile();
-    }
-  }, [isLoggedIn]);
-
-  useEffect(() => {
     if (!isLoggedIn) {
       setUnreadCount(0);
       return;
@@ -170,6 +187,7 @@ export default function Navbar() {
       fetchCart();
     }
   }, [isLoggedIn, pathname, fetchCart]);
+
   const handleLogout = () => {
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
@@ -198,13 +216,12 @@ export default function Navbar() {
               height={40}
               priority
             />
-
-            <span className="text-[20px] font-black  md:text-[24px]">
+            <span className="text-[20px] font-black md:text-[24px]">
               DeliGo
             </span>
           </Link>
 
-          <Link href="/add-address">
+          <Link href={isLoggedIn && primaryAddressId ? `/edit-address/${primaryAddressId}` : "/add-address"}>
             <button className="hidden cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20 lg:flex">
               <MapPin size={20} />
               {addressText}

@@ -21,10 +21,20 @@ interface DeliveryAddress {
   isActive: boolean;
 }
 
+interface ProfileAddress {
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  detailedAddress?: string;
+}
+
 interface ProfileResponse {
   success: boolean;
   message: string;
   data: {
+    address: ProfileAddress;
     deliveryAddresses: DeliveryAddress[];
   };
 }
@@ -33,6 +43,7 @@ export default function SavedAddressesPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const [addresses, setAddresses] = useState<DeliveryAddress[]>([]);
+  const [profileAddress, setProfileAddress] = useState<ProfileAddress | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -45,6 +56,7 @@ export default function SavedAddressesPage() {
 
       const response = await apiClient.get<ProfileResponse>("/profile");
 
+      setProfileAddress(response.data.data.address || null);
       setAddresses(response.data.data.deliveryAddresses || []);
     } catch (error) {
       setError(getApiErrorMessage(error, "Failed to load addresses"));
@@ -132,8 +144,47 @@ export default function SavedAddressesPage() {
         </button>
       </div>
 
-      {/* Address List */}
+      {/* Profile Address */}
+      {profileAddress && (
+        <div className="mb-6">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+            {t("profileAddress") || "Profile Address"}
+          </h2>
+          <div className="flex items-start gap-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
+              <Home className="h-4 w-4 text-blue-500" />
+            </div>
+            <div className="flex-1">
+              <div className="mb-1 flex items-center gap-2">
+                <span className="text-sm font-semibold uppercase text-blue-600">
+                  {t("profileAddress") || "Profile Address"}
+                </span>
+              </div>
+              <p className="truncate text-sm font-semibold text-black">
+                {profileAddress.detailedAddress || profileAddress.street}
+              </p>
+              <p className="truncate text-xs text-gray-600">
+                {profileAddress.city}, {profileAddress.state}, {profileAddress.country}{" "}
+                {profileAddress.postalCode}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link href="/edit-profile">
+                <Pencil className="h-4 w-4 text-blue-500" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delivery Addresses */}
       <div className="space-y-4">
+        {addresses.length > 0 && (
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            {t("deliveryAddresses") || "Delivery Addresses"}
+          </h2>
+        )}
+
         {addresses.map((address) => {
           const isPrimary = address.isActive;
 
@@ -145,34 +196,29 @@ export default function SavedAddressesPage() {
                   handleSetPrimaryAddress(address._id);
                 }
               }}
-              className={`flex cursor-pointer items-start gap-4 rounded-xl p-4 transition-all ${
-                isPrimary
+              className={`flex cursor-pointer items-start gap-4 rounded-xl p-4 transition-all ${isPrimary
                   ? "border border-pink-200 bg-pink-50"
                   : "border border-gray-200 bg-white hover:border-pink-300 hover:bg-pink-50/40"
-              } ${
-                updatingId === address._id || deletingId === address._id
+                } ${updatingId === address._id || deletingId === address._id
                   ? "pointer-events-none opacity-70"
                   : ""
-              }`}
+                }`}
             >
               <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                  isPrimary ? "bg-white" : "bg-gray-100"
-                }`}
+                className={`flex h-10 w-10 items-center justify-center rounded-full ${isPrimary ? "bg-white" : "bg-gray-100"
+                  }`}
               >
                 <Home
-                  className={`h-4 w-4 ${
-                    isPrimary ? "text-[#C2185B]" : "text-gray-600"
-                  }`}
+                  className={`h-4 w-4 ${isPrimary ? "text-[#C2185B]" : "text-gray-600"
+                    }`}
                 />
               </div>
 
               <div className="flex-1">
                 <div className="mb-1 flex items-center gap-2">
                   <span
-                    className={`text-sm font-semibold uppercase ${
-                      isPrimary ? "text-[#C2185B]" : "text-black"
-                    }`}
+                    className={`text-sm font-semibold uppercase ${isPrimary ? "text-[#C2185B]" : "text-black"
+                      }`}
                   >
                     {address.addressType}
                   </span>

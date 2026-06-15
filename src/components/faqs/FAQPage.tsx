@@ -8,10 +8,9 @@ import {
   Users,
   Store,
   Bike,
-  Car,
   Shield,
   Globe,
- 
+  Scale,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -19,7 +18,7 @@ export default function FAQPage() {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
 
-  // Helper to get an array of FAQ items for a category using flat keys
+  // Helper to get FAQ items using flat keys
   const getFaqsForCategory = (prefix: string, count: number) => {
     const faqs = [];
     for (let i = 1; i <= count; i++) {
@@ -36,7 +35,7 @@ export default function FAQPage() {
       id: "general",
       title: t("generalQuestions"),
       icon: Globe,
-      faqs: getFaqsForCategory("general", 5),
+      faqs: getFaqsForCategory("general", 4),
     },
     {
       id: "customer",
@@ -48,7 +47,7 @@ export default function FAQPage() {
       id: "merchant",
       title: t("merchantFaqs"),
       icon: Store,
-      faqs: getFaqsForCategory("merchant", 6),
+      faqs: getFaqsForCategory("merchant", 5),
     },
     {
       id: "driver",
@@ -57,16 +56,16 @@ export default function FAQPage() {
       faqs: getFaqsForCategory("driver", 5),
     },
     {
-      id: "ride",
-      title: t("rideFleetFaqs"),
-      icon: Car,
-      faqs: getFaqsForCategory("ride", 6),
+      id: "paymentSecurity",
+      title: t("paymentSecurityFaqs"),
+      icon: Shield,
+      faqs: getFaqsForCategory("security", 3),
     },
     {
-      id: "security",
-      title: t("securityInnovationFaqs"),
-      icon: Shield,
-      faqs: getFaqsForCategory("security", 6),
+      id: "liability",
+      title: t("liabilityFaqs"),
+      icon: Scale,
+      faqs: getFaqsForCategory("liability", 3),
     },
   ];
 
@@ -159,7 +158,7 @@ export default function FAQPage() {
         </div>
       </section>
 
-      {/* FAQs */}
+      {/* FAQs List */}
       <section className="mx-auto max-w-7xl px-6 pb-20">
         <div className="space-y-12">
           {filteredCategories.map((category) => {

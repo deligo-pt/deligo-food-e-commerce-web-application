@@ -1,7 +1,8 @@
 const en = {
   addAddress: "Add Address",
   locationPromptTitle: "Allow Location Access",
-  locationPromptDescription: "Discover the best restaurants, local stores, and get accurate delivery times in your area.",
+  locationPromptDescription:
+    "Discover the best restaurants, local stores, and get accurate delivery times in your area.",
   shareLocation: "Share Location",
   notNow: "Not Now",
 
@@ -623,8 +624,9 @@ const en = {
   removeReferralCode: "Remove",
   portugues: "Português",
   footerDescription:
-    "Delivering delight to your doorstep, one order at a time. The most reliable and fastest way to get everything you need from local stores and restaurants.",
-
+    "𝗗𝗲𝗹𝗶𝗚𝗼 𝗶𝘀 𝗮 𝘁𝗲𝗰𝗵𝗻𝗼𝗹𝗼𝗴𝘆 𝗺𝗮𝗿𝗸𝗲𝘁𝗽𝗹𝗮𝗰𝗲 𝗽𝗹𝗮𝘁𝗳𝗼𝗿𝗺 𝘁𝗵𝗮𝘁 𝗰𝗼𝗻𝗻𝗲𝗰𝘁𝘀 𝗰𝘂𝘀𝘁𝗼𝗺𝗲𝗿𝘀, 𝗺𝗲𝗿𝗰𝗵𝗮𝗻𝘁𝘀, 𝗮𝗻𝗱 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁 𝗰𝗼𝘂𝗿𝗶𝗲𝗿𝘀.",
+  aboutSlogan:
+    "𝗗𝗲𝗹𝗶𝗚𝗼 𝗶𝘀 𝗮 𝘁𝗲𝗰𝗵𝗻𝗼𝗹𝗼𝗴𝘆 𝗺𝗮𝗿𝗸𝗲𝘁𝗽𝗹𝗮𝗰𝗲 𝗽𝗹𝗮𝘁𝗳𝗼𝗿𝗺 𝘁𝗵𝗮𝘁 𝗰𝗼𝗻𝗻𝗲𝗰𝘁𝘀 𝗰𝘂𝘀𝘁𝗼𝗺𝗲𝗿𝘀, 𝗺𝗲𝗿𝗰𝗵𝗮𝗻𝘁𝘀, 𝗮𝗻𝗱 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁 𝗰𝗼𝘂𝗿𝗶𝗲𝗿𝘀.",
   company: "Company",
   aboutUs: "About Us",
   partnerWithUs: "Partner with us",
@@ -764,17 +766,8 @@ const en = {
   fleetManagementSolutions: "Fleet Management Solutions",
 
   deligoRideMobilityPlatform: "DeliGo Ride Mobility Platform",
-  faqTitle: "Frequently Asked Questions",
-
-  faqSubtitle: "Everything you need to know about the DeliGo Ecosystem",
 
   searchFaqs: "Search FAQs...",
-
-  generalQuestions: "General Questions",
-
-  customerFaqs: "Customer FAQs",
-
-  merchantFaqs: "Merchant FAQs",
 
   driverPartnerFaqs: "Driver & Delivery Partner FAQs",
 
@@ -788,98 +781,23 @@ const en = {
 
   // Hero & Search
 
-  faqSearchPlaceholder: "Search your question...",
-  faqQuestions: "questions",
   contactTitle: "Contact Us",
 
   // Category Titles
 
-  driverFaqs: "Driver & Delivery Partner FAQs",
   rideFleetFaqs: "Ride & Fleet Management",
   securityInnovationFaqs: "Security, Privacy & Innovation",
-
-  // Contact details
-  website: "www.deligo.pt",
-
-  whatsapp: "+351 920 136 680",
 
   tagline: "DeliGo – Delivering Convenience, Empowering Communities.",
 
   // General FAQs (5 items)
-  general_q1: "What is DeliGo?",
-  general_a1:
-    "DeliGo is a technology-driven platform that offers food delivery, grocery delivery, courier services, logistics solutions, fleet management, and mobility services through a single digital ecosystem.",
-  general_q2: "Where does DeliGo operate?",
-  general_a2:
-    "DeliGo is headquartered in Lisbon, Portugal, and aims to expand its services across Portugal and other European markets.",
-  general_q3: "How do I create a DeliGo account?",
-  general_a3:
-    "You can register through the DeliGo mobile app or website using your email address or mobile number.",
-  general_q4: "Is DeliGo available 24/7?",
-  general_a4:
-    "Service availability depends on your location and merchant operating hours. Some services may be available 24/7.",
   general_q5: "Is DeliGo available on Android and iOS?",
   general_a5: "Yes, DeliGo is available on both Android and iOS platforms.",
 
-  // Customer FAQs (7 items)
-  customer_q1: "How can I place an order?",
-  customer_a1:
-    "Browse available restaurants, stores, or services, add items to your cart, select a delivery address, and complete your payment.",
-  customer_q2: "How can I track my order?",
-  customer_a2:
-    "You can track your order in real time through the DeliGo app or website from pickup to delivery.",
-  customer_q3: "What payment methods are accepted?",
-  customer_a3:
-    "DeliGo accepts debit cards, credit cards, digital wallets, and other secure online payment methods.",
-  customer_q4: "Can I schedule an order for later?",
-  customer_a4:
-    "Yes. Customers can place scheduled orders for future delivery based on merchant availability.",
-  customer_q5: "Can I cancel my order?",
-  customer_a5:
-    "Orders can be canceled before preparation or dispatch, subject to the cancellation policy.",
-  customer_q6: "What if my order is missing items?",
-  customer_a6:
-    "Contact DeliGo Support immediately through the app, website, WhatsApp, or email for assistance.",
-  customer_q7: "How do I request a refund?",
-  customer_a7:
-    "Refund requests can be submitted through customer support and will be reviewed according to our refund policy.",
-
   // Merchant FAQs (6 items)
-  merchant_q1: "How can my business join DeliGo?",
-  merchant_a1:
-    "Simply register through the Merchant Portal and complete the onboarding and verification process.",
-  merchant_q2: "What types of businesses can partner with DeliGo?",
-  merchant_a2:
-    "Restaurants, supermarkets, grocery stores, pharmacies, bakeries, florists, retail stores, and many other local businesses.",
-  merchant_q3: "Does DeliGo charge commission fees?",
-  merchant_a3:
-    "Yes. Commission structures vary depending on partnership agreements and service categories.",
-  merchant_q4: "How do merchants receive payments?",
-  merchant_a4:
-    "Payments are securely processed and transferred according to the agreed settlement schedule.",
-  merchant_q5: "Can merchants manage orders online?",
-  merchant_a5:
-    "Yes. Merchants receive access to a dedicated dashboard for order management, sales tracking, analytics, and reports.",
   merchant_q6: "Does DeliGo help promote my business?",
   merchant_a6:
     "Yes. DeliGo offers marketing campaigns, featured listings, promotions, and digital visibility opportunities.",
-
-  // Driver FAQs (5 items)
-  driver_q1: "How can I become a delivery partner?",
-  driver_a1:
-    "You can apply through the DeliGo Driver App or website and complete the required verification process.",
-  driver_q2: "What documents are required?",
-  driver_a2:
-    "Requirements may include identification documents, driving license, vehicle documents, insurance, and work authorization.",
-  driver_q3: "Can I work part-time?",
-  driver_a3:
-    "Yes. DeliGo offers flexible earning opportunities for both full-time and part-time partners.",
-  driver_q4: "How are drivers paid?",
-  driver_a4:
-    "Payments are transferred directly to the registered bank account according to the payment cycle.",
-  driver_q5: "Can I choose my own working hours?",
-  driver_a5:
-    "Yes. Delivery partners can choose flexible schedules based on availability.",
 
   // Ride & Fleet FAQs (6 items)
   ride_q1: "What is DeliGo Ride?",
@@ -901,15 +819,6 @@ const en = {
     "Yes. Real-time vehicle tracking and performance monitoring are available through the fleet dashboard.",
 
   // Security & Innovation FAQs (6 items)
-  security_q1: "Is my personal information secure?",
-  security_a1:
-    "Yes. DeliGo follows industry-standard security practices and data protection regulations.",
-  security_q2: "Are online payments secure?",
-  security_a2:
-    "Absolutely. All transactions are encrypted and processed through secure payment gateways.",
-  security_q3: "Does DeliGo share customer information?",
-  security_a3:
-    "No. Customer data is protected and handled according to our Privacy Policy and applicable laws.",
   security_q4: "What future services will DeliGo introduce?",
   security_a4:
     "Future services include DeliGo Ride, electric mobility solutions, advanced logistics services, fleet technology, and AI-powered delivery optimization.",
@@ -1199,6 +1108,228 @@ const en = {
   cuisineBurger: "Burger",
   cuisineHalal: "Halal",
   cuisineOthers: "Others",
+  // en.ts
+  faqTitle: "Frequently Asked Questions",
+  faqSubtitle: "Everything you need to know about DeliGo",
+  faqSearchPlaceholder: "Search for questions...",
+  faqQuestions: "questions",
+
+  // Category titles
+  generalQuestions: "About DeliGo",
+  customerFaqs: "Customer FAQs",
+  merchantFaqs: "Merchant FAQs",
+  driverFaqs: "Courier FAQs",
+  paymentSecurityFaqs: "Payments & Security",
+  liabilityFaqs: "Liability & Responsibility",
+
+  // General (4)
+  general_q1: "What is DeliGo?",
+  general_a1:
+    "DeliGo is a technology marketplace and intermediary platform that connects customers, merchants, service providers, and independent couriers through a digital ecosystem. The platform enables users to discover, order, purchase, and receive products and services from independent third parties.",
+  general_q2: "Does DeliGo sell products?",
+  general_a2:
+    "No. DeliGo does not own, manufacture, prepare, store, or sell any products. All products available through the platform are offered and sold by independent merchants.",
+  general_q3: "Does DeliGo provide delivery services?",
+  general_a3:
+    "No. DeliGo does not provide transportation, courier, or delivery services. Deliveries are performed by independent couriers who use the platform.",
+  general_q4: "What is DeliGo's role?",
+  general_a4:
+    "DeliGo acts solely as a technology provider and digital intermediary. The platform facilitates communication, order management, payment processing, and transaction support between customers, merchants, service providers, and independent couriers.",
+
+  // Customer (7)
+  customer_q1: "How do I create a DeliGo account?",
+  customer_a1:
+    "You can register through the DeliGo mobile application or website using your email address or mobile number.",
+  customer_q2: "How do I place an order?",
+  customer_a2:
+    "Browse available merchants on the platform, select products or services, add them to your cart, and complete the checkout process.",
+  customer_q3: "Who am I purchasing from?",
+  customer_a3:
+    "You are purchasing directly from the merchant or service provider listed on the platform. DeliGo is not the seller of any products or services.",
+  customer_q4: "How can I track my order?",
+  customer_a4:
+    "Customers can monitor order status and delivery progress through the DeliGo platform when tracking information is available.",
+  customer_q5: "What payment methods are accepted?",
+  customer_a5:
+    "Available payment methods may include credit cards, debit cards, digital wallets, bank transfers, and cash options where supported by merchants.",
+  customer_q6: "Can I cancel an order?",
+  customer_a6:
+    "Cancellation availability depends on the merchant's policies and the order status at the time of the request.",
+  customer_q7: "Who should I contact regarding product quality issues?",
+  customer_a7:
+    "Product quality, availability, preparation, packaging, and product-related concerns are the responsibility of the merchant supplying the product.",
+
+  // Merchant (5)
+  merchant_q1: "Who can join DeliGo?",
+  merchant_a1:
+    "Restaurants, grocery stores, supermarkets, pharmacies, bakeries, retail shops, florists, and other eligible businesses may apply to join the platform.",
+  merchant_q2: "How do I become a merchant partner?",
+  merchant_a2:
+    "Businesses can register through the DeliGo Merchant Portal and submit the required business documentation for verification.",
+  merchant_q3: "What benefits do merchants receive?",
+  merchant_a3:
+    "Merchants gain access to customers, digital order management, reporting tools, promotional opportunities, and marketplace visibility.",
+  merchant_q4: "Who sets product prices?",
+  merchant_a4:
+    "Merchants are responsible for determining their own pricing, promotions, product availability, and business policies.",
+  merchant_q5: "How are payments settled?",
+  merchant_a5:
+    "Payments are processed through the platform and settled according to the applicable merchant agreement.",
+
+  // Courier (5)
+  driver_q1: "Who are DeliGo couriers?",
+  driver_a1:
+    "Couriers are independent individuals or businesses that use the DeliGo platform to connect with delivery opportunities.",
+  driver_q2: "Are couriers employed by DeliGo?",
+  driver_a2:
+    "No. Couriers operate independently and are not employees, agents, or representatives of DeliGo.",
+  driver_q3: "How can I become a courier partner?",
+  driver_a3:
+    "Applicants can register through the DeliGo Courier Portal and submit the required documents for verification.",
+  driver_q4: "What documents are required?",
+  driver_a4:
+    "Requirements may include identification documents, driving licenses, vehicle documents, insurance, and any permits required by local laws.",
+  driver_q5: "Can I choose my own working hours?",
+  driver_a5:
+    "Yes. Independent couriers generally have flexibility regarding when and how often they use the platform.",
+
+  // Payments & Security (3)
+  security_q1: "Is my payment information secure?",
+  security_a1:
+    "DeliGo uses industry-standard security measures and secure payment technologies to help protect payment information.",
+  security_q2: "Does DeliGo store credit card information?",
+  security_a2:
+    "Payment information is processed through authorized payment providers and handled in accordance with applicable security standards and privacy regulations.",
+  security_q3: "How does DeliGo protect personal data?",
+  security_a3:
+    "DeliGo processes personal data in accordance with its Privacy Policy and applicable data protection laws, including GDPR where applicable.",
+
+  // Liability (3)
+  liability_q1: "Who is responsible for products sold on DeliGo?",
+  liability_a1:
+    "The merchant supplying the product is responsible for product quality, safety, legality, pricing, availability, and compliance with applicable regulations.",
+  liability_q2: "Who is responsible for deliveries?",
+  liability_a2:
+    "Independent couriers are responsible for delivery and transportation services they provide through the platform.",
+  liability_q3: "Is DeliGo responsible for disputes between users?",
+  liability_a3:
+    "DeliGo may assist with dispute resolution where appropriate but is not a party to transactions between customers, merchants, service providers, or couriers.",
+  // Hero
+  aboutTitle: "About DeliGo",
+  aboutSubtitle: "Neutral Digital Marketplace & Super App Ecosystem",
+
+  // Technology Marketplace Model
+  techMarketplaceTitle: "1. Technology Marketplace Model",
+  techMarketplaceText:
+    "DeliGo operates exclusively as a neutral digital marketplace designed to dynamically connect independent customers, merchants, and self-employed couriers through a unified, high-performance ecosystem. This modern model establishes an open framework where every participant retains structural autonomy while benefiting from the shared network infrastructure.",
+
+  regulatoryClarificationTitle:
+    "Important Regulatory and Operational Clarification",
+  regulatoryClarificationText:
+    "DeliGo is not a seller, retailer, logistics provider, or delivery contractor. The platform does not sell corporate products, stock inventory, or provide transport services directly. Instead, it functions strictly as a digital intermediary that facilitates secure, high-efficiency commercial transactions and real-time handshakes between independent marketplace parties.",
+
+  // Multi-Service Super App
+  superAppTitle: "2. Multi-Service Super App Architecture",
+  superAppIntro:
+    "The DeliGo platform is natively engineered to scale seamlessly beyond traditional logistics, evolving into a centralized everyday multi-service ecosystem across European markets:",
+  superAppServices: [
+    "Food Delivery: Dynamic interactive menu interfaces and localized restaurant marketplace networks.",
+    "Grocery Delivery: High-volume item curation, inventory sync windows, and neighborhood retail options.",
+    "Pharmacy Delivery: Secure operational pipelines tailored for essential personal care and medical fulfillment.",
+    "Courier & Parcel Services: Dedicated peer-to-peer and point-to-point courier request engines.",
+    "Last-Mile Logistics & Fleet Management: Scalable routing infrastructures customized for enterprise fleet partners.",
+    "Ride-Hailing Services & Mobility: On-demand urban transit technology designed to simplify inner-city navigation.",
+  ],
+  superAppFooter: "One unified app interface. Multiple everyday solutions.",
+
+  // Merchant Empowerment
+  merchantTitle: "3. Merchant Empowerment Toolkit",
+  merchantBullets: [
+    "Intuitive digital storefront creation and branding tools.",
+    "Robust order management and operational tracking panels.",
+    "Advanced business analytics and behavior dashboard frameworks.",
+    "In-app marketing, promotional execution, and visibility mechanics.",
+    "Direct customer engagement and loyalty maximization modules.",
+  ],
+
+  // Independent Courier Framework
+  courierTitle: "4. Independent Courier Framework",
+  courierBullets: [
+    "Autonomous schedule control and dynamic active-status settings.",
+    "Full preference settings for localized delivery areas and neighborhood corridors.",
+    "Flexible earning models aligned with independent lifestyle requirements.",
+  ],
+
+  // Advanced Technology Infrastructure
+  advancedTechTitle: "5. Advanced Technology Infrastructure",
+
+  aiSmartMatching: "AI-Powered Smart Matching Engine",
+  aiSmartMatchingText:
+    "Using predictive machine learning models, DeliGo mathematically maps customer demand metrics against current merchant capacities and optimal courier geolocations. This automated optimization minimizes terminal wait times, optimizes delivery path length, and drives marketplace operational velocity.",
+
+  realTimeTransparency: "Real-Time Transparency Architecture",
+  realTimeTransparencyText:
+    "Full behavioral trust is achieved across the platform ecosystem through the real-time tracking of every active order variable. Stakeholders receive instant notifications, fluid map updates reflecting courier movements, and cryptographically sound, unalterable digital transactional ledgers.",
+
+  dataIntelligence: "Data-Driven Marketplace Intelligence",
+  dataIntelligenceText:
+    "By transforming raw platform signals into actionable, anonymized market intelligence datasets, DeliGo assists partner merchants in identifying macro trends, managing localized inventory levels, and securing data-driven long-term profitability.",
+
+  // Scalability, Sustainability & Security
+  scalabilityTitle: "6. Scalability, Sustainability & Security",
+
+  expansionStrategy: "European Expansion Strategy",
+  expansionStrategyText:
+    "Built upon a microservices cloud architecture, DeliGo is optimized for immediate deployment across diverse cross-border metropolitan regions, allowing for swift adaptation to localized legal frameworks while maintaining standardized, high-caliber platform performance.",
+
+  sustainableInfra: "Sustainable Digital Infrastructure",
+  sustainableInfraText:
+    "Environmental conscientiousness is explicitly coded into platform route planning. By deploying smart multi-order routing algorithms, DeliGo effectively minimizes carbon overheads, truncates unnecessary travel distances, and prioritizes alternative energy transportation modes and electric mobility integration.",
+
+  secureProtocols: "Secure Digital Marketplace Protocols",
+  secureProtocolsText:
+    "Complete platform protection is engineered across every touchpoint through standard encrypted payment checkouts, secure independent identity validation protocols, layered data privacy controls, and proactive fraud prevention algorithms.",
+
+  // Corporate Contacts
+  contactsTitle: "Corporate Contacts & Communications",
+  website: "Official Website: www.deligo.pt",
+  supportEmail: "Corporate Support Email: contact@deligo.pt",
+  headquarters:
+    "Headquarters Address: Rua Joaquim Agostinho 16C, 1750-126 Lisboa, Portugal",
+  whatsapp: "Corporate WhatsApp: +351 920 136 680",
+  telephone: "Office Telephone: +351 217 570 184",
+
+  // 2. Multi-Service Super App Architecture
+  superAppService1:
+    "Food Delivery: Dynamic interactive menu interfaces and localized restaurant marketplace networks.",
+  superAppService2:
+    "Grocery Delivery: High-volume item curation, inventory sync windows, and neighborhood retail options.",
+  superAppService3:
+    "Pharmacy Delivery: Secure operational pipelines tailored for essential personal care and medical fulfillment.",
+  superAppService4:
+    "Courier & Parcel Services: Dedicated peer-to-peer and point-to-point courier request engines.",
+  superAppService5:
+    "Last-Mile Logistics & Fleet Management: Scalable routing infrastructures customized for enterprise fleet partners.",
+  superAppService6:
+    "Ride-Hailing Services & Mobility: On-demand urban transit technology designed to simplify inner-city navigation.",
+
+  // 3. Merchant Empowerment Toolkit
+  merchantBullet1: "Intuitive digital storefront creation and branding tools.",
+  merchantBullet2: "Robust order management and operational tracking panels.",
+  merchantBullet3:
+    "Advanced business analytics and behavior dashboard frameworks.",
+  merchantBullet4:
+    "In-app marketing, promotional execution, and visibility mechanics.",
+  merchantBullet5:
+    "Direct customer engagement and loyalty maximization modules.",
+
+  // 4. Independent Courier Framework
+  courierBullet1:
+    "Autonomous schedule control and dynamic active-status settings.",
+  courierBullet2:
+    "Full preference settings for localized delivery areas and neighborhood corridors.",
+  courierBullet3:
+    "Flexible earning models aligned with independent lifestyle requirements.",
 };
 
 export default en;
