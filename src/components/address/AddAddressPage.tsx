@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import { ArrowLeft, CheckCircle, LocateFixed, Map, Search } from "lucide-react";
@@ -20,7 +19,10 @@ export default function AddAddressPage() {
   const { coords: geoCoords } = useLocationStore();
 
   const [loading, setLoading] = useState(true);
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [coordinates, setCoordinates] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [searchValue, setSearchValue] = useState("");
 
   // Try GPS first, then session location as fallback
@@ -33,7 +35,10 @@ export default function AddAddressPage() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setCoordinates({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
           setLoading(false);
         },
         async () => {
@@ -53,7 +58,7 @@ export default function AddAddressPage() {
             setLoading(false);
           }
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 10000 },
       );
     } else {
       setLoading(false);
@@ -66,13 +71,16 @@ export default function AddAddressPage() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) =>
+        setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => toast.error("Could not get your location"),
     );
   };
 
   const handleFullMap = () => {
-    document.getElementById("map-section")?.scrollIntoView({ behavior: "smooth" });
+    document
+      .getElementById("map-section")
+      ?.scrollIntoView({ behavior: "smooth" });
   };
 
   if (loading)
@@ -164,11 +172,14 @@ export default function AddAddressPage() {
                 <CheckCircle className="mt-0.5 text-green-600" size={20} />
                 <div>
                   <p className="font-bold text-green-800">
-                    {coordinates ? t("locationConfirmed") : "Waiting for location..."}
+                    {coordinates
+                      ? t("locationConfirmed")
+                      : "Waiting for location..."}
                   </p>
                   {coordinates && (
                     <p className="text-sm text-green-700">
-                      Lat: {coordinates.lat.toFixed(6)} | Lng: {coordinates.lng.toFixed(6)}
+                      Lat: {coordinates.lat.toFixed(6)} | Lng:{" "}
+                      {coordinates.lng.toFixed(6)}
                     </p>
                   )}
                 </div>

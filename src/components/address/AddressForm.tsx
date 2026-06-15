@@ -4,7 +4,7 @@
 "use client";
 
 import { Building2, Globe, Home, MapPin, Navigation, Save } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Toaster, toast } from "sonner";
 import { addDeliveryAddress, updateLiveLocation } from "@/services/addressApi";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -43,6 +43,11 @@ export default function AddressForm({
     notes: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  // Tracks whether the initial address data has been loaded into the form.
+  // The geocode effect skips the very first coordinate change (which comes from
+  // EditAddressPage calling setCoordinates with the saved lat/lng) so it doesn't
+  // clobber the form data we just loaded from the API.
+  const hasInitializedRef = useRef(false);
 
   // Initialize from initialAddress (edit mode)
   useEffect(() => {
@@ -65,44 +70,61 @@ export default function AddressForm({
             : "home"
       );
     }
+    // Mark that the form is populated — geocode effect can now safely replace fields
+    hasInitializedRef.current = true;
   }, [initialAddress]);
 
-  // Reverse geocode when coordinates change
-  // Only auto-fill fields that are still blank (don't overwrite pre-loaded edit data)
+  // Reverse geocode whenever the map position changes.
+  //
+  // Skip the very first fire in edit mode (the coordinate comes from the saved address
+  // and the initialAddress effect already populated the form). After that — whether
+  // add or edit — always replace all 5 geocoded fields with whatever the geocoder
+  // returns, clearing any field the geocoder has no value for.
   useEffect(() => {
     if (!coordinates) return;
     if (!window.google?.maps) return;
+
+    // In edit mode, skip until initialAddress has been loaded into the form
+    if (initialAddress && !hasInitializedRef.current) return;
+
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode(
       { location: { lat: coordinates.lat, lng: coordinates.lng } },
       (results: any[], status: any) => {
         if (status !== "OK" || !results?.length) return;
         const comps = results[0].address_components;
+
+        // Extract every component we care about (empty string = not present)
         let street = "",
           city = "",
           state = "",
           country = "",
           postalCode = "";
+
         comps.forEach((c: any) => {
+          // Street: prefer "route"; fall back to "sublocality_level_1" for areas without named roads
           if (c.types.includes("route")) street = c.long_name;
+          else if (!street && c.types.includes("sublocality_level_1"))
+            street = c.long_name;
           if (c.types.includes("locality")) city = c.long_name;
           if (c.types.includes("administrative_area_level_1"))
             state = c.long_name;
           if (c.types.includes("country")) country = c.long_name;
           if (c.types.includes("postal_code")) postalCode = c.long_name;
         });
+
+        // Always replace all geocoded fields — clear any that the geocoder didn't return
         setFormData((prev) => ({
           ...prev,
-          // Only fill a field if it's currently empty
-          street: prev.street || street,
-          city: prev.city || city,
-          state: prev.state || state,
-          country: prev.country || country,
-          postalCode: prev.postalCode || postalCode,
+          street,
+          city,
+          state,
+          country,
+          postalCode,
         }));
       }
     );
-  }, [coordinates]);
+  }, [coordinates, initialAddress]);
 
   const mapAddressTypeToBackend = (
     type: string
