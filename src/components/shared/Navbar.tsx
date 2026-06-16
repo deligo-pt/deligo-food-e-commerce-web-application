@@ -25,6 +25,7 @@ import {
   REFRESH_TOKEN_COOKIE,
 } from "../../lib/authCookies";
 import { useCartStore } from "@/stores/cartStore";
+import { useLocationStore } from "@/stores/locationStore";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -46,6 +47,8 @@ export default function Navbar() {
 
   const [unreadCount, setUnreadCount] = useState(0);
   const { vendorCount, fetchCart } = useCartStore();
+  const { coords, permissionStatus } = useLocationStore();
+  const [guestGeocoding, setGuestGeocoding] = useState(false);
 
   // Fetch profile and update address text
   const fetchProfile = useCallback(async () => {
@@ -73,6 +76,41 @@ export default function Navbar() {
       fetchProfile();
     }
   }, [isLoggedIn, pathname, fetchProfile]);
+
+  // When NOT logged in and location permission granted, show reverse-geocoded location in addressText
+  useEffect(() => {
+    if (isLoggedIn || !coords || permissionStatus !== "granted") return;
+
+    let cancelled = false;
+    setGuestGeocoding(true);
+    (async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`,
+          { headers: { "Accept-Language": "en" } }
+        );
+        if (cancelled) return;
+        const data = await res.json();
+        const addr = data?.address;
+        const label =
+          addr?.suburb ??
+          addr?.neighbourhood ??
+          addr?.village ??
+          addr?.town ??
+          addr?.city ??
+          addr?.county ??
+          addr?.state ??
+          data?.display_name?.split(",")[0] ??
+          null;
+        if (!cancelled && label) setAddressText(label);
+      } catch {
+        // silently ignore — addressText stays as "Add Address"
+      } finally {
+        if (!cancelled) setGuestGeocoding(false);
+      }
+    })();
+    return () => { cancelled = true; setGuestGeocoding(false); };
+  }, [isLoggedIn, coords, permissionStatus]);
 
   useEffect(() => {
     const handleAddressUpdate = () => {
@@ -224,7 +262,15 @@ export default function Navbar() {
           <Link href={isLoggedIn && primaryAddressId ? `/edit-address/${primaryAddressId}` : "/add-address"}>
             <button className="hidden cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20 lg:flex">
               <MapPin size={20} />
-              {addressText}
+              {!isLoggedIn && (permissionStatus === "loading" || guestGeocoding) ? (
+                <span
+                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                  role="status"
+                  aria-label="Locating"
+                />
+              ) : (
+                addressText
+              )}
               <ChevronDown size={16} />
             </button>
           </Link>
