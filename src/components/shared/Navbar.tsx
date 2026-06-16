@@ -50,6 +50,11 @@ export default function Navbar() {
   const { coords, permissionStatus } = useLocationStore();
   const [guestGeocoding, setGuestGeocoding] = useState(false);
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   // Fetch profile and update address text
   const fetchProfile = useCallback(async () => {
     if (!isLoggedIn) return;
@@ -87,7 +92,7 @@ export default function Navbar() {
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`,
-          { headers: { "Accept-Language": "en" } }
+          { headers: { "Accept-Language": "en" } },
         );
         if (cancelled) return;
         const data = await res.json();
@@ -109,7 +114,10 @@ export default function Navbar() {
         if (!cancelled) setGuestGeocoding(false);
       }
     })();
-    return () => { cancelled = true; setGuestGeocoding(false); };
+    return () => {
+      cancelled = true;
+      setGuestGeocoding(false);
+    };
   }, [isLoggedIn, coords, permissionStatus]);
 
   useEffect(() => {
@@ -259,10 +267,22 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <Link href={isLoggedIn && primaryAddressId ? `/edit-address/${primaryAddressId}` : "/add-address"}>
-            <button className="hidden cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20 lg:flex">
+          <Link
+            href={
+              isLoggedIn && primaryAddressId
+                ? `/edit-address/${primaryAddressId}`
+                : "/add-address"
+            }
+          >
+            <button
+              suppressHydrationWarning
+              className="hidden cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20 lg:flex"
+            >
               <MapPin size={20} />
-              {!isLoggedIn && (permissionStatus === "loading" || guestGeocoding) ? (
+              {!mounted ? (
+                "Add Address"
+              ) : !isLoggedIn &&
+                (permissionStatus === "loading" || guestGeocoding) ? (
                 <span
                   className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
                   role="status"

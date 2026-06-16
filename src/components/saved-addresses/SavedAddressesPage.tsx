@@ -74,6 +74,7 @@ export default function SavedAddressesPage() {
       );
 
       await fetchAddresses();
+      window.dispatchEvent(new Event("addressUpdated"));
     } catch (error) {
       alert(getApiErrorMessage(error, "Failed to update primary address"));
     } finally {
@@ -93,6 +94,7 @@ export default function SavedAddressesPage() {
       await apiClient.delete(`/customers/delete-delivery-address/${addressId}`);
 
       await fetchAddresses();
+      window.dispatchEvent(new Event("addressUpdated"));
     } catch (error) {
       alert(getApiErrorMessage(error, "Failed to delete address"));
     } finally {
@@ -197,8 +199,8 @@ export default function SavedAddressesPage() {
                 }
               }}
               className={`flex cursor-pointer items-start gap-4 rounded-xl p-4 transition-all ${isPrimary
-                  ? "border border-pink-200 bg-pink-50"
-                  : "border border-gray-200 bg-white hover:border-pink-300 hover:bg-pink-50/40"
+                ? "border border-pink-200 bg-pink-50"
+                : "border border-gray-200 bg-white hover:border-pink-300 hover:bg-pink-50/40"
                 } ${updatingId === address._id || deletingId === address._id
                   ? "pointer-events-none opacity-70"
                   : ""
