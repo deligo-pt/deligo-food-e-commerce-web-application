@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -8,6 +9,7 @@ import {
   BellRing,
   CheckCircle2,
   ChevronRight,
+  ChevronLeft,
 } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -32,19 +34,23 @@ interface Notification {
   updatedAt: string;
 }
 
+interface Meta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPage: number;
+}
+
 interface ApiResponse {
   success: boolean;
   message: string;
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPage: number;
-  };
+  meta: Meta;
   data: Notification[];
 }
 
 type FilterType = "all" | "unread" | "orders" | "promos";
+
+const PAGE_LIMIT = 10;
 
 const formatRelativeTime = (
   isoDate: string,
@@ -58,13 +64,9 @@ const formatRelativeTime = (
   const diffDays = Math.floor(diffMs / 86400000);
 
   if (diffMins < 1) return t("justNow");
-
   if (diffMins < 60) return `${diffMins} ${t("minutesAgo")}`;
-
   if (diffHours < 24) return `${diffHours} ${t("hoursAgo")}`;
-
   if (diffDays === 1) return t("yesterday");
-
   if (diffDays < 7) return `${diffDays} ${t("daysAgo")}`;
   return date.toLocaleDateString();
 };
@@ -87,82 +89,109 @@ const getIconByType = (type: Notification["type"]) => {
 export default function NotificationsPage() {
   const { t } = useTranslation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [meta, setMeta] = useState<Meta>({
+    page: 1,
+    limit: PAGE_LIMIT,
+    total: 0,
+    totalPage: 1,
+  });
   const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [markingId, setMarkingId] = useState<string | null>(null);
+  const [markingAll, setMarkingAll] = useState(false);
 
-  // Fetch notifications on mount
-  const fetchNotifications = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiClient.get<ApiResponse>(
-        "/notifications/my-notifications",
-      );
-      if (response.data.success) {
-        setNotifications(response.data.data);
-      } else {
-        throw new Error(
-          response.data.message || "Failed to fetch notifications",
+  const fetchNotifications = useCallback(
+    async (page: number, isInitial = false) => {
+      try {
+        isInitial ? setLoading(true) : setPageLoading(true);
+        setError(null);
+
+        const response = await apiClient.get<ApiResponse>(
+          `/notifications/my-notifications?page=${page}&limit=${PAGE_LIMIT}`,
         );
+
+        if (response.data.success) {
+          setNotifications(response.data.data);
+          setMeta(response.data.meta);
+        } else {
+          throw new Error(
+            response.data.message || "Failed to fetch notifications",
+          );
+        }
+      } catch (err) {
+        setError(getApiErrorMessage(err, "Could not load notifications"));
+      } finally {
+        setLoading(false);
+        setPageLoading(false);
       }
-    } catch (err) {
-      setError(getApiErrorMessage(err, "Could not load notifications"));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchNotifications();
+    fetchNotifications(1, true);
   }, [fetchNotifications]);
 
-  // Mark a single notification as read
+  const goToPage = (page: number) => {
+    if (page < 1 || page > meta.totalPage || pageLoading) return;
+    setCurrentPage(page);
+    fetchNotifications(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleMarkAsRead = useCallback(async (id: string) => {
+    setMarkingId(id);
+    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)),
     );
-
     try {
-      await apiClient.put(`/notifications/${id}/read`);
+      await apiClient.patch(`/notifications/${id}/read`);
     } catch (err) {
+      // Roll back on failure
       setNotifications((prev) =>
         prev.map((n) => (n._id === id ? { ...n, isRead: false } : n)),
       );
       console.error("Failed to mark as read:", err);
+    } finally {
+      setMarkingId(null);
     }
   }, []);
 
-  // Mark all as read
   const handleMarkAllAsRead = useCallback(async () => {
-    const unreadCount = notifications.filter((n) => !n.isRead).length;
-    if (unreadCount === 0) return;
+    const hasUnread = notifications.some((n) => !n.isRead);
+    if (!hasUnread || markingAll) return;
+
+    setMarkingAll(true);
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
 
     try {
-      await apiClient.post("/notifications/mark-all-as-read");
+      await apiClient.patch("/notifications/mark-all-as-read");
     } catch (err) {
-      await fetchNotifications();
+      // Roll back on failure
+      await fetchNotifications(currentPage);
       console.error("Failed to mark all as read:", err);
+    } finally {
+      setMarkingAll(false);
     }
-  }, [notifications, fetchNotifications]);
+  }, [notifications, markingAll, fetchNotifications, currentPage]);
 
-  const filteredNotifications = notifications.filter((notification) => {
-    if (filter === "unread") return !notification.isRead;
-    if (filter === "orders") return notification.type === "ORDER";
-    if (filter === "promos") return notification.type === "PROMO";
+  const filteredNotifications = notifications.filter((n) => {
+    if (filter === "unread") return !n.isRead;
+    if (filter === "orders") return n.type === "ORDER";
+    if (filter === "promos") return n.type === "PROMO";
     return true;
   });
 
-  const totalCount = notifications.length;
   const unreadCount = notifications.filter((n) => !n.isRead).length;
   const ordersCount = notifications.filter((n) => n.type === "ORDER").length;
   const promosCount = notifications.filter((n) => n.type === "PROMO").length;
 
-  if (loading) {
-    return <NotificationsSkeleton />;
-  }
+  if (loading) return <NotificationsSkeleton />;
 
   if (error) {
     return (
@@ -172,7 +201,7 @@ export default function NotificationsPage() {
             {t("error")}: {error}
           </p>
           <button
-            onClick={fetchNotifications}
+            onClick={() => fetchNotifications(currentPage, true)}
             className="mt-4 rounded-md bg-[#c1005b] px-4 py-2 text-white"
           >
             {t("retry")}
@@ -198,8 +227,9 @@ export default function NotificationsPage() {
 
           <button
             onClick={handleMarkAllAsRead}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffe9ef] text-[#c1005b]"
-            disabled={unreadCount === 0}
+            disabled={unreadCount === 0 || markingAll}
+            title="Mark all as read"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffe9ef] text-[#c1005b] disabled:opacity-40 transition"
           >
             <CheckCheck size={18} />
           </button>
@@ -207,79 +237,39 @@ export default function NotificationsPage() {
 
         {/* Filters */}
         <div className="mb-6 flex flex-wrap gap-3">
-          <button
-            onClick={() => setFilter("all")}
-            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs ${
-              filter === "all"
-                ? "border-[#c1005b] bg-[#c1005b] text-white"
-                : "border-[#e4d3d8] bg-white text-[#666]"
-            }`}
-          >
-            {t("all")}
-            <span
-              className={`rounded-full px-2 py-px ${
-                filter === "all" ? "bg-white/20 text-white" : "bg-[#f2f2f2]"
+          {(
+            [
+              { key: "all", label: t("all"), count: notifications.length },
+              { key: "unread", label: t("unread"), count: unreadCount },
+              { key: "orders", label: t("orders"), count: ordersCount },
+              { key: "promos", label: t("promos"), count: promosCount },
+            ] as { key: FilterType; label: string; count: number }[]
+          ).map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs transition ${
+                filter === key
+                  ? "border-[#c1005b] bg-[#c1005b] text-white"
+                  : "border-[#e4d3d8] bg-white text-[#666]"
               }`}
             >
-              {totalCount}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setFilter("unread")}
-            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs ${
-              filter === "unread"
-                ? "border-[#c1005b] bg-[#c1005b] text-white"
-                : "border-[#e4d3d8] bg-white text-[#666]"
-            }`}
-          >
-            {t("unread")}
-            <span
-              className={`rounded-full px-2 py-px ${
-                filter === "unread" ? "bg-white/20 text-white" : "bg-[#f2f2f2]"
-              }`}
-            >
-              {unreadCount}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setFilter("orders")}
-            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs ${
-              filter === "orders"
-                ? "border-[#c1005b] bg-[#c1005b] text-white"
-                : "border-[#e4d3d8] bg-white text-[#666]"
-            }`}
-          >
-            {t("orders")}
-            <span
-              className={`rounded-full px-2 py-px ${
-                filter === "orders" ? "bg-white/20 text-white" : "bg-[#f2f2f2]"
-              }`}
-            >
-              {ordersCount}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setFilter("promos")}
-            className={`rounded-full border px-4 py-2 text-xs ${
-              filter === "promos"
-                ? "border-[#c1005b] bg-[#c1005b] text-white"
-                : "border-[#e4d3d8] bg-white text-[#666]"
-            }`}
-          >
-            {t("promos")}
-            {filter === "promos" && (
-              <span className="ml-2 rounded-full bg-white/20 px-2 py-px">
-                {promosCount}
+              {label}
+              <span
+                className={`rounded-full px-2 py-px ${
+                  filter === key ? "bg-white/20 text-white" : "bg-[#f2f2f2]"
+                }`}
+              >
+                {count}
               </span>
-            )}
-          </button>
+            </button>
+          ))}
         </div>
 
         {/* Notification List */}
-        <div className="space-y-4">
+        <div
+          className={`space-y-4 transition-opacity ${pageLoading ? "opacity-50 pointer-events-none" : ""}`}
+        >
           {filteredNotifications.length === 0 ? (
             <div className="rounded-xl border border-[#ededed] bg-white p-8 text-center text-[#666]">
               {t("noNotifications")}
@@ -288,11 +278,14 @@ export default function NotificationsPage() {
             filteredNotifications.map((notification) => {
               const Icon = getIconByType(notification.type);
               const isUnread = !notification.isRead;
+              const isMarkingThis = markingId === notification._id;
 
               return (
                 <div
                   key={notification._id}
-                  className="relative flex gap-4 rounded-xl border border-[#ededed] bg-white p-5 cursor-pointer transition-shadow hover:shadow-md"
+                  className={`relative flex gap-4 rounded-xl border border-[#ededed] bg-white p-5 transition-shadow hover:shadow-md ${
+                    isUnread ? "cursor-pointer" : ""
+                  } ${isMarkingThis ? "opacity-60 pointer-events-none" : ""}`}
                   onClick={() => {
                     if (isUnread) handleMarkAsRead(notification._id);
                   }}
@@ -347,7 +340,7 @@ export default function NotificationsPage() {
                       </span>
                     </div>
 
-                    {/* Conditional actions based on type */}
+                    {/* Conditional actions */}
                     {notification.type === "ORDER" &&
                       notification.data?.orderId && (
                         <Link
@@ -355,14 +348,7 @@ export default function NotificationsPage() {
                         >
                           <button
                             className="mt-4 rounded-md bg-[#c1005b] px-5 py-2 text-sm font-medium text-white"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // TODO: navigate to order tracking page
-                              console.log(
-                                "Track order:",
-                                notification.data.orderId,
-                              );
-                            }}
+                            onClick={(e) => e.stopPropagation()}
                           >
                             {t("trackOrder")}
                           </button>
@@ -387,7 +373,7 @@ export default function NotificationsPage() {
                     )}
                   </div>
 
-                  {/* Chevron for unread items */}
+                  {/* Chevron for unread */}
                   {isUnread && (
                     <div className="flex items-center">
                       <ChevronRight size={18} className="text-[#b5b5b5]" />
@@ -398,6 +384,72 @@ export default function NotificationsPage() {
             })
           )}
         </div>
+        {meta.totalPage > 1 && (
+          <div className="mt-8 flex items-center justify-between">
+            {/* Info */}
+            <p className="text-sm text-[#888]">
+              {t("page") || "Page"} {meta.page} {t("of") || "of"}{" "}
+              {meta.totalPage} &mdash; {meta.total}{" "}
+              {t("totalNotifications") || "total"}
+            </p>
+
+            {/* Controls */}
+            <div className="flex items-center gap-2">
+              {/* Previous */}
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1 || pageLoading}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e4d3d8] bg-white text-[#c1005b] disabled:opacity-40 transition hover:bg-[#fff0f5]"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              {/* Page numbers */}
+              {Array.from({ length: meta.totalPage }, (_, i) => i + 1)
+                .filter(
+                  (p) =>
+                    p === 1 ||
+                    p === meta.totalPage ||
+                    Math.abs(p - currentPage) <= 1,
+                )
+                .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1)
+                    acc.push("...");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((item, idx) =>
+                  item === "..." ? (
+                    <span key={`ellipsis-${idx}`} className="px-1 text-[#aaa]">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => goToPage(item as number)}
+                      disabled={pageLoading}
+                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition ${
+                        currentPage === item
+                          ? "bg-[#c1005b] text-white"
+                          : "border border-[#e4d3d8] bg-white text-[#444] hover:bg-[#fff0f5]"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ),
+                )}
+
+              {/* Next */}
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === meta.totalPage || pageLoading}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e4d3d8] bg-white text-[#c1005b] disabled:opacity-40 transition hover:bg-[#fff0f5]"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
