@@ -264,6 +264,10 @@ const pt = {
   deliciousMenuItem: "Item delicioso do nosso menu.",
 
   pleaseContactVendor: "Por favor contacte o vendedor",
+  share: "Partilhar",
+  shareVia: "Partilhar via",
+  copyLink: "Copiar Ligação",
+  linkCopied: "Ligação copiada!",
 
   mapUnavailable: "Mapa indisponível",
   locationNotAvailable: "Localização indisponível",
