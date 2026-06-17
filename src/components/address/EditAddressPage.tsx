@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft, CheckCircle, LocateFixed, Map, Search } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { Toaster, toast } from "sonner";
@@ -227,6 +228,20 @@ export default function EditAddressPage({ addressId }: Props) {
               addressId={addressId}
               onSuccess={() => router.push("/saved-addresses")}
             />
+          </div>
+        </div>
+
+        {/* Divider + Add New Address */}
+        <div className="mt-10">
+          <hr className="border-t border-[#e3bdc3]" />
+          <div className="mt-6 flex items-center justify-center">
+            <Link
+              href="/add-address"
+              className="inline-flex items-center gap-2 rounded-full bg-[#b0004a] px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[#8c003b] active:scale-95"
+            >
+              <span className="text-xl font-bold leading-none">+</span>
+              {t("addNewAddress")}
+            </Link>
           </div>
         </div>
       </div>
