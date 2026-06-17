@@ -80,6 +80,14 @@ export default function HeroSection() {
     };
   }, [emblaApi]);
 
+  useEffect(() => {
+    if (!emblaApi || slides.length <= 1) return;
+    const timer = setInterval(() => {
+      emblaApi.scrollNext();
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [emblaApi, slides.length]);
+
   const emptyStateMessage = useMemo(() => {
     if (loading) return t("loadingSponsorshipBanners");
     if (error) return t("unableToLoadSponsorshipBanners");
@@ -92,7 +100,7 @@ export default function HeroSection() {
   return (
     <section className="group relative mt-8">
       {loading ? (
-        <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-0">
+        <div>
           <div className="relative overflow-hidden rounded-4xl bg-gray-100">
             <div className="relative aspect-video animate-pulse lg:aspect-21/8">
               <div className="absolute inset-0 bg-linear-to-r from-gray-100 via-gray-200 to-gray-100" />
@@ -111,7 +119,7 @@ export default function HeroSection() {
           </div>
         </div>
       ) : hasSlides ? (
-        <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-0">
+        <div>
           <div className="relative overflow-hidden rounded-4xl">
             <div className="absolute inset-0 z-10 pointer-events-none" />
             <div className="overflow-hidden touch-pan-y" ref={emblaRef}>
@@ -126,7 +134,7 @@ export default function HeroSection() {
                       alt={slide.sponsorName}
                       fill
                       priority={selectedIndex === 0}
-                      sizes="(max-width: 1024px) 100vw, 1280px"
+                      sizes="100vw"
                       className="object-fit object-center"
                     />
                   </div>
