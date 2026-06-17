@@ -13,14 +13,19 @@ import {
   Lock,
   AlertCircle,
   Star,
+  X,
+  CheckCircle,
+  Tag,
+  ChevronRight,
+  Percent,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
 import { useTranslation } from "@/hooks/useTranslation";
+import Link from "next/link";
 
-// Type definitions
 interface CheckoutItem {
   productId: string;
   name: string;
@@ -32,6 +37,7 @@ interface CheckoutItem {
 interface OrderCalculation {
   totalOriginalPrice: number;
   totalProductDiscount: number;
+  totalOfferDiscount: number;
   totalTaxAmount: number;
 }
 
@@ -53,6 +59,13 @@ interface DeliveryAddress {
   postalCode: string;
 }
 
+interface OfferApplied {
+  promoId: string;
+  title: string;
+  discountValue: number;
+  code: string;
+}
+
 interface CheckoutSummary {
   _id: string;
   vendorId: string;
@@ -62,7 +75,12 @@ interface CheckoutSummary {
   payoutSummary: PayoutSummary;
   deliveryAddress: DeliveryAddress;
   paymentStatus: string;
+  offer: {
+    isApplied: boolean;
+    offerApplied: OfferApplied | null;
+  };
 }
+
 interface Vendor {
   id: string;
   userId: string;
@@ -88,6 +106,21 @@ interface Vendor {
   rating: { average: number; totalReviews: number };
 }
 
+interface AvailableOffer {
+  _id: string;
+  title: string;
+  description: string;
+  offerType: "PERCENT" | "FLAT";
+  isAutoApply: boolean;
+  code: string;
+  discountValue: number;
+  maxDiscountAmount: number;
+  minOrderAmount: number;
+  expiresAt: string;
+  isEligible: boolean;
+  message: string;
+}
+
 export default function PaymentPage() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
@@ -100,8 +133,15 @@ export default function PaymentPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>("CARD");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentError, setPaymentError] = useState("");
-  const [voucherCode, setVoucherCode] = useState("");
-  const [showVoucherInput, setShowVoucherInput] = useState(false);
+
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [availableOffers, setAvailableOffers] = useState<AvailableOffer[]>([]);
+  const [offersLoading, setOffersLoading] = useState(false);
+  const [offersError, setOffersError] = useState("");
+  const [manualCode, setManualCode] = useState("");
+  const [applyingOfferId, setApplyingOfferId] = useState<string | null>(null);
+  const [offerApplyError, setOfferApplyError] = useState("");
+  const [showSupportModal, setShowSupportModal] = useState(false);
 
   useEffect(() => {
     if (!checkoutId) {
@@ -114,28 +154,19 @@ export default function PaymentPage() {
       try {
         setLoading(true);
 
-        // 1. Fetch checkout summary
         const summaryResponse = await apiClient.get(
           `/checkout/summary/${checkoutId}`,
         );
-
         const summaryData = summaryResponse.data.data;
-
         setSummary(summaryData);
 
-        // 2. Fetch vendor immediately
         if (summaryData.vendorId) {
           const vendorResponse = await apiClient.get("/vendors/customer");
-
           const vendors: Vendor[] = vendorResponse.data.data;
-
           const matchedVendor = vendors.find(
             (v) => v.id === summaryData.vendorId,
           );
-
-          if (matchedVendor) {
-            setVendor(matchedVendor);
-          }
+          if (matchedVendor) setVendor(matchedVendor);
         }
       } catch (err) {
         setError(
@@ -148,6 +179,58 @@ export default function PaymentPage() {
 
     fetchData();
   }, [checkoutId]);
+
+  const handleOpenOfferModal = async () => {
+    if (!summary) return;
+    setShowOfferModal(true);
+    setOffersError("");
+    setOfferApplyError("");
+    setManualCode("");
+
+    try {
+      setOffersLoading(true);
+      const res = await apiClient.get(
+        `/offers/available-offers/${summary._id}`,
+      );
+      setAvailableOffers(res.data.data ?? []);
+    } catch (err) {
+      setOffersError(getApiErrorMessage(err, "Failed to load offers"));
+    } finally {
+      setOffersLoading(false);
+    }
+  };
+
+  const applyOffer = async (offer?: AvailableOffer, codeOverride?: string) => {
+    if (!summary) return;
+
+    let identifier: string;
+    if (codeOverride) {
+      identifier = codeOverride.trim();
+    } else if (offer) {
+      identifier = offer.isAutoApply ? offer._id : offer.code;
+    } else {
+      return;
+    }
+
+    const key = offer ? offer._id : "manual";
+    setApplyingOfferId(key);
+    setOfferApplyError("");
+
+    try {
+      const res = await apiClient.post("/offers/validate-apply-offer", {
+        checkoutId: summary._id,
+        offerIdentifier: identifier,
+      });
+
+      setSummary(res.data.data);
+      setShowOfferModal(false);
+      setManualCode("");
+    } catch (err) {
+      setOfferApplyError(getApiErrorMessage(err, "Failed to apply offer"));
+    } finally {
+      setApplyingOfferId(null);
+    }
+  };
 
   const handlePlaceOrder = async () => {
     if (!summary) return;
@@ -201,32 +284,34 @@ export default function PaymentPage() {
 
   const { items, orderCalculation, delivery, payoutSummary, deliveryAddress } =
     summary;
+
   const subtotal =
     orderCalculation.totalOriginalPrice - orderCalculation.totalProductDiscount;
+
+  const offerDiscount = orderCalculation.totalOfferDiscount ?? 0;
   const orderTotal = payoutSummary.grandTotal;
 
   const vendorRating = vendor?.rating.average ?? 0;
   const vendorReviewCount = vendor?.rating.totalReviews ?? 0;
 
+  const appliedOffer = summary.offer?.isApplied
+    ? summary.offer.offerApplied
+    : null;
+
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
         <div className="flex flex-col gap-6 lg:flex-row">
-          {/* LEFT COLUMN */}
           <div className="flex-1 space-y-6">
-            {/* Delivery Details */}
             <div className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900">
                   {t("deliveryDetails")}
                 </h2>
-                <button className="text-sm font-semibold text-pink-600">
-                  {t("change")}
-                </button>
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Delivery From - dynamic vendor */}
+                {/* Delivery From */}
                 <div>
                   <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">
                     {t("deliveryFrom")}
@@ -252,33 +337,43 @@ export default function PaymentPage() {
                         {vendor?.businessDetails.businessName}
                       </p>
                       {vendor && (
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`h-2 w-2 rounded-full ${
-                              vendor.businessDetails.isStoreOpen
-                                ? "bg-green-500"
-                                : "bg-red-500"
-                            }`}
-                          />
-                          <span className="text-xs font-medium text-gray-600">
-                            {vendor.businessDetails.isStoreOpen
-                              ? t("open")
-                              : t("closed")}
-                          </span>
-                          {vendorRating > 0 && (
-                            <div className="flex items-center gap-1 ml-2">
-                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                              <span className="text-xs font-medium">
-                                {vendorRating.toFixed(1)} ({vendorReviewCount})
-                              </span>
-                            </div>
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`h-2 w-2 rounded-full ${
+                                vendor.businessDetails.isStoreOpen
+                                  ? "bg-green-500"
+                                  : "bg-red-500"
+                              }`}
+                            />
+                            <span className="text-xs font-medium text-gray-600">
+                              {vendor.businessDetails.isStoreOpen
+                                ? t("open")
+                                : t("closed")}
+                            </span>
+                            {vendorRating > 0 && (
+                              <div className="flex items-center gap-1 ml-2">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                <span className="text-xs font-medium">
+                                  {vendorRating.toFixed(1)} ({vendorReviewCount}
+                                  )
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {vendor.businessLocation && (
+                            <p className="mt-1 text-sm text-gray-500">
+                              {vendor.businessLocation.street},{" "}
+                              {vendor.businessLocation.city}
+                            </p>
                           )}
-                        </div>
+                        </>
                       )}
                     </div>
                   </div>
                 </div>
 
+                {/* Delivery To */}
                 <div>
                   <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">
                     {t("deliveryTo")}
@@ -314,9 +409,11 @@ export default function PaymentPage() {
             <div className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold">{t("yourOrder")}</h2>
-                <button className="text-sm font-semibold text-pink-600">
-                  {t("addMoreItems")}
-                </button>
+                <Link href={`/vendors`}>
+                  <button className="text-sm font-semibold text-pink-600">
+                    {t("addMoreItems")}
+                  </button>
+                </Link>
               </div>
 
               <div className="divide-y">
@@ -354,12 +451,11 @@ export default function PaymentPage() {
               </div>
             </div>
           </div>
-
-          {/* RIGHT COLUMN - Payment Summary (unchanged) */}
           <div className="w-full lg:w-100">
             <div className="sticky top-6 rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
               <h2 className="mb-6 text-2xl font-bold">{t("paymentSummary")}</h2>
 
+              {/* Price breakdown */}
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-gray-500">{t("itemsTotal")}</span>
@@ -368,17 +464,17 @@ export default function PaymentPage() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t("subtotal")}</span>
-                  <span className="font-semibold">€{subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-gray-500">{t("discount")}</span>
                   <span className="font-semibold text-green-600">
                     -€{orderCalculation.totalProductDiscount.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t("tax")}</span>
+                  <span className="text-gray-500">{t("subtotal")}</span>
+                  <span className="font-semibold">€{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">{t("serviceCharge")}</span>
                   <span className="font-semibold">
                     €{orderCalculation.totalTaxAmount.toFixed(2)}
                   </span>
@@ -391,32 +487,61 @@ export default function PaymentPage() {
                       : t("free")}
                   </span>
                 </div>
-              </div>
 
-              <div className="my-6 border-t border-dashed pt-6">
-                <button
-                  onClick={() => setShowVoucherInput(!showVoucherInput)}
-                  className="mb-6 flex w-full items-center justify-end gap-2 text-pink-600"
-                >
-                  <Ticket className="h-4 w-4" />
-                  {t("applyVoucherCode")}
-                </button>
-
-                {showVoucherInput && (
-                  <div className="mb-4 flex gap-2">
-                    <input
-                      type="text"
-                      placeholder={t("enterVoucherCode")}
-                      value={voucherCode}
-                      onChange={(e) => setVoucherCode(e.target.value)}
-                      className="flex-1 rounded-lg border border-gray-200 px-4 py-2 outline-none focus:border-pink-500"
-                    />
-                    <button className="rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white">
-                      {t("apply")}
-                    </button>
+                {/* Offer discount row – only shown when an offer is applied */}
+                {offerDiscount > 0 && (
+                  <div className="flex justify-between rounded-lg bg-green-50 px-3 py-2">
+                    <span className="flex items-center gap-1.5 text-green-700 font-medium">
+                      <Tag className="h-3.5 w-3.5" />
+                      {appliedOffer
+                        ? `${appliedOffer.title} (${appliedOffer.code})`
+                        : t("offerDiscount")}
+                    </span>
+                    <span className="font-semibold text-green-700">
+                      -€{offerDiscount.toFixed(2)}
+                    </span>
                   </div>
                 )}
+              </div>
 
+              {/* Voucher section */}
+              <div className="my-6 border-t border-dashed pt-6">
+                {appliedOffer ? (
+                  /* Applied offer pill */
+                  <div className="mb-6 flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-semibold text-green-700">
+                        {appliedOffer.title}
+                      </span>
+                      <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-bold text-green-700">
+                        {appliedOffer.code}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleOpenOfferModal}
+                      className="text-xs font-semibold text-pink-600 underline"
+                    >
+                      {t("change")}
+                    </button>
+                  </div>
+                ) : (
+                  /* Apply voucher button */
+                  <button
+                    onClick={handleOpenOfferModal}
+                    className="mb-6 flex w-full items-center justify-between gap-2 rounded-lg border border-dashed border-pink-300 bg-pink-50 px-4 py-3 text-pink-600 transition hover:bg-pink-100"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Ticket className="h-4 w-4" />
+                      <span className="text-sm font-semibold">
+                        {t("applyVoucherCode")}
+                      </span>
+                    </div>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                )}
+
+                {/* Order Total */}
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold">{t("orderTotal")}</span>
                   <span className="text-3xl font-bold text-pink-600">
@@ -425,6 +550,7 @@ export default function PaymentPage() {
                 </div>
               </div>
 
+              {/* Payment Methods */}
               <h3 className="mb-4 text-lg font-semibold">
                 {t("paymentMethod")}
               </h3>
@@ -491,7 +617,10 @@ export default function PaymentPage() {
                 <p className="text-sm text-gray-500">
                   {t("needHelpWithOrder")}
                 </p>
-                <button className="font-semibold text-pink-600">
+                <button
+                  onClick={() => setShowSupportModal(true)}
+                  className="font-semibold text-pink-600"
+                >
                   {t("contactSupport")}
                 </button>
               </div>
@@ -504,6 +633,267 @@ export default function PaymentPage() {
           </div>
         </div>
       </div>
+
+      {showOfferModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowOfferModal(false)}
+          />
+
+          {/* Panel */}
+          <div className="relative z-10 w-full max-w-lg rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <Ticket className="h-5 w-5 text-pink-600" />
+                <h3 className="text-lg font-bold text-gray-900">
+                  {t("availableOffers")}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowOfferModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {/* Manual code input */}
+              <div className="rounded-xl border border-gray-200 p-4">
+                <p className="mb-2 text-sm font-semibold text-gray-700">
+                  {t("enterVoucherCode")}
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={manualCode}
+                    onChange={(e) =>
+                      setManualCode(e.target.value.toUpperCase())
+                    }
+                    placeholder={t("enterVoucherCode")}
+                    className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
+                  />
+                  <button
+                    onClick={() => applyOffer(undefined, manualCode)}
+                    disabled={
+                      !manualCode.trim() || applyingOfferId === "manual"
+                    }
+                    className="rounded-lg bg-pink-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-pink-700 disabled:opacity-50"
+                  >
+                    {applyingOfferId === "manual" ? t("applying") : t("apply")}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error */}
+              {offerApplyError && (
+                <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                  <p className="text-sm text-red-600">{offerApplyError}</p>
+                </div>
+              )}
+
+              {/* Available offer list */}
+              {offersLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-600 border-t-transparent" />
+                </div>
+              ) : offersError ? (
+                <p className="py-4 text-center text-sm text-red-500">
+                  {offersError}
+                </p>
+              ) : availableOffers.length === 0 ? (
+                <div className="flex flex-col items-center py-10 text-gray-400">
+                  <Ticket className="mb-3 h-10 w-10 opacity-40" />
+                  <p className="text-sm">{t("noOffersAvailable")}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                    {t("availableOffers")}
+                  </p>
+                  {availableOffers.map((offer) => (
+                    <div
+                      key={offer._id}
+                      className={`rounded-xl border p-4 transition ${
+                        !offer.isEligible
+                          ? "border-gray-100 bg-gray-50 opacity-60"
+                          : "border-pink-100 bg-pink-50/40 hover:border-pink-300"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          {/* Icon badge */}
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-100">
+                            <Percent className="h-5 w-5 text-pink-600" />
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-gray-900">
+                                {offer.title}
+                              </p>
+                              <span className="rounded-md bg-pink-100 px-2 py-0.5 text-xs font-bold tracking-wide text-pink-700">
+                                {offer.code}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 text-sm text-gray-500 line-clamp-2">
+                              {offer.description}
+                            </p>
+                            <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                              <span className="font-medium text-pink-600">
+                                {offer.offerType === "PERCENT"
+                                  ? `${offer.discountValue}% off`
+                                  : `€${offer.discountValue} off`}
+                              </span>
+                              {offer.minOrderAmount > 0 && (
+                                <span>Min. €{offer.minOrderAmount}</span>
+                              )}
+                              <span>
+                                Expires{" "}
+                                {new Date(offer.expiresAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {!offer.isEligible && (
+                              <p className="mt-1 text-xs text-red-400">
+                                {offer.message}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Apply button */}
+                        <button
+                          onClick={() => applyOffer(offer)}
+                          disabled={
+                            !offer.isEligible || applyingOfferId === offer._id
+                          }
+                          className="shrink-0 rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {applyingOfferId === offer._id
+                            ? t("applying")
+                            : t("apply")}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {showSupportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowSupportModal(false)}
+          />
+
+          {/* Panel */}
+          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between bg-linear-to-r from-pink-600 to-pink-500 px-6 py-5">
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+                  <AlertCircle className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  {t("contactSupport")}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowSupportModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-6 space-y-4">
+              <p className="text-sm text-gray-500 text-center">
+                {t("needHelpWithOrder")}
+              </p>
+
+              {/* Email */}
+              <a
+                href="mailto:contact@deligo.pt"
+                className="flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50 p-4 transition hover:bg-pink-50 hover:border-pink-200 group"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pink-100 group-hover:bg-pink-200 transition">
+                  <svg
+                    className="h-5 w-5 text-pink-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                    {t("email")}
+                  </p>
+                  <p className="font-semibold text-gray-800 group-hover:text-pink-600 transition">
+                    contact@deligo.pt
+                  </p>
+                </div>
+              </a>
+
+              {/* Phone */}
+              <a
+                href="tel:+351920136680"
+                className="flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50 p-4 transition hover:bg-pink-50 hover:border-pink-200 group"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pink-100 group-hover:bg-pink-200 transition">
+                  <svg
+                    className="h-5 w-5 text-pink-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                    {t("phone")}
+                  </p>
+                  <p className="font-semibold text-gray-800 group-hover:text-pink-600 transition">
+                    +351 920 136 680
+                  </p>
+                </div>
+              </a>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-100 px-6 py-4">
+              <button
+                onClick={() => setShowSupportModal(false)}
+                className="w-full rounded-lg bg-gray-100 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-200"
+              >
+                {t("cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

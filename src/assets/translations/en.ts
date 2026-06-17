@@ -143,6 +143,7 @@ const en = {
   originalPrice: "Original Price",
   productDiscount: "Product Discount",
   tax: "Tax",
+  serviceCharge: "Service Charge",
   total: "Total",
 
   deliveryInstructions: "Delivery Instructions",
@@ -182,6 +183,10 @@ const en = {
   applyVoucherCode: "Apply voucher code",
   enterVoucherCode: "Enter voucher code",
   apply: "Apply",
+  applying: "Applying...",
+  availableOffers: "Available Offers",
+  noOffersAvailable: "No offers available for this order",
+  offerDiscount: "Offer Discount",
 
   orderTotal: "Order Total",
 

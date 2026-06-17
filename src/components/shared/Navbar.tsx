@@ -36,6 +36,7 @@ export default function Navbar() {
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [addressText, setAddressText] = useState("Add Address");
   const [primaryAddressId, setPrimaryAddressId] = useState<string | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -77,6 +78,7 @@ export default function Navbar() {
       const resolved = activeAddress || firstAddress;
       setAddressText(resolved?.street || "Add Address");
       setPrimaryAddressId(resolved?._id || null);
+      setProfilePhoto(profile?.profilePhoto || null);
     } catch (error) {
       console.error("Failed to fetch profile:", error);
       setAddressText("Add Address");
@@ -342,14 +344,40 @@ export default function Navbar() {
               onClick={handleAccountClick}
               className="flex items-center gap-3 rounded-full p-1.5 text-white transition-colors hover:bg-white/10"
             >
-              <div className="h-9 w-9 overflow-hidden rounded-full border-2 border-white/20 bg-[#edeeef]">
-                <Image
-                  alt="User avatar"
-                  className="h-full w-full object-cover"
-                  height={36}
-                  width={36}
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3HK_ck--tlX6pTwJ0djnpKaVYN3IZ9Bjuz-L9h9EWbAVqiBm4fdfcd7p7_hAJx9ftyhl9KfCemQKsV1XNEie_Gg16WW0xNz3S_lmyMGsTq-ZJ8L30ey1GMPF5XD1S6LiB5j2SetOyaSQfDjnVbtHPCBEKKy0g57EskBQU9VV1-1FG87q7et1ImrR1dz-RpJ3mRwTomBstK_t53Dxcx3ywMYwT6Qi0Ehf3MyaRohi9aJ2KhCbHDGpc0v6gtMmmOf5wpctFt41o9zE"
-                />
+              <div className="h-9 w-9 overflow-hidden rounded-full border-2 border-white/20 bg-[#edeeef] flex items-center justify-center">
+                {!mounted ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 36 36"
+                    className="h-full w-full"
+                  >
+                    <circle cx="18" cy="18" r="18" fill="#edeeef" />
+                    <circle cx="18" cy="14" r="6" fill="#c8cdd0" />
+                    <ellipse cx="18" cy="30" rx="10" ry="7" fill="#c8cdd0" />
+                  </svg>
+                ) : isLoggedIn ? (
+                  profilePhoto ? (
+                    <Image
+                      alt="User avatar"
+                      className="h-full w-full object-cover"
+                      height={36}
+                      width={36}
+                      src={profilePhoto}
+                    />
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 36 36"
+                      className="h-full w-full"
+                    >
+                      <circle cx="18" cy="18" r="18" fill="#f9e4ec" />
+                      <circle cx="18" cy="14" r="6" fill="#b0004a" />
+                      <ellipse cx="18" cy="30" rx="10" ry="7" fill="#b0004a" />
+                    </svg>
+                  )
+                ) : (
+                  <User size={22} className="text-[#b0004a]" />
+                )}
               </div>
               <span className="hidden text-[14px] font-semibold leading-5 xl:block">
                 {t("account")}

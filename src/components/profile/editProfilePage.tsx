@@ -12,6 +12,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 interface ProfileData {
   name: { firstName: string; lastName: string };
   email: string;
+  contactNumber?: string;
   NIF: string;
   address: { street: string; city: string; postalCode: string };
   profilePhoto?: string;
@@ -49,7 +50,7 @@ export default function EditProfilePage() {
             firstName: profileData.name?.firstName || "",
             lastName: profileData.name?.lastName || "",
             email: profileData.email || "",
-            mobile: "",
+            mobile: profileData.contactNumber || "",
             nif: profileData.NIF || "",
             address: fullAddress,
           });

@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw, Home, Pencil, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, RefreshCw, Home, Pencil, Trash2 } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -270,14 +270,7 @@ export default function SavedAddressesPage() {
           </div>
         )}
 
-        {/* Add New Address */}
-        <Link href="/add-address">
-          <button className="flex h-24 w-full items-center justify-center gap-3 rounded-xl border border-dashed border-[#C2185B] text-[#C2185B]">
-            <Plus className="h-5 w-5" />
 
-            <span className="text-base font-medium">{t("addNewAddress")}</span>
-          </button>
-        </Link>
       </div>
     </div>
   );

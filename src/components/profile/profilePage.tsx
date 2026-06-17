@@ -84,6 +84,7 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [voucherCount, setVoucherCount] = useState(0);
   const [rewardPoints, setRewardPoints] = useState(0);
+  const [showProModal, setShowProModal] = useState(false);
 
   const orderItems = [
     {
@@ -244,10 +245,6 @@ export default function AccountPage() {
                       <User className="h-10 w-10 text-pink-700" />
                     )}
                   </div>
-
-                  <button className="absolute bottom-0 right-0 rounded-full bg-pink-700 p-2 text-white">
-                    <Edit size={14} />
-                  </button>
                 </div>
 
                 <h2 className="mt-4 text-xl font-bold">{fullName}</h2>
@@ -294,7 +291,10 @@ export default function AccountPage() {
                 {t("deligoProDescription")}
               </p>
 
-              <button className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-medium text-[#c1005a]">
+              <button
+                onClick={() => setShowProModal(true)}
+                className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-medium text-[#c1005a] transition hover:bg-pink-50"
+              >
                 {t("learnMore")}
               </button>
             </div>
@@ -393,6 +393,61 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
+      {showProModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowProModal(false)}
+          />
+
+          {/* Panel */}
+          <div className="relative z-10 w-full max-w-md mx-4 rounded-2xl bg-white shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#c1005a] to-pink-400 px-6 pt-8 pb-10 text-center">
+              <Star className="absolute -bottom-6 -right-6 h-28 w-28 opacity-10" />
+              <Star className="absolute -top-4 -left-4 h-20 w-20 opacity-10" />
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/20">
+                <Star className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Unlock Exclusive Features</h3>
+              <p className="mt-2 text-sm text-white/85 leading-relaxed">
+                Use the app regularly and place more orders to unlock and enjoy these exclusive features.
+              </p>
+            </div>
+
+            {/* Features list */}
+            <div className="px-6 py-6 space-y-4">
+              {[
+                { emoji: "🚚", title: "Free Delivery", desc: "Enjoy free delivery on every order" },
+                { emoji: "🎟️", title: "Exclusive Vouchers", desc: "Access member-only discount codes" },
+                { emoji: "⚡", title: "Priority Support", desc: "Skip the queue with dedicated support" },
+                { emoji: "🎁", title: "Bonus Reward Points", desc: "Earn 2× points on every purchase" },
+              ].map((f) => (
+                <div key={f.title} className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-50 text-xl">
+                    {f.emoji}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">{f.title}</p>
+                    <p className="text-sm text-gray-500">{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-100 px-6 py-4">
+              <button
+                onClick={() => setShowProModal(false)}
+                className="w-full rounded-lg bg-gray-100 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-200"
+              >
+                {t("cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
