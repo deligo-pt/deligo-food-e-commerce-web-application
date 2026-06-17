@@ -193,6 +193,10 @@ const pt = {
   applyVoucherCode: "Aplicar código promocional",
   enterVoucherCode: "Digite o código promocional",
   apply: "Aplicar",
+  applying: "A aplicar...",
+  availableOffers: "Ofertas Disponíveis",
+  noOffersAvailable: "Não há ofertas disponíveis para este pedido",
+  offerDiscount: "Desconto de Oferta",
 
   orderTotal: "Total do Pedido",
 
