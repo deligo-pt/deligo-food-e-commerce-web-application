@@ -143,6 +143,7 @@ const en = {
   originalPrice: "Original Price",
   productDiscount: "Product Discount",
   tax: "Tax",
+  serviceCharge: "Service Charge",
   total: "Total",
 
   deliveryInstructions: "Delivery Instructions",

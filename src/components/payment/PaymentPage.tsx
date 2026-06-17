@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
 import { useTranslation } from "@/hooks/useTranslation";
+import Link from "next/link";
 
 // Type definitions
 interface CheckoutItem {
@@ -220,9 +221,6 @@ export default function PaymentPage() {
                 <h2 className="text-2xl font-bold text-gray-900">
                   {t("deliveryDetails")}
                 </h2>
-                <button className="text-sm font-semibold text-pink-600">
-                  {t("change")}
-                </button>
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
@@ -252,28 +250,37 @@ export default function PaymentPage() {
                         {vendor?.businessDetails.businessName}
                       </p>
                       {vendor && (
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`h-2 w-2 rounded-full ${
-                              vendor.businessDetails.isStoreOpen
-                                ? "bg-green-500"
-                                : "bg-red-500"
-                            }`}
-                          />
-                          <span className="text-xs font-medium text-gray-600">
-                            {vendor.businessDetails.isStoreOpen
-                              ? t("open")
-                              : t("closed")}
-                          </span>
-                          {vendorRating > 0 && (
-                            <div className="flex items-center gap-1 ml-2">
-                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                              <span className="text-xs font-medium">
-                                {vendorRating.toFixed(1)} ({vendorReviewCount})
-                              </span>
-                            </div>
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`h-2 w-2 rounded-full ${
+                                vendor.businessDetails.isStoreOpen
+                                  ? "bg-green-500"
+                                  : "bg-red-500"
+                              }`}
+                            />
+                            <span className="text-xs font-medium text-gray-600">
+                              {vendor.businessDetails.isStoreOpen
+                                ? t("open")
+                                : t("closed")}
+                            </span>
+                            {vendorRating > 0 && (
+                              <div className="flex items-center gap-1 ml-2">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                <span className="text-xs font-medium">
+                                  {vendorRating.toFixed(1)} ({vendorReviewCount}
+                                  )
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {vendor.businessLocation && (
+                            <p className="mt-1 text-sm text-gray-500">
+                              {vendor.businessLocation.street},{" "}
+                              {vendor.businessLocation.city}
+                            </p>
                           )}
-                        </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -314,9 +321,11 @@ export default function PaymentPage() {
             <div className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold">{t("yourOrder")}</h2>
-                <button className="text-sm font-semibold text-pink-600">
-                  {t("addMoreItems")}
-                </button>
+                <Link href={`/vendors`}>
+                  <button className="text-sm font-semibold text-pink-600">
+                    {t("addMoreItems")}
+                  </button>
+                </Link>
               </div>
 
               <div className="divide-y">
@@ -368,17 +377,17 @@ export default function PaymentPage() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t("subtotal")}</span>
-                  <span className="font-semibold">€{subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-gray-500">{t("discount")}</span>
                   <span className="font-semibold text-green-600">
                     -€{orderCalculation.totalProductDiscount.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t("tax")}</span>
+                  <span className="text-gray-500">{t("subtotal")}</span>
+                  <span className="font-semibold">€{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">{t("serviceCharge")}</span>
                   <span className="font-semibold">
                     €{orderCalculation.totalTaxAmount.toFixed(2)}
                   </span>
