@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -37,7 +36,10 @@ export default function EditAddressPage({ addressId }: Props) {
   const [address, setAddress] = useState<Address | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [coordinates, setCoordinates] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [userId, setUserId] = useState<string>("");
   const [searchValue, setSearchValue] = useState("");
 
@@ -73,23 +75,23 @@ export default function EditAddressPage({ addressId }: Props) {
     fetchAddress();
   }, [addressId]);
 
-  const handleUseGPS = () => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocation not supported");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => toast.error("Could not get your location"),
-    );
-  };
+  // const handleUseGPS = () => {
+  //   if (!navigator.geolocation) {
+  //     toast.error("Geolocation not supported");
+  //     return;
+  //   }
+  //   navigator.geolocation.getCurrentPosition(
+  //     (pos) =>
+  //       setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+  //     () => toast.error("Could not get your location"),
+  //   );
+  // };
 
-  const handleFullMap = () => {
-    document
-      .getElementById("map-section")
-      ?.scrollIntoView({ behavior: "smooth" });
-  };
+  // const handleFullMap = () => {
+  //   document
+  //     .getElementById("map-section")
+  //     ?.scrollIntoView({ behavior: "smooth" });
+  // };
 
   if (loading) {
     return (
@@ -126,7 +128,9 @@ export default function EditAddressPage({ addressId }: Props) {
           >
             <ArrowLeft className="h-5 w-5 text-[#b0004a]" />
           </button>
-          <h1 className="text-3xl font-bold text-[#191c1d]">{t("editAddress")}</h1>
+          <h1 className="text-3xl font-bold text-[#191c1d]">
+            {t("editAddress")}
+          </h1>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -156,7 +160,7 @@ export default function EditAddressPage({ addressId }: Props) {
                 />
               </div>
 
-              <div className="mb-6 grid grid-cols-2 gap-4">
+              {/* <div className="mb-6 grid grid-cols-2 gap-4">
                 <button
                   type="button"
                   onClick={handleUseGPS}
@@ -173,7 +177,7 @@ export default function EditAddressPage({ addressId }: Props) {
                   <Map size={18} />
                   {t("fullMap")}
                 </button>
-              </div>
+              </div> */}
 
               <div id="map-section" className="mb-6">
                 {coordinates ? (
@@ -198,11 +202,14 @@ export default function EditAddressPage({ addressId }: Props) {
                 <CheckCircle className="mt-0.5 text-green-600" size={20} />
                 <div>
                   <p className="font-bold text-green-800">
-                    {coordinates ? t("locationConfirmed") : "Waiting for location..."}
+                    {coordinates
+                      ? t("locationConfirmed")
+                      : "Waiting for location..."}
                   </p>
                   {coordinates && (
                     <p className="text-sm text-green-700">
-                      Lat: {coordinates.lat.toFixed(6)} | Lng: {coordinates.lng.toFixed(6)}
+                      Lat: {coordinates.lat.toFixed(6)} | Lng:{" "}
+                      {coordinates.lng.toFixed(6)}
                     </p>
                   )}
                 </div>
