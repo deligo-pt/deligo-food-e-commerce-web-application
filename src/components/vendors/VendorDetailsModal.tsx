@@ -10,8 +10,11 @@ import {
   Phone,
   Mail,
   FileText,
+  Copy,
+  Check,
+  MessageCircle,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -66,6 +69,9 @@ export default function VendorDetailsModal({
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen || !vendorId) return;
@@ -81,7 +87,9 @@ export default function VendorDetailsModal({
           setVendorData(response.data.data);
         } else {
           // Unauthenticated: use the dedicated open single-vendor endpoint
-          const response = await apiClient.get(`/vendors/nearby/open/${vendorId}`);
+          const response = await apiClient.get(
+            `/vendors/nearby/open/${vendorId}`,
+          );
           setVendorData(response.data.data);
         }
       } catch (err) {
@@ -93,6 +101,19 @@ export default function VendorDetailsModal({
 
     fetchVendor();
   }, [isOpen, vendorId]);
+
+  // Close share dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
+        setShareMenuOpen(false);
+      }
+    };
+    if (shareMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [shareMenuOpen]);
 
   if (!isOpen) return null;
 
@@ -106,6 +127,60 @@ export default function VendorDetailsModal({
   const fullAddress = vendorData?.businessLocation
     ? `${vendorData.businessLocation.street}, ${vendorData.businessLocation.city} ${vendorData.businessLocation.postalCode}, ${vendorData.businessLocation.country}`
     : "";
+
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareTitle = vendorData?.businessDetails?.businessName
+    ? `${vendorData.businessDetails.businessName} – DeliGo`
+    : "DeliGo Vendor";
+  const shareText = fullAddress
+    ? `Check out ${shareTitle} at ${fullAddress}`
+    : `Check out ${shareTitle} on DeliGo!`;
+
+  const handleShareClick = async () => {
+    // Use native Web Share API on supporting devices (mobile)
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch {
+        // User cancelled – do nothing
+      }
+      return;
+    }
+    // Fallback: toggle dropdown on desktop
+    setShareMenuOpen((prev) => !prev);
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Ignore
+    }
+    setShareMenuOpen(false);
+  };
+
+  const handleShareWhatsApp = () => {
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+    setShareMenuOpen(false);
+  };
+
+  const handleShareEmail = () => {
+    window.open(
+      `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`,
+      "_self",
+    );
+    setShareMenuOpen(false);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2 sm:p-4">
@@ -130,9 +205,67 @@ export default function VendorDetailsModal({
             </div>
           </div>
 
-          <button className="self-end sm:self-auto rounded-full p-2 text-pink-600 transition hover:bg-pink-50">
-            <Share2 size={18} />
-          </button>
+          {/* Share button + dropdown */}
+          <div className="relative self-end sm:self-auto" ref={shareRef}>
+            <button
+              onClick={handleShareClick}
+              className="rounded-full p-2 text-pink-600 transition hover:bg-pink-50"
+              title={t("share")}
+              aria-label={t("share")}
+            >
+              <Share2 size={18} />
+            </button>
+
+            {/* Copied toast */}
+            {copied && (
+              <div className="absolute right-0 top-12 z-50 flex items-center gap-2 whitespace-nowrap rounded-xl bg-gray-900 px-4 py-2 text-sm text-white shadow-lg animate-fade-in">
+                <Check size={14} className="text-green-400" />
+                {t("linkCopied")}
+              </div>
+            )}
+
+            {/* Share dropdown */}
+            {shareMenuOpen && !copied && (
+              <div className="absolute right-0 top-12 z-50 min-w-47.5 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl">
+                <p className="border-b border-gray-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  {t("shareVia")}
+                </p>
+
+                {/* Copy Link */}
+                <button
+                  onClick={handleCopyLink}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 transition hover:bg-pink-50 hover:text-pink-600"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                    <Copy size={15} />
+                  </span>
+                  {t("copyLink")}
+                </button>
+
+                {/* WhatsApp */}
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 transition hover:bg-green-50 hover:text-green-600"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                    <MessageCircle size={15} className="text-green-600" />
+                  </span>
+                  WhatsApp
+                </button>
+
+                {/* Email */}
+                <button
+                  onClick={handleShareEmail}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 transition hover:bg-pink-50 hover:text-pink-600"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-100">
+                    <Mail size={15} className="text-pink-600" />
+                  </span>
+                  {t("email")}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Content */}
@@ -288,7 +421,8 @@ export default function VendorDetailsModal({
                     {t("legalEntityName")}
                   </p>
                   <p className="font-bold text-gray-900 wrap-break-words">
-                    {vendorData?.businessDetails?.businessName || t("notProvided")}
+                    {vendorData?.businessDetails?.businessName ||
+                      t("notProvided")}
                   </p>
                 </div>
                 <div className="rounded-lg bg-gray-100 p-3 sm:p-4 italic leading-relaxed text-gray-500 text-sm sm:text-base">

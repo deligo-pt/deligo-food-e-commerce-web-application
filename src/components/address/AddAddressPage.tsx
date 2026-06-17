@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 
 "use client";
@@ -65,23 +66,23 @@ export default function AddAddressPage() {
     }
   }, [geoCoords]);
 
-  const handleUseGPS = () => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocation not supported");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => toast.error("Could not get your location"),
-    );
-  };
+  // const handleUseGPS = () => {
+  //   if (!navigator.geolocation) {
+  //     toast.error("Geolocation not supported");
+  //     return;
+  //   }
+  //   navigator.geolocation.getCurrentPosition(
+  //     (pos) =>
+  //       setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+  //     () => toast.error("Could not get your location"),
+  //   );
+  // };
 
-  const handleFullMap = () => {
-    document
-      .getElementById("map-section")
-      ?.scrollIntoView({ behavior: "smooth" });
-  };
+  // const handleFullMap = () => {
+  //   document
+  //     .getElementById("map-section")
+  //     ?.scrollIntoView({ behavior: "smooth" });
+  // };
 
   if (loading)
     return (
@@ -133,9 +134,9 @@ export default function AddAddressPage() {
                 />
               </div>
 
-              <div className="mb-6 grid grid-cols-2 gap-4">
+              {/* <div className="mb-6 grid grid-cols-2 gap-4">
                 <button
-                  onClick={handleUseGPS}
+                  // onClick={handleUseGPS}
                   className="flex items-center justify-center gap-2 rounded-xl border border-[#b0004a] px-4 py-3 font-medium text-[#b0004a] hover:bg-[#fff2f5]"
                 >
                   <LocateFixed size={18} /> {t("useGps")}
@@ -146,7 +147,7 @@ export default function AddAddressPage() {
                 >
                   <Map size={18} /> {t("fullMap")}
                 </button>
-              </div>
+              </div> */}
 
               <div id="map-section" className="mb-6">
                 {coordinates ? (

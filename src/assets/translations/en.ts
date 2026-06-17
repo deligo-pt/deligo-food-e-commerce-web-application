@@ -250,6 +250,10 @@ const en = {
 
   deliciousMenuItem: "Delicious item from our menu.",
   pleaseContactVendor: "Please contact the vendor",
+  share: "Share",
+  shareVia: "Share via",
+  copyLink: "Copy Link",
+  linkCopied: "Link copied!",
 
   mapUnavailable: "Map unavailable",
   locationNotAvailable: "Location not available",
