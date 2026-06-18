@@ -56,6 +56,17 @@ const pt = {
   editAddress: "Editar Endereço",
   addNewAddress: "Adicionar Novo Endereço",
 
+  myCurrentLocation: "A Minha Localização Atual",
+  currentLocationDescription:
+    "Utilize o GPS do seu dispositivo para atualizar o endereço de entrega instantaneamente.",
+  useCurrentLocation: "Usar Localização Atual",
+  detecting: "A detetar localização…",
+  locationUpdated: "Localização atualizada!",
+  locationAccessDenied:
+    "Acesso à localização negado. Ative-o nas definições do seu browser.",
+  couldNotDetectLocation:
+    "Não foi possível detetar a sua localização. Tente novamente.",
+
   confirmLocation: "Confirmar Localização",
   confirmLocationDescription:
     "Selecione uma etiqueta e salve sua localização para futuros pedidos",
@@ -419,6 +430,15 @@ const pt = {
   support: "Suporte",
 
   inProgress: "Em Progresso",
+  yourRider: "O Seu Estafeta",
+  riderHeadingYourWay: "O estafeta está a caminho da sua localização",
+  callRider: "Ligar para Estafeta",
+  riderAssigned: "Estafeta atribuído",
+  recenterMap: "Centrar Mapa",
+  cancelled: "Cancelado",
+  rejected: "Rejeitado",
+  orderHasBeenDelivered: "O pedido foi entregue",
+  riderIsHeadingToYourLocation: "O estafeta está a caminho da sua localização",
 
   orderPending: "Pedido Pendente",
   waitingRestaurantResponse: "A aguardar resposta do restaurante",

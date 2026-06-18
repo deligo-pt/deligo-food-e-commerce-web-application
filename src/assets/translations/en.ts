@@ -51,6 +51,16 @@ const en = {
   editAddress: "Edit Address",
   addNewAddress: "Add New Address",
 
+  myCurrentLocation: "My Current Location",
+  currentLocationDescription:
+    "Use your device's GPS to update your delivery location instantly.",
+  useCurrentLocation: "Use Current Location",
+  detecting: "Detecting location…",
+  locationUpdated: "Location updated!",
+  locationAccessDenied:
+    "Location access denied. Please enable it in your browser settings.",
+  couldNotDetectLocation: "Could not detect your location. Please try again.",
+
   confirmLocation: "Confirm Location",
   confirmLocationDescription:
     "Select a label and save your location for future orders",
@@ -400,6 +410,15 @@ const en = {
   support: "Support",
 
   inProgress: "In Progress",
+  yourRider: "Your Rider",
+  riderHeadingYourWay: "Rider is heading to your location",
+  callRider: "Call Rider",
+  riderAssigned: "Rider assigned",
+  recenterMap: "Recenter Map",
+  cancelled: "Cancelled",
+  rejected: "Rejected",
+  orderHasBeenDelivered: "Order has been delivered",
+  riderIsHeadingToYourLocation: "Rider is heading to your location",
 
   orderPending: "Order Pending",
   waitingRestaurantResponse: "Waiting for restaurant response",

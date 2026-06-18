@@ -7,6 +7,7 @@ import CartStoreCard from "./CartStoreCard";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCartStore } from "@/stores/cartStore";
 
 export default function CartPage() {
   const { t } = useTranslation();
@@ -92,6 +93,15 @@ export default function CartPage() {
         totalTaxAmount,
         grandTotal,
       },
+    });
+
+    // Sync Navbar badge instantly — recalculate unique vendors from the new items
+    const newVendorCount = new Set(
+      newItems.map((item: any) => item.vendorId?._id)
+    ).size;
+    useCartStore.setState({
+      vendorCount: newVendorCount,
+      itemCount: totalItems,
     });
   };
 

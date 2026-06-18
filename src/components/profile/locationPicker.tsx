@@ -23,7 +23,6 @@ interface LocationPickerProps {
     lat: number;
     lng: number;
   };
-  searchValue?: string;
   onCoordinatesChange?: (
     lat: number,
     lng: number
@@ -32,7 +31,6 @@ interface LocationPickerProps {
 
 export default function LocationPicker({
   defaultCenter = DEFAULT_CENTER,
-  searchValue,
   onCoordinatesChange,
 }: LocationPickerProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -143,39 +141,7 @@ export default function LocationPicker({
       onCoordinatesChange?.(resolvedCenter.lat, resolvedCenter.lng);
     }
   }, [resolvedCenter]);
-  useEffect(() => {
-  if (!searchValue || !window.google?.maps) return;
 
-  const service = new window.google.maps.Geocoder();
-
-  service.geocode(
-    {
-      address: searchValue,
-    },
-    (results: any, status: string) => {
-      if (status !== "OK" || !results?.length) return;
-
-      const location = results[0].geometry.location;
-
-      const lat = location.lat();
-      const lng = location.lng();
-
-      setCoordinates({ lat, lng });
-
-      markerRef.current?.setPosition({
-        lat,
-        lng,
-      });
-
-      mapInstanceRef.current?.setCenter({
-        lat,
-        lng,
-      });
-
-      onCoordinatesChange?.(lat, lng);
-    }
-  );
-}, [searchValue]);
 
   return (
     <div className="space-y-4">

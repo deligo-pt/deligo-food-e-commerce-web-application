@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Navigation, Plus } from "lucide-react";
+import { MapPin, Navigation, Plus, ArrowLeft, Loader2 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { useLocationStore } from "@/stores/locationStore";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function CurrentLocationPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { requestLocation, permissionStatus } = useLocationStore();
   const [loading, setLoading] = useState(false);
@@ -17,59 +19,78 @@ export default function CurrentLocationPage() {
     setLoading(false);
 
     if (granted) {
-      toast.success("Location updated!");
+      toast.success(t("locationUpdated") || "Location updated!");
     } else {
       if (permissionStatus === "denied") {
         toast.error(
-          "Location access is blocked. Enable it in your browser settings."
+          t("locationAccessDenied") ||
+            "Location access is blocked. Enable it in your browser settings.",
         );
       } else {
-        toast.error("Could not detect your location. Please try again.");
+        toast.error(
+          t("couldNotDetectLocation") ||
+            "Could not detect your location. Please try again.",
+        );
       }
     }
   };
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center px-4 py-12">
+    <div className="flex min-h-[80vh] flex-col items-center justify-center px-4 py-12">
       <Toaster position="top-center" richColors />
 
       <div className="w-full max-w-md">
+        {/* Back button */}
+        <button
+          onClick={() => router.back()}
+          className="mb-6 flex items-center gap-2 text-sm font-medium text-[#b0004a] transition hover:opacity-70"
+        >
+          <ArrowLeft size={18} />
+          {t("back") || "Back"}
+        </button>
+
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#b0004a]/10">
-            <MapPin size={32} className="text-[#b0004a]" />
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#b0004a]/10">
+            <MapPin size={36} className="text-[#b0004a]" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            My Current Location
+          <h1 className="mb-2 text-2xl font-bold text-[#191c1d]">
+            {t("myCurrentLocation")}
           </h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Choose how you want to set your delivery location
+          <p className="text-sm text-[#5a4044]">
+            {t("currentLocationDescription")}
           </p>
         </div>
 
         {/* Buttons */}
         <div className="flex flex-col gap-4">
-          {/* Current Location */}
+          {/* Use Current Location */}
           <button
             onClick={handleCurrentLocation}
             disabled={loading}
-            className="flex items-center justify-center gap-3 rounded-2xl border-2 border-[#b0004a] bg-[#b0004a] px-6 py-4 text-base font-semibold text-white transition-all hover:bg-[#8c0039] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center justify-center gap-3 rounded-2xl bg-[#b0004a] px-6 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-[#8c003b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? (
-              <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                {t("detecting")}
+              </>
             ) : (
-              <Navigation size={20} />
+              <>
+                <Navigation size={20} />
+                {t("useCurrentLocation")}
+              </>
             )}
-            {loading ? "Detecting location…" : "Current Location"}
           </button>
 
           {/* Add New Address */}
           <button
             onClick={() => router.push("/add-address")}
-            className="flex items-center justify-center gap-3 rounded-2xl border-2 border-[#b0004a] bg-white px-6 py-4 text-base font-semibold text-[#b0004a] transition-all hover:bg-[#b0004a]/5 dark:bg-transparent dark:hover:bg-[#b0004a]/10"
+            disabled={loading}
+            className="flex items-center justify-center gap-3 rounded-2xl border-2 border-[#b0004a] bg-white px-6 py-4 text-base font-semibold text-[#b0004a] transition-all hover:bg-[#b0004a]/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Plus size={20} />
-            Add New Address
+            {t("addNewAddress")}
           </button>
         </div>
       </div>

@@ -4,23 +4,112 @@ import { useEffect, useState } from "react";
 import { MapPin, Loader2, Compass } from "lucide-react";
 import { useLocationStore } from "@/stores/locationStore";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getAccessToken } from "@/lib/authCookies";
+import { apiClient } from "@/lib/apiClient";
+import { addDeliveryAddress } from "@/services/addressApi";
+
+async function reverseGeocode(latitude: number, longitude: number) {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+    { headers: { "Accept-Language": "en" } },
+  );
+  const data = await res.json();
+  const addr = data?.address ?? {};
+
+  const street =
+    addr.road ??
+    addr.pedestrian ??
+    addr.footway ??
+    addr.path ??
+    addr.suburb ??
+    addr.neighbourhood ??
+    data?.display_name?.split(",")?.[0] ??
+    "Unknown Street";
+
+  const city =
+    addr.city ??
+    addr.town ??
+    addr.village ??
+    addr.county ??
+    addr.suburb ??
+    "Unknown City";
+
+  return {
+    street,
+    city,
+    state: addr.state ?? "Unknown State",
+    country: addr.country ?? "Unknown Country",
+    postalCode: addr.postcode ?? "00000",
+    detailedAddress: data?.display_name ?? street,
+  };
+}
+
+async function checkLoggedInWithNoAddresses(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (!getAccessToken()) return false;
+
+  try {
+    const res = await apiClient.get("/profile");
+    const deliveryAddresses: unknown[] =
+      res.data?.data?.deliveryAddresses ?? [];
+    return deliveryAddresses.length === 0;
+  } catch {
+    return false;
+  }
+}
+
+async function autoSaveLocationAsAddress(latitude: number, longitude: number) {
+  const addressFields = await reverseGeocode(latitude, longitude);
+  await addDeliveryAddress({
+    ...addressFields,
+    latitude,
+    longitude,
+    addressType: "HOME",
+  });
+  window.dispatchEvent(new Event("addressUpdated"));
+}
 
 export default function LocationPromptModal() {
   const { t } = useTranslation();
   const {
     showPromptModal,
+    coords,
+    permissionStatus,
     initLocation,
     requestLocation,
     setShowPromptModal,
     setPermissionStatus,
+    setIsAutoSavingAddress,
   } = useLocationStore();
 
   const [isRequesting, setIsRequesting] = useState(false);
 
-  // Initialize the location check on mount
   useEffect(() => {
     initLocation();
   }, [initLocation]);
+
+  useEffect(() => {
+    if (permissionStatus !== "granted" || !coords) return;
+    const { hasAutoSavedAddress, setHasAutoSavedAddress } =
+      useLocationStore.getState();
+    if (hasAutoSavedAddress) return;
+    if (!getAccessToken()) return;
+    setHasAutoSavedAddress(true);
+    setIsAutoSavingAddress(true);
+
+    (async () => {
+      try {
+        const shouldSave = await checkLoggedInWithNoAddresses();
+        if (shouldSave) {
+          await autoSaveLocationAsAddress(coords.latitude, coords.longitude);
+        }
+      } catch (err) {
+        console.error("Failed to auto-save location as delivery address:", err);
+      } finally {
+        setIsAutoSavingAddress(false);
+      }
+    })();
+  }, [permissionStatus, coords, setIsAutoSavingAddress]);
 
   if (!showPromptModal) return null;
 
@@ -38,7 +127,7 @@ export default function LocationPromptModal() {
   return (
     <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
       {/* Backdrop blur overlay */}
-      <div 
+      <div
         className="absolute inset-0 bg-[#191c1d]/60 backdrop-blur-md transition-opacity duration-500"
         onClick={handleNotNow}
       />
@@ -46,13 +135,10 @@ export default function LocationPromptModal() {
       {/* Modal card */}
       <div className="relative w-full max-w-md overflow-hidden rounded-4xl bg-white p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-gray-100 transition-all duration-300 transform scale-100 animate-in fade-in zoom-in-95">
         <div className="flex flex-col items-center text-center">
-          
-          {/* Animated illustration container */}
+          {/* Animated illustration */}
           <div className="relative mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-tr from-[#ffd9de] to-[#fff2f3]">
-            {/* Pulsing rings */}
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ffd9de]/50 opacity-75 duration-1000" />
             <span className="absolute inline-flex h-20 w-20 animate-pulse rounded-full bg-[#ffd9de]/70" />
-            
             {isRequesting ? (
               <Loader2 className="relative h-12 w-12 animate-spin text-[#b0004a]" />
             ) : (
@@ -63,7 +149,7 @@ export default function LocationPromptModal() {
           <h2 className="mb-4 text-3xl font-black tracking-tight text-[#191c1d]">
             {t("locationPromptTitle")}
           </h2>
-          
+
           <p className="mb-8 text-[16px] leading-relaxed text-[#5a4044] font-medium px-2">
             {t("locationPromptDescription")}
           </p>

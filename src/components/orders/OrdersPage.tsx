@@ -35,15 +35,64 @@ export default function OrdersPage() {
     return <OrdersPageSkeleton />;
   }
 
-  const ongoingOrders = orders.filter(
-    (order) =>
-      order.orderStatus === "PENDING" || order.orderStatus === "ACCEPTED",
+  const ongoingOrders = orders.filter((order) =>
+    [
+      "PENDING",
+      "ACCEPTED",
+      "ASSIGNED",
+      "PREPARING",
+      "READY_FOR_PICKUP",
+      "PICKED_UP",
+      "ON_THE_WAY",
+    ].includes(order.orderStatus)
   );
 
-  const historyOrders = orders.filter(
-    (order) =>
-      order.orderStatus !== "PENDING" && order.orderStatus !== "ACCEPTED",
+  const historyOrders = orders.filter((order) =>
+    ["DELIVERED", "CANCELLED", "REJECTED"].includes(order.orderStatus)
   );
+
+  const getOrderProgress = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return {
+          progress: 15,
+          text: t("waitingRestaurantConfirmation"),
+          status: "pending" as const,
+        };
+      case "ACCEPTED":
+      case "ASSIGNED":
+        return {
+          progress: 40,
+          text: t("orderAccepted") || t("accepted"),
+          status: "accepted" as const,
+        };
+      case "PREPARING":
+        return {
+          progress: 60,
+          text: t("chefPreparingMeal") || t("preparing"),
+          status: "accepted" as const,
+        };
+      case "READY_FOR_PICKUP":
+        return {
+          progress: 75,
+          text: t("readyForPickup"),
+          status: "accepted" as const,
+        };
+      case "PICKED_UP":
+      case "ON_THE_WAY":
+        return {
+          progress: 90,
+          text: t("onTheWay") || t("riderHeadingLocation"),
+          status: "accepted" as const,
+        };
+      default:
+        return {
+          progress: 15,
+          text: t("waitingRestaurantConfirmation"),
+          status: "pending" as const,
+        };
+    }
+  };
 
   return (
     <section className="min-h-screen bg-[#f8f9fa] py-8">
@@ -91,33 +140,30 @@ export default function OrdersPage() {
                 <p className="text-[#5a4044]">{t("noOngoingOrders")}</p>
               </div>
             ) : (
-              ongoingOrders.map((order) => (
-                <OrderCard
-                  key={order._id}
-                  image={order.items?.[0]?.image}
-                  restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
-                    order.vendorId?.name?.lastName ?? ""
-                  }`}
-                  orderId={order.orderId}
-                  date={new Date(order.createdAt).toLocaleString()}
-                  price={`€${order.payoutSummary?.grandTotal?.toFixed(2)}`}
-                  status={
-                    order.orderStatus === "ACCEPTED" ? "accepted" : "pending"
-                  }
-                  items={order.items
-                    ?.map(
-                      (item: any) =>
-                        `${item.itemSummary?.quantity}x ${item.name}`,
-                    )
-                    .join(", ")}
-                  progress={order.orderStatus === "ACCEPTED" ? 65 : 15}
-                  progressText={
-                    order.orderStatus === "ACCEPTED"
-                      ? t("chefPreparingMeal")
-                      : t("waitingRestaurantConfirmation")
-                  }
-                />
-              ))
+              ongoingOrders.map((order) => {
+                const { progress, text, status } = getOrderProgress(order.orderStatus);
+                return (
+                  <OrderCard
+                    key={order._id}
+                    image={order.items?.[0]?.image}
+                    restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
+                      order.vendorId?.name?.lastName ?? ""
+                    }`}
+                    orderId={order.orderId}
+                    date={new Date(order.createdAt).toLocaleString()}
+                    price={`€${order.payoutSummary?.grandTotal?.toFixed(2)}`}
+                    status={status}
+                    items={order.items
+                      ?.map(
+                        (item: any) =>
+                          `${item.itemSummary?.quantity}x ${item.name}`,
+                      )
+                      .join(", ")}
+                    progress={progress}
+                    progressText={text}
+                  />
+                );
+              })
             )}
           </div>
         ) : (
@@ -137,7 +183,7 @@ export default function OrdersPage() {
                   orderId={order.orderId}
                   date={new Date(order.createdAt).toLocaleString()}
                   price={`€${order.payoutSummary?.grandTotal?.toFixed(2)}`}
-                  status="pending"
+                  status={order.orderStatus === "DELIVERED" ? "delivered" : "cancelled"}
                   items={order.items
                     ?.map(
                       (item: any) =>
@@ -145,7 +191,13 @@ export default function OrdersPage() {
                     )
                     .join(", ")}
                   progress={100}
-                  progressText={t("delivered")}
+                  progressText={
+                    order.orderStatus === "DELIVERED"
+                      ? t("delivered")
+                      : order.orderStatus === "CANCELLED"
+                      ? t("cancelled") || "Cancelled"
+                      : t("rejected") || "Rejected"
+                  }
                 />
               ))
             )}

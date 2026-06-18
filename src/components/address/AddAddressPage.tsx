@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 "use client";
 
-import { ArrowLeft, CheckCircle, LocateFixed, Map, Search } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Toaster, toast } from "sonner";
+import { ArrowLeft, CheckCircle, Search, X } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Toaster } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "./AddressForm";
 import { fetchUserProfile } from "@/services/addressApi";
@@ -13,6 +14,15 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
 import { getAccessToken } from "@/lib/authCookies";
+
+const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_LOCATION_API_KEY}&libraries=places`;
+
+interface Suggestion {
+  placeId: string;
+  description: string;
+  mainText: string;
+  secondaryText: string;
+}
 
 export default function AddAddressPage() {
   const { t } = useTranslation();
@@ -25,8 +35,39 @@ export default function AddAddressPage() {
     lng: number;
   } | null>(null);
   const [searchValue, setSearchValue] = useState("");
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingMaps, setIsLoadingMaps] = useState(false);
 
-  // Try GPS first, then session location as fallback
+  const autocompleteServiceRef = useRef<any>(null);
+  const sessionTokenRef = useRef<any>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const ensureGoogleMaps = useCallback((): Promise<void> => {
+    return new Promise((resolve) => {
+      if (window.google?.maps?.places) {
+        resolve();
+        return;
+      }
+      const existing = document.querySelector(`script[src^="https://maps.googleapis.com"]`);
+      if (existing) {
+        existing.addEventListener("load", () => resolve());
+        return;
+      }
+      setIsLoadingMaps(true);
+      const script = document.createElement("script");
+      script.src = GOOGLE_API_URL;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        setIsLoadingMaps(false);
+        resolve();
+      };
+      document.body.appendChild(script);
+    });
+  }, []);
+
   useEffect(() => {
     if (geoCoords) {
       setCoordinates({ lat: geoCoords.latitude, lng: geoCoords.longitude });
@@ -43,7 +84,6 @@ export default function AddAddressPage() {
           setLoading(false);
         },
         async () => {
-          // GPS denied — try session location from profile
           try {
             const token = getAccessToken();
             if (token) {
@@ -54,7 +94,7 @@ export default function AddAddressPage() {
               }
             }
           } catch {
-            // silently ignore — map will use its own default center
+            // silently ignore
           } finally {
             setLoading(false);
           }
@@ -66,23 +106,108 @@ export default function AddAddressPage() {
     }
   }, [geoCoords]);
 
-  // const handleUseGPS = () => {
-  //   if (!navigator.geolocation) {
-  //     toast.error("Geolocation not supported");
-  //     return;
-  //   }
-  //   navigator.geolocation.getCurrentPosition(
-  //     (pos) =>
-  //       setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-  //     () => toast.error("Could not get your location"),
-  //   );
-  // };
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
-  // const handleFullMap = () => {
-  //   document
-  //     .getElementById("map-section")
-  //     ?.scrollIntoView({ behavior: "smooth" });
-  // };
+  const fetchSuggestions = useCallback(
+    async (query: string) => {
+      if (!query.trim() || query.length < 3) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      await ensureGoogleMaps();
+
+      if (!autocompleteServiceRef.current) {
+        autocompleteServiceRef.current =
+          new window.google.maps.places.AutocompleteService();
+      }
+      if (!sessionTokenRef.current) {
+        sessionTokenRef.current =
+          new window.google.maps.places.AutocompleteSessionToken();
+      }
+
+      autocompleteServiceRef.current.getPlacePredictions(
+        {
+          input: query,
+          sessionToken: sessionTokenRef.current,
+        },
+        (predictions: any[], status: string) => {
+          if (
+            status !== window.google.maps.places.PlacesServiceStatus.OK ||
+            !predictions?.length
+          ) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+          }
+
+          const mapped: Suggestion[] = predictions.map((p: any) => ({
+            placeId: p.place_id,
+            description: p.description,
+            mainText: p.structured_formatting?.main_text ?? p.description,
+            secondaryText: p.structured_formatting?.secondary_text ?? "",
+          }));
+
+          setSuggestions(mapped);
+          setShowSuggestions(true);
+        },
+      );
+    },
+    [ensureGoogleMaps],
+  );
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchValue(val);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(val), 350);
+  };
+
+  const handleSuggestionClick = useCallback(
+    async (suggestion: Suggestion) => {
+      setSearchValue(suggestion.description);
+      setSuggestions([]);
+      setShowSuggestions(false);
+
+      // Reset session token after selection (billing best practice)
+      sessionTokenRef.current = null;
+
+      await ensureGoogleMaps();
+
+      // Use Geocoder to get lat/lng for the selected place
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode(
+        { placeId: suggestion.placeId },
+        (results: any[], status: string) => {
+          if (status !== "OK" || !results?.length) return;
+          const loc = results[0].geometry.location;
+          const lat = typeof loc.lat === "function" ? loc.lat() : loc.lat;
+          const lng = typeof loc.lng === "function" ? loc.lng() : loc.lng;
+          setCoordinates({ lat, lng });
+        },
+      );
+    },
+    [ensureGoogleMaps],
+  );
+
+  const clearSearch = () => {
+    setSearchValue("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
 
   if (loading)
     return (
@@ -120,40 +245,67 @@ export default function AddAddressPage() {
                 </p>
               </div>
 
-              <div className="relative mb-6">
+              {/* Search with Autocomplete Suggestions */}
+              <div ref={searchContainerRef} className="relative mb-6">
                 <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10"
                   size={18}
                 />
                 <input
                   type="text"
                   value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
+                  onChange={handleSearchChange}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder")}
-                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-4 outline-none focus:border-[#b0004a]"
+                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-10 outline-none focus:border-[#b0004a]"
+                  autoComplete="off"
                 />
-              </div>
+                {searchValue && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
 
-              {/* <div className="mb-6 grid grid-cols-2 gap-4">
-                <button
-                  // onClick={handleUseGPS}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#b0004a] px-4 py-3 font-medium text-[#b0004a] hover:bg-[#fff2f5]"
-                >
-                  <LocateFixed size={18} /> {t("useGps")}
-                </button>
-                <button
-                  onClick={handleFullMap}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#b0004a] px-4 py-3 font-medium text-[#b0004a] hover:bg-[#fff2f5]"
-                >
-                  <Map size={18} /> {t("fullMap")}
-                </button>
-              </div> */}
+                {/* Suggestions Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <ul className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#e3bdc3] bg-white shadow-xl">
+                    {suggestions.map((s, idx) => (
+                      <li key={s.placeId}>
+                        <button
+                          type="button"
+                          onClick={() => handleSuggestionClick(s)}
+                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] ${idx !== suggestions.length - 1
+                            ? "border-b border-[#f5e0e5]"
+                            : ""
+                            }`}
+                        >
+                          <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#fff2f5]">
+                            <Search size={13} className="text-[#b0004a]" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-semibold text-[#191c1d]">
+                              {s.mainText}
+                            </span>
+                            {s.secondaryText && (
+                              <span className="block truncate text-xs text-[#5a4044]">
+                                {s.secondaryText}
+                              </span>
+                            )}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               <div id="map-section" className="mb-6">
                 {coordinates ? (
                   <LocationPicker
                     defaultCenter={coordinates}
-                    searchValue={searchValue}
                     onCoordinatesChange={(lat, lng) =>
                       setCoordinates({ lat, lng })
                     }

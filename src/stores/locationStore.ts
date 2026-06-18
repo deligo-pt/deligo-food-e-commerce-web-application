@@ -9,9 +9,13 @@ interface LocationState {
   coords: Coords | null;
   permissionStatus: "prompt" | "granted" | "denied" | "loading";
   showPromptModal: boolean;
+  isAutoSavingAddress: boolean;
+  hasAutoSavedAddress: boolean;
   setCoords: (coords: Coords | null) => void;
   setPermissionStatus: (status: "prompt" | "granted" | "denied" | "loading") => void;
   setShowPromptModal: (show: boolean) => void;
+  setIsAutoSavingAddress: (saving: boolean) => void;
+  setHasAutoSavedAddress: (done: boolean) => void;
   initLocation: () => Promise<void>;
   requestLocation: () => Promise<boolean>;
 }
@@ -22,10 +26,14 @@ export const useLocationStore = create<LocationState>((set, get) => ({
   coords: null,
   permissionStatus: "loading",
   showPromptModal: false,
+  isAutoSavingAddress: false,
+  hasAutoSavedAddress: false,
 
   setCoords: (coords) => set({ coords }),
   setPermissionStatus: (permissionStatus) => set({ permissionStatus }),
   setShowPromptModal: (showPromptModal) => set({ showPromptModal }),
+  setIsAutoSavingAddress: (isAutoSavingAddress) => set({ isAutoSavingAddress }),
+  setHasAutoSavedAddress: (hasAutoSavedAddress) => set({ hasAutoSavedAddress }),
 
   initLocation: async () => {
     if (typeof window === "undefined") return;

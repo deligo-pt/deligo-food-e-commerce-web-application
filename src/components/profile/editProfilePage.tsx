@@ -85,17 +85,18 @@ export default function EditProfilePage() {
           <div className="border-b border-[#e3bdc3] px-6 py-10">
             <div className="flex flex-col items-center">
               <div className="relative">
-                <div className="h-24 w-24 overflow-hidden rounded-full">
-                  <Image
-                    src={
-                      profile?.profilePhoto ||
-                      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80"
-                    }
-                    alt="Profile"
-                    width={96}
-                    height={96}
-                    className="h-full w-full object-cover"
-                  />
+                <div className="h-24 w-24 overflow-hidden rounded-full bg-pink-50 flex items-center justify-center border border-[#e3bdc3]">
+                  {profile?.profilePhoto ? (
+                    <Image
+                      src={profile.profilePhoto}
+                      alt="Profile"
+                      width={96}
+                      height={96}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-12 w-12 text-[#b0004a]" />
+                  )}
                 </div>
               </div>
               <h1 className="mt-5 text-3xl font-bold text-[#191c1d]">

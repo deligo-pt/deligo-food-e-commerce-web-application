@@ -10,6 +10,7 @@ import {
 } from "../lib/auth";
 import { storeAuthTokens } from "../lib/authCookies";
 import { COUNTRY_OPTIONS } from "../data/countryCodes";
+import { requestFCMToken } from "../lib/fcmToken";
 
 type LoginMode = "mobile" | "email";
 type LoginStep = "credentials" | "otp";
@@ -107,10 +108,19 @@ export function useLoginFlow() {
 
     try {
       setIsVerifyingOtp(true);
+
+      // Fetch the FCM token so it is included in deviceDetails on the very
+      // first verify-otp call. Falls back to "" when FCM is unavailable.
+      console.log("[FCM] Requesting FCM token before OTP verification...");
+      const fcmToken = (await requestFCMToken()) ?? "";
+      console.log("[FCM] Token received:", fcmToken ? `✅ ${fcmToken.slice(0, 30)}...` : "❌ No token (empty)");
+      const deviceDetails = { ...buildDeviceDetails(), fcmToken };
+      console.log("[FCM] deviceDetails being sent:", deviceDetails);
+
       const response = await verifyLoginOtp({
         ...loginIdentifier,
         otp: trimmedOtp,
-        deviceDetails: buildDeviceDetails(),
+        deviceDetails,
         forceLogin,
       });
       storeAuthTokens(response.data.accessToken, response.data.refreshToken);
