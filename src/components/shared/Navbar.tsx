@@ -48,8 +48,9 @@ export default function Navbar() {
 
   const [unreadCount, setUnreadCount] = useState(0);
   const { vendorCount, fetchCart } = useCartStore();
-  const { coords, permissionStatus } = useLocationStore();
+  const { coords, permissionStatus, isAutoSavingAddress } = useLocationStore();
   const [guestGeocoding, setGuestGeocoding] = useState(false);
+  const [isAddressRefetching, setIsAddressRefetching] = useState(false);
 
   const [mounted, setMounted] = useState(false);
 
@@ -63,7 +64,6 @@ export default function Navbar() {
       : isLoggedIn
         ? "/add-address"
         : "/current-location";
-  // Fetch profile and update address text
   const fetchProfile = useCallback(async () => {
     if (!isLoggedIn) return;
     try {
@@ -76,12 +76,20 @@ export default function Navbar() {
 
       const firstAddress = profile?.deliveryAddresses?.[0];
       const resolved = activeAddress || firstAddress;
-      setAddressText(resolved?.street || "Add Address");
-      setPrimaryAddressId(resolved?._id || null);
+
+      if (resolved) {
+        const street = resolved.street || resolved.detailedAddress || "";
+        const city = resolved.city || "";
+        const label = street && city ? `${street}, ${city}` : street || city;
+        if (label) setAddressText(label);
+        setPrimaryAddressId(resolved._id || null);
+      } else {
+        setPrimaryAddressId(null);
+      }
+
       setProfilePhoto(profile?.profilePhoto || null);
     } catch (error) {
       console.error("Failed to fetch profile:", error);
-      setAddressText("Add Address");
     }
   }, [isLoggedIn]);
 
@@ -91,7 +99,6 @@ export default function Navbar() {
     }
   }, [isLoggedIn, pathname, fetchProfile]);
 
-  // When NOT logged in and location permission granted, show reverse-geocoded location in addressText
   useEffect(() => {
     if (isLoggedIn || !coords || permissionStatus !== "granted") return;
 
@@ -105,17 +112,32 @@ export default function Navbar() {
         );
         if (cancelled) return;
         const data = await res.json();
-        const addr = data?.address;
-        const label =
-          addr?.suburb ??
-          addr?.neighbourhood ??
-          addr?.village ??
-          addr?.town ??
-          addr?.city ??
-          addr?.county ??
-          addr?.state ??
-          data?.display_name?.split(",")[0] ??
+        const addr = data?.address ?? {};
+
+        const street =
+          addr.road ??
+          addr.pedestrian ??
+          addr.footway ??
+          addr.path ??
+          addr.suburb ??
+          addr.neighbourhood ??
+          data?.display_name?.split(",")?.[0] ??
           null;
+
+        const city =
+          addr.city ??
+          addr.town ??
+          addr.village ??
+          addr.county ??
+          addr.suburb ??
+          addr.state ??
+          null;
+
+        const label =
+          street && city
+            ? `${street}, ${city}`
+            : (street ?? city ?? data?.display_name?.split(",")[0] ?? null);
+
         if (!cancelled && label) setAddressText(label);
       } catch {
         // silently ignore — addressText stays as "Add Address"
@@ -130,8 +152,13 @@ export default function Navbar() {
   }, [isLoggedIn, coords, permissionStatus]);
 
   useEffect(() => {
-    const handleAddressUpdate = () => {
-      if (isLoggedIn) fetchProfile();
+    const handleAddressUpdate = async () => {
+      if (isLoggedIn) {
+        // Keep spinner active while re-fetching so there's no "Add Address" flash
+        setIsAddressRefetching(true);
+        await fetchProfile();
+        setIsAddressRefetching(false);
+      }
     };
     window.addEventListener("addressUpdated", handleAddressUpdate);
     return () =>
@@ -246,6 +273,7 @@ export default function Navbar() {
   const handleLogout = () => {
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
+    useLocationStore.getState().setHasAutoSavedAddress(false);
     setIsLoggedIn(false);
     setShowAccountDropdown(false);
     router.push("/");
@@ -284,6 +312,12 @@ export default function Navbar() {
               <MapPin size={20} />
               {!mounted ? (
                 "Add Address"
+              ) : isLoggedIn && (isAutoSavingAddress || isAddressRefetching) ? (
+                <span
+                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                  role="status"
+                  aria-label="Saving address"
+                />
               ) : !isLoggedIn &&
                 (permissionStatus === "loading" || guestGeocoding) ? (
                 <span

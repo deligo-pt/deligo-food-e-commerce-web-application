@@ -1,250 +1,192 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, CheckCircle, LocateFixed, Map, Search } from "lucide-react";
+import { ArrowLeft, Navigation, MapPin, Plus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
-import { Toaster, toast } from "sonner";
-import LocationPicker from "@/components/profile/locationPicker";
-import AddressForm from "./AddressForm";
+import { updateLiveLocation } from "@/services/addressApi";
 import { useTranslation } from "@/hooks/useTranslation";
-
-interface Address {
-  _id: string;
-  street: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
-  detailedAddress?: string;
-  addressType: string;
-  isActive: boolean;
-  latitude?: number;
-  longitude?: number;
-  notes?: string;
-}
 
 interface Props {
   addressId: string;
 }
 
+async function reverseGeocode(latitude: number, longitude: number) {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+    { headers: { "Accept-Language": "en" } },
+  );
+  const data = await res.json();
+  const addr = data?.address ?? {};
+
+  const street =
+    addr.road ??
+    addr.pedestrian ??
+    addr.footway ??
+    addr.path ??
+    addr.suburb ??
+    addr.neighbourhood ??
+    data?.display_name?.split(",")?.[0] ??
+    "Unknown Street";
+
+  const city =
+    addr.city ??
+    addr.town ??
+    addr.village ??
+    addr.county ??
+    addr.suburb ??
+    "Unknown City";
+
+  return {
+    street,
+    city,
+    state: addr.state ?? "Unknown State",
+    country: addr.country ?? "Unknown Country",
+    postalCode: addr.postcode ?? "00000",
+    detailedAddress: data?.display_name ?? street,
+  };
+}
+
 export default function EditAddressPage({ addressId }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
-  const [address, setAddress] = useState<Address | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [coordinates, setCoordinates] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-  const [userId, setUserId] = useState<string>("");
-  const [searchValue, setSearchValue] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState("");
 
   useEffect(() => {
-    const fetchAddress = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.get("/profile");
-        const userData = response.data.data;
-        setUserId(userData.userId || "");
-        const deliveryAddresses = userData.deliveryAddresses || [];
-        const foundAddress = deliveryAddresses.find(
-          (item: Address) => item._id === addressId,
-        );
+    apiClient
+      .get("/profile")
+      .then((res) => setUserId(res.data?.data?.userId ?? ""))
+      .catch(() => { });
+  }, []);
 
-        if (!foundAddress) {
-          setError("Address not found");
-          return;
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error(
+        t("geolocationNotSupported") ||
+          "Geolocation is not supported by your browser.",
+      );
+      return;
+    }
+    if (!userId) {
+      toast.error(
+        t("profileNotLoadedYet") ||
+          "User profile not loaded yet. Please wait a moment.",
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+
+          const addressFields = await reverseGeocode(latitude, longitude);
+
+          await updateLiveLocation(userId, {
+            latitude,
+            longitude,
+            geoAccuracy: 10,
+            isMocked: false,
+            street: addressFields.street,
+            city: addressFields.city,
+            state: addressFields.state,
+            country: addressFields.country,
+            postalCode: addressFields.postalCode,
+            detailedAddress: addressFields.detailedAddress,
+          });
+          window.dispatchEvent(new Event("addressUpdated"));
+
+          toast.success(
+            t("locationUpdated") || "Primary address updated successfully!",
+          );
+          router.push("/saved-addresses");
+        } catch (err) {
+          toast.error(getApiErrorMessage(err, "Failed to update location."));
+        } finally {
+          setLoading(false);
         }
-
-        setAddress(foundAddress);
-        setCoordinates({
-          lat: foundAddress.latitude ?? 23.8103,
-          lng: foundAddress.longitude ?? 90.4125,
-        });
-      } catch (err) {
-        setError(getApiErrorMessage(err, "Failed to load address"));
-      } finally {
+      },
+      (err) => {
         setLoading(false);
-      }
-    };
-
-    fetchAddress();
-  }, [addressId]);
-
-  // const handleUseGPS = () => {
-  //   if (!navigator.geolocation) {
-  //     toast.error("Geolocation not supported");
-  //     return;
-  //   }
-  //   navigator.geolocation.getCurrentPosition(
-  //     (pos) =>
-  //       setCoordinates({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-  //     () => toast.error("Could not get your location"),
-  //   );
-  // };
-
-  // const handleFullMap = () => {
-  //   document
-  //     .getElementById("map-section")
-  //     ?.scrollIntoView({ behavior: "smooth" });
-  // };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
-      </div>
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error(
+            t("locationAccessDenied") ||
+              "Location access denied. Please enable it in your browser settings.",
+          );
+        } else {
+          toast.error(
+            t("couldNotDetectLocation") ||
+              "Could not detect your location. Please try again.",
+          );
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
-  }
-
-  if (error || !address) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#f8f9fa]">
-        <p className="text-lg text-red-500">{error || "Address not found"}</p>
-        <button
-          onClick={() => router.back()}
-          className="rounded-lg bg-[#b0004a] px-6 py-2 text-white"
-        >
-          Go Back
-        </button>
-      </div>
-    );
-  }
+  };
 
   return (
-    <section className="bg-[#f8f9fa] py-8">
-      <Toaster position="top-center" richColors />
-      <div className="mx-auto max-w-7xl px-4 md:px-8">
-        {/* Page Title */}
-        <div className="mb-8 flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm transition hover:bg-gray-100"
-          >
-            <ArrowLeft className="h-5 w-5 text-[#b0004a]" />
-          </button>
-          <h1 className="text-3xl font-bold text-[#191c1d]">
-            {t("editAddress")}
+    <div className="flex min-h-[80vh] flex-col items-center justify-center px-4 py-12">
+      {/* Back button */}
+      <div className="mb-10 w-full max-w-md">
+        <button
+          onClick={() => router.back()}
+          className="mb-6 flex items-center gap-2 text-sm font-medium text-[#b0004a] transition hover:opacity-70"
+        >
+          <ArrowLeft size={18} />
+          {t("back") || "Back"}
+        </button>
+
+        {/* Icon + Title */}
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#b0004a]/10">
+            <MapPin size={36} className="text-[#b0004a]" />
+          </div>
+          <h1 className="mb-2 text-2xl font-bold text-[#191c1d]">
+            {t("myCurrentLocation") || "My Current Location"}
           </h1>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left Panel – identical to AddAddressPage */}
-          <div className="lg:col-span-5">
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
-              <div className="mb-6">
-                <h2 className="mb-2 text-2xl font-bold text-[#191c1d]">
-                  {t("confirmLocation")}
-                </h2>
-                <p className="text-sm text-[#5a4044]">
-                  {t("confirmLocationDescription")}
-                </p>
-              </div>
-
-              <div className="relative mb-6">
-                <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={18}
-                />
-                <input
-                  type="text"
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  placeholder={t("searchAreaPlaceholder")}
-                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-4 outline-none focus:border-[#b0004a]"
-                />
-              </div>
-
-              {/* <div className="mb-6 grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={handleUseGPS}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#b0004a] px-4 py-3 font-medium text-[#b0004a] transition hover:bg-[#fff2f5]"
-                >
-                  <LocateFixed size={18} />
-                  {t("useGps")}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleFullMap}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#b0004a] px-4 py-3 font-medium text-[#b0004a] transition hover:bg-[#fff2f5]"
-                >
-                  <Map size={18} />
-                  {t("fullMap")}
-                </button>
-              </div> */}
-
-              <div id="map-section" className="mb-6">
-                {coordinates ? (
-                  <LocationPicker
-                    defaultCenter={coordinates}
-                    searchValue={searchValue}
-                    onCoordinatesChange={(lat, lng) =>
-                      setCoordinates({ lat, lng })
-                    }
-                  />
-                ) : (
-                  <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50">
-                    <div className="flex flex-col items-center gap-3 text-gray-400">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
-                      <p className="text-sm">Detecting your location…</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
-                <CheckCircle className="mt-0.5 text-green-600" size={20} />
-                <div>
-                  <p className="font-bold text-green-800">
-                    {coordinates
-                      ? t("locationConfirmed")
-                      : "Waiting for location..."}
-                  </p>
-                  {coordinates && (
-                    <p className="text-sm text-green-700">
-                      Lat: {coordinates.lat.toFixed(6)} | Lng:{" "}
-                      {coordinates.lng.toFixed(6)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Panel */}
-          <div className="lg:col-span-7">
-            <AddressForm
-              coordinates={coordinates}
-              initialAddress={address}
-              isEditMode={true}
-              userId={userId}
-              addressId={addressId}
-              onSuccess={() => router.push("/saved-addresses")}
-            />
-          </div>
-        </div>
-
-        {/* Divider + Add New Address */}
-        <div className="mt-10">
-          <hr className="border-t border-[#e3bdc3]" />
-          <div className="mt-6 flex items-center justify-center">
-            <Link
-              href="/add-address"
-              className="inline-flex items-center gap-2 rounded-full bg-[#b0004a] px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[#8c003b] active:scale-95"
-            >
-              <span className="text-xl font-bold leading-none">+</span>
-              {t("addNewAddress")}
-            </Link>
-          </div>
+          <p className="text-sm text-[#5a4044]">
+            {t("currentLocationDescription") ||
+              "Use your device's GPS to update your delivery location instantly."}
+          </p>
         </div>
       </div>
-    </section>
+
+      {/* Buttons */}
+      <div className="flex w-full max-w-md flex-col gap-4">
+        {/* Use Current Location */}
+        <button
+          onClick={handleUseCurrentLocation}
+          disabled={loading}
+          className="flex items-center justify-center gap-3 rounded-2xl bg-[#b0004a] px-6 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-[#8c003b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? (
+            <>
+              <Loader2 size={20} className="animate-spin" />
+              {t("detecting") || "Detecting location…"}
+            </>
+          ) : (
+            <>
+              <Navigation size={20} />
+              {t("useCurrentLocation") || "Use Current Location"}
+            </>
+          )}
+        </button>
+
+        {/* Add New Address */}
+        <button
+          onClick={() => router.push("/add-address")}
+          disabled={loading}
+          className="flex items-center justify-center gap-3 rounded-2xl border-2 border-[#b0004a] bg-white px-6 py-4 text-base font-semibold text-[#b0004a] transition-all hover:bg-[#b0004a]/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Plus size={20} />
+          {t("addNewAddress") || "Add New Address"}
+        </button>
+      </div>
+    </div>
   );
 }

@@ -51,6 +51,16 @@ const en = {
   editAddress: "Edit Address",
   addNewAddress: "Add New Address",
 
+  myCurrentLocation: "My Current Location",
+  currentLocationDescription:
+    "Use your device's GPS to update your delivery location instantly.",
+  useCurrentLocation: "Use Current Location",
+  detecting: "Detecting location…",
+  locationUpdated: "Location updated!",
+  locationAccessDenied:
+    "Location access denied. Please enable it in your browser settings.",
+  couldNotDetectLocation: "Could not detect your location. Please try again.",
+
   confirmLocation: "Confirm Location",
   confirmLocationDescription:
     "Select a label and save your location for future orders",
