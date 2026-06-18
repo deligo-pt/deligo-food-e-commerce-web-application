@@ -15,7 +15,7 @@ interface AddressFormProps {
   coordinates: { lat: number; lng: number } | null;
   initialAddress?: any;
   isEditMode?: boolean;
-  userId?: string;        // required only for edit mode (PATCH)
+  userId?: string;
   addressId?: string;
   onSuccess?: () => void;
 }
@@ -40,13 +40,8 @@ export default function AddressForm({
     state: "",
     country: "",
     postalCode: "",
-    notes: "",
   });
   const [isSaving, setIsSaving] = useState(false);
-  // Tracks whether the initial address data has been loaded into the form.
-  // The geocode effect skips the very first coordinate change (which comes from
-  // EditAddressPage calling setCoordinates with the saved lat/lng) so it doesn't
-  // clobber the form data we just loaded from the API.
   const hasInitializedRef = useRef(false);
 
   // Initialize from initialAddress (edit mode)
@@ -59,7 +54,6 @@ export default function AddressForm({
       state: initialAddress.state || "",
       country: initialAddress.country || "",
       postalCode: initialAddress.postalCode || "",
-      notes: initialAddress.notes || "",
     });
     if (initialAddress.addressType) {
       setAddressType(
@@ -74,12 +68,6 @@ export default function AddressForm({
     hasInitializedRef.current = true;
   }, [initialAddress]);
 
-  // Reverse geocode whenever the map position changes.
-  //
-  // Skip the very first fire in edit mode (the coordinate comes from the saved address
-  // and the initialAddress effect already populated the form). After that — whether
-  // add or edit — always replace all 5 geocoded fields with whatever the geocoder
-  // returns, clearing any field the geocoder has no value for.
   useEffect(() => {
     if (!coordinates) return;
     if (!window.google?.maps) return;
@@ -173,7 +161,6 @@ export default function AddressForm({
           country: formData.country.trim(),
           postalCode: formData.postalCode.trim(),
           detailedAddress: formData.detailedAddress.trim(),
-          notes: formData.notes.trim(),
         });
       } else {
         // POST — add new delivery address
@@ -188,7 +175,6 @@ export default function AddressForm({
           geoAccuracy: 10,
           detailedAddress: formData.detailedAddress.trim(),
           addressType: mapAddressTypeToBackend(addressType),
-          notes: formData.notes.trim(),
         });
       }
 
@@ -233,8 +219,8 @@ export default function AddressForm({
               type="button"
               onClick={() => setAddressType(type)}
               className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-medium transition ${addressType === type
-                  ? "border-[#b0004a] bg-[#fff2f5] text-[#b0004a]"
-                  : "border-[#e3bdc3] text-[#5a4044]"
+                ? "border-[#b0004a] bg-[#fff2f5] text-[#b0004a]"
+                : "border-[#e3bdc3] text-[#5a4044]"
                 }`}
             >
               {type === "home" && <Home size={18} />}
@@ -353,19 +339,7 @@ export default function AddressForm({
         </div>
       </div>
 
-      {/* Notes (optional) */}
-      <div className="mb-8">
-        <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-          Delivery Notes (optional)
-        </label>
-        <textarea
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          placeholder="e.g., Ring the bell, leave at reception, etc."
-          rows={2}
-          className="w-full rounded-xl border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
-        />
-      </div>
+
 
       {/* Coordinates Card */}
       <div className="mb-8 rounded-2xl border border-[#e3bdc3] bg-[#fafafa] p-5">

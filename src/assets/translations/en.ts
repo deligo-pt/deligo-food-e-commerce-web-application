@@ -410,6 +410,15 @@ const en = {
   support: "Support",
 
   inProgress: "In Progress",
+  yourRider: "Your Rider",
+  riderHeadingYourWay: "Rider is heading to your location",
+  callRider: "Call Rider",
+  riderAssigned: "Rider assigned",
+  recenterMap: "Recenter Map",
+  cancelled: "Cancelled",
+  rejected: "Rejected",
+  orderHasBeenDelivered: "Order has been delivered",
+  riderIsHeadingToYourLocation: "Rider is heading to your location",
 
   orderPending: "Order Pending",
   waitingRestaurantResponse: "Waiting for restaurant response",

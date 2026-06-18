@@ -10,7 +10,7 @@ interface OrderCardProps {
   orderId: string;
   date: string;
   price: string;
-  status: "accepted" | "pending";
+  status: "accepted" | "pending" | "delivered" | "cancelled";
   items: string;
   progress: number;
   progressText: string;
@@ -64,6 +64,16 @@ export default function OrderCard({
             <div className="flex items-center gap-1 rounded-full bg-pink-50 px-2 py-1 text-xs text-[#b0004a]">
               <CheckCircle size={12} />
               {t("accepted")}
+            </div>
+          ) : status === "delivered" ? (
+            <div className="flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs text-green-700">
+              <CheckCircle size={12} />
+              {t("delivered")}
+            </div>
+          ) : status === "cancelled" ? (
+            <div className="flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-xs text-red-600">
+              <Clock3 size={12} />
+              {t("cancelled") || "Cancelled"}
             </div>
           ) : (
             <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">

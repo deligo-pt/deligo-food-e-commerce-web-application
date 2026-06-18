@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Pencil, X } from "lucide-react";
+import { Pencil, User, X } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
 import EditProfileFormSkeleton from "./EditProfileFormSkeleton";
@@ -238,6 +238,12 @@ export default function EditProfileFormPage() {
         setOriginalMobile(d.contactNumber || "");
         setEmail(d.email || "");
         setMobileNumber(d.contactNumber || "");
+        // Notify Navbar to update profile photo instantly
+        window.dispatchEvent(
+          new CustomEvent("profilePhotoUpdated", {
+            detail: { profilePhoto: d.profilePhoto || null },
+          })
+        );
       }
     } catch (err) {
       console.error("Update error:", err);
@@ -263,17 +269,18 @@ export default function EditProfileFormPage() {
         <div className="overflow-hidden rounded-xl border border-[#e3bdc3] bg-white shadow-sm">
           <div className="flex flex-col items-center border-b border-[#e3bdc3]/30 bg-linear-to-b from-[#b0004a]/5 to-transparent py-10">
             <div className="relative">
-              <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white shadow-lg">
-                <Image
-                  src={
-                    imagePreview ||
-                    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300"
-                  }
-                  alt="Profile"
-                  className="h-full w-full object-cover"
-                  width={128}
-                  height={128}
-                />
+              <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white shadow-lg flex items-center justify-center bg-pink-50">
+                {imagePreview ? (
+                  <Image
+                    src={imagePreview}
+                    alt="Profile"
+                    className="h-full w-full object-cover"
+                    width={128}
+                    height={128}
+                  />
+                ) : (
+                  <User className="h-16 w-16 text-[#b0004a]" />
+                )}
               </div>
               <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white bg-[#b0004a] p-2 text-white shadow-lg">
                 <Pencil size={18} />

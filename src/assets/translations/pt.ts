@@ -430,6 +430,15 @@ const pt = {
   support: "Suporte",
 
   inProgress: "Em Progresso",
+  yourRider: "O Seu Estafeta",
+  riderHeadingYourWay: "O estafeta está a caminho da sua localização",
+  callRider: "Ligar para Estafeta",
+  riderAssigned: "Estafeta atribuído",
+  recenterMap: "Centrar Mapa",
+  cancelled: "Cancelado",
+  rejected: "Rejeitado",
+  orderHasBeenDelivered: "O pedido foi entregue",
+  riderIsHeadingToYourLocation: "O estafeta está a caminho da sua localização",
 
   orderPending: "Pedido Pendente",
   waitingRestaurantResponse: "A aguardar resposta do restaurante",

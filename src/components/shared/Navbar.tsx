@@ -165,6 +165,18 @@ export default function Navbar() {
       window.removeEventListener("addressUpdated", handleAddressUpdate);
   }, [isLoggedIn, fetchProfile]);
 
+  // Instantly reflect profile photo changes when the user saves from the edit profile form
+  useEffect(() => {
+    const handlePhotoUpdate = (e: Event) => {
+      const photo = (e as CustomEvent<{ profilePhoto: string | null }>).detail
+        .profilePhoto;
+      setProfilePhoto(photo);
+    };
+    window.addEventListener("profilePhotoUpdated", handlePhotoUpdate);
+    return () =>
+      window.removeEventListener("profilePhotoUpdated", handlePhotoUpdate);
+  }, []);
+
   const handleSearch = useCallback(() => {
     if (localSearchTerm.trim()) {
       router.push(`/search?q=${encodeURIComponent(localSearchTerm.trim())}`);
