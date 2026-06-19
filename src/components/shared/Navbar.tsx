@@ -26,6 +26,7 @@ import {
 } from "../../lib/authCookies";
 import { useCartStore } from "@/stores/cartStore";
 import { useLocationStore } from "@/stores/locationStore";
+import { updateLiveLocation } from "@/services/addressApi";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -48,7 +49,7 @@ export default function Navbar() {
 
   const [unreadCount, setUnreadCount] = useState(0);
   const { vendorCount, fetchCart } = useCartStore();
-  const { coords, permissionStatus, isAutoSavingAddress } = useLocationStore();
+  const { coords, permissionStatus, isAutoSavingAddress, guestAddress } = useLocationStore();
   const [guestGeocoding, setGuestGeocoding] = useState(false);
   const [isAddressRefetching, setIsAddressRefetching] = useState(false);
 
@@ -96,11 +97,56 @@ export default function Navbar() {
   useEffect(() => {
     if (isLoggedIn) {
       fetchProfile();
+
+      const guestAddressStr = typeof window !== "undefined" ? localStorage.getItem("deligo_guest_address") : null;
+      if (guestAddressStr) {
+        (async () => {
+          try {
+            const guestAddressObj = JSON.parse(guestAddressStr);
+            const profileRes = await apiClient.get("/profile");
+            const userId = profileRes.data?.data?.userId;
+            if (userId) {
+              await updateLiveLocation(userId, {
+                latitude: guestAddressObj.latitude,
+                longitude: guestAddressObj.longitude,
+                geoAccuracy: 10,
+                isMocked: false,
+                street: guestAddressObj.street,
+                city: guestAddressObj.city,
+                state: guestAddressObj.state,
+                country: guestAddressObj.country,
+                postalCode: guestAddressObj.postalCode,
+                detailedAddress: guestAddressObj.detailedAddress,
+              });
+              localStorage.removeItem("deligo_guest_address");
+              useLocationStore.getState().setGuestAddress(null);
+              window.dispatchEvent(new Event("addressUpdated"));
+            }
+          } catch (syncErr) {
+            console.error("Failed to sync guest address in Navbar:", syncErr);
+          }
+        })();
+      }
     }
   }, [isLoggedIn, pathname, fetchProfile]);
 
   useEffect(() => {
-    if (isLoggedIn || !coords || permissionStatus !== "granted") return;
+    if (isLoggedIn) return;
+
+    if (guestAddress) {
+      const street = guestAddress.street || guestAddress.detailedAddress || "";
+      const city = guestAddress.city || "";
+      const label = street && city ? `${street}, ${city}` : street || city;
+      if (label) {
+        setAddressText(label);
+        return;
+      }
+    }
+
+    if (!coords || permissionStatus !== "granted") {
+      setAddressText("Add Address");
+      return;
+    }
 
     let cancelled = false;
     setGuestGeocoding(true);
@@ -149,7 +195,7 @@ export default function Navbar() {
       cancelled = true;
       setGuestGeocoding(false);
     };
-  }, [isLoggedIn, coords, permissionStatus]);
+  }, [isLoggedIn, coords, permissionStatus, guestAddress]);
 
   useEffect(() => {
     const handleAddressUpdate = async () => {
@@ -331,6 +377,7 @@ export default function Navbar() {
                   aria-label="Saving address"
                 />
               ) : !isLoggedIn &&
+                !guestAddress &&
                 (permissionStatus === "loading" || guestGeocoding) ? (
                 <span
                   className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
