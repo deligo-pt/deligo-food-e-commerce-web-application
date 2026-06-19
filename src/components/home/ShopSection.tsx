@@ -10,7 +10,7 @@ import {
   BusinessCategory,
 } from "@/stores/businessCategoryStore";
 import { useTranslation } from "@/hooks/useTranslation";
-import RestaurantFilterModal from "./RestaurantFilterModal";
+// import RestaurantFilterModal from "./RestaurantFilterModal";
 type ApiResponse = {
   success: boolean;
   message: string;
@@ -31,7 +31,7 @@ export default function ShopSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { selectedCategory, setSelectedCategory } = useBusinessCategoryStore();
-  const [showFilterModal, setShowFilterModal] = useState(false);
+  // const [showFilterModal, setShowFilterModal] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
@@ -156,14 +156,14 @@ export default function ShopSection() {
           {t("shopOnDeligo")}
         </h2>
 
-        {selectedCategory?.name === "RESTAURANT" && (
+        {/* {selectedCategory?.name === "RESTAURANT" && (
           <button
             onClick={() => setShowFilterModal(true)}
             className="rounded-full border border-[#ffd9de] px-6 py-3 text-[#b0004a]"
           >
             {t("filter")}
           </button>
-        )}
+        )} */}
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:gap-6">
@@ -216,10 +216,10 @@ export default function ShopSection() {
         })}
       </div>
 
-      <RestaurantFilterModal
+      {/* <RestaurantFilterModal
         open={showFilterModal}
         onClose={() => setShowFilterModal(false)}
-      />
+      /> */}
     </section>
   );
 }

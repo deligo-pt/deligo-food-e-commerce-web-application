@@ -56,8 +56,8 @@ function getDistanceKm(
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -353,37 +353,37 @@ export default function RestaurantsSection() {
         {(selectedBusinessCategory ||
           selectedProductCategory ||
           selectedCuisines.length > 0) && (
-          <div className="mb-6 flex flex-wrap gap-2">
-            {selectedBusinessCategory && (
-              <button
-                onClick={() => setSelectedBusinessCategory(null)}
-                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-              >
-                {selectedBusinessCategory.name}
-                <X size={16} />
-              </button>
-            )}
-            {selectedProductCategory && (
-              <button
-                onClick={() => setSelectedProductCategory(null)}
-                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-              >
-                {selectedProductCategory.name}
-                <X size={16} />
-              </button>
-            )}
-            {selectedCuisines.map((cuisine) => (
-              <button
-                key={cuisine}
-                onClick={() => toggleCuisine(cuisine)}
-                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-              >
-                {cuisine}
-                <X size={16} />
-              </button>
-            ))}
-          </div>
-        )}
+            <div className="mb-6 flex flex-wrap gap-2">
+              {selectedBusinessCategory && (
+                <button
+                  onClick={() => setSelectedBusinessCategory(null)}
+                  className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                >
+                  {selectedBusinessCategory.name}
+                  <X size={16} />
+                </button>
+              )}
+              {selectedProductCategory && (
+                <button
+                  onClick={() => setSelectedProductCategory(null)}
+                  className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                >
+                  {selectedProductCategory.name}
+                  <X size={16} />
+                </button>
+              )}
+              {selectedCuisines.map((cuisine) => (
+                <button
+                  key={cuisine}
+                  onClick={() => toggleCuisine(cuisine)}
+                  className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                >
+                  {cuisine}
+                  <X size={16} />
+                </button>
+              ))}
+            </div>
+          )}
         <div className="py-12 text-center text-gray-500">
           {selectedProductCategory
             ? `${t("noVendorsFoundFor")} "${selectedProductCategory.name}"`
@@ -409,39 +409,39 @@ export default function RestaurantsSection() {
       {(selectedBusinessCategory ||
         selectedProductCategory ||
         selectedCuisines.length > 0) && (
-        <div className="mb-6 flex flex-wrap gap-2">
-          {selectedBusinessCategory && (
-            <button
-              onClick={() => setSelectedBusinessCategory(null)}
-              className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-            >
-              {selectedBusinessCategory.name}
-              <X size={16} />
-            </button>
-          )}
+          <div className="mb-6 flex flex-wrap gap-2">
+            {selectedBusinessCategory && (
+              <button
+                onClick={() => setSelectedBusinessCategory(null)}
+                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+              >
+                {selectedBusinessCategory.name}
+                <X size={16} />
+              </button>
+            )}
 
-          {selectedProductCategory && (
-            <button
-              onClick={() => setSelectedProductCategory(null)}
-              className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-            >
-              {selectedProductCategory.name}
-              <X size={16} />
-            </button>
-          )}
+            {selectedProductCategory && (
+              <button
+                onClick={() => setSelectedProductCategory(null)}
+                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+              >
+                {selectedProductCategory.name}
+                <X size={16} />
+              </button>
+            )}
 
-          {selectedCuisines.map((cuisine) => (
-            <button
-              key={cuisine}
-              onClick={() => toggleCuisine(cuisine)}
-              className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-            >
-              {cuisine}
-              <X size={16} />
-            </button>
-          ))}
-        </div>
-      )}
+            {selectedCuisines.map((cuisine) => (
+              <button
+                key={cuisine}
+                onClick={() => toggleCuisine(cuisine)}
+                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+              >
+                {cuisine}
+                <X size={16} />
+              </button>
+            ))}
+          </div>
+        )}
 
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
         {filteredVendors.map((vendor) => {
