@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import FCMProvider from "@/components/shared/FCMProvider";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "DeliGo | Fresh Delivery Right to Your Door",
@@ -16,7 +20,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="light h-full antialiased"
+      className={cn("light h-full antialiased", "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col bg-[#f8f9fa] font-sans text-[#191c1d]">
         {children}

@@ -7,6 +7,16 @@ import { MoreVertical, CheckCircle, Ban, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface CartItem {
   productId: string;
@@ -41,6 +51,7 @@ export default function CartProductRow({
   const [isDeleting, setIsDeleting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const processingRef = useRef(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -81,17 +92,17 @@ export default function CartProductRow({
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent) => {
+  const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     if (processingRef.current) return;
-    processingRef.current = true;
+    setIsConfirmOpen(true);
+  };
 
-    const confirmRemove = confirm(`${t("removeFromCart")} "${item.name}"?`);
-    if (!confirmRemove) {
-      processingRef.current = false;
-      return;
-    }
+  const handleConfirmDelete = async () => {
+    setIsConfirmOpen(false);
+    if (processingRef.current) return;
+    processingRef.current = true;
 
     setIsDeleting(true);
     try {
@@ -221,6 +232,29 @@ export default function CartProductRow({
           </div>
         </div>
       </div>
+
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("removeFromCart") || "Remove from cart?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove &ldquo;{item.name}&rdquo; from your cart?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={(e) => {
+              e?.stopPropagation();
+              setIsConfirmOpen(false);
+            }}>{t("cancel") || "Cancel"}</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => {
+              e?.stopPropagation();
+              handleConfirmDelete();
+            }} className="bg-pink-600 hover:bg-pink-700 text-white">
+              {t("remove") || "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
