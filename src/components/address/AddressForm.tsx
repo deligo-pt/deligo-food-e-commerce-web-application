@@ -79,7 +79,17 @@ export default function AddressForm({
     geocoder.geocode(
       { location: { lat: coordinates.lat, lng: coordinates.lng } },
       (results: any[], status: any) => {
-        if (status !== "OK" || !results?.length) return;
+        if (status !== "OK" || !results?.length) {
+          setFormData((prev) => ({
+            ...prev,
+            street: "",
+            city: "",
+            state: "",
+            country: "",
+            postalCode: "",
+          }));
+          return;
+        }
         const comps = results[0].address_components;
 
         // Extract every component we care about (empty string = not present)

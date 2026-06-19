@@ -12,7 +12,6 @@ import { Toaster, toast } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "./AddressForm";
 import { useTranslation } from "@/hooks/useTranslation";
-import { updateLiveLocation } from "@/services/addressApi";
 
 const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_LOCATION_API_KEY}&libraries=places`;
 
@@ -42,41 +41,7 @@ interface Suggestion {
   secondaryText: string;
 }
 
-async function reverseGeocode(latitude: number, longitude: number) {
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-    { headers: { "Accept-Language": "en" } },
-  );
-  const data = await res.json();
-  const addr = data?.address ?? {};
 
-  const street =
-    addr.road ??
-    addr.pedestrian ??
-    addr.footway ??
-    addr.path ??
-    addr.suburb ??
-    addr.neighbourhood ??
-    data?.display_name?.split(",")?.[0] ??
-    "Unknown Street";
-
-  const city =
-    addr.city ??
-    addr.town ??
-    addr.village ??
-    addr.county ??
-    addr.suburb ??
-    "Unknown City";
-
-  return {
-    street,
-    city,
-    state: addr.state ?? "Unknown State",
-    country: addr.country ?? "Unknown Country",
-    postalCode: addr.postcode ?? "00000",
-    detailedAddress: data?.display_name ?? street,
-  };
-}
 
 export default function EditAddressPage({ addressId }: Props) {
   const { t } = useTranslation();
@@ -266,7 +231,6 @@ export default function EditAddressPage({ addressId }: Props) {
     setShowSuggestions(false);
   };
 
-  // Original "Use Current Location" flow (instant reverse-geocoding, update, and redirect)
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
       toast.error(
@@ -275,46 +239,15 @@ export default function EditAddressPage({ addressId }: Props) {
       );
       return;
     }
-    if (!userId) {
-      toast.error(
-        t("profileNotLoadedYet") ||
-        "User profile not loaded yet. Please wait a moment.",
-      );
-      return;
-    }
 
     setLoadingCurrentLocation(true);
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-
-          const addressFields = await reverseGeocode(latitude, longitude);
-
-          await updateLiveLocation(userId, {
-            latitude,
-            longitude,
-            geoAccuracy: 10,
-            isMocked: false,
-            street: addressFields.street,
-            city: addressFields.city,
-            state: addressFields.state,
-            country: addressFields.country,
-            postalCode: addressFields.postalCode,
-            detailedAddress: addressFields.detailedAddress,
-          });
-          window.dispatchEvent(new Event("addressUpdated"));
-
-          toast.success(
-            t("locationUpdated") || "Primary address updated successfully!",
-          );
-          router.push("/saved-addresses");
-        } catch (err) {
-          toast.error(getApiErrorMessage(err, "Failed to update location."));
-        } finally {
-          setLoadingCurrentLocation(false);
-        }
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setCoordinates({ lat: latitude, lng: longitude });
+        toast.success( "Current location loaded on map.");
+        setLoadingCurrentLocation(false);
       },
       (err) => {
         setLoadingCurrentLocation(false);
