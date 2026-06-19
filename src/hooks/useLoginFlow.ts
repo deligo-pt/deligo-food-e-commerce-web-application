@@ -249,5 +249,6 @@ export function useLoginFlow() {
     resendOtp,
     backToCredentials,
     clearSessionAndRetry,
+    setShowDeviceLimitModal,
   };
 }
