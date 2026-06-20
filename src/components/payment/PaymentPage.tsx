@@ -340,11 +340,10 @@ export default function PaymentPage() {
                         <>
                           <div className="flex items-center gap-2">
                             <div
-                              className={`h-2 w-2 rounded-full ${
-                                vendor.businessDetails.isStoreOpen
-                                  ? "bg-green-500"
-                                  : "bg-red-500"
-                              }`}
+                              className={`h-2 w-2 rounded-full ${vendor.businessDetails.isStoreOpen
+                                ? "bg-green-500"
+                                : "bg-red-500"
+                                }`}
                             />
                             <span className="text-xs font-medium text-gray-600">
                               {vendor.businessDetails.isStoreOpen
@@ -568,11 +567,10 @@ export default function PaymentPage() {
                 ].map((method) => (
                   <label
                     key={method.value}
-                    className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 ${
-                      paymentMethod === method.value
-                        ? "border-pink-600 bg-pink-50"
-                        : "border-gray-200"
-                    }`}
+                    className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 ${paymentMethod === method.value
+                      ? "border-pink-600 bg-pink-50"
+                      : "border-gray-200"
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <method.icon className="h-5 w-5" />
@@ -719,11 +717,10 @@ export default function PaymentPage() {
                   {availableOffers.map((offer) => (
                     <div
                       key={offer._id}
-                      className={`rounded-xl border p-4 transition ${
-                        !offer.isEligible
-                          ? "border-gray-100 bg-gray-50 opacity-60"
-                          : "border-pink-100 bg-pink-50/40 hover:border-pink-300"
-                      }`}
+                      className={`rounded-xl border p-4 transition ${!offer.isEligible
+                        ? "border-gray-100 bg-gray-50 opacity-60"
+                        : "border-pink-100 bg-pink-50/40 hover:border-pink-300"
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3">

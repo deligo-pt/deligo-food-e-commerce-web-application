@@ -246,6 +246,20 @@ const pt = {
 
   trackOrder: "Rastrear Pedido",
   rateOrder: "Avaliar Pedido",
+  alreadySubmitted: "Feedback Enviado",
+  rateYourOrder: "Avalie seu pedido",
+  foodReview: "Avaliação da Comida",
+  deliveryReview: "Avaliação da Entrega",
+  overallRating: "Avaliação Geral",
+  thankYou: "Obrigado!",
+  alreadyRated: "Você já avaliou este pedido.",
+  ratingsSubmitted: "O seu feedback ajuda-nos a melhorar.",
+  foodQuality: "Qualidade da Comida",
+  packaging: "Embalagem",
+  deliverySpeed: "Velocidade da Entrega",
+  riderBehavior: "Comportamento do Estafeta",
+  submitReview: "Enviar Avaliação",
+  cancel: "Cancelar",
   orderAgain: "Pedir Novamente",
 
   order: "Pedido",
@@ -377,8 +391,6 @@ const pt = {
   labelAs: "Identificar como",
 
   houseApartmentFloorPlaceholder: "ex. 123, 4º Andar, Porta B",
-
-  cancel: "Cancelar",
 
   uploadingImage: "A carregar imagem...",
 

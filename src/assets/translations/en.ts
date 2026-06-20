@@ -231,9 +231,22 @@ const en = {
   minutesAgo: "mins ago",
   hoursAgo: "hours ago",
   daysAgo: "days ago",
-
   trackOrder: "Track Order",
   rateOrder: "Rate Order",
+  alreadySubmitted: "Feedback Submitted",
+  rateYourOrder: "Rate your order",
+  foodReview: "Food Review",
+  deliveryReview: "Delivery Review",
+  overallRating: "Overall Rating",
+  thankYou: "Thank You!",
+  alreadyRated: "You have already rated this order.",
+  ratingsSubmitted: "Your feedback helps us improve.",
+  foodQuality: "Food Quality",
+  packaging: "Packaging",
+  deliverySpeed: "Delivery Speed",
+  riderBehavior: "Rider Behavior",
+  submitReview: "Submit Review",
+  cancel: "Cancel",
   orderAgain: "Order Again",
 
   order: "Order",
@@ -358,8 +371,6 @@ const en = {
   labelAs: "Label as",
 
   houseApartmentFloorPlaceholder: "e.g. 123, 4th Floor, Door B",
-
-  cancel: "Cancel",
 
   uploadingImage: "Uploading image...",
   saveChanges: "Save Changes",
