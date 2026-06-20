@@ -121,7 +121,6 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   useEffect(() => {
     const timeouts = syncTimeoutRef.current;
     return () => {
-      // Clear all sync timeouts when the page unmounts
       Object.values(timeouts).forEach(clearTimeout);
     };
   }, []);
@@ -151,13 +150,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     const delta = pendingUpdatesRef.current[key];
     if (!delta) return;
 
-    // Clear timeout tracking
     delete syncTimeoutRef.current[key];
 
-    // Set syncing flag to lock new timeouts and queue subsequent clicks
     isSyncingRef.current[key] = true;
     
-    // Reset delta for this sync batch
     pendingUpdatesRef.current[key] = 0;
 
     try {
@@ -175,17 +171,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
       await apiClient.patch("/carts/update-quantity", payload);
       
-      // Fetch latest calculations from server
       await fetchCheckoutData(false);
       useCartStore.getState().fetchCart();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to sync cart updates"));
       await fetchCheckoutData(false);
     } finally {
-      // Release syncing lock
       isSyncingRef.current[key] = false;
-
-      // Check if there are new updates that accumulated while sync was running
       if (pendingUpdatesRef.current[key] && pendingUpdatesRef.current[key] !== 0) {
         triggerSync(key, item);
       }
@@ -193,7 +185,6 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   };
 
   const triggerSync = (key: string, item: any) => {
-    // If request is in-flight, return and wait for it to finish and trailing check to run.
     if (isSyncingRef.current[key]) return;
 
     if (syncTimeoutRef.current[key]) {
@@ -202,7 +193,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
     syncTimeoutRef.current[key] = setTimeout(() => {
       executeSync(key, item);
-    }, 500); // 500-millisecond debounce
+    }, 500);
   };
 
   const updateQuantity = (
@@ -214,10 +205,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     const currentQty = item.itemSummary.quantity;
     const newQty = currentQty + change;
 
-    // Quantities must be at least 1
     if (newQty < 1) return;
 
-    // 1. Optimistic Update of local cart state
     setCart((prevCart) => {
       if (!prevCart) return null;
       const updatedItems = prevCart.items.map((cartItem) => {
