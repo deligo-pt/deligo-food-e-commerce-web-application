@@ -597,6 +597,16 @@ const en = {
 
   deleteAccount: "Delete Account",
   deleteAccountDescription: "Permanently delete your account",
+  deleteAccountWarning: "We are sorry to see you go. Please fill out the form below to request account deletion. Your data will be permanently removed within 24 hours after verification.",
+  fullName: "Full Name",
+  contactNumber: "Contact Number",
+  requestDeletion: "Request Deletion",
+  returnToHome: "Return to Home",
+  pleaseFillFields: "Please fill in all fields.",
+  requestSubmitted: "Request Submitted",
+  deleteAccountRequestReceived: "Your account deletion request has been received. Our team will verify your information, and your account will be permanently deleted within 24 hours.",
+  close: "Close",
+  goBackHome: "Go Back Home",
 
   loadingAddresses: "Loading addresses...",
 
