@@ -4,9 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
+import { toast } from "sonner";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function DeleteAccountPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -31,7 +34,7 @@ export default function DeleteAccountPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.contactNumber) {
-      alert("Please fill in all fields.");
+      toast.error(t("pleaseFillFields"));
       return;
     }
 
@@ -49,7 +52,7 @@ export default function DeleteAccountPage() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-black text-[#b0004a] md:text-3xl">
-            Delete Account
+            {t("deleteAccount")}
           </h1>
           <Link
             href="/"
@@ -60,9 +63,7 @@ export default function DeleteAccountPage() {
         </div>
 
         <p className="mb-8 text-[16px] text-[#5a4044]">
-          We are sorry to see you go. Please fill out the form below to request
-          account deletion. Your data will be permanently removed within 24
-          hours after verification.
+          {t("deleteAccountWarning")}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -71,7 +72,7 @@ export default function DeleteAccountPage() {
               htmlFor="name"
               className="mb-1 block text-sm font-semibold text-[#191c1d]"
             >
-              Full Name
+              {t("fullName")}
             </label>
             <input
               type="text"
@@ -90,7 +91,7 @@ export default function DeleteAccountPage() {
               htmlFor="email"
               className="mb-1 block text-sm font-semibold text-[#191c1d]"
             >
-              Email Address
+              {t("emailAddress")}
             </label>
             <input
               type="email"
@@ -109,7 +110,7 @@ export default function DeleteAccountPage() {
               htmlFor="contactNumber"
               className="mb-1 block text-sm font-semibold text-[#191c1d]"
             >
-              Contact Number
+              {t("contactNumber")}
             </label>
             <input
               type="tel"
@@ -126,15 +127,15 @@ export default function DeleteAccountPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-xl bg-[#b0004a] py-3 font-bold text-white transition-all hover:bg-[#8a0038] disabled:opacity-60"
+            className="w-full rounded-xl bg-[#b0004a] py-3 font-bold text-white transition-all hover:bg-[#8a0038] disabled:opacity-60 cursor-pointer"
           >
-            {isSubmitting ? "Submitting..." : "Request Deletion"}
+            {isSubmitting ? t("submitting") || "Submitting..." : t("requestDeletion")}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm text-[#5a4044]">
           <Link href="/" className="underline hover:text-[#b0004a]">
-            Return to Home
+            {t("returnToHome")}
           </Link>
         </div>
       </div>
@@ -167,25 +168,23 @@ export default function DeleteAccountPage() {
               </div>
             </div>
             <h3 className="mb-2 text-xl font-bold text-[#191c1d]">
-              Request Submitted
+              {t("requestSubmitted")}
             </h3>
             <p className="mb-6 text-[16px] text-[#5a4044]">
-              Your account deletion request has been received. Our team will
-              verify your information, and your account will be permanently
-              deleted within <strong>24 hours</strong>.
+              {t("deleteAccountRequestReceived")}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-xl border border-[#b0004a] px-6 py-2 font-semibold text-[#b0004a] transition-colors hover:bg-[#b0004a] hover:text-white"
+                className="rounded-xl border border-[#b0004a] px-6 py-2 font-semibold text-[#b0004a] transition-colors hover:bg-[#b0004a] hover:text-white cursor-pointer"
               >
-                Close
+                {t("close")}
               </button>
               <button
                 onClick={() => router.push("/")}
-                className="rounded-xl bg-[#b0004a] px-6 py-2 font-semibold text-white transition-colors hover:bg-[#8a0038]"
+                className="rounded-xl bg-[#b0004a] px-6 py-2 font-semibold text-white transition-colors hover:bg-[#8a0038] cursor-pointer"
               >
-                Go Back Home
+                {t("goBackHome")}
               </button>
             </div>
           </div>

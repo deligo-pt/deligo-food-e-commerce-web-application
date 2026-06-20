@@ -115,6 +115,19 @@ export default function VendorDetailsModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [shareMenuOpen]);
 
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Build static map URL using vendor coordinates
@@ -183,8 +196,14 @@ export default function VendorDetailsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2 sm:p-4">
-      <div className="w-full max-w-250 max-h-[95vh] overflow-y-auto rounded-xl bg-white shadow-xl">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2 sm:p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-250 max-h-[95vh] overflow-y-auto rounded-xl bg-white shadow-xl"
+      >
         {/* Header */}
         <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-4 sm:px-6 md:px-8 sm:py-5 md:py-6">
           <div className="flex items-center gap-3 sm:gap-4">

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
@@ -161,12 +162,36 @@ export default function PaymentPage() {
         setSummary(summaryData);
 
         if (summaryData.vendorId) {
-          const vendorResponse = await apiClient.get("/vendors/customer");
-          const vendors: Vendor[] = vendorResponse.data.data;
-          const matchedVendor = vendors.find(
-            (v) => v.id === summaryData.vendorId,
-          );
-          if (matchedVendor) setVendor(matchedVendor);
+          try {
+            // Try fetching the specific vendor directly
+            const response = await apiClient.get(
+              `/vendors/customer/${summaryData.vendorId}`,
+            );
+            if (response.data?.data) {
+              setVendor(response.data.data);
+            } else {
+              throw new Error("No vendor data in response");
+            }
+          } catch (directErr) {
+            console.warn(
+              "Failed to fetch vendor directly, falling back to list lookup:",
+              directErr,
+            );
+            // Fallback: Fetch vendor list with pagination limit and check id, _id, and userId
+            const vendorResponse = await apiClient.get(
+              "/vendors/customer?page=1&limit=100",
+            );
+            const vendors: any[] = vendorResponse.data?.data ?? [];
+            const matchedVendor = vendors.find(
+              (v) =>
+                v.id === summaryData.vendorId ||
+                v._id === summaryData.vendorId ||
+                v.userId === summaryData.vendorId,
+            );
+            if (matchedVendor) {
+              setVendor(matchedVendor);
+            }
+          }
         }
       } catch (err) {
         setError(
@@ -474,7 +499,7 @@ export default function PaymentPage() {
                   <span className="font-semibold">€{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t("serviceCharge")}</span>
+                  <span className="text-gray-500">{t("tax")}</span>
                   <span className="font-semibold">
                     €{orderCalculation.totalTaxAmount.toFixed(2)}
                   </span>
@@ -486,6 +511,10 @@ export default function PaymentPage() {
                       ? `€${delivery.totalDeliveryCharge.toFixed(2)}`
                       : t("free")}
                   </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">{t("serviceCharge")}</span>
+                  <span className="font-semibold">€0.00</span>
                 </div>
 
                 {/* Offer discount row – only shown when an offer is applied */}

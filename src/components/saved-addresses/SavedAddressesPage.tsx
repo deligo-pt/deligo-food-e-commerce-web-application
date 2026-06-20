@@ -8,6 +8,17 @@ import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import SavedAddressesSkeleton from "./SavedAddressesSkeleton";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface DeliveryAddress {
   _id: string;
@@ -48,6 +59,7 @@ export default function SavedAddressesPage() {
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [addressToDelete, setAddressToDelete] = useState<string | null>(null);
 
   const fetchAddresses = async () => {
     try {
@@ -75,18 +87,21 @@ export default function SavedAddressesPage() {
 
       await fetchAddresses();
       window.dispatchEvent(new Event("addressUpdated"));
+      toast.success("Primary address updated successfully");
     } catch (error) {
-      alert(getApiErrorMessage(error, "Failed to update primary address"));
+      toast.error(getApiErrorMessage(error, "Failed to update primary address"));
     } finally {
       setUpdatingId(null);
     }
   };
-  const handleDeleteAddress = async (addressId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this address?",
-    );
+  const handleDeleteAddress = (addressId: string) => {
+    setAddressToDelete(addressId);
+  };
 
-    if (!confirmed) return;
+  const confirmDeleteAddress = async () => {
+    if (!addressToDelete) return;
+    const addressId = addressToDelete;
+    setAddressToDelete(null);
 
     try {
       setDeletingId(addressId);
@@ -95,8 +110,9 @@ export default function SavedAddressesPage() {
 
       await fetchAddresses();
       window.dispatchEvent(new Event("addressUpdated"));
+      toast.success("Address deleted successfully");
     } catch (error) {
-      alert(getApiErrorMessage(error, "Failed to delete address"));
+      toast.error(getApiErrorMessage(error, "Failed to delete address"));
     } finally {
       setDeletingId(null);
     }
@@ -270,8 +286,24 @@ export default function SavedAddressesPage() {
           </div>
         )}
 
-
       </div>
+
+      <AlertDialog open={addressToDelete !== null} onOpenChange={(open) => !open && setAddressToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Address</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this address? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAddress} className="bg-[#C2185B] hover:bg-[#A01248] text-white">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

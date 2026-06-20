@@ -153,7 +153,7 @@ const en = {
   originalPrice: "Original Price",
   productDiscount: "Product Discount",
   tax: "Tax",
-  serviceCharge: "Service Charge",
+  serviceCharge: "Service Fee",
   total: "Total",
 
   deliveryInstructions: "Delivery Instructions",
@@ -231,9 +231,22 @@ const en = {
   minutesAgo: "mins ago",
   hoursAgo: "hours ago",
   daysAgo: "days ago",
-
   trackOrder: "Track Order",
   rateOrder: "Rate Order",
+  alreadySubmitted: "Feedback Submitted",
+  rateYourOrder: "Rate your order",
+  foodReview: "Food Review",
+  deliveryReview: "Delivery Review",
+  overallRating: "Overall Rating",
+  thankYou: "Thank You!",
+  alreadyRated: "You have already rated this order.",
+  ratingsSubmitted: "Your feedback helps us improve.",
+  foodQuality: "Food Quality",
+  packaging: "Packaging",
+  deliverySpeed: "Delivery Speed",
+  riderBehavior: "Rider Behavior",
+  submitReview: "Submit Review",
+  cancel: "Cancel",
   orderAgain: "Order Again",
 
   order: "Order",
@@ -358,8 +371,6 @@ const en = {
   labelAs: "Label as",
 
   houseApartmentFloorPlaceholder: "e.g. 123, 4th Floor, Door B",
-
-  cancel: "Cancel",
 
   uploadingImage: "Uploading image...",
   saveChanges: "Save Changes",
@@ -586,6 +597,16 @@ const en = {
 
   deleteAccount: "Delete Account",
   deleteAccountDescription: "Permanently delete your account",
+  deleteAccountWarning: "We are sorry to see you go. Please fill out the form below to request account deletion. Your data will be permanently removed within 24 hours after verification.",
+  fullName: "Full Name",
+  contactNumber: "Contact Number",
+  requestDeletion: "Request Deletion",
+  returnToHome: "Return to Home",
+  pleaseFillFields: "Please fill in all fields.",
+  requestSubmitted: "Request Submitted",
+  deleteAccountRequestReceived: "Your account deletion request has been received. Our team will verify your information, and your account will be permanently deleted within 24 hours.",
+  close: "Close",
+  goBackHome: "Go Back Home",
 
   loadingAddresses: "Loading addresses...",
 

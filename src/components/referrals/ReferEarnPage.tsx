@@ -5,6 +5,7 @@ import { Gift, Copy, Share2, Clock3, Users, Wallet, Check } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
 import ReferEarnSkeleton from "./ReferEarnSkeleton";
+import { toast } from "sonner";
 
 interface ReferralResponse {
   success: boolean;
@@ -68,12 +69,14 @@ export default function ReferEarnPage() {
       await navigator.clipboard.writeText(referralData.myReferralCode);
 
       setCopied(true);
+      toast.success("Referral code copied to clipboard");
 
       setTimeout(() => {
         setCopied(false);
       }, 2000);
     } catch (error) {
       console.error("Copy failed:", error);
+      toast.error("Failed to copy referral code");
     }
   };
 
@@ -90,10 +93,11 @@ export default function ReferEarnPage() {
         });
       } else {
         await navigator.clipboard.writeText(shareText);
-        alert("Referral information copied to clipboard");
+        toast.success("Referral information copied to clipboard");
       }
     } catch (error) {
       console.error("Share failed:", error);
+      toast.error("Failed to share referral code");
     }
   };
 

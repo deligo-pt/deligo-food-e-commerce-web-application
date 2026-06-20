@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Star, Heart, Truck, Check } from "lucide-react";
@@ -56,8 +55,8 @@ function getDistanceKm(
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -129,7 +128,7 @@ export default function RestaurantsSection() {
     selectedCategory: selectedProductCategory,
     setSelectedCategory: setSelectedProductCategory,
   } = useProductCategoryStore();
-  const { selectedCuisines, toggleCuisine } = useCuisineFilterStore();
+  const { selectedCuisines, toggleCuisine, clearCuisines } = useCuisineFilterStore();
 
   useEffect(() => {
     if (permissionStatus === "loading") return;
@@ -160,29 +159,19 @@ export default function RestaurantsSection() {
         setActiveAddressCoords(activeCoords);
 
         // Step 2: pick the best coords for vendor lookup
-        // Priority: active delivery address > browser GPS > default
+        // Priority: active delivery address > browser GPS
         const coords =
           activeCoords ??
           (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null);
 
-        if (coords) {
-          const response = await apiClient.get("/vendors/nearby/open", {
-            params: { latitude: coords.lat, longitude: coords.lng },
-          });
-          setAllVendors(response.data?.data || []);
+        if (!coords) {
+          setAllVendors([]);
+          setLoading(false);
           return;
         }
 
-        // Authenticated fallback — server uses session location
-        if (token) {
-          const response = await apiClient.get("/vendors/customer");
-          setAllVendors(response.data?.data || []);
-          return;
-        }
-
-        // Unauthenticated fallback — default Lisbon coords
         const response = await apiClient.get("/vendors/nearby/open", {
-          params: { latitude: 38.7298248, longitude: -9.1475019 },
+          params: { latitude: coords.lat, longitude: coords.lng },
         });
         setAllVendors(response.data?.data || []);
       } catch (err) {
@@ -195,6 +184,16 @@ export default function RestaurantsSection() {
 
     fetchVendors();
   }, [geoCoords, permissionStatus]);
+
+  // Clear cuisines filter if selected category is not RESTAURANT
+  useEffect(() => {
+    if (
+      selectedBusinessCategory &&
+      selectedBusinessCategory.name !== "RESTAURANT"
+    ) {
+      clearCuisines();
+    }
+  }, [selectedBusinessCategory, clearCuisines]);
 
   const filteredVendors = useMemo(() => {
     if (!allVendors.length) return [];
@@ -288,11 +287,41 @@ export default function RestaurantsSection() {
     [activeAddressCoords, geoCoords],
   );
 
+  const lastFetchedCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+
   useEffect(() => {
-    if (!loading && filteredVendors.length > 0) {
-      filteredVendors.forEach((vendor) => estimateDeliveryTime(vendor));
+    if (loading || filteredVendors.length === 0) return;
+
+    const currentCoords =
+      activeAddressCoords ??
+      (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null);
+
+    if (!currentCoords) {
+      filteredVendors.forEach((vendor) => {
+        setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+      });
+      return;
     }
-  }, [activeAddressCoords, geoCoords, loading, filteredVendors, estimateDeliveryTime]);
+
+    const coordsChanged =
+      !lastFetchedCoordsRef.current ||
+      lastFetchedCoordsRef.current.lat !== currentCoords.lat ||
+      lastFetchedCoordsRef.current.lng !== currentCoords.lng;
+
+    const hasUnestimatedVendors = filteredVendors.some(
+      (vendor) => !deliveryTimes[vendor.userId]
+    );
+
+    if (coordsChanged || hasUnestimatedVendors) {
+      lastFetchedCoordsRef.current = currentCoords;
+      filteredVendors.forEach((vendor) => {
+        const hasTime = deliveryTimes[vendor.userId];
+        if (coordsChanged || !hasTime) {
+          estimateDeliveryTime(vendor);
+        }
+      });
+    }
+  }, [activeAddressCoords, geoCoords, loading, filteredVendors, deliveryTimes, estimateDeliveryTime]);
 
   if (loading) {
     return (
@@ -353,37 +382,37 @@ export default function RestaurantsSection() {
         {(selectedBusinessCategory ||
           selectedProductCategory ||
           selectedCuisines.length > 0) && (
-          <div className="mb-6 flex flex-wrap gap-2">
-            {selectedBusinessCategory && (
-              <button
-                onClick={() => setSelectedBusinessCategory(null)}
-                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-              >
-                {selectedBusinessCategory.name}
-                <X size={16} />
-              </button>
-            )}
-            {selectedProductCategory && (
-              <button
-                onClick={() => setSelectedProductCategory(null)}
-                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-              >
-                {selectedProductCategory.name}
-                <X size={16} />
-              </button>
-            )}
-            {selectedCuisines.map((cuisine) => (
-              <button
-                key={cuisine}
-                onClick={() => toggleCuisine(cuisine)}
-                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-              >
-                {cuisine}
-                <X size={16} />
-              </button>
-            ))}
-          </div>
-        )}
+            <div className="mb-6 flex flex-wrap gap-2">
+              {selectedBusinessCategory && (
+                <button
+                  onClick={() => setSelectedBusinessCategory(null)}
+                  className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                >
+                  {selectedBusinessCategory.name}
+                  <X size={16} />
+                </button>
+              )}
+              {selectedProductCategory && (
+                <button
+                  onClick={() => setSelectedProductCategory(null)}
+                  className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                >
+                  {selectedProductCategory.name}
+                  <X size={16} />
+                </button>
+              )}
+              {selectedCuisines.map((cuisine) => (
+                <button
+                  key={cuisine}
+                  onClick={() => toggleCuisine(cuisine)}
+                  className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                >
+                  {cuisine}
+                  <X size={16} />
+                </button>
+              ))}
+            </div>
+          )}
         <div className="py-12 text-center text-gray-500">
           {selectedProductCategory
             ? `${t("noVendorsFoundFor")} "${selectedProductCategory.name}"`
@@ -409,39 +438,39 @@ export default function RestaurantsSection() {
       {(selectedBusinessCategory ||
         selectedProductCategory ||
         selectedCuisines.length > 0) && (
-        <div className="mb-6 flex flex-wrap gap-2">
-          {selectedBusinessCategory && (
-            <button
-              onClick={() => setSelectedBusinessCategory(null)}
-              className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-            >
-              {selectedBusinessCategory.name}
-              <X size={16} />
-            </button>
-          )}
+          <div className="mb-6 flex flex-wrap gap-2">
+            {selectedBusinessCategory && (
+              <button
+                onClick={() => setSelectedBusinessCategory(null)}
+                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+              >
+                {selectedBusinessCategory.name}
+                <X size={16} />
+              </button>
+            )}
 
-          {selectedProductCategory && (
-            <button
-              onClick={() => setSelectedProductCategory(null)}
-              className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-            >
-              {selectedProductCategory.name}
-              <X size={16} />
-            </button>
-          )}
+            {selectedProductCategory && (
+              <button
+                onClick={() => setSelectedProductCategory(null)}
+                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+              >
+                {selectedProductCategory.name}
+                <X size={16} />
+              </button>
+            )}
 
-          {selectedCuisines.map((cuisine) => (
-            <button
-              key={cuisine}
-              onClick={() => toggleCuisine(cuisine)}
-              className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
-            >
-              {cuisine}
-              <X size={16} />
-            </button>
-          ))}
-        </div>
-      )}
+            {selectedCuisines.map((cuisine) => (
+              <button
+                key={cuisine}
+                onClick={() => toggleCuisine(cuisine)}
+                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+              >
+                {cuisine}
+                <X size={16} />
+              </button>
+            ))}
+          </div>
+        )}
 
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
         {filteredVendors.map((vendor) => {

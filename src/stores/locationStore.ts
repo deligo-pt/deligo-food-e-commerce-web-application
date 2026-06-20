@@ -5,6 +5,18 @@ export interface Coords {
   longitude: number;
 }
 
+export interface GuestAddress {
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  latitude: number;
+  longitude: number;
+  detailedAddress?: string;
+  addressType: "HOME" | "OFFICE" | "OTHER";
+}
+
 interface LocationState {
   coords: Coords | null;
   permissionStatus: "prompt" | "granted" | "denied" | "loading";
@@ -18,9 +30,27 @@ interface LocationState {
   setHasAutoSavedAddress: (done: boolean) => void;
   initLocation: () => Promise<void>;
   requestLocation: () => Promise<boolean>;
+  guestAddress: GuestAddress | null;
+  setGuestAddress: (address: GuestAddress | null) => void;
 }
 
 const STORAGE_KEY = "deligo_user_coords";
+
+const getCachedGuestAddress = (): GuestAddress | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = localStorage.getItem("deligo_guest_address");
+    if (cached) {
+      const parsed = JSON.parse(cached) as GuestAddress;
+      if (parsed && typeof parsed.latitude === "number" && typeof parsed.longitude === "number") {
+        return parsed;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+};
 
 export const useLocationStore = create<LocationState>((set, get) => ({
   coords: null,
@@ -28,15 +58,39 @@ export const useLocationStore = create<LocationState>((set, get) => ({
   showPromptModal: false,
   isAutoSavingAddress: false,
   hasAutoSavedAddress: false,
+  guestAddress: getCachedGuestAddress(),
 
   setCoords: (coords) => set({ coords }),
   setPermissionStatus: (permissionStatus) => set({ permissionStatus }),
   setShowPromptModal: (showPromptModal) => set({ showPromptModal }),
   setIsAutoSavingAddress: (isAutoSavingAddress) => set({ isAutoSavingAddress }),
   setHasAutoSavedAddress: (hasAutoSavedAddress) => set({ hasAutoSavedAddress }),
+  setGuestAddress: (guestAddress) => {
+    set({ guestAddress });
+    if (typeof window !== "undefined") {
+      if (guestAddress) {
+        localStorage.setItem("deligo_guest_address", JSON.stringify(guestAddress));
+        const newCoords = {
+          latitude: guestAddress.latitude,
+          longitude: guestAddress.longitude,
+        };
+        set({ coords: newCoords });
+        localStorage.setItem("deligo_user_coords", JSON.stringify(newCoords));
+      } else {
+        localStorage.removeItem("deligo_guest_address");
+      }
+    }
+  },
 
   initLocation: async () => {
     if (typeof window === "undefined") return;
+
+    const guest = get().guestAddress;
+    if (guest) {
+      const guestCoords = { latitude: guest.latitude, longitude: guest.longitude };
+      set({ coords: guestCoords, permissionStatus: "granted", showPromptModal: false });
+      return;
+    }
 
     // Load initial coords from cache if available, but do NOT short-circuit
     const cached = localStorage.getItem(STORAGE_KEY);

@@ -1,11 +1,12 @@
 "use client";
 
-import { CheckCircle, Clock3, UtensilsCrossed } from "lucide-react";
+import { CheckCircle, Clock3, UtensilsCrossed, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface OrderCardProps {
+  dbId: string;
   restaurant: string;
   orderId: string;
   date: string;
@@ -15,9 +16,12 @@ interface OrderCardProps {
   progress: number;
   progressText: string;
   image?: string;
+  isRated?: boolean;
+  onRateOrder?: (dbId: string) => void;
 }
 
 export default function OrderCard({
+  dbId,
   restaurant,
   orderId,
   date,
@@ -27,6 +31,8 @@ export default function OrderCard({
   progress,
   progressText,
   image,
+  isRated = false,
+  onRateOrder,
 }: OrderCardProps) {
   const { t } = useTranslation();
   return (
@@ -118,12 +124,27 @@ export default function OrderCard({
 
       {/* Actions */}
       <div className="mt-5">
-        <Link
-          href={`/orders/track-order/${orderId}`}
-          className="block w-full rounded-lg bg-[#b0004a] py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
-        >
-          {t("trackOrder")}
-        </Link>
+        {status === "delivered" ? (
+          <button
+            onClick={() => onRateOrder?.(dbId)}
+            disabled={isRated}
+            className={`flex w-full items-center justify-center gap-2 rounded-lg py-3 text-center text-sm transition ${
+              isRated
+                ? "bg-gray-50 border border-gray-200 text-gray-500 cursor-default"
+                : "bg-[#b0004a] text-white font-semibold hover:opacity-90"
+            }`}
+          >
+            <Star size={16} className={isRated ? "fill-[#f6c344] text-[#f6c344]" : "fill-white text-white"} />
+            {isRated ? t("alreadySubmitted") || "Already Submitted" : t("rateOrder") || "Rate Order"}
+          </button>
+        ) : (
+          <Link
+            href={`/orders/track-order/${orderId}`}
+            className="block w-full rounded-lg bg-[#b0004a] py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
+          >
+            {t("trackOrder")}
+          </Link>
+        )}
       </div>
     </div>
   );

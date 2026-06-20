@@ -162,7 +162,7 @@ const pt = {
   originalPrice: "Preço Original",
   productDiscount: "Desconto do Produto",
   tax: "Imposto",
-  serviceCharge: "Encargo de Serviço",
+  serviceCharge: "Taxa de Serviço",
   total: "Total",
 
   deliveryInstructions: "Instruções de Entrega",
@@ -246,6 +246,20 @@ const pt = {
 
   trackOrder: "Rastrear Pedido",
   rateOrder: "Avaliar Pedido",
+  alreadySubmitted: "Feedback Enviado",
+  rateYourOrder: "Avalie seu pedido",
+  foodReview: "Avaliação da Comida",
+  deliveryReview: "Avaliação da Entrega",
+  overallRating: "Avaliação Geral",
+  thankYou: "Obrigado!",
+  alreadyRated: "Você já avaliou este pedido.",
+  ratingsSubmitted: "O seu feedback ajuda-nos a melhorar.",
+  foodQuality: "Qualidade da Comida",
+  packaging: "Embalagem",
+  deliverySpeed: "Velocidade da Entrega",
+  riderBehavior: "Comportamento do Estafeta",
+  submitReview: "Enviar Avaliação",
+  cancel: "Cancelar",
   orderAgain: "Pedir Novamente",
 
   order: "Pedido",
@@ -377,8 +391,6 @@ const pt = {
   labelAs: "Identificar como",
 
   houseApartmentFloorPlaceholder: "ex. 123, 4º Andar, Porta B",
-
-  cancel: "Cancelar",
 
   uploadingImage: "A carregar imagem...",
 
@@ -608,6 +620,18 @@ const pt = {
 
   deleteAccount: "Eliminar Conta",
   deleteAccountDescription: "Eliminar permanentemente a sua conta",
+  deleteAccountWarning:
+    "Lamentamos a sua partida. Por favor, preencha o formulário abaixo para solicitar a eliminação da conta. Os seus dados serão removidos permanentemente no prazo de 24 horas após a verificação.",
+  fullName: "Nome Completo",
+  contactNumber: "Número de Contacto",
+  requestDeletion: "Solicitar Eliminação",
+  returnToHome: "Voltar para a Página Inicial",
+  pleaseFillFields: "Por favor, preencha todos os campos.",
+  requestSubmitted: "Pedido Submetido",
+  deleteAccountRequestReceived:
+    "O seu pedido de eliminação de conta foi recebido. A nossa equipa irá verificar as suas informações e a sua conta será eliminada permanentemente no prazo de 24 horas.",
+  close: "Fechar",
+  goBackHome: "Voltar ao Início",
 
   loadingAddresses: "A carregar moradas...",
 

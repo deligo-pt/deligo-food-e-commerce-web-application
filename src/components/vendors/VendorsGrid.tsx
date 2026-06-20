@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,10 +8,6 @@ import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
-
-// Default Lisbon coordinates used as fallback when no GPS and no auth
-const DEFAULT_LATITUDE = 38.7298248;
-const DEFAULT_LONGITUDE = -9.1475019;
 
 const ITEMS_PER_PAGE = 10;
 
@@ -66,6 +61,10 @@ export default function VendorsGrid() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [resolvedCoords, setResolvedCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const { coords: geoCoords, permissionStatus } = useLocationStore();
 
   useEffect(() => {
@@ -77,8 +76,6 @@ export default function VendorsGrid() {
         setError("");
 
         const token = getAccessToken();
-
-        // Step 1: fetch the active delivery address fresh from the API (no cache)
         let activeCoords: { lat: number; lng: number } | null = null;
         if (token) {
           try {
@@ -93,39 +90,28 @@ export default function VendorsGrid() {
             // Profile fetch failed — fall through to GPS / default
           }
         }
-
-        // Step 2: pick the best coords
-        // Priority: active delivery address > browser GPS > default
         const coords =
           activeCoords ??
           (geoCoords
             ? { lat: geoCoords.latitude, lng: geoCoords.longitude }
             : null);
 
-        let url: string;
-        let params: Record<string, string | number> = {};
+        setResolvedCoords(coords);
 
-        if (coords) {
-          url = "/vendors/nearby/open";
-          params = {
-            page,
-            limit: ITEMS_PER_PAGE,
-            latitude: coords.lat,
-            longitude: coords.lng,
-          };
-        } else if (token) {
-          // Logged in, no coords — use authenticated customer endpoint
-          url = `/vendors/customer?page=${page}&limit=${ITEMS_PER_PAGE}`;
-        } else {
-          // Not logged in, no coords — default Lisbon coords
-          url = "/vendors/nearby/open";
-          params = {
-            page,
-            limit: ITEMS_PER_PAGE,
-            latitude: DEFAULT_LATITUDE,
-            longitude: DEFAULT_LONGITUDE,
-          };
+        if (!coords) {
+          setVendors([]);
+          setTotalPages(1);
+          setLoading(false);
+          return;
         }
+
+        const url = "/vendors/nearby/open";
+        const params = {
+          page,
+          limit: ITEMS_PER_PAGE,
+          latitude: coords.lat,
+          longitude: coords.lng,
+        };
 
         const response = await apiClient.get<VendorsResponse>(url, { params });
 
@@ -178,7 +164,11 @@ export default function VendorsGrid() {
     <>
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
         {vendors.map((vendor) => (
-          <VendorCard key={vendor.id} vendor={vendor} />
+          <VendorCard
+            key={vendor.id}
+            vendor={vendor}
+            userCoords={resolvedCoords}
+          />
         ))}
       </div>
 

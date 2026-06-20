@@ -5,6 +5,7 @@ import { Clock3, Ticket } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
 import VouchersSkeleton from "./VouchersSkeleton";
+import { toast } from "sonner";
 
 type Offer = {
   _id: string;
@@ -93,13 +94,13 @@ export default function VouchersPageContent() {
 
       setCopiedCode(code);
 
-      alert(`Copied: ${code}`);
+      toast.success(`Copied: ${code}`);
 
       setTimeout(() => {
         setCopiedCode("");
       }, 2000);
     } catch {
-      alert("Failed to copy code");
+      toast.error("Failed to copy code");
     }
   };
 

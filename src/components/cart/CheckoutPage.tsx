@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   ArrowLeft,
   Minus,
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCartStore } from "@/stores/cartStore";
 
 interface CheckoutPageProps {
   vendorId: string;
@@ -28,14 +29,56 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [vendor, setVendor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [updatingAction, setUpdatingAction] = useState<{
-    productId: string;
-    action: "increment" | "decrement";
-  } | null>(null);
   const [deletingItem, setDeletingItem] = useState<string | null>(null);
+
+  const pendingUpdatesRef = useRef<Record<string, number>>({});
+  const syncTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const isSyncingRef = useRef<Record<string, boolean>>({});
   const [instructions, setInstructions] = useState("");
   const [error, setError] = useState("");
   const [isProceeding, setIsProceeding] = useState(false);
+
+  const applyPendingUpdates = useCallback((cartData: CartResponse | null): CartResponse | null => {
+    if (!cartData) return null;
+
+    const updatedItems = cartData.items.map((cartItem) => {
+      const key = cartItem.productId + "_" + (cartItem.variationSku || "default");
+      const pendingDelta = pendingUpdatesRef.current[key] || 0;
+
+      if (pendingDelta === 0) return cartItem;
+
+      const pricing = cartItem.productPricing;
+      const newQty = Math.max(1, cartItem.itemSummary.quantity + pendingDelta);
+
+      const newTotalProductDiscount = pricing.productDiscountAmount * newQty;
+      const newTotalBeforeTax = pricing.priceAfterProductDiscount * newQty;
+      const newTotalTaxAmount = newTotalBeforeTax * (pricing.taxRate / 100);
+      const newGrandTotal = newTotalBeforeTax + newTotalTaxAmount;
+
+      return {
+        ...cartItem,
+        itemSummary: {
+          ...cartItem.itemSummary,
+          quantity: newQty,
+          totalProductDiscount: newTotalProductDiscount,
+          totalBeforeTax: newTotalBeforeTax,
+          totalTaxAmount: newTotalTaxAmount,
+          grandTotal: newGrandTotal,
+        },
+      };
+    });
+
+    const totalItems = updatedItems.reduce(
+      (sum, i) => sum + i.itemSummary.quantity,
+      0,
+    );
+
+    return {
+      ...cartData,
+      items: updatedItems,
+      totalItems,
+    };
+  }, []);
 
   const fetchCheckoutData = useCallback(
     async (showLoader = true) => {
@@ -52,7 +95,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         ]);
 
         const cartData = cartRes.data.data;
-        setCart(cartData);
+        setCart(applyPendingUpdates(cartData));
 
         const foundVendor = vendorRes.data.data.find(
           (v: any) => v.id === vendorId || v._id === vendorId,
@@ -67,13 +110,20 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         }
       }
     },
-    [vendorId],
+    [vendorId, applyPendingUpdates],
   );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCheckoutData(true);
   }, [fetchCheckoutData]);
+
+  useEffect(() => {
+    const timeouts = syncTimeoutRef.current;
+    return () => {
+      Object.values(timeouts).forEach(clearTimeout);
+    };
+  }, []);
   const vendorItems = useMemo(() => {
     return (
       cart?.items.filter(
@@ -96,26 +146,108 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     );
   }, [vendorItems]);
 
-  const updateQuantity = async (
-    item: any,
-    action: "increment" | "decrement",
-  ) => {
+  const executeSync = async (key: string, item: any) => {
+    const delta = pendingUpdatesRef.current[key];
+    if (!delta) return;
+
+    delete syncTimeoutRef.current[key];
+
+    isSyncingRef.current[key] = true;
+    
+    pendingUpdatesRef.current[key] = 0;
+
     try {
-      setUpdatingAction({
+      const syncAction = delta > 0 ? "increment" : "decrement";
+      const syncQty = Math.abs(delta);
+
+      const payload: any = {
         productId: item.productId,
-        action,
-      });
-      const payload: any = { productId: item.productId, quantity: 1, action };
+        quantity: syncQty,
+        action: syncAction,
+      };
       if (item.variationSku && item.variationSku !== null) {
         payload.variationSku = item.variationSku;
       }
+
       await apiClient.patch("/carts/update-quantity", payload);
+      
       await fetchCheckoutData(false);
+      useCartStore.getState().fetchCart();
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to update quantity"));
+      toast.error(getApiErrorMessage(error, "Failed to sync cart updates"));
+      await fetchCheckoutData(false);
     } finally {
-      setUpdatingAction(null);
+      isSyncingRef.current[key] = false;
+      if (pendingUpdatesRef.current[key] && pendingUpdatesRef.current[key] !== 0) {
+        triggerSync(key, item);
+      }
     }
+  };
+
+  const triggerSync = (key: string, item: any) => {
+    if (isSyncingRef.current[key]) return;
+
+    if (syncTimeoutRef.current[key]) {
+      clearTimeout(syncTimeoutRef.current[key]);
+    }
+
+    syncTimeoutRef.current[key] = setTimeout(() => {
+      executeSync(key, item);
+    }, 500);
+  };
+
+  const updateQuantity = (
+    item: any,
+    action: "increment" | "decrement",
+  ) => {
+    const key = item.productId + "_" + (item.variationSku || "default");
+    const change = action === "increment" ? 1 : -1;
+    const currentQty = item.itemSummary.quantity;
+    const newQty = currentQty + change;
+
+    if (newQty < 1) return;
+
+    setCart((prevCart) => {
+      if (!prevCart) return null;
+      const updatedItems = prevCart.items.map((cartItem) => {
+        const itemKey = cartItem.productId + "_" + (cartItem.variationSku || "default");
+        if (itemKey === key) {
+          const pricing = cartItem.productPricing;
+          const newTotalProductDiscount = pricing.productDiscountAmount * newQty;
+          const newTotalBeforeTax = pricing.priceAfterProductDiscount * newQty;
+          const newTotalTaxAmount = newTotalBeforeTax * (pricing.taxRate / 100);
+          const newGrandTotal = newTotalBeforeTax + newTotalTaxAmount;
+
+          return {
+            ...cartItem,
+            itemSummary: {
+              ...cartItem.itemSummary,
+              quantity: newQty,
+              totalProductDiscount: newTotalProductDiscount,
+              totalBeforeTax: newTotalBeforeTax,
+              totalTaxAmount: newTotalTaxAmount,
+              grandTotal: newGrandTotal,
+            },
+          };
+        }
+        return cartItem;
+      });
+
+      const totalItems = updatedItems.reduce(
+        (sum, i) => sum + i.itemSummary.quantity,
+        0,
+      );
+
+      return {
+        ...prevCart,
+        items: updatedItems,
+        totalItems,
+      };
+    });
+
+    // 2. Accumulate delta and queue/trigger sync
+    pendingUpdatesRef.current[key] = (pendingUpdatesRef.current[key] || 0) + change;
+    triggerSync(key, item);
   };
 
   const deleteItem = async (item: any) => {
@@ -289,17 +421,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                         <div className="flex items-center rounded-2xl border border-gray-200">
                           <button
                             onClick={() => updateQuantity(item, "decrement")}
-                            disabled={
-                              updatingAction?.productId === item.productId
-                            }
                             className="p-3 transition hover:bg-gray-100"
                           >
-                            {updatingAction?.productId === item.productId &&
-                            updatingAction?.action === "decrement" ? (
-                              <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                              <Minus size={16} />
-                            )}
+                            <Minus size={16} />
                           </button>
                           <div className="min-w-15 text-center font-bold">
                             {item.itemSummary.quantity}
@@ -307,17 +431,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
                           <button
                             onClick={() => updateQuantity(item, "increment")}
-                            disabled={
-                              updatingAction?.productId === item.productId
-                            }
                             className="p-3 transition hover:bg-gray-100"
                           >
-                            {updatingAction?.productId === item.productId &&
-                            updatingAction?.action === "increment" ? (
-                              <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                              <Plus size={16} />
-                            )}
+                            <Plus size={16} />
                           </button>
                         </div>
                         <div className="text-right">

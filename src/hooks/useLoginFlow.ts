@@ -11,6 +11,9 @@ import {
 import { storeAuthTokens } from "../lib/authCookies";
 import { COUNTRY_OPTIONS } from "../data/countryCodes";
 import { requestFCMToken } from "../lib/fcmToken";
+import { apiClient } from "@/lib/apiClient";
+import { updateLiveLocation } from "@/services/addressApi";
+import { useLocationStore } from "@/stores/locationStore";
 
 type LoginMode = "mobile" | "email";
 type LoginStep = "credentials" | "otp";
@@ -124,6 +127,36 @@ export function useLoginFlow() {
         forceLogin,
       });
       storeAuthTokens(response.data.accessToken, response.data.refreshToken);
+
+      // Auto-sync guest address to the logged in user
+      const guestAddressStr = typeof window !== "undefined" ? localStorage.getItem("deligo_guest_address") : null;
+      if (guestAddressStr) {
+        try {
+          const guestAddress = JSON.parse(guestAddressStr);
+          const profileResponse = await apiClient.get("/profile");
+          const userId = profileResponse.data?.data?.userId;
+          if (userId) {
+            await updateLiveLocation(userId, {
+              latitude: guestAddress.latitude,
+              longitude: guestAddress.longitude,
+              geoAccuracy: 10,
+              isMocked: false,
+              street: guestAddress.street,
+              city: guestAddress.city,
+              state: guestAddress.state,
+              country: guestAddress.country,
+              postalCode: guestAddress.postalCode,
+              detailedAddress: guestAddress.detailedAddress,
+            });
+            localStorage.removeItem("deligo_guest_address");
+            useLocationStore.getState().setGuestAddress(null);
+            window.dispatchEvent(new Event("addressUpdated"));
+          }
+        } catch (syncErr) {
+          console.error("Failed to sync guest address on OTP verification:", syncErr);
+        }
+      }
+
       router.replace("/");
       router.refresh();
     } catch (error) {
@@ -216,5 +249,6 @@ export function useLoginFlow() {
     resendOtp,
     backToCredentials,
     clearSessionAndRetry,
+    setShowDeviceLimitModal,
   };
 }

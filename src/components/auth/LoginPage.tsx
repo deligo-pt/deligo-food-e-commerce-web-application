@@ -106,6 +106,7 @@ export default function LoginPage() {
     loginHint,
     loginIdentifier,
     showDeviceLimitModal,
+    setShowDeviceLimitModal,
     setShowReferral,
     setShowLanguageModal,
     setShowCountryMenu,
@@ -546,7 +547,7 @@ export default function LoginPage() {
       {/* Device limit modal */}
       <ClearSessionModal
         open={showDeviceLimitModal}
-        onOpenChange={() => {}}
+        onOpenChange={setShowDeviceLimitModal}
         onRemove={clearSessionAndRetry}
         t={t}
       />

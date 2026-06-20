@@ -10,6 +10,7 @@ import { addDeliveryAddress, updateLiveLocation } from "@/services/addressApi";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/authCookies";
+import { useLocationStore } from "@/stores/locationStore";
 
 interface AddressFormProps {
   coordinates: { lat: number; lng: number } | null;
@@ -18,6 +19,7 @@ interface AddressFormProps {
   userId?: string;
   addressId?: string;
   onSuccess?: () => void;
+  isGuestMode?: boolean;
 }
 
 export default function AddressForm({
@@ -26,6 +28,7 @@ export default function AddressForm({
   isEditMode = false,
   userId,
   onSuccess,
+  isGuestMode = false,
 }: AddressFormProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -79,7 +82,17 @@ export default function AddressForm({
     geocoder.geocode(
       { location: { lat: coordinates.lat, lng: coordinates.lng } },
       (results: any[], status: any) => {
-        if (status !== "OK" || !results?.length) return;
+        if (status !== "OK" || !results?.length) {
+          setFormData((prev) => ({
+            ...prev,
+            street: "",
+            city: "",
+            state: "",
+            country: "",
+            postalCode: "",
+          }));
+          return;
+        }
         const comps = results[0].address_components;
 
         // Extract every component we care about (empty string = not present)
@@ -123,6 +136,45 @@ export default function AddressForm({
   };
 
   const handleSave = async () => {
+    if (isGuestMode) {
+      if (!coordinates) {
+        toast.error("Location not detected yet. Please wait or use GPS.");
+        return;
+      }
+      if (!formData.street.trim()) {
+        toast.error("Street address is required.");
+        return;
+      }
+      if (!formData.city.trim()) {
+        toast.error("City is required.");
+        return;
+      }
+
+      setIsSaving(true);
+      try {
+        const guestAddress = {
+          street: formData.street.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim(),
+          country: formData.country.trim(),
+          postalCode: formData.postalCode.trim(),
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+          detailedAddress: formData.detailedAddress.trim(),
+          addressType: mapAddressTypeToBackend(addressType),
+        };
+        useLocationStore.getState().setGuestAddress(guestAddress);
+        window.dispatchEvent(new Event("addressUpdated"));
+        toast.success("Location saved locally!");
+        onSuccess?.();
+      } catch (err: any) {
+        toast.error("Failed to save location.");
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
     if (!getAccessToken()) {
       toast.info("Please log in to save your address.");
       router.push("/login");
@@ -369,7 +421,7 @@ export default function AddressForm({
         </div>
       </div>
 
-      {!isLoggedIn && (
+      {!isLoggedIn && !isGuestMode && (
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <strong>Not signed in.</strong> You can explore the map and pick a location, but you need to{" "}
           <button
@@ -388,13 +440,15 @@ export default function AddressForm({
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#b0004a] py-4 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
       >
         <Save size={18} />
-        {!isLoggedIn
-          ? "Login to Save Address"
-          : isSaving
-            ? t("saving")
-            : isEditMode
-              ? t("updateAddress")
-              : t("saveAddress")}
+        {isGuestMode
+          ? (t("updateAddress") || "Update Address")
+          : !isLoggedIn
+            ? "Login to Save Address"
+            : isSaving
+              ? t("saving")
+              : isEditMode
+                ? t("updateAddress")
+                : t("saveAddress")}
       </button>
     </div>
   );

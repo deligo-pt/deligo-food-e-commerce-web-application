@@ -128,14 +128,22 @@ export default function ProductDetailsModal({
     }
   }
 
-  const unitPrice =
-    selectedOption?.price ?? product?.pricing?.discountedBasePrice ?? 0;
+  const discountPercentage = product?.pricing?.discount ?? 0;
+  const hasDiscount = discountPercentage > 0;
+
+  const unitPrice = selectedOption
+    ? selectedOption.price * (1 - discountPercentage / 100)
+    : (product?.pricing?.discountedBasePrice ?? 0);
+
+  const currentOriginalUnitPrice = selectedOption
+    ? selectedOption.price
+    : (product?.pricing?.price ?? 0);
+
   const subtotal = unitPrice * quantity;
   const taxRate = product?.pricing?.taxRate ?? 0;
   const taxAmount = subtotal * (taxRate / 100);
   const total = subtotal + taxAmount;
   const currency = product?.pricing?.currency ?? "€";
-  const originalProductPrice = product?.pricing?.price ?? 0;
 
   const handleOptionClick = (opt: VariantOption) => {
     if (
@@ -252,23 +260,22 @@ export default function ProductDetailsModal({
                     <p className="text-3xl font-bold text-pink-600">
                       {formatPrice(unitPrice, currency)}
                     </p>
-                    {product.pricing.discount > 0 && !selectedOption && (
+                    {hasDiscount && (
                       <p className="text-gray-400 line-through">
-                        {formatPrice(originalProductPrice, currency)}
+                        {formatPrice(currentOriginalUnitPrice, currency)}
                       </p>
                     )}
                   </div>
                 </div>
-                {product.pricing.discount > 0 && !selectedOption && (
+                {hasDiscount && (
                   <div className="mt-3 flex items-center gap-2 text-pink-600">
                     <span className="text-sm font-semibold">
                       Save{" "}
                       {formatPrice(
-                        originalProductPrice -
-                          product.pricing.discountedBasePrice,
+                        currentOriginalUnitPrice - unitPrice,
                         currency,
                       )}{" "}
-                      ({Math.round(product.pricing.discount)}% Off)
+                      ({Math.round(discountPercentage)}% Off)
                     </span>
                   </div>
                 )}
@@ -306,9 +313,16 @@ export default function ProductDetailsModal({
                                   {opt.label}
                                 </span>
                               </div>
-                              <span className="font-medium text-pink-600">
-                                {formatPrice(opt.price, currency)}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                {hasDiscount && (
+                                  <span className="text-sm text-gray-400 line-through">
+                                    {formatPrice(opt.price, currency)}
+                                  </span>
+                                )}
+                                <span className="font-medium text-pink-600">
+                                  {formatPrice(opt.price * (1 - discountPercentage / 100), currency)}
+                                </span>
+                              </div>
                             </div>
                           );
                         })}
