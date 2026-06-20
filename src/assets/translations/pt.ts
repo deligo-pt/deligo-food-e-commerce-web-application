@@ -161,8 +161,8 @@ const pt = {
 
   originalPrice: "Preço Original",
   productDiscount: "Desconto do Produto",
-  tax: "Taxa de Serviço",
-  serviceCharge: "Encargo de Serviço",
+  tax: "Imposto",
+  serviceCharge: "Taxa de Serviço",
   total: "Total",
 
   deliveryInstructions: "Instruções de Entrega",
@@ -620,14 +620,16 @@ const pt = {
 
   deleteAccount: "Eliminar Conta",
   deleteAccountDescription: "Eliminar permanentemente a sua conta",
-  deleteAccountWarning: "Lamentamos a sua partida. Por favor, preencha o formulário abaixo para solicitar a eliminação da conta. Os seus dados serão removidos permanentemente no prazo de 24 horas após a verificação.",
+  deleteAccountWarning:
+    "Lamentamos a sua partida. Por favor, preencha o formulário abaixo para solicitar a eliminação da conta. Os seus dados serão removidos permanentemente no prazo de 24 horas após a verificação.",
   fullName: "Nome Completo",
   contactNumber: "Número de Contacto",
   requestDeletion: "Solicitar Eliminação",
   returnToHome: "Voltar para a Página Inicial",
   pleaseFillFields: "Por favor, preencha todos os campos.",
   requestSubmitted: "Pedido Submetido",
-  deleteAccountRequestReceived: "O seu pedido de eliminação de conta foi recebido. A nossa equipa irá verificar as suas informações e a sua conta será eliminada permanentemente no prazo de 24 horas.",
+  deleteAccountRequestReceived:
+    "O seu pedido de eliminação de conta foi recebido. A nossa equipa irá verificar as suas informações e a sua conta será eliminada permanentemente no prazo de 24 horas.",
   close: "Fechar",
   goBackHome: "Voltar ao Início",
 

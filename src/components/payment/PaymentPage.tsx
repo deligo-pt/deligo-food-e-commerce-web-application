@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
@@ -161,12 +162,36 @@ export default function PaymentPage() {
         setSummary(summaryData);
 
         if (summaryData.vendorId) {
-          const vendorResponse = await apiClient.get("/vendors/customer");
-          const vendors: Vendor[] = vendorResponse.data.data;
-          const matchedVendor = vendors.find(
-            (v) => v.id === summaryData.vendorId,
-          );
-          if (matchedVendor) setVendor(matchedVendor);
+          try {
+            // Try fetching the specific vendor directly
+            const response = await apiClient.get(
+              `/vendors/customer/${summaryData.vendorId}`,
+            );
+            if (response.data?.data) {
+              setVendor(response.data.data);
+            } else {
+              throw new Error("No vendor data in response");
+            }
+          } catch (directErr) {
+            console.warn(
+              "Failed to fetch vendor directly, falling back to list lookup:",
+              directErr,
+            );
+            // Fallback: Fetch vendor list with pagination limit and check id, _id, and userId
+            const vendorResponse = await apiClient.get(
+              "/vendors/customer?page=1&limit=100",
+            );
+            const vendors: any[] = vendorResponse.data?.data ?? [];
+            const matchedVendor = vendors.find(
+              (v) =>
+                v.id === summaryData.vendorId ||
+                v._id === summaryData.vendorId ||
+                v.userId === summaryData.vendorId,
+            );
+            if (matchedVendor) {
+              setVendor(matchedVendor);
+            }
+          }
         }
       } catch (err) {
         setError(
@@ -340,10 +365,11 @@ export default function PaymentPage() {
                         <>
                           <div className="flex items-center gap-2">
                             <div
-                              className={`h-2 w-2 rounded-full ${vendor.businessDetails.isStoreOpen
-                                ? "bg-green-500"
-                                : "bg-red-500"
-                                }`}
+                              className={`h-2 w-2 rounded-full ${
+                                vendor.businessDetails.isStoreOpen
+                                  ? "bg-green-500"
+                                  : "bg-red-500"
+                              }`}
                             />
                             <span className="text-xs font-medium text-gray-600">
                               {vendor.businessDetails.isStoreOpen
@@ -486,6 +512,10 @@ export default function PaymentPage() {
                       : t("free")}
                   </span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">{t("serviceCharge")}</span>
+                  <span className="font-semibold">€0.00</span>
+                </div>
 
                 {/* Offer discount row – only shown when an offer is applied */}
                 {offerDiscount > 0 && (
@@ -567,10 +597,11 @@ export default function PaymentPage() {
                 ].map((method) => (
                   <label
                     key={method.value}
-                    className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 ${paymentMethod === method.value
-                      ? "border-pink-600 bg-pink-50"
-                      : "border-gray-200"
-                      }`}
+                    className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 ${
+                      paymentMethod === method.value
+                        ? "border-pink-600 bg-pink-50"
+                        : "border-gray-200"
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <method.icon className="h-5 w-5" />
@@ -717,10 +748,11 @@ export default function PaymentPage() {
                   {availableOffers.map((offer) => (
                     <div
                       key={offer._id}
-                      className={`rounded-xl border p-4 transition ${!offer.isEligible
-                        ? "border-gray-100 bg-gray-50 opacity-60"
-                        : "border-pink-100 bg-pink-50/40 hover:border-pink-300"
-                        }`}
+                      className={`rounded-xl border p-4 transition ${
+                        !offer.isEligible
+                          ? "border-gray-100 bg-gray-50 opacity-60"
+                          : "border-pink-100 bg-pink-50/40 hover:border-pink-300"
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3">

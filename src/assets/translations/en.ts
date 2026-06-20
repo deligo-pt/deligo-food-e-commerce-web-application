@@ -152,8 +152,8 @@ const en = {
 
   originalPrice: "Original Price",
   productDiscount: "Product Discount",
-  tax: "Service Fee",
-  serviceCharge: "Service Charge",
+  tax: "Tax",
+  serviceCharge: "Service Fee",
   total: "Total",
 
   deliveryInstructions: "Delivery Instructions",

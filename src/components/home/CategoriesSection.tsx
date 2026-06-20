@@ -402,13 +402,13 @@ export default function CategoriesSection() {
         <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
           {t("whatsOnYourMind")}
         </h2>
-        <button
+        {/* <button
           onClick={() => setIsModalOpen(true)}
           onMouseEnter={() => setIsModalOpen(true)}
           className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline cursor-pointer"
         >
           {t("viewAll")} <ChevronRight size={20} />
-        </button>
+        </button> */}
       </div>
 
       <div className="overflow-hidden pb-6">
