@@ -5,9 +5,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Star, Truck, Check } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
+import { useLocationStore } from "@/stores/locationStore";
 
 export interface Vendor {
   id: string;
@@ -32,15 +33,23 @@ export interface Vendor {
 
 interface VendorCardProps {
   vendor: Vendor;
+  userCoords?: { lat: number; lng: number } | null;
 }
 
-function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function getDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -53,34 +62,44 @@ function formatTimeRange(totalMinutes: number): string {
   if (hours < 24) {
     const low = Math.floor(hours);
     const high = Math.ceil(hours + 10 / 60); // add 10 min buffer
-    return low === high ? `${low} hour${low !== 1 ? 's' : ''}` : `${low} to ${high} hours`;
+    return low === high
+      ? `${low} hour${low !== 1 ? "s" : ""}`
+      : `${low} to ${high} hours`;
   }
 
   const days = totalMinutes / (60 * 24);
   if (days < 7) {
     const low = Math.floor(days);
     const high = Math.ceil(days + 10 / (60 * 24));
-    return low === high ? `${low} day${low !== 1 ? 's' : ''}` : `${low} to ${high} days`;
+    return low === high
+      ? `${low} day${low !== 1 ? "s" : ""}`
+      : `${low} to ${high} days`;
   }
 
   const weeks = totalMinutes / (60 * 24 * 7);
   if (weeks < 4) {
     const low = Math.floor(weeks);
     const high = Math.ceil(weeks + 10 / (60 * 24 * 7));
-    return low === high ? `${low} week${low !== 1 ? 's' : ''}` : `${low} to ${high} weeks`;
+    return low === high
+      ? `${low} week${low !== 1 ? "s" : ""}`
+      : `${low} to ${high} weeks`;
   }
 
   const months = totalMinutes / (60 * 24 * 30);
   if (months < 12) {
     const low = Math.floor(months);
     const high = Math.ceil(months + 10 / (60 * 24 * 30));
-    return low === high ? `${low} month${low !== 1 ? 's' : ''}` : `${low} to ${high} months`;
+    return low === high
+      ? `${low} month${low !== 1 ? "s" : ""}`
+      : `${low} to ${high} months`;
   }
 
   const years = totalMinutes / (60 * 24 * 365);
   const low = Math.floor(years);
   const high = Math.ceil(years + 10 / (60 * 24 * 365));
-  return low === high ? `${low} year${low !== 1 ? 's' : ''}` : `${low} to ${high} years`;
+  return low === high
+    ? `${low} year${low !== 1 ? "s" : ""}`
+    : `${low} to ${high} years`;
 }
 
 function getVendorCoords(vendor: Vendor): { lat: number; lng: number } | null {
@@ -98,7 +117,9 @@ async function fetchUserPrimaryAddress() {
   if (!token) return null;
   try {
     const { data } = await apiClient.get("/profile");
-    const primary = data?.data?.deliveryAddresses?.find((a: any) => a.isActive === true);
+    const primary = data?.data?.deliveryAddresses?.find(
+      (a: any) => a.isActive === true,
+    );
     if (primary?.latitude && primary?.longitude) {
       cachedUserCoords = { lat: primary.latitude, lng: primary.longitude };
     }
@@ -110,17 +131,60 @@ async function fetchUserPrimaryAddress() {
 }
 
 function useUserAddress() {
-  const [coords, setCoords] = useState(cachedUserCoords);
-  const [loading, setLoading] = useState(!cachedUserCoords);
+  const { coords: geoCoords, permissionStatus } = useLocationStore();
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    cachedUserCoords,
+  );
+  const [loading, setLoading] = useState(
+    !cachedUserCoords && permissionStatus === "loading",
+  );
+
   useEffect(() => {
     if (cachedUserCoords) {
       setCoords(cachedUserCoords);
       setLoading(false);
       return;
     }
-    if (!userPromise) userPromise = fetchUserPrimaryAddress();
-    userPromise.then(setCoords).finally(() => setLoading(false));
-  }, []);
+
+    const token = getAccessToken();
+    if (!token) {
+      if (permissionStatus !== "loading") {
+        if (geoCoords) {
+          setCoords({ lat: geoCoords.latitude, lng: geoCoords.longitude });
+        } else {
+          setCoords(null);
+        }
+        setLoading(false);
+      }
+      return;
+    }
+
+    setLoading(true);
+    if (!userPromise) {
+      userPromise = fetchUserPrimaryAddress();
+    }
+    userPromise
+      .then((profileCoords) => {
+        if (profileCoords) {
+          setCoords(profileCoords);
+        } else if (geoCoords) {
+          setCoords({ lat: geoCoords.latitude, lng: geoCoords.longitude });
+        } else {
+          setCoords(null);
+        }
+      })
+      .catch(() => {
+        if (geoCoords) {
+          setCoords({ lat: geoCoords.latitude, lng: geoCoords.longitude });
+        } else {
+          setCoords(null);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [geoCoords, permissionStatus]);
+
   return { coords, loading };
 }
 
@@ -156,14 +220,18 @@ function VendorCardSkeleton() {
   );
 }
 
-export default function VendorCard({ vendor }: VendorCardProps) {
-  const { coords: userCoords, loading: userLoading } = useUserAddress();
+export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
+  const { coords: internalCoords, loading: userLoading } = useUserAddress();
   const [estimatedTime, setEstimatedTime] = useState<string | null>(null);
   const [loadingTime, setLoadingTime] = useState(false);
 
+  const hasUserCoords = userCoords !== undefined;
+  const coordsToUse = hasUserCoords ? userCoords : internalCoords;
+  const isUserLoading = hasUserCoords ? false : userLoading;
+
   const fetchTime = useCallback(async () => {
     const vendorCoords = getVendorCoords(vendor);
-    if (!vendorCoords || !userCoords) {
+    if (!vendorCoords || !coordsToUse) {
       setEstimatedTime("Under 10 min");
       return;
     }
@@ -171,39 +239,69 @@ export default function VendorCard({ vendor }: VendorCardProps) {
     setLoadingTime(true);
     try {
       // 1) Try Google Distance Matrix via our proxy
-      const url = `/api/distance-matrix?originLat=${vendorCoords.lat}&originLng=${vendorCoords.lng}&destLat=${userCoords.lat}&destLng=${userCoords.lng}`;
+      const url = `/api/distance-matrix?originLat=${vendorCoords.lat}&originLng=${vendorCoords.lng}&destLat=${coordsToUse.lat}&destLng=${coordsToUse.lng}`;
       const res = await fetch(url);
       const data = await res.json();
 
-      if (data.status === "OK" && data.rows?.[0]?.elements?.[0]?.status === "OK") {
-        const minutes = Math.round(data.rows[0].elements[0].duration.value / 60);
+      if (
+        data.status === "OK" &&
+        data.rows?.[0]?.elements?.[0]?.status === "OK"
+      ) {
+        const minutes = Math.round(
+          data.rows[0].elements[0].duration.value / 60,
+        );
         setEstimatedTime(formatTimeRange(minutes));
         return;
       }
 
       // 2) Fallback: straight‑line distance + average speed (30 km/h)
-      const distance = getDistanceKm(vendorCoords.lat, vendorCoords.lng, userCoords.lat, userCoords.lng);
+      const distance = getDistanceKm(
+        vendorCoords.lat,
+        vendorCoords.lng,
+        coordsToUse.lat,
+        coordsToUse.lng,
+      );
       const estimatedMinutes = Math.round((distance / 30) * 60);
-      setEstimatedTime(estimatedMinutes < 10 ? "Under 10 min" : formatTimeRange(estimatedMinutes));
+      setEstimatedTime(
+        estimatedMinutes < 10
+          ? "Under 10 min"
+          : formatTimeRange(estimatedMinutes),
+      );
     } catch (err) {
       console.error("Time estimation error", err);
       setEstimatedTime("Under 10 min");
     } finally {
       setLoadingTime(false);
     }
-  }, [vendor, userCoords]);
+  }, [vendor, coordsToUse]);
+
+  const lastCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    if (userCoords) fetchTime();
-    else if (!userLoading) setEstimatedTime("Under 10 min");
-  }, [userCoords, userLoading, fetchTime]);
+    if (!coordsToUse) {
+      if (!isUserLoading) setEstimatedTime("Under 10 min");
+      return;
+    }
+
+    const coordsChanged =
+      !lastCoordsRef.current ||
+      lastCoordsRef.current.lat !== coordsToUse.lat ||
+      lastCoordsRef.current.lng !== coordsToUse.lng;
+
+    if (coordsChanged) {
+      lastCoordsRef.current = coordsToUse;
+      fetchTime();
+    }
+  }, [coordsToUse, isUserLoading, fetchTime]);
 
   // Show skeleton while user address is being fetched (initial load)
-  if (userLoading) {
+  if (isUserLoading) {
     return <VendorCardSkeleton />;
   }
 
-  const displayTime = loadingTime ? "Calculating..." : estimatedTime || "Under 10 min";
+  const displayTime = loadingTime
+    ? "Calculating..."
+    : estimatedTime || "Under 10 min";
 
   return (
     <Link href={`/vendors/${vendor.userId}`} className="block">
@@ -229,10 +327,14 @@ export default function VendorCard({ vendor }: VendorCardProps) {
             <h3 className="line-clamp-1 text-[24px] font-bold leading-8 text-[#191c1d]">
               {vendor.businessDetails.businessName}
             </h3>
-            <Heart size={22} className="text-[#d81b60] transition-colors group-hover:fill-current" />
+            <Heart
+              size={22}
+              className="text-[#d81b60] transition-colors group-hover:fill-current"
+            />
           </div>
           <p className="mb-6 text-[18px] leading-7 text-[#5a4044]">
-            {vendor.businessDetails.restaurantCuisineType || vendor.businessDetails.businessType}
+            {vendor.businessDetails.restaurantCuisineType ||
+              vendor.businessDetails.businessType}
           </p>
           <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-[14px] font-medium">
             <span className="flex items-center gap-2 text-[#b0004a]">

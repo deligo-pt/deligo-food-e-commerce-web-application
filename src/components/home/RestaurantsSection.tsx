@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Star, Heart, Truck, Check } from "lucide-react";
@@ -160,29 +159,19 @@ export default function RestaurantsSection() {
         setActiveAddressCoords(activeCoords);
 
         // Step 2: pick the best coords for vendor lookup
-        // Priority: active delivery address > browser GPS > default
+        // Priority: active delivery address > browser GPS
         const coords =
           activeCoords ??
           (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null);
 
-        if (coords) {
-          const response = await apiClient.get("/vendors/nearby/open", {
-            params: { latitude: coords.lat, longitude: coords.lng },
-          });
-          setAllVendors(response.data?.data || []);
+        if (!coords) {
+          setAllVendors([]);
+          setLoading(false);
           return;
         }
 
-        // Authenticated fallback — server uses session location
-        if (token) {
-          const response = await apiClient.get("/vendors/customer");
-          setAllVendors(response.data?.data || []);
-          return;
-        }
-
-        // Unauthenticated fallback — default Lisbon coords
         const response = await apiClient.get("/vendors/nearby/open", {
-          params: { latitude: 38.7298248, longitude: -9.1475019 },
+          params: { latitude: coords.lat, longitude: coords.lng },
         });
         setAllVendors(response.data?.data || []);
       } catch (err) {
@@ -288,11 +277,41 @@ export default function RestaurantsSection() {
     [activeAddressCoords, geoCoords],
   );
 
+  const lastFetchedCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+
   useEffect(() => {
-    if (!loading && filteredVendors.length > 0) {
-      filteredVendors.forEach((vendor) => estimateDeliveryTime(vendor));
+    if (loading || filteredVendors.length === 0) return;
+
+    const currentCoords =
+      activeAddressCoords ??
+      (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null);
+
+    if (!currentCoords) {
+      filteredVendors.forEach((vendor) => {
+        setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+      });
+      return;
     }
-  }, [activeAddressCoords, geoCoords, loading, filteredVendors, estimateDeliveryTime]);
+
+    const coordsChanged =
+      !lastFetchedCoordsRef.current ||
+      lastFetchedCoordsRef.current.lat !== currentCoords.lat ||
+      lastFetchedCoordsRef.current.lng !== currentCoords.lng;
+
+    const hasUnestimatedVendors = filteredVendors.some(
+      (vendor) => !deliveryTimes[vendor.userId]
+    );
+
+    if (coordsChanged || hasUnestimatedVendors) {
+      lastFetchedCoordsRef.current = currentCoords;
+      filteredVendors.forEach((vendor) => {
+        const hasTime = deliveryTimes[vendor.userId];
+        if (coordsChanged || !hasTime) {
+          estimateDeliveryTime(vendor);
+        }
+      });
+    }
+  }, [activeAddressCoords, geoCoords, loading, filteredVendors, deliveryTimes, estimateDeliveryTime]);
 
   if (loading) {
     return (

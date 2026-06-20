@@ -11,6 +11,7 @@ import ProductDetailsModal from "./ProductDetailsModal";
 import VendorDetailsModal from "./VendorDetailsModal";
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useLocationStore } from "@/stores/locationStore";
 
 function getDistanceKm(
   lat1: number,
@@ -24,8 +25,8 @@ function getDistanceKm(
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -97,17 +98,56 @@ async function fetchUserPrimaryAddress() {
 }
 
 function useUserAddress() {
-  const [coords, setCoords] = useState(cachedUserCoords);
-  const [loading, setLoading] = useState(!cachedUserCoords);
+  const { coords: geoCoords, permissionStatus } = useLocationStore();
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(cachedUserCoords);
+  const [loading, setLoading] = useState(!cachedUserCoords && permissionStatus === "loading");
+
   useEffect(() => {
     if (cachedUserCoords) {
       setCoords(cachedUserCoords);
       setLoading(false);
       return;
     }
-    if (!userPromise) userPromise = fetchUserPrimaryAddress();
-    userPromise.then(setCoords).finally(() => setLoading(false));
-  }, []);
+
+    const token = getAccessToken();
+    if (!token) {
+      if (permissionStatus !== "loading") {
+        if (geoCoords) {
+          setCoords({ lat: geoCoords.latitude, lng: geoCoords.longitude });
+        } else {
+          setCoords(null);
+        }
+        setLoading(false);
+      }
+      return;
+    }
+
+    setLoading(true);
+    if (!userPromise) {
+      userPromise = fetchUserPrimaryAddress();
+    }
+    userPromise
+      .then((profileCoords) => {
+        if (profileCoords) {
+          setCoords(profileCoords);
+        } else if (geoCoords) {
+          setCoords({ lat: geoCoords.latitude, lng: geoCoords.longitude });
+        } else {
+          setCoords(null);
+        }
+      })
+      .catch(() => {
+        if (geoCoords) {
+          setCoords({ lat: geoCoords.latitude, lng: geoCoords.longitude });
+        } else {
+          setCoords(null);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [geoCoords, permissionStatus]);
+
   return { coords, loading };
 }
 
@@ -181,7 +221,6 @@ export default function VendorDetailsPage({
         const token = getAccessToken();
 
         if (token) {
-          // Authenticated: search paginated /vendors/customer
           let foundVendor: Vendor | null = null;
           let currentPage = 1;
           while (!foundVendor) {
@@ -260,9 +299,9 @@ export default function VendorDetailsPage({
       const vendorCoords =
         vendor.businessLocation?.latitude && vendor.businessLocation?.longitude
           ? {
-              lat: vendor.businessLocation.latitude,
-              lng: vendor.businessLocation.longitude,
-            }
+            lat: vendor.businessLocation.latitude,
+            lng: vendor.businessLocation.longitude,
+          }
           : null;
 
       if (!vendorCoords || !userCoords) {
@@ -343,12 +382,12 @@ export default function VendorDetailsPage({
   const productCategoryNames =
     vendorCategoryNames.length === 0
       ? [
-          ...new Set(
-            products
-              .map((p) => p.category?.name)
-              .filter((n): n is string => !!n),
-          ),
-        ]
+        ...new Set(
+          products
+            .map((p) => p.category?.name)
+            .filter((n): n is string => !!n),
+        ),
+      ]
       : [];
   const categories = [
     "All",
@@ -392,11 +431,10 @@ export default function VendorDetailsPage({
                       {vendor.businessDetails.businessName}
                     </h1>
                     <span
-                      className={`h-3 w-3 rounded-full ${
-                        vendor.businessDetails.isStoreOpen
-                          ? "bg-green-500"
-                          : "bg-red-500"
-                      }`}
+                      className={`h-3 w-3 rounded-full ${vendor.businessDetails.isStoreOpen
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                        }`}
                     />
                   </div>
                   <p className="mb-4 text-sm text-gray-500">
@@ -436,11 +474,10 @@ export default function VendorDetailsPage({
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`rounded-lg px-5 py-2 text-sm font-semibold transition ${
-                  selectedCategory === cat
-                    ? "bg-pink-600 text-white"
-                    : "border border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
-                }`}
+                className={`rounded-lg px-5 py-2 text-sm font-semibold transition ${selectedCategory === cat
+                  ? "bg-pink-600 text-white"
+                  : "border border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+                  }`}
               >
                 {cat}
               </button>
