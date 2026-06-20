@@ -128,7 +128,7 @@ export default function RestaurantsSection() {
     selectedCategory: selectedProductCategory,
     setSelectedCategory: setSelectedProductCategory,
   } = useProductCategoryStore();
-  const { selectedCuisines, toggleCuisine } = useCuisineFilterStore();
+  const { selectedCuisines, toggleCuisine, clearCuisines } = useCuisineFilterStore();
 
   useEffect(() => {
     if (permissionStatus === "loading") return;
@@ -184,6 +184,16 @@ export default function RestaurantsSection() {
 
     fetchVendors();
   }, [geoCoords, permissionStatus]);
+
+  // Clear cuisines filter if selected category is not RESTAURANT
+  useEffect(() => {
+    if (
+      selectedBusinessCategory &&
+      selectedBusinessCategory.name !== "RESTAURANT"
+    ) {
+      clearCuisines();
+    }
+  }, [selectedBusinessCategory, clearCuisines]);
 
   const filteredVendors = useMemo(() => {
     if (!allVendors.length) return [];

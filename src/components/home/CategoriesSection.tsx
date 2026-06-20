@@ -227,7 +227,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
@@ -326,7 +326,6 @@ export default function CategoriesSection() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Prevent background scroll when modal is open
   useEffect(() => {
     if (isModalOpen) {
       document.body.style.overflow = "hidden";
@@ -338,7 +337,6 @@ export default function CategoriesSection() {
     };
   }, [isModalOpen]);
 
-  // Close modal on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -351,7 +349,41 @@ export default function CategoriesSection() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isModalOpen]);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeftState, setScrollLeftState] = useState(0);
+  const [dragged, setDragged] = useState(false);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeftState(scrollRef.current.scrollLeft);
+    setDragged(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    if (Math.abs(walk) > 5) {
+      setDragged(true);
+    }
+    scrollRef.current.scrollLeft = scrollLeftState - walk;
+  };
+
   const handleCuisineClick = (value: string) => {
+    if (dragged) return;
     if (selectedCuisines.includes(value)) {
       clearCuisines();
     } else {
@@ -380,7 +412,14 @@ export default function CategoriesSection() {
       </div>
 
       <div className="overflow-hidden pb-6">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4 overflow-hidden max-h-44 justify-items-center">
+        <div
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          className="-mx-4 flex gap-8 overflow-x-auto px-4 pb-4 lg:-mx-16 lg:px-16 select-none cursor-grab active:cursor-grabbing [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
           {CUISINE_OPTIONS.map((item) => {
             const isActive = selectedCuisines.includes(item.value);
             const Icon = item.icon;
