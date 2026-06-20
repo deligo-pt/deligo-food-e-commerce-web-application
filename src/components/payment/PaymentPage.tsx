@@ -474,7 +474,7 @@ export default function PaymentPage() {
                   <span className="font-semibold">€{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t("serviceCharge")}</span>
+                  <span className="text-gray-500">{t("tax")}</span>
                   <span className="font-semibold">
                     €{orderCalculation.totalTaxAmount.toFixed(2)}
                   </span>

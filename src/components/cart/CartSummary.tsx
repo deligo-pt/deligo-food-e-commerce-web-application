@@ -52,7 +52,7 @@ export default function CartSummary({
 
         <div className="flex items-center justify-between">
           <span className="text-gray-600">
-            Taxable Amount
+            Subtotal (excl. Service Fee)
           </span>
 
           <span className="font-medium text-gray-900">
@@ -62,7 +62,7 @@ export default function CartSummary({
 
         <div className="flex items-center justify-between">
           <span className="text-gray-600">
-            Tax
+            Service Fee
           </span>
 
           <span className="font-medium text-gray-900">

@@ -161,7 +161,7 @@ const pt = {
 
   originalPrice: "Preço Original",
   productDiscount: "Desconto do Produto",
-  tax: "Imposto",
+  tax: "Taxa de Serviço",
   serviceCharge: "Encargo de Serviço",
   total: "Total",
 
