@@ -54,7 +54,7 @@ export default function EditAddressPage({ addressId }: Props) {
     lng: number;
   } | null>(null);
   const [userId, setUserId] = useState<string>("");
-  
+
   // Suggestion & Search State
   const [searchValue, setSearchValue] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -246,7 +246,7 @@ export default function EditAddressPage({ addressId }: Props) {
       (position) => {
         const { latitude, longitude } = position.coords;
         setCoordinates({ lat: latitude, lng: longitude });
-        toast.success( "Current location loaded on map.");
+        toast.success("Current location loaded on map.");
         setLoadingCurrentLocation(false);
       },
       (err) => {
@@ -383,11 +383,10 @@ export default function EditAddressPage({ addressId }: Props) {
                         <button
                           type="button"
                           onClick={() => handleSuggestionClick(s)}
-                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] ${
-                            idx !== suggestions.length - 1
+                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] ${idx !== suggestions.length - 1
                               ? "border-b border-[#f5e0e5]"
                               : ""
-                          }`}
+                            }`}
                         >
                           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5]">
                             <Search size={13} className="text-[#b0004a]" />

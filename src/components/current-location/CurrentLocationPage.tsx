@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -26,7 +27,7 @@ export default function CurrentLocationPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const isLoggedIn = typeof window !== "undefined" ? !!getAccessToken() : false;
-  const { guestAddress } = useLocationStore();
+  const { guestAddress, coords } = useLocationStore();
 
   // Redirect logged-in users to home or profile
   useEffect(() => {
@@ -38,11 +39,14 @@ export default function CurrentLocationPage() {
   const [coordinates, setCoordinates] = useState<{
     lat: number;
     lng: number;
-  }>(() => {
+  } | null>(() => {
     if (guestAddress) {
       return { lat: guestAddress.latitude, lng: guestAddress.longitude };
     }
-    return { lat: 23.8103, lng: 90.4125 };
+    if (coords) {
+      return { lat: coords.latitude, lng: coords.longitude };
+    }
+    return null;
   });
 
   const [searchValue, setSearchValue] = useState("");
@@ -58,7 +62,15 @@ export default function CurrentLocationPage() {
 
   // Initialize GPS location if guestAddress is not set
   useEffect(() => {
-    if (!guestAddress && typeof window !== "undefined" && navigator.geolocation) {
+    if (guestAddress) return;
+    if (coords) {
+      setCoordinates({
+        lat: coords.latitude,
+        lng: coords.longitude,
+      });
+      return;
+    }
+    if (typeof window !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setCoordinates({
@@ -67,11 +79,11 @@ export default function CurrentLocationPage() {
           });
         },
         () => {
-          // Keep default
+          // Keep null so we don't prefill defaults
         }
       );
     }
-  }, [guestAddress]);
+  }, [guestAddress, coords]);
 
   // Click outside to hide suggestions dropdown
   useEffect(() => {
@@ -341,11 +353,10 @@ export default function CurrentLocationPage() {
                         <button
                           type="button"
                           onClick={() => handleSuggestionClick(s)}
-                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] ${
-                            idx !== suggestions.length - 1
-                              ? "border-b border-[#f5e0e5]"
-                              : ""
-                          }`}
+                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] ${idx !== suggestions.length - 1
+                            ? "border-b border-[#f5e0e5]"
+                            : ""
+                            }`}
                         >
                           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5]">
                             <Search size={13} className="text-[#b0004a]" />
@@ -369,21 +380,12 @@ export default function CurrentLocationPage() {
 
               {/* Location Picker Map */}
               <div id="map-section" className="mb-6">
-                {coordinates ? (
-                  <LocationPicker
-                    defaultCenter={coordinates}
-                    onCoordinatesChange={(lat, lng) =>
-                      setCoordinates({ lat, lng })
-                    }
-                  />
-                ) : (
-                  <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50">
-                    <div className="flex flex-col items-center gap-3 text-gray-400">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
-                      <p className="text-sm">Detecting your location…</p>
-                    </div>
-                  </div>
-                )}
+                <LocationPicker
+                  defaultCenter={coordinates || undefined}
+                  onCoordinatesChange={(lat, lng) =>
+                    setCoordinates({ lat, lng })
+                  }
+                />
               </div>
             </div>
           </div>

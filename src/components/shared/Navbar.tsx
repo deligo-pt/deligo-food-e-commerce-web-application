@@ -29,6 +29,7 @@ import { useLocationStore } from "@/stores/locationStore";
 import { updateLiveLocation } from "@/services/addressApi";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useTranslation } from "@/hooks/useTranslation";
+import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 
 export default function Navbar() {
   const { t } = useTranslation();
@@ -152,41 +153,58 @@ export default function Navbar() {
     setGuestGeocoding(true);
     (async () => {
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`,
-          { headers: { "Accept-Language": "en" } },
-        );
+        await loadGoogleMapsScript();
         if (cancelled) return;
-        const data = await res.json();
-        const addr = data?.address ?? {};
+        if (!window.google?.maps) return;
 
-        const street =
-          addr.road ??
-          addr.pedestrian ??
-          addr.footway ??
-          addr.path ??
-          addr.suburb ??
-          addr.neighbourhood ??
-          data?.display_name?.split(",")?.[0] ??
-          null;
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode(
+          { location: { lat: coords.latitude, lng: coords.longitude } },
+          (results: any, status: any) => {
+            if (cancelled) return;
+            if (status !== "OK" || !results || !results[0]) {
+              return;
+            }
 
-        const city =
-          addr.city ??
-          addr.town ??
-          addr.village ??
-          addr.county ??
-          addr.suburb ??
-          addr.state ??
-          null;
+            const comps = results[0].address_components;
+            let street = "",
+              city = "",
+              state = "",
+              country = "",
+              apartment = "";
 
-        const label =
-          street && city
-            ? `${street}, ${city}`
-            : (street ?? city ?? data?.display_name?.split(",")[0] ?? null);
+            comps.forEach((c: any) => {
+              if (c.types.includes("subpremise") || c.types.includes("premise")) {
+                apartment = c.long_name;
+              }
+              if (c.types.includes("route")) {
+                street = c.long_name;
+              } else if (!street && c.types.includes("sublocality_level_1")) {
+                street = c.long_name;
+              }
+              if (c.types.includes("locality")) {
+                city = c.long_name;
+              }
+              if (c.types.includes("administrative_area_level_1")) {
+                state = c.long_name;
+              }
+              if (c.types.includes("country")) {
+                country = c.long_name;
+              }
+            });
 
-        if (!cancelled && label) setAddressText(label);
-      } catch {
-        // silently ignore — addressText stays as "Add Address"
+            const streetPart = street || apartment || "";
+            const cityPart = city || state || country || "";
+            const label =
+              streetPart && cityPart
+                ? `${streetPart}, ${cityPart}`
+                : streetPart || cityPart || results[0].formatted_address || "Add Address";
+
+            if (label) setAddressText(label);
+          }
+        );
+      } catch (err) {
+        console.error("Failed to load Google Maps or geocode inside Navbar:", err);
       } finally {
         if (!cancelled) setGuestGeocoding(false);
       }

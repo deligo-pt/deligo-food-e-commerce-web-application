@@ -7,41 +7,73 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { getAccessToken } from "@/lib/authCookies";
 import { apiClient } from "@/lib/apiClient";
 import { addDeliveryAddress } from "@/services/addressApi";
+import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 
-async function reverseGeocode(latitude: number, longitude: number) {
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-    { headers: { "Accept-Language": "en" } },
-  );
-  const data = await res.json();
-  const addr = data?.address ?? {};
+async function reverseGeocode(latitude: number, longitude: number): Promise<{
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  detailedAddress: string;
+}> {
+  await loadGoogleMapsScript();
+  if (!window.google?.maps) {
+    throw new Error("Google Maps script not loaded");
+  }
 
-  const street =
-    addr.road ??
-    addr.pedestrian ??
-    addr.footway ??
-    addr.path ??
-    addr.suburb ??
-    addr.neighbourhood ??
-    data?.display_name?.split(",")?.[0] ??
-    "Unknown Street";
+  return new Promise((resolve, reject) => {
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode(
+      { location: { lat: latitude, lng: longitude } },
+      (results: any, status: any) => {
+        if (status !== "OK" || !results || !results[0]) {
+          reject(new Error("Geocoding failed: " + status));
+          return;
+        }
 
-  const city =
-    addr.city ??
-    addr.town ??
-    addr.village ??
-    addr.county ??
-    addr.suburb ??
-    "Unknown City";
+        const comps = results[0].address_components;
+        let street = "",
+          city = "",
+          state = "",
+          country = "",
+          postalCode = "",
+          apartment = "";
 
-  return {
-    street,
-    city,
-    state: addr.state ?? "Unknown State",
-    country: addr.country ?? "Unknown Country",
-    postalCode: addr.postcode ?? "00000",
-    detailedAddress: data?.display_name ?? street,
-  };
+        comps.forEach((c: any) => {
+          if (c.types.includes("subpremise") || c.types.includes("premise")) {
+            apartment = c.long_name;
+          }
+          if (c.types.includes("route")) {
+            street = c.long_name;
+          } else if (!street && c.types.includes("sublocality_level_1")) {
+            street = c.long_name;
+          }
+          if (c.types.includes("locality")) {
+            city = c.long_name;
+          }
+          if (c.types.includes("administrative_area_level_1")) {
+            state = c.long_name;
+          }
+          if (c.types.includes("country")) {
+            country = c.long_name;
+          }
+          if (c.types.includes("postal_code")) {
+            postalCode = c.long_name;
+          }
+        });
+
+        resolve({
+          street: street || "Unknown Street",
+          city: city || "Unknown City",
+          state: state || "Unknown State",
+          country: country || "Unknown Country",
+          postalCode: postalCode || "00000",
+          detailedAddress: apartment || results[0].formatted_address || street || "",
+        });
+      }
+    );
+  });
 }
 
 async function checkLoggedInWithNoAddresses(): Promise<boolean> {
