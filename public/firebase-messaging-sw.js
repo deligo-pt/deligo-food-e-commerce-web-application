@@ -6,18 +6,20 @@ importScripts(
 );
 
 firebase.initializeApp({
-  apiKey: "AIzaSyAHpLImdbqVhGuqWyqNef3jFd5Qum91MyY",
-  authDomain: "deligo-food.firebaseapp.com",
-  projectId: "deligo-food",
-  storageBucket: "deligo-food.firebasestorage.app",
-  messagingSenderId: "703860914762",
-  appId: "1:703860914762:web:7967f8476eb322ed82c4b3",
+  apiKey: "AIzaSyC3hOXv8j35pLWPrPOKwPO9nnP6TNVGi7g",
+  authDomain: "deligo-a196c.firebaseapp.com",
+  projectId: "deligo-a196c",
+  storageBucket: "deligo-a196c.firebasestorage.app",
+  messagingSenderId: "256376229566",
+  appId: "1:256376229566:web:7f0226f21eba0ec99118ef",
 });
 
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const { title, body, orderId, channelId } = payload.data || {};
+  const title = payload.notification?.title || payload.data?.title;
+  const body = payload.notification?.body || payload.data?.body;
+  const { orderId, channelId } = payload.data || {};
 
   const url = channelId === "order_notification" ? "/orders/" + orderId : "/";
 
@@ -30,13 +32,11 @@ messaging.onBackgroundMessage((payload) => {
     data: { url },
     vibrate: [200, 100, 200],
   };
-
-  // Play notification sound by posting message to all clients
   self.clients
     .matchAll({ type: "window", includeUncontrolled: true })
     .then((clients) => {
       clients.forEach((client) => {
-        client.postMessage({ type: "PLAY_NOTIFICATION_SOUND" });
+        client.postMessage({ type: "NOTIFICATION_RECEIVED" });
       });
     });
 

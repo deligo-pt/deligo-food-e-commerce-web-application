@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-expressions */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -104,9 +104,13 @@ export default function NotificationsPage() {
   const [markingAll, setMarkingAll] = useState(false);
 
   const fetchNotifications = useCallback(
-    async (page: number, isInitial = false) => {
+    async (page: number, loadingType: "none" | "initial" | "page" = "page") => {
       try {
-        isInitial ? setLoading(true) : setPageLoading(true);
+        if (loadingType === "initial") {
+          setLoading(true);
+        } else if (loadingType === "page") {
+          setPageLoading(true);
+        }
         setError(null);
 
         const response = await apiClient.get<ApiResponse>(
@@ -132,14 +136,31 @@ export default function NotificationsPage() {
   );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchNotifications(1, true);
+    fetchNotifications(1, "initial");
   }, [fetchNotifications]);
+
+  useEffect(() => {
+    const handleNotificationsUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.source !== "read") {
+        fetchNotifications(currentPage, "none");
+      }
+    };
+    const intervalId = setInterval(() => {
+      fetchNotifications(currentPage, "none");
+    }, 5000);
+
+    window.addEventListener("notificationsUpdated", handleNotificationsUpdate as EventListener);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("notificationsUpdated", handleNotificationsUpdate as EventListener);
+    };
+  }, [fetchNotifications, currentPage]);
 
   const goToPage = (page: number) => {
     if (page < 1 || page > meta.totalPage || pageLoading) return;
     setCurrentPage(page);
-    fetchNotifications(page);
+    fetchNotifications(page, "page");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -151,6 +172,9 @@ export default function NotificationsPage() {
     );
     try {
       await apiClient.patch(`/notifications/${id}/read`);
+      window.dispatchEvent(
+        new CustomEvent("notificationsUpdated", { detail: { source: "read" } })
+      );
     } catch (err) {
       // Roll back on failure
       setNotifications((prev) =>
@@ -171,9 +195,12 @@ export default function NotificationsPage() {
 
     try {
       await apiClient.patch("/notifications/mark-all-as-read");
+      window.dispatchEvent(
+        new CustomEvent("notificationsUpdated", { detail: { source: "read" } })
+      );
     } catch (err) {
       // Roll back on failure
-      await fetchNotifications(currentPage);
+      await fetchNotifications(currentPage, "none");
       console.error("Failed to mark all as read:", err);
     } finally {
       setMarkingAll(false);
@@ -201,7 +228,7 @@ export default function NotificationsPage() {
             {t("error")}: {error}
           </p>
           <button
-            onClick={() => fetchNotifications(currentPage, true)}
+            onClick={() => fetchNotifications(currentPage, "initial")}
             className="mt-4 rounded-md bg-[#c1005b] px-4 py-2 text-white"
           >
             {t("retry")}
@@ -248,17 +275,15 @@ export default function NotificationsPage() {
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs transition ${
-                filter === key
-                  ? "border-[#c1005b] bg-[#c1005b] text-white"
-                  : "border-[#e4d3d8] bg-white text-[#666]"
-              }`}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs transition ${filter === key
+                ? "border-[#c1005b] bg-[#c1005b] text-white"
+                : "border-[#e4d3d8] bg-white text-[#666]"
+                }`}
             >
               {label}
               <span
-                className={`rounded-full px-2 py-px ${
-                  filter === key ? "bg-white/20 text-white" : "bg-[#f2f2f2]"
-                }`}
+                className={`rounded-full px-2 py-px ${filter === key ? "bg-white/20 text-white" : "bg-[#f2f2f2]"
+                  }`}
               >
                 {count}
               </span>
@@ -283,9 +308,8 @@ export default function NotificationsPage() {
               return (
                 <div
                   key={notification._id}
-                  className={`relative flex gap-4 rounded-xl border border-[#ededed] bg-white p-5 transition-shadow hover:shadow-md ${
-                    isUnread ? "cursor-pointer" : ""
-                  } ${isMarkingThis ? "opacity-60 pointer-events-none" : ""}`}
+                  className={`relative flex gap-4 rounded-xl border border-[#ededed] bg-white p-5 transition-shadow hover:shadow-md ${isUnread ? "cursor-pointer" : ""
+                    } ${isMarkingThis ? "opacity-60 pointer-events-none" : ""}`}
                   onClick={() => {
                     if (isUnread) handleMarkAsRead(notification._id);
                   }}
@@ -297,9 +321,8 @@ export default function NotificationsPage() {
 
                   {/* Icon */}
                   <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
-                      isUnread ? "bg-[#fff0f5]" : "bg-[#f3f3f3]"
-                    }`}
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${isUnread ? "bg-[#fff0f5]" : "bg-[#f3f3f3]"
+                      }`}
                   >
                     <Icon
                       size={20}
@@ -428,11 +451,10 @@ export default function NotificationsPage() {
                       key={item}
                       onClick={() => goToPage(item as number)}
                       disabled={pageLoading}
-                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition ${
-                        currentPage === item
-                          ? "bg-[#c1005b] text-white"
-                          : "border border-[#e4d3d8] bg-white text-[#444] hover:bg-[#fff0f5]"
-                      }`}
+                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition ${currentPage === item
+                        ? "bg-[#c1005b] text-white"
+                        : "border border-[#e4d3d8] bg-white text-[#444] hover:bg-[#fff0f5]"
+                        }`}
                     >
                       {item}
                     </button>

@@ -27,6 +27,7 @@ import {
 import { useCartStore } from "@/stores/cartStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { updateLiveLocation } from "@/services/addressApi";
+import { clearCachedFCMToken } from "@/lib/fcmToken";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useTranslation } from "@/hooks/useTranslation";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
@@ -338,6 +339,17 @@ export default function Navbar() {
     };
 
     fetchUnreadCount();
+
+    const handleNotificationsUpdate = () => {
+      fetchUnreadCount();
+    };
+    const intervalId = setInterval(fetchUnreadCount, 5000);
+
+    window.addEventListener("notificationsUpdated", handleNotificationsUpdate);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("notificationsUpdated", handleNotificationsUpdate);
+    };
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -347,6 +359,7 @@ export default function Navbar() {
   }, [isLoggedIn, pathname, fetchCart]);
 
   const handleLogout = () => {
+    clearCachedFCMToken();
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
     useLocationStore.getState().setHasAutoSavedAddress(false);
