@@ -36,6 +36,10 @@ export default function AddressForm({
 
   const getLabelText = (key: string) => {
     const value = t(key);
+    const requiredKeys = ["streetAddress", "city", "stateRegion", "country"];
+    if (requiredKeys.includes(key)) {
+      return value.endsWith("*") ? value : `${value} *`;
+    }
     return isEditMode ? value.replace(/\s*\*$/, "") : value;
   };
   const [addressType, setAddressType] = useState<"home" | "work" | "other">(
@@ -146,12 +150,20 @@ export default function AddressForm({
         toast.error("Location not detected yet. Please wait or use GPS.");
         return;
       }
-      if (!isEditMode && !formData.street.trim()) {
+      if (!formData.street.trim()) {
         toast.error("Street address is required.");
         return;
       }
-      if (!isEditMode && !formData.city.trim()) {
+      if (!formData.city.trim()) {
         toast.error("City is required.");
+        return;
+      }
+      if (!formData.state.trim()) {
+        toast.error("Region/State is required.");
+        return;
+      }
+      if (!formData.country.trim()) {
+        toast.error("Country is required.");
         return;
       }
 
@@ -189,12 +201,20 @@ export default function AddressForm({
       toast.error("Location not detected yet. Please wait or use GPS.");
       return;
     }
-    if (!isEditMode && !formData.street.trim()) {
+    if (!formData.street.trim()) {
       toast.error("Street address is required.");
       return;
     }
-    if (!isEditMode && !formData.city.trim()) {
+    if (!formData.city.trim()) {
       toast.error("City is required.");
+      return;
+    }
+    if (!formData.state.trim()) {
+      toast.error("Region/State is required.");
+      return;
+    }
+    if (!formData.country.trim()) {
+      toast.error("Country is required.");
       return;
     }
 

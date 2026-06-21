@@ -105,8 +105,15 @@ export function useFCMNotifications() {
           }
         });
 
-      } catch (error) {
-        console.error(error);
+      } catch (error: any) {
+        if (error?.name === "AbortError" || error?.message?.includes("push service error")) {
+          console.warn(
+            "[FCM] Service worker or push registration aborted. This usually happens when " +
+            "Google push service is blocked by the browser (like Brave/Opera settings) or network."
+          );
+        } else {
+          console.error("[FCM] Error initializing notifications:", error);
+        }
       }
     }
 

@@ -40,6 +40,7 @@ interface OrderCalculation {
   totalProductDiscount: number;
   totalOfferDiscount: number;
   totalTaxAmount: number;
+  serviceCharge?: number;
 }
 
 interface Delivery {
@@ -514,7 +515,9 @@ export default function PaymentPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">{t("serviceCharge")}</span>
-                  <span className="font-semibold">€0.00</span>
+                  <span className="font-semibold">
+                    €{(orderCalculation.serviceCharge ?? 0).toFixed(2)}
+                  </span>
                 </div>
 
                 {/* Offer discount row – only shown when an offer is applied */}

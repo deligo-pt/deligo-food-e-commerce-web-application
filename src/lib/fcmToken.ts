@@ -37,8 +37,16 @@ export async function requestFCMToken(): Promise<string | null> {
     });
 
     return token || null;
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    if (error?.name === "AbortError" || error?.message?.includes("push service error")) {
+      console.warn(
+        "[FCM] Push service registration failed. This is a common browser/network constraint " +
+        "(e.g., Brave browser blocking 'Google services for push messaging', VPN/firewall blocking " +
+        "FCM endpoints, or running in an Incognito window). Notifications will not be active."
+      );
+    } else {
+      console.error("[FCM] Error requesting FCM token:", error);
+    }
     return null;
   }
 }
