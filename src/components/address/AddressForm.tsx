@@ -33,6 +33,15 @@ export default function AddressForm({
   const { t } = useTranslation();
   const router = useRouter();
   const isLoggedIn = !!getAccessToken();
+
+  const getLabelText = (key: string) => {
+    const value = t(key);
+    const requiredKeys = ["streetAddress", "city", "stateRegion", "country"];
+    if (requiredKeys.includes(key)) {
+      return value.endsWith("*") ? value : `${value} *`;
+    }
+    return isEditMode ? value.replace(/\s*\*$/, "") : value;
+  };
   const [addressType, setAddressType] = useState<"home" | "work" | "other">(
     "home"
   );
@@ -149,6 +158,14 @@ export default function AddressForm({
         toast.error("City is required.");
         return;
       }
+      if (!formData.state.trim()) {
+        toast.error("Region/State is required.");
+        return;
+      }
+      if (!formData.country.trim()) {
+        toast.error("Country is required.");
+        return;
+      }
 
       setIsSaving(true);
       try {
@@ -190,6 +207,14 @@ export default function AddressForm({
     }
     if (!formData.city.trim()) {
       toast.error("City is required.");
+      return;
+    }
+    if (!formData.state.trim()) {
+      toast.error("Region/State is required.");
+      return;
+    }
+    if (!formData.country.trim()) {
+      toast.error("Country is required.");
       return;
     }
 
@@ -293,7 +318,7 @@ export default function AddressForm({
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
           <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            {t("streetAddress")}
+            {getLabelText("streetAddress")}
           </label>
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
             <MapPin size={18} className="mr-3 text-[#5a4044]" />
@@ -310,7 +335,7 @@ export default function AddressForm({
         </div>
         <div>
           <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            {t("houseApartmentFloor")}
+            {getLabelText("houseApartmentFloor")}
           </label>
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
             <Building2 size={18} className="mr-3 text-[#5a4044]" />
@@ -331,7 +356,7 @@ export default function AddressForm({
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
           <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            {t("city")}
+            {getLabelText("city")}
           </label>
           <input
             type="text"
@@ -343,7 +368,7 @@ export default function AddressForm({
         </div>
         <div>
           <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            {t("postalCode")}
+            {getLabelText("postalCode")}
           </label>
           <input
             type="text"
@@ -361,7 +386,7 @@ export default function AddressForm({
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
           <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            {t("stateRegion")}
+            {getLabelText("stateRegion")}
           </label>
           <input
             type="text"
@@ -375,7 +400,7 @@ export default function AddressForm({
         </div>
         <div>
           <label className="mb-2 block text-sm font-medium text-[#191c1d]">
-            {t("country")}
+            {getLabelText("country")}
           </label>
           <div className="flex items-center rounded-xl border border-[#e3bdc3] px-4">
             <Globe size={18} className="mr-3 text-[#5a4044]" />

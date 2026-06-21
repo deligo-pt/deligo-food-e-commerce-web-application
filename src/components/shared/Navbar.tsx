@@ -27,8 +27,10 @@ import {
 import { useCartStore } from "@/stores/cartStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { updateLiveLocation } from "@/services/addressApi";
+import { clearCachedFCMToken } from "@/lib/fcmToken";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useTranslation } from "@/hooks/useTranslation";
+import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 
 export default function Navbar() {
   const { t } = useTranslation();
@@ -152,41 +154,58 @@ export default function Navbar() {
     setGuestGeocoding(true);
     (async () => {
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`,
-          { headers: { "Accept-Language": "en" } },
-        );
+        await loadGoogleMapsScript();
         if (cancelled) return;
-        const data = await res.json();
-        const addr = data?.address ?? {};
+        if (!window.google?.maps) return;
 
-        const street =
-          addr.road ??
-          addr.pedestrian ??
-          addr.footway ??
-          addr.path ??
-          addr.suburb ??
-          addr.neighbourhood ??
-          data?.display_name?.split(",")?.[0] ??
-          null;
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode(
+          { location: { lat: coords.latitude, lng: coords.longitude } },
+          (results: any, status: any) => {
+            if (cancelled) return;
+            if (status !== "OK" || !results || !results[0]) {
+              return;
+            }
 
-        const city =
-          addr.city ??
-          addr.town ??
-          addr.village ??
-          addr.county ??
-          addr.suburb ??
-          addr.state ??
-          null;
+            const comps = results[0].address_components;
+            let street = "",
+              city = "",
+              state = "",
+              country = "",
+              apartment = "";
 
-        const label =
-          street && city
-            ? `${street}, ${city}`
-            : (street ?? city ?? data?.display_name?.split(",")[0] ?? null);
+            comps.forEach((c: any) => {
+              if (c.types.includes("subpremise") || c.types.includes("premise")) {
+                apartment = c.long_name;
+              }
+              if (c.types.includes("route")) {
+                street = c.long_name;
+              } else if (!street && c.types.includes("sublocality_level_1")) {
+                street = c.long_name;
+              }
+              if (c.types.includes("locality")) {
+                city = c.long_name;
+              }
+              if (c.types.includes("administrative_area_level_1")) {
+                state = c.long_name;
+              }
+              if (c.types.includes("country")) {
+                country = c.long_name;
+              }
+            });
 
-        if (!cancelled && label) setAddressText(label);
-      } catch {
-        // silently ignore — addressText stays as "Add Address"
+            const streetPart = street || apartment || "";
+            const cityPart = city || state || country || "";
+            const label =
+              streetPart && cityPart
+                ? `${streetPart}, ${cityPart}`
+                : streetPart || cityPart || results[0].formatted_address || "Add Address";
+
+            if (label) setAddressText(label);
+          }
+        );
+      } catch (err) {
+        console.error("Failed to load Google Maps or geocode inside Navbar:", err);
       } finally {
         if (!cancelled) setGuestGeocoding(false);
       }
@@ -320,6 +339,17 @@ export default function Navbar() {
     };
 
     fetchUnreadCount();
+
+    const handleNotificationsUpdate = () => {
+      fetchUnreadCount();
+    };
+    const intervalId = setInterval(fetchUnreadCount, 5000);
+
+    window.addEventListener("notificationsUpdated", handleNotificationsUpdate);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("notificationsUpdated", handleNotificationsUpdate);
+    };
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -329,6 +359,7 @@ export default function Navbar() {
   }, [isLoggedIn, pathname, fetchCart]);
 
   const handleLogout = () => {
+    clearCachedFCMToken();
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
     useLocationStore.getState().setHasAutoSavedAddress(false);
@@ -346,8 +377,10 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#b0004a] text-white transition-all duration-300 dark:bg-[#d81b60]">
-      <div className="flex w-full items-center justify-between px-4 py-4 lg:px-16">
+    <header className="sticky top-0 z-50 bg-[#b0004a] text-white transition-all duration-300 dark:bg-[#d81b60] px-4 py-3 lg:px-16 lg:py-4">
+      {/* Desktop Layout & Mobile Row 1 */}
+      <div className="flex w-full items-center justify-between">
+        {/* Brand / Logo */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-1">
             <Image
@@ -362,10 +395,11 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <Link href={addressHref}>
+          {/* Desktop-only location button */}
+          <Link href={addressHref} className="hidden lg:block">
             <button
               suppressHydrationWarning
-              className="hidden cursor-pointer items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20 lg:flex"
+              className="cursor-pointer flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20"
             >
               <MapPin size={20} />
               {!mounted ? (
@@ -392,7 +426,8 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <div className="mx-8 hidden flex-1 md:block">
+        {/* Desktop-only Search Bar */}
+        <div className="mx-8 hidden flex-1 lg:block">
           <div className="relative flex items-center">
             <Search size={18} className="absolute left-4 text-black/60" />
             <input
@@ -406,8 +441,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-4">
+        {/* Actions (Desktop and Mobile) */}
+        <div className="flex items-center gap-4 lg:gap-6">
+          <div className="flex items-center gap-2 lg:gap-4">
             <LanguageSwitcher />
             <Link href="/notifications">
               <button className="relative rounded-full p-2 text-white transition-colors hover:bg-white/10">
@@ -501,6 +537,57 @@ export default function Navbar() {
             <Menu size={26} />
           </button>
         </div>
+      </div>
+
+      {/* Mobile-only Row 2: Search Bar */}
+      <div className="mt-3 w-full lg:hidden">
+        <div className="relative flex items-center">
+          <Search size={18} className="absolute left-4 text-black/60" />
+          <input
+            type="text"
+            placeholder={t("searchPlaceholder")}
+            value={localSearchTerm}
+            onChange={onSearchChange}
+            onKeyDown={onKeyDown}
+            className="w-full rounded-full border-0 bg-[#ffffff] py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] outline-none ring-0 placeholder:text-black/45 focus:ring-2 focus:ring-[#dd2269]/50"
+          />
+        </div>
+      </div>
+
+      {/* Mobile-only Row 3: Location (goes after second row) */}
+      <div className="mt-2.5 w-full lg:hidden">
+        <Link href={addressHref} className="block w-full">
+          <button
+            suppressHydrationWarning
+            className="cursor-pointer flex w-full items-center justify-between rounded-xl bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20"
+          >
+            <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+              <MapPin size={18} className="shrink-0" />
+              <span className="text-[14px] font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+                {!mounted ? (
+                  "Add Address"
+                ) : isLoggedIn && (isAutoSavingAddress || isAddressRefetching) ? (
+                  <span
+                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                    role="status"
+                    aria-label="Saving address"
+                  />
+                ) : !isLoggedIn &&
+                  !guestAddress &&
+                  (permissionStatus === "loading" || guestGeocoding) ? (
+                  <span
+                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                    role="status"
+                    aria-label="Locating"
+                  />
+                ) : (
+                  addressText
+                )}
+              </span>
+            </div>
+            <ChevronDown size={16} className="shrink-0" />
+          </button>
+        </Link>
       </div>
     </header>
   );

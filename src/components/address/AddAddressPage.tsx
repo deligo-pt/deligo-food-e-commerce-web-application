@@ -282,7 +282,7 @@ export default function AddAddressPage() {
                             : ""
                             }`}
                         >
-                          <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#fff2f5]">
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5]">
                             <Search size={13} className="text-[#b0004a]" />
                           </span>
                           <span className="min-w-0">
@@ -303,21 +303,12 @@ export default function AddAddressPage() {
               </div>
 
               <div id="map-section" className="mb-6">
-                {coordinates ? (
-                  <LocationPicker
-                    defaultCenter={coordinates}
-                    onCoordinatesChange={(lat, lng) =>
-                      setCoordinates({ lat, lng })
-                    }
-                  />
-                ) : (
-                  <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50">
-                    <div className="flex flex-col items-center gap-3 text-gray-400">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
-                      <p className="text-sm">Detecting your location…</p>
-                    </div>
-                  </div>
-                )}
+                <LocationPicker
+                  defaultCenter={coordinates || undefined}
+                  onCoordinatesChange={(lat, lng) =>
+                    setCoordinates({ lat, lng })
+                  }
+                />
               </div>
 
               {/* Status Card */}
