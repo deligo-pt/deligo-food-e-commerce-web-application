@@ -222,14 +222,14 @@ export default function NotificationsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f6f6f7] flex items-center justify-center">
-        <div className="text-red-500 text-center">
+      <div className="min-h-screen bg-[#f6f6f7] dark:bg-neutral-950 flex items-center justify-center transition-colors duration-200">
+        <div className="text-red-500 dark:text-red-400 text-center">
           <p>
             {t("error")}: {error}
           </p>
           <button
             onClick={() => fetchNotifications(currentPage, "initial")}
-            className="mt-4 rounded-md bg-[#c1005b] px-4 py-2 text-white"
+            className="mt-4 rounded-md bg-[#c1005b] dark:bg-pink-600 px-4 py-2 text-white hover:bg-[#a0004c] dark:hover:bg-pink-700 transition cursor-pointer"
           >
             {t("retry")}
           </button>
@@ -239,15 +239,15 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f7]">
+    <div className="min-h-screen bg-[#f6f6f7] dark:bg-neutral-950 transition-colors duration-200">
       <div className="mx-auto max-w-230 px-6 py-8">
         {/* Header */}
         <div className="mb-6 flex items-start justify-between">
           <div>
-            <h1 className="text-[36px] font-bold leading-none text-[#1f1f1f]">
+            <h1 className="text-[36px] font-bold leading-none text-[#1f1f1f] dark:text-neutral-100">
               {t("notifications")}
             </h1>
-            <p className="mt-2 text-sm text-[#777]">
+            <p className="mt-2 text-sm text-[#777] dark:text-neutral-400">
               {t("notificationsSubtitle")}
             </p>
           </div>
@@ -256,7 +256,7 @@ export default function NotificationsPage() {
             onClick={handleMarkAllAsRead}
             disabled={unreadCount === 0 || markingAll}
             title="Mark all as read"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffe9ef] text-[#c1005b] disabled:opacity-40 transition"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffe9ef] dark:bg-pink-950/40 text-[#c1005b] dark:text-pink-400 disabled:opacity-40 dark:disabled:opacity-20 transition cursor-pointer"
           >
             <CheckCheck size={18} />
           </button>
@@ -275,14 +275,14 @@ export default function NotificationsPage() {
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs transition ${filter === key
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs transition cursor-pointer ${filter === key
                 ? "border-[#c1005b] bg-[#c1005b] text-white"
-                : "border-[#e4d3d8] bg-white text-[#666]"
+                : "border-[#e4d3d8] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#666] dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 }`}
             >
               {label}
               <span
-                className={`rounded-full px-2 py-px ${filter === key ? "bg-white/20 text-white" : "bg-[#f2f2f2]"
+                className={`rounded-full px-2 py-px ${filter === key ? "bg-white/20 text-white" : "bg-[#f2f2f2] dark:bg-neutral-800 dark:text-neutral-300"
                   }`}
               >
                 {count}
@@ -296,7 +296,7 @@ export default function NotificationsPage() {
           className={`space-y-4 transition-opacity ${pageLoading ? "opacity-50 pointer-events-none" : ""}`}
         >
           {filteredNotifications.length === 0 ? (
-            <div className="rounded-xl border border-[#ededed] bg-white p-8 text-center text-[#666]">
+            <div className="rounded-xl border border-[#ededed] dark:border-neutral-800 bg-white dark:bg-neutral-900 p-8 text-center text-[#666] dark:text-neutral-400">
               {t("noNotifications")}
             </div>
           ) : (
@@ -308,7 +308,7 @@ export default function NotificationsPage() {
               return (
                 <div
                   key={notification._id}
-                  className={`relative flex gap-4 rounded-xl border border-[#ededed] bg-white p-5 transition-shadow hover:shadow-md ${isUnread ? "cursor-pointer" : ""
+                  className={`relative flex gap-4 rounded-xl border border-[#ededed] dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 transition-shadow hover:shadow-md ${isUnread ? "cursor-pointer" : ""
                     } ${isMarkingThis ? "opacity-60 pointer-events-none" : ""}`}
                   onClick={() => {
                     if (isUnread) handleMarkAsRead(notification._id);
@@ -321,23 +321,23 @@ export default function NotificationsPage() {
 
                   {/* Icon */}
                   <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${isUnread ? "bg-[#fff0f5]" : "bg-[#f3f3f3]"
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${isUnread ? "bg-[#fff0f5] dark:bg-pink-950/20" : "bg-[#f3f3f3] dark:bg-neutral-800"
                       }`}
                   >
                     <Icon
                       size={20}
-                      className={isUnread ? "text-[#c1005b]" : "text-[#666]"}
+                      className={isUnread ? "text-[#c1005b] dark:text-pink-400" : "text-[#666] dark:text-neutral-400"}
                     />
                   </div>
 
                   {/* Content */}
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
-                      <h3 className="text-[20px] font-semibold text-[#222]">
+                      <h3 className="text-[20px] font-semibold text-[#222] dark:text-neutral-100">
                         {notification.title}
                       </h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-[#888]">
+                        <span className="text-xs text-[#888] dark:text-neutral-400">
                           {formatRelativeTime(notification.createdAt, t)}
                         </span>
                         {isUnread && (
@@ -346,13 +346,13 @@ export default function NotificationsPage() {
                       </div>
                     </div>
 
-                    <p className="mt-1 text-sm leading-6 text-[#666]">
+                    <p className="mt-1 text-sm leading-6 text-[#666] dark:text-neutral-300">
                       {notification.message}
                     </p>
 
                     {/* Type badge */}
                     <div className="mt-3">
-                      <span className="rounded bg-[#fff0f5] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#c1005b]">
+                      <span className="rounded bg-[#fff0f5] dark:bg-pink-950/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#c1005b] dark:text-pink-400">
                         {notification.type === "ORDER"
                           ? t("order")
                           : notification.type === "PROMO"
@@ -370,7 +370,7 @@ export default function NotificationsPage() {
                           href={`/orders/track-order/${notification.data.orderId}`}
                         >
                           <button
-                            className="mt-4 rounded-md bg-[#c1005b] px-5 py-2 text-sm font-medium text-white"
+                            className="mt-4 rounded-md bg-[#c1005b] dark:bg-pink-600 px-5 py-2 text-sm font-medium text-white hover:bg-[#a0004c] dark:hover:bg-pink-700 transition cursor-pointer"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {t("trackOrder")}
@@ -381,13 +381,13 @@ export default function NotificationsPage() {
                     {notification.type === "DELIVERED" && (
                       <div className="mt-4 flex gap-6">
                         <button
-                          className="text-sm font-medium text-[#c1005b]"
+                          className="text-sm font-medium text-[#c1005b] dark:text-pink-400 hover:underline cursor-pointer"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {t("rateOrder")}
                         </button>
                         <button
-                          className="text-sm font-medium text-[#c1005b]"
+                          className="text-sm font-medium text-[#c1005b] dark:text-pink-400 hover:underline cursor-pointer"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {t("orderAgain")}
@@ -399,7 +399,7 @@ export default function NotificationsPage() {
                   {/* Chevron for unread */}
                   {isUnread && (
                     <div className="flex items-center">
-                      <ChevronRight size={18} className="text-[#b5b5b5]" />
+                      <ChevronRight size={18} className="text-[#b5b5b5] dark:text-neutral-500" />
                     </div>
                   )}
                 </div>
@@ -410,7 +410,7 @@ export default function NotificationsPage() {
         {meta.totalPage > 1 && (
           <div className="mt-8 flex items-center justify-between">
             {/* Info */}
-            <p className="text-sm text-[#888]">
+            <p className="text-sm text-[#888] dark:text-neutral-400">
               {t("page") || "Page"} {meta.page} {t("of") || "of"}{" "}
               {meta.totalPage} &mdash; {meta.total}{" "}
               {t("totalNotifications") || "total"}
@@ -422,7 +422,7 @@ export default function NotificationsPage() {
               <button
                 onClick={() => goToPage(currentPage - 1)}
                 disabled={currentPage === 1 || pageLoading}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e4d3d8] bg-white text-[#c1005b] disabled:opacity-40 transition hover:bg-[#fff0f5]"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e4d3d8] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#c1005b] dark:text-pink-400 disabled:opacity-40 transition hover:bg-[#fff0f5] dark:hover:bg-pink-950/20 cursor-pointer"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -443,7 +443,7 @@ export default function NotificationsPage() {
                 }, [])
                 .map((item, idx) =>
                   item === "..." ? (
-                    <span key={`ellipsis-${idx}`} className="px-1 text-[#aaa]">
+                    <span key={`ellipsis-${idx}`} className="px-1 text-[#aaa] dark:text-neutral-600">
                       …
                     </span>
                   ) : (
@@ -451,9 +451,9 @@ export default function NotificationsPage() {
                       key={item}
                       onClick={() => goToPage(item as number)}
                       disabled={pageLoading}
-                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition ${currentPage === item
+                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition cursor-pointer ${currentPage === item
                         ? "bg-[#c1005b] text-white"
-                        : "border border-[#e4d3d8] bg-white text-[#444] hover:bg-[#fff0f5]"
+                        : "border border-[#e4d3d8] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#444] dark:text-neutral-300 hover:bg-[#fff0f5] dark:hover:bg-pink-950/20"
                         }`}
                     >
                       {item}
@@ -465,7 +465,7 @@ export default function NotificationsPage() {
               <button
                 onClick={() => goToPage(currentPage + 1)}
                 disabled={currentPage === meta.totalPage || pageLoading}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e4d3d8] bg-white text-[#c1005b] disabled:opacity-40 transition hover:bg-[#fff0f5]"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e4d3d8] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#c1005b] dark:text-pink-400 disabled:opacity-40 transition hover:bg-[#fff0f5] dark:hover:bg-pink-950/20 cursor-pointer"
               >
                 <ChevronRight size={16} />
               </button>
