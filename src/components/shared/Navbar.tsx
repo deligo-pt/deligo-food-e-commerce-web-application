@@ -436,7 +436,7 @@ export default function Navbar() {
               value={localSearchTerm}
               onChange={onSearchChange}
               onKeyDown={onKeyDown}
-              className="w-full rounded-full border-0 bg-[#ffffff] py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] outline-none ring-0 placeholder:text-black/45 focus:ring-2 focus:ring-[#dd2269]/50"
+              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#dd2269]/50 transition-colors"
             />
           </div>
         </div>
@@ -513,10 +513,10 @@ export default function Navbar() {
               </span>
             </button>
             {isLoggedIn && showAccountDropdown && (
-              <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5">
+              <div className="absolute right-0 mt-2 w-48 rounded-md bg-white dark:bg-neutral-800 py-1 shadow-lg ring-1 ring-black/5 dark:ring-white/10 transition-all">
                 <Link
                   href="/profile"
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-neutral-200 hover:bg-gray-100 dark:hover:bg-neutral-700/50 transition-colors"
                   onClick={() => setShowAccountDropdown(false)}
                 >
                   <User size={16} />
@@ -524,7 +524,7 @@ export default function Navbar() {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-neutral-700/50 transition-colors"
                 >
                   <LogOut size={16} />
                   {t("logout")}
@@ -549,7 +549,7 @@ export default function Navbar() {
             value={localSearchTerm}
             onChange={onSearchChange}
             onKeyDown={onKeyDown}
-            className="w-full rounded-full border-0 bg-[#ffffff] py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] outline-none ring-0 placeholder:text-black/45 focus:ring-2 focus:ring-[#dd2269]/50"
+            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#dd2269]/50 transition-colors"
           />
         </div>
       </div>
