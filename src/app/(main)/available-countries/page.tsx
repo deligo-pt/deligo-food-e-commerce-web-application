@@ -38,43 +38,43 @@ const upcomingCountries = [
 export default function SelectCountryPage() {
   const { t } = useTranslation();
   return (
-    <div className="min-h-screen bg-[#f7f7f7] px-4 py-10">
+    <div className="min-h-screen bg-[#f7f7f7] dark:bg-neutral-950 px-4 py-10 transition-colors duration-200 text-gray-900 dark:text-neutral-100">
       <div className="mx-auto max-w-md">
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-slate-900">{t("selectCountry")}</h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-neutral-50">{t("selectCountry")}</h1>
+          <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
             {t("selectCountryDescription")}
           </p>
         </div>
 
         {/* Available */}
         <div className="mb-8">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
             {t("availableCountries")}
           </p>
 
-          <button className="flex w-full items-center justify-between rounded-2xl bg-white px-5 py-5 shadow-sm transition hover:shadow-md">
+          <button className="flex w-full items-center justify-between rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 px-5 py-5 shadow-sm dark:shadow-none transition hover:shadow-md dark:hover:bg-neutral-800/30">
             <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 dark:bg-neutral-950">
                 <CountryFlag
                   countryCode={availableCountry.flagCode}
                   name={availableCountry.name}
                 />
               </div>
 
-              <span className="font-medium text-slate-900">
+              <span className="font-medium text-slate-900 dark:text-neutral-200">
                 {availableCountry.name}
               </span>
             </div>
 
-            <ChevronRight className="h-5 w-5 text-slate-400" />
+            <ChevronRight className="h-5 w-5 text-slate-400 dark:text-neutral-500" />
           </button>
         </div>
 
         {/* Upcoming */}
         <div>
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
             {t("upcomingCountries")}
           </p>
 
@@ -82,22 +82,22 @@ export default function SelectCountryPage() {
             {upcomingCountries.map((country) => (
               <div
                 key={country.name}
-                className="flex items-center justify-between rounded-2xl bg-white px-5 py-5 shadow-sm"
+                className="flex items-center justify-between rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 px-5 py-5 shadow-sm dark:shadow-none"
               >
                 <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 dark:bg-neutral-950">
                     <CountryFlag
                       countryCode={country.flagCode}
                       name={country.name}
                     />
                   </div>
 
-                  <span className="font-medium text-slate-900">
+                  <span className="font-medium text-slate-900 dark:text-neutral-200">
                     {country.name}
                   </span>
                 </div>
 
-                <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-950/30 px-3 py-1 text-xs font-medium text-green-700 dark:text-green-400">
                   <span className="h-2 w-2 rounded-full bg-green-500" />
                   {t("upcoming")}
                 </span>
