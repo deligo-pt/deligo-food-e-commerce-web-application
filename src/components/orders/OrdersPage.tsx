@@ -36,7 +36,7 @@ function StarRating({ value, onChange, size = 28 }: StarRatingProps) {
               className={`transition-all duration-100 ${
                 active
                   ? "fill-[#f6c344] text-[#f6c344] drop-shadow-[0_2px_4px_rgba(246,195,68,0.2)]"
-                  : "text-gray-300 hover:text-gray-400"
+                  : "text-gray-300 dark:text-neutral-700 hover:text-gray-400 dark:hover:text-neutral-600"
               }`}
             />
           </button>
@@ -267,40 +267,40 @@ export default function OrdersPage() {
   };
 
   return (
-    <section className="min-h-screen bg-[#f8f9fa] py-8">
+    <section className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-8 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-5xl px-4 md:px-8">
         <div className="mb-8">
-          <h1 className="text-[32px] font-bold text-[#191c1d]">
+          <h1 className="text-[32px] font-bold text-[#191c1d] dark:text-neutral-50">
             {t("myOrders")}
           </h1>
 
-          <p className="mt-1 text-sm text-[#5a4044]">
+          <p className="mt-1 text-sm text-[#5a4044] dark:text-neutral-400">
             {t("trackOrdersDescription")}
           </p>
         </div>
 
-        <div className="mb-8 flex border-b border-[#e3bdc3]">
+        <div className="mb-8 flex border-b border-neutral-200 dark:border-neutral-800">
           <button
             onClick={() => setActiveTab("ongoing")}
-            className={`relative flex-1 py-4 text-center font-medium ${
-              activeTab === "ongoing" ? "text-[#b0004a]" : "text-[#5a4044]"
+            className={`relative flex-1 py-4 text-center font-medium transition-colors ${
+              activeTab === "ongoing" ? "text-[#b0004a] dark:text-pink-500" : "text-[#5a4044] dark:text-neutral-400"
             }`}
           >
             {t("ongoing")}
             {activeTab === "ongoing" && (
-              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#b0004a]" />
+              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#b0004a] dark:bg-pink-500" />
             )}
           </button>
 
           <button
             onClick={() => setActiveTab("history")}
-            className={`relative flex-1 py-4 text-center font-medium ${
-              activeTab === "history" ? "text-[#b0004a]" : "text-[#5a4044]"
+            className={`relative flex-1 py-4 text-center font-medium transition-colors ${
+              activeTab === "history" ? "text-[#b0004a] dark:text-pink-500" : "text-[#5a4044] dark:text-neutral-400"
             }`}
           >
             {t("history")}
             {activeTab === "history" && (
-              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#b0004a]" />
+              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#b0004a] dark:bg-pink-500" />
             )}
           </button>
         </div>
@@ -308,8 +308,8 @@ export default function OrdersPage() {
         {activeTab === "ongoing" ? (
           <div className="space-y-6">
             {ongoingOrders.length === 0 ? (
-              <div className="flex h-75 items-center justify-center rounded-xl bg-white">
-                <p className="text-[#5a4044]">{t("noOngoingOrders")}</p>
+              <div className="flex h-75 items-center justify-center rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-xs">
+                <p className="text-[#5a4044] dark:text-neutral-400">{t("noOngoingOrders")}</p>
               </div>
             ) : (
               ongoingOrders.map((order) => {
@@ -344,8 +344,8 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-6">
             {historyOrders.length === 0 ? (
-              <div className="flex h-75 items-center justify-center rounded-xl bg-white">
-                <p className="text-[#5a4044]">{t("previousOrdersMessage")}</p>
+              <div className="flex h-75 items-center justify-center rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-xs">
+                <p className="text-[#5a4044] dark:text-neutral-400">{t("previousOrdersMessage")}</p>
               </div>
             ) : (
               historyOrders.map((order) => (
@@ -397,39 +397,39 @@ export default function OrdersPage() {
 
       {/* Rating Modal */}
       {activeRatingOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-xs transition-all duration-300">
-          <div className="relative flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl transition-all duration-300 max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 dark:bg-black/60 p-4 backdrop-blur-xs transition-all duration-300">
+          <div className="relative flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 shadow-2xl transition-all duration-300 max-h-[90vh]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 px-6 py-4">
               <div>
-                <h3 className="text-lg font-bold text-[#191c1d]">
+                <h3 className="text-lg font-bold text-[#191c1d] dark:text-neutral-50">
                   {t("rateYourOrder")}
                 </h3>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-neutral-450">
                   {t("order")} #{activeRatingOrder.orderId}
                 </p>
               </div>
               <button
                 onClick={() => setActiveRatingOrder(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-neutral-700 hover:text-gray-700 dark:hover:text-neutral-200 transition"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Modal Scrollable Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white dark:bg-neutral-900">
               {/* Product / Food Rating Section */}
-              <div className="rounded-2xl border border-pink-100/55 bg-linear-to-b from-white to-pink-50/10 p-5 space-y-4 shadow-xs">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                  <span className="rounded-full bg-pink-50 px-2.5 py-0.5 text-xs font-semibold text-[#b0004a] uppercase tracking-wider">
+              <div className="rounded-2xl border border-pink-100/55 dark:border-pink-900/20 bg-linear-to-b from-white dark:from-neutral-900 to-pink-50/10 dark:to-pink-950/5 p-5 space-y-4 shadow-xs">
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-2">
+                  <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-[#b0004a] dark:text-pink-400 uppercase tracking-wider">
                     {t("foodReview")}
                   </span>
                 </div>
 
                 {/* Overall Food Rating */}
                 <div className="flex flex-col items-center justify-center py-2 space-y-2">
-                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                  <span className="text-xs font-medium text-gray-400 dark:text-neutral-500 uppercase tracking-wide">
                     {t("overallRating")}
                   </span>
                   <StarRating
@@ -441,8 +441,8 @@ export default function OrdersPage() {
 
                 {/* Sub-ratings: quality & packaging */}
                 <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between border-t border-gray-100/80 pt-3">
-                    <span className="text-sm font-semibold text-gray-700">
+                  <div className="flex items-center justify-between border-t border-gray-100/80 dark:border-neutral-800 pt-3">
+                    <span className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
                       {t("foodQuality")}
                     </span>
                     <StarRating
@@ -452,7 +452,7 @@ export default function OrdersPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-gray-700">
+                    <span className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
                       {t("packaging")}
                     </span>
                     <StarRating
@@ -466,16 +466,16 @@ export default function OrdersPage() {
 
               {/* Rider / Delivery Partner Rating Section */}
               {activeRatingOrder.deliveryPartnerId && (
-                <div className="rounded-2xl border border-pink-100/55 bg-linear-to-b from-white to-pink-50/10 p-5 space-y-4 shadow-xs">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                    <span className="rounded-full bg-pink-50 px-2.5 py-0.5 text-xs font-semibold text-[#b0004a] uppercase tracking-wider">
+                <div className="rounded-2xl border border-pink-100/55 dark:border-pink-900/20 bg-linear-to-b from-white dark:from-neutral-900 to-pink-50/10 dark:to-pink-950/5 p-5 space-y-4 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-2">
+                    <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-[#b0004a] dark:text-pink-400 uppercase tracking-wider">
                       {t("deliveryReview")}
                     </span>
                   </div>
 
                   {/* Overall Delivery Rating */}
                   <div className="flex flex-col items-center justify-center py-2 space-y-2">
-                    <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                    <span className="text-xs font-medium text-gray-400 dark:text-neutral-500 uppercase tracking-wide">
                       {t("overallRating")}
                     </span>
                     <StarRating
@@ -487,8 +487,8 @@ export default function OrdersPage() {
 
                   {/* Sub-ratings: speed & rider behavior */}
                   <div className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between border-t border-gray-100/80 pt-3">
-                      <span className="text-sm font-semibold text-gray-700">
+                    <div className="flex items-center justify-between border-t border-gray-100/80 dark:border-neutral-800 pt-3">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
                         {t("deliverySpeed")}
                       </span>
                       <StarRating
@@ -498,7 +498,7 @@ export default function OrdersPage() {
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-gray-700">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
                         {t("riderBehavior")}
                       </span>
                       <StarRating
@@ -513,12 +513,12 @@ export default function OrdersPage() {
             </div>
 
             {/* Modal Footer Actions */}
-            <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4">
+            <div className="flex items-center justify-end gap-3 border-t border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-850 px-6 py-4">
               <button
                 type="button"
                 onClick={() => setActiveRatingOrder(null)}
                 disabled={submittingRating}
-                className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition disabled:opacity-50"
+                className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-neutral-350 hover:bg-gray-100 dark:hover:bg-neutral-800 transition disabled:opacity-50"
               >
                 {t("cancel")}
               </button>
@@ -533,7 +533,7 @@ export default function OrdersPage() {
                       ? deliveryRating === 0
                       : true))
                 }
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#b0004a] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#90003c] transition disabled:opacity-50 disabled:cursor-not-allowed min-w-30"
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#b0004a] dark:bg-pink-650 px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#90003c] transition disabled:opacity-50 disabled:cursor-not-allowed min-w-30"
               >
                 {submittingRating ? (
                   <>
