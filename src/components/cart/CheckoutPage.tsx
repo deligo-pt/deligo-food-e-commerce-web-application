@@ -296,7 +296,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f9fa] dark:bg-neutral-950">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-pink-600 border-t-transparent" />
       </div>
     );
@@ -304,8 +304,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-7xl p-8">
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-500">
+      <div className="mx-auto max-w-7xl p-8 bg-[#f8f9fa] dark:bg-neutral-950 min-h-screen">
+        <div className="rounded-2xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 p-6 text-red-500 dark:text-red-400">
           {error}
         </div>
       </div>
@@ -321,21 +321,21 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
       <button
         onClick={goBack}
-        className="mb-4 flex items-center gap-2 text-gray-500 transition hover:text-gray-700"
+        className="mb-4 flex items-center gap-2 text-gray-500 transition hover:text-gray-700 dark:text-neutral-400 dark:hover:text-neutral-200"
       >
         <ArrowLeft size={18} />
         {t("back")}
       </button>
 
-      <h1 className="text-4xl font-extrabold text-gray-900">
+      <h1 className="text-4xl font-extrabold text-gray-900 dark:text-neutral-50">
         {t("reviewYourCart")}
       </h1>
-      <p className="mt-2 text-gray-500">{t("completeOrderDetails")}</p>
+      <p className="mt-2 text-gray-500 dark:text-neutral-400">{t("completeOrderDetails")}</p>
 
-      <div className="mt-8 mb-8 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+      <div className="mt-8 mb-8 overflow-hidden rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
         <div className="p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center">
-            <div className="relative h-24 w-24 overflow-hidden rounded-2xl bg-gray-100">
+            <div className="relative h-24 w-24 overflow-hidden rounded-2xl bg-gray-100 dark:bg-neutral-800">
               <Image
                 fill
                 src={vendorImage}
@@ -349,17 +349,17 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               />
             </div>
             <div className="flex-1">
-              <h2 className="text-3xl font-bold text-gray-900">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-neutral-50">
                 {vendor?.businessDetails?.businessName || "Store"}
               </h2>
               <div className="mt-3 flex flex-wrap gap-3">
-                <div className="flex items-center gap-2 rounded-xl bg-pink-50 px-3 py-2 text-pink-600">
+                <div className="flex items-center gap-2 rounded-xl bg-pink-50 dark:bg-pink-950/30 px-3 py-2 text-pink-600 dark:text-pink-400">
                   <ShoppingBag size={16} />
                   <span className="font-medium">
                     {vendorItems.length} {t("products")}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-green-600">
+                <div className="flex items-center gap-2 rounded-xl bg-green-50 dark:bg-green-950/30 px-3 py-2 text-green-600 dark:text-green-400">
                   <MapPin size={16} />
                   <span className="font-medium">{t("deliveryAvailable")}</span>
                 </div>
@@ -372,19 +372,19 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       <div className="grid gap-8 lg:grid-cols-12">
         <div className="space-y-5 lg:col-span-8">
           {vendorItems.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-12 text-center">
-              <h3 className="text-xl font-semibold">{t("noProductsFound")}</h3>
-              <p className="mt-2 text-gray-500">{t("vendorHasNoProducts")}</p>
+            <div className="rounded-3xl border border-dashed border-gray-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-12 text-center">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-neutral-50">{t("noProductsFound")}</h3>
+              <p className="mt-2 text-gray-500 dark:text-neutral-400">{t("vendorHasNoProducts")}</p>
             </div>
           ) : (
             vendorItems.map((item) => (
               <div
                 key={`${item.productId}-${item.variationSku ?? "default"}`}
-                className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm"
+                className="overflow-hidden rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm"
               >
                 <div className="p-5">
                   <div className="flex flex-col gap-5 sm:flex-row">
-                    <div className="relative h-28 w-full overflow-hidden rounded-2xl sm:w-28 bg-gray-100">
+                    <div className="relative h-28 w-full overflow-hidden rounded-2xl sm:w-28 bg-gray-100 dark:bg-neutral-800">
                       <Image
                         fill
                         src={item.image}
@@ -396,11 +396,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-neutral-50">
                             {item.name}
                           </h3>
                           {item.variationSku && (
-                            <p className="mt-1 text-sm text-gray-500">
+                            <p className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
                               {t("sku")}: {item.variationSku}
                             </p>
                           )}
@@ -408,7 +408,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                         <button
                           onClick={() => deleteItem(item)}
                           disabled={deletingItem === item.productId}
-                          className="rounded-xl p-2 text-red-500 transition hover:bg-red-50"
+                          className="rounded-xl p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
                         >
                           {deletingItem === item.productId ? (
                             <Loader2 size={18} className="animate-spin" />
@@ -418,33 +418,33 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                         </button>
                       </div>
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex items-center rounded-2xl border border-gray-200">
+                        <div className="flex items-center rounded-2xl border border-gray-200 dark:border-neutral-800">
                           <button
                             onClick={() => updateQuantity(item, "decrement")}
-                            className="p-3 transition hover:bg-gray-100"
+                            className="p-3 transition hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300"
                           >
                             <Minus size={16} />
                           </button>
-                          <div className="min-w-15 text-center font-bold">
+                          <div className="min-w-15 text-center font-bold text-gray-900 dark:text-neutral-50">
                             {item.itemSummary.quantity}
                           </div>
 
                           <button
                             onClick={() => updateQuantity(item, "increment")}
-                            className="p-3 transition hover:bg-gray-100"
+                            className="p-3 transition hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300"
                           >
                             <Plus size={16} />
                           </button>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-400 line-through">
+                          <p className="text-sm text-gray-400 dark:text-neutral-500 line-through">
                             €
                             {(
                               item.productPricing.originalPrice *
                               item.itemSummary.quantity
                             ).toFixed(2)}
                           </p>
-                          <p className="text-2xl font-bold text-pink-600">
+                          <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">
                             €{item.itemSummary.grandTotal.toFixed(2)}
                           </p>
                         </div>
@@ -458,44 +458,44 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         </div>
 
         <div className="lg:col-span-4">
-          <div className="sticky top-24 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-100 p-6">
-              <h3 className="text-2xl font-bold text-gray-900">
+          <div className="sticky top-24 overflow-hidden rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
+            <div className="border-b border-gray-100 dark:border-neutral-800 p-6">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-neutral-50">
                 {t("orderSummary")}
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
                 {t("reviewOrderDetails")}
               </p>
             </div>
             <div className="space-y-4 p-6">
               <div className="flex justify-between">
-                <span className="text-gray-600">{t("originalPrice")}</span>
-                <span className="font-semibold">
+                <span className="text-gray-600 dark:text-neutral-400">{t("originalPrice")}</span>
+                <span className="font-semibold text-gray-900 dark:text-neutral-50">
                   €{summary.originalPrice.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">{t("productDiscount")}</span>
-                <span className="font-semibold text-green-600">
+                <span className="text-gray-600 dark:text-neutral-400">{t("productDiscount")}</span>
+                <span className="font-semibold text-green-600 dark:text-green-400">
                   -€{summary.discount.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">{t("tax")}</span>
-                <span className="font-semibold">€{summary.tax.toFixed(2)}</span>
+                <span className="text-gray-600 dark:text-neutral-400">{t("tax")}</span>
+                <span className="font-semibold text-gray-900 dark:text-neutral-50">€{summary.tax.toFixed(2)}</span>
               </div>
-              <div className="border-t border-dashed border-gray-200 pt-4">
+              <div className="border-t border-dashed border-gray-200 dark:border-neutral-800 pt-4">
                 <div className="flex justify-between">
-                  <span className="text-xl font-bold">{t("total")}</span>
-                  <span className="text-3xl font-extrabold text-pink-600">
+                  <span className="text-xl font-bold text-gray-900 dark:text-neutral-50">{t("total")}</span>
+                  <span className="text-3xl font-extrabold text-pink-600 dark:text-pink-400">
                     €{summary.total.toFixed(2)}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-gray-100 p-6">
-              <label className="mb-2 block font-semibold text-gray-900">
+            <div className="border-t border-gray-100 dark:border-neutral-800 p-6">
+              <label className="mb-2 block font-semibold text-gray-900 dark:text-neutral-50">
                 {t("deliveryInstructions")}
               </label>
               <textarea
@@ -503,19 +503,19 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
                 placeholder={t("deliveryInstructionsPlaceholder")}
-                className="w-full rounded-2xl border border-gray-200 p-4 outline-none transition focus:border-pink-500"
+                className="w-full rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 outline-none transition focus:border-pink-500 dark:focus:border-pink-400 text-gray-900 dark:text-neutral-50 placeholder:text-gray-400 dark:placeholder:text-neutral-600"
               />
             </div>
 
-            <div className="border-t border-gray-100 p-6">
+            <div className="border-t border-gray-100 dark:border-neutral-800 p-6">
               <button
                 onClick={handleProceedToCheckout}
                 disabled={isProceeding || vendorItems.length === 0}
-                className="w-full rounded-2xl bg-pink-600 py-4 text-lg font-semibold text-white transition hover:bg-pink-700 disabled:opacity-50"
+                className="w-full rounded-2xl bg-pink-600 dark:bg-pink-500 py-4 text-lg font-semibold text-white transition hover:bg-pink-700 dark:hover:bg-pink-600 disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
               >
                 {isProceeding ? t("processing") : t("proceedToCheckout")}
               </button>
-              <p className="mt-3 text-center text-xs text-gray-400">
+              <p className="mt-3 text-center text-xs text-gray-400 dark:text-neutral-500">
                 {t("termsAndConditions")}
               </p>
             </div>
