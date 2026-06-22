@@ -211,8 +211,8 @@ export default function AccountPage() {
 
   if (error || !profile) {
     return (
-      <section className="bg-[#f7f7f7] min-h-screen p-4 md:p-6 flex items-center justify-center">
-        <div className="text-red-500 text-lg">
+      <section className="bg-[#f7f7f7] dark:bg-neutral-950 min-h-screen p-4 md:p-6 flex items-center justify-center text-gray-900 dark:text-neutral-100 transition-colors duration-200">
+        <div className="text-red-500 dark:text-red-400 text-lg">
           Error: {error || "Profile not found"}
         </div>
       </section>
@@ -224,15 +224,15 @@ export default function AccountPage() {
     "Unnamed User";
 
   return (
-    <section className="bg-[#f7f7f7] min-h-screen p-4 md:p-6">
+    <section className="bg-[#f7f7f7] dark:bg-neutral-950 min-h-screen p-4 md:p-6 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
           {/* LEFT */}
           <div className="space-y-4">
-            <div className="rounded-xl bg-white p-6 shadow-sm">
+            <div className="rounded-xl bg-white dark:bg-neutral-900 p-6 shadow-sm border border-gray-100 dark:border-neutral-800">
               <div className="flex flex-col items-center">
                 <div className="relative">
-                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-pink-100">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
                     {profile.profilePhoto ? (
                       <Image
                         src={profile.profilePhoto}
@@ -242,21 +242,21 @@ export default function AccountPage() {
                         height={96}
                       />
                     ) : (
-                      <User className="h-10 w-10 text-pink-700" />
+                      <User className="h-10 w-10 text-pink-700 dark:text-pink-400" />
                     )}
                   </div>
                 </div>
 
-                <h2 className="mt-4 text-xl font-bold">{fullName}</h2>
+                <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-neutral-50">{fullName}</h2>
 
-                <div className="mt-2 flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">
+                <div className="mt-2 flex items-center gap-2 rounded-full bg-gray-100 dark:bg-neutral-800 px-3 py-1 text-sm text-gray-650 dark:text-neutral-300">
                   <Mail size={14} />
                   {profile.email}
                 </div>
 
                 <Link href="/edit-profile" className="w-full">
                   {" "}
-                  <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#c1005a] py-3 font-medium text-white transition hover:bg-[#a6004d]">
+                  <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#c1005a] hover:bg-[#a6004d] dark:hover:bg-[#d6116c] py-3 font-medium text-white transition">
                     <Edit size={16} />
                     {t("editProfile")}
                   </button>
@@ -267,22 +267,22 @@ export default function AccountPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4">
               <Link href="/vouchers">
-                <div className="rounded-xl bg-white p-5 text-center shadow-sm transition hover:shadow-md cursor-pointer">
-                  <Ticket className="mx-auto mb-2 text-[#c1005a]" />
-                  <h3 className="font-bold">{voucherCount}</h3>
-                  <p className="text-sm text-gray-500">{t("vouchers")}</p>
+                <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-gray-100 dark:border-neutral-800 transition hover:shadow-md cursor-pointer">
+                  <Ticket className="mx-auto mb-2 text-[#c1005a] dark:text-pink-400" />
+                  <h3 className="font-bold text-gray-900 dark:text-neutral-50">{voucherCount}</h3>
+                  <p className="text-sm text-gray-500 dark:text-neutral-400">{t("vouchers")}</p>
                 </div>
               </Link>
 
-              <div className="rounded-xl bg-white p-5 text-center shadow-sm">
-                <Gift className="mx-auto mb-2 text-[#c1005a]" />
-                <h3 className="font-bold">{rewardPoints}</h3>
-                <p className="text-sm text-gray-500">{t("rewardPoints")}</p>
+              <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-gray-100 dark:border-neutral-800">
+                <Gift className="mx-auto mb-2 text-[#c1005a] dark:text-pink-400" />
+                <h3 className="font-bold text-gray-900 dark:text-neutral-50">{rewardPoints}</h3>
+                <p className="text-sm text-gray-500 dark:text-neutral-400">{t("rewardPoints")}</p>
               </div>
             </div>
 
             {/* Pro Banner */}
-            <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-[#c1005a] to-pink-500 p-6 text-white">
+            <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-[#c1005a] to-pink-500 p-6 text-white shadow-sm">
               <Star className="absolute -bottom-6 -right-6 h-28 w-28 opacity-10" />
 
               <h3 className="text-2xl font-bold">{t("deligoPro")}</h3>
@@ -303,33 +303,33 @@ export default function AccountPage() {
           {/* RIGHT */}
           <div className="space-y-6">
             <div>
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
                 {t("ordersAndPayments")}
               </h3>
 
-              <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+              <div className="overflow-hidden rounded-xl bg-white dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 shadow-sm">
                 {orderItems.map((item, index) => {
                   const Icon = item.icon;
 
                   const path = item.path;
                   const content = (
                     <div
-                      className={`flex cursor-pointer items-center justify-between p-5 hover:bg-gray-50 ${
-                        index !== orderItems.length - 1 ? "border-b" : ""
+                      className={`flex cursor-pointer items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors ${
+                        index !== orderItems.length - 1 ? "border-b border-gray-100 dark:border-neutral-800" : ""
                       }`}
                     >
                       <div className="flex items-center gap-4">
-                        <div className="rounded-full bg-pink-100 p-3">
-                          <Icon className="h-5 w-5 text-[#c1005a]" />
+                        <div className="rounded-full bg-pink-100 dark:bg-pink-950/40 p-3">
+                          <Icon className="h-5 w-5 text-[#c1005a] dark:text-pink-400" />
                         </div>
                         <div>
-                          <h4 className="font-semibold">{item.title}</h4>
-                          <p className="text-sm text-gray-500">
+                          <h4 className="font-semibold text-gray-900 dark:text-neutral-100">{item.title}</h4>
+                          <p className="text-sm text-gray-500 dark:text-neutral-400">
                             {item.description}
                           </p>
                         </div>
                       </div>
-                      <ChevronRight size={18} />
+                      <ChevronRight size={18} className="text-gray-400 dark:text-neutral-500" />
                     </div>
                   );
 
@@ -347,7 +347,7 @@ export default function AccountPage() {
             </div>
 
             <div>
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
                 {t("preferencesAndMore")}
               </h3>
 
@@ -357,14 +357,14 @@ export default function AccountPage() {
 
                   const path = item.path;
                   const content = (
-                    <div className="flex cursor-pointer items-center justify-between rounded-xl bg-white p-5 shadow-sm transition hover:shadow-md">
+                    <div className="flex cursor-pointer items-center justify-between rounded-xl bg-white dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 p-5 shadow-sm transition hover:shadow-md">
                       <div className="flex items-center gap-3">
-                        <div className="rounded-lg bg-gray-100 p-2">
+                        <div className="rounded-lg bg-gray-100 dark:bg-neutral-800 p-2 text-gray-600 dark:text-neutral-300">
                           <Icon size={18} />
                         </div>
-                        <span className="font-medium">{item.title}</span>
+                        <span className="font-medium text-gray-900 dark:text-neutral-100">{item.title}</span>
                       </div>
-                      <ChevronRight size={16} />
+                      <ChevronRight size={16} className="text-gray-400 dark:text-neutral-500" />
                     </div>
                   );
 
@@ -383,13 +383,13 @@ export default function AccountPage() {
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 rounded-xl border border-red-200 bg-white px-6 py-3 font-medium text-red-500 shadow-sm"
+              className="flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-950/30 bg-white dark:bg-neutral-900 px-6 py-3 font-medium text-red-500 dark:text-red-400 shadow-sm hover:bg-red-50 dark:hover:bg-red-950/10 transition"
             >
               <LogOut size={18} />
               {t("logout")}
             </button>
 
-            <p className="text-xs text-gray-400">{t("version")} 1.0.0</p>
+            <p className="text-xs text-gray-400 dark:text-neutral-500">{t("version")} 1.0.0</p>
           </div>
         </div>
       </div>
@@ -402,7 +402,7 @@ export default function AccountPage() {
           />
 
           {/* Panel */}
-          <div className="relative z-10 w-full max-w-md mx-4 rounded-2xl bg-white shadow-2xl overflow-hidden">
+          <div className="relative z-10 w-full max-w-md mx-4 rounded-2xl bg-white dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="relative overflow-hidden bg-gradient-to-br from-[#c1005a] to-pink-400 px-6 pt-8 pb-10 text-center">
               <Star className="absolute -bottom-6 -right-6 h-28 w-28 opacity-10" />
@@ -417,7 +417,7 @@ export default function AccountPage() {
             </div>
 
             {/* Features list */}
-            <div className="px-6 py-6 space-y-4">
+            <div className="px-6 py-6 space-y-4 bg-white dark:bg-neutral-900">
               {[
                 { emoji: "🚚", title: "Free Delivery", desc: "Enjoy free delivery on every order" },
                 { emoji: "🎟️", title: "Exclusive Vouchers", desc: "Access member-only discount codes" },
@@ -425,22 +425,22 @@ export default function AccountPage() {
                 { emoji: "🎁", title: "Bonus Reward Points", desc: "Earn 2× points on every purchase" },
               ].map((f) => (
                 <div key={f.title} className="flex items-center gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-50 text-xl">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-50 dark:bg-pink-950/40 text-xl">
                     {f.emoji}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">{f.title}</p>
-                    <p className="text-sm text-gray-500">{f.desc}</p>
+                    <p className="font-semibold text-gray-800 dark:text-neutral-100">{f.title}</p>
+                    <p className="text-sm text-gray-500 dark:text-neutral-400">{f.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-100 px-6 py-4">
+            <div className="border-t border-gray-100 dark:border-neutral-800 px-6 py-4 bg-gray-50 dark:bg-neutral-900/80">
               <button
                 onClick={() => setShowProModal(false)}
-                className="w-full rounded-lg bg-gray-100 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-200"
+                className="w-full rounded-lg bg-gray-100 dark:bg-neutral-800 py-2.5 text-sm font-semibold text-gray-600 dark:text-neutral-300 transition hover:bg-gray-200 dark:hover:bg-neutral-700"
               >
                 {t("cancel")}
               </button>
