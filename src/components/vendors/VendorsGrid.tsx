@@ -25,28 +25,28 @@ type VendorsResponse = {
 
 function VendorCardSkeleton() {
   return (
-    <article className="group cursor-pointer overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all">
+    <article className="group cursor-pointer overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all">
       <div className="relative aspect-16/10 overflow-hidden">
-        <div className="h-full w-full animate-pulse bg-gray-200" />
+        <div className="h-full w-full animate-pulse bg-gray-200 dark:bg-neutral-800" />
         <div className="absolute left-5 top-5">
-          <div className="h-9 w-16 animate-pulse rounded-2xl bg-white/95 shadow-lg backdrop-blur-md" />
+          <div className="h-9 w-16 animate-pulse rounded-2xl bg-white/95 dark:bg-neutral-900/95 shadow-lg backdrop-blur-md" />
         </div>
       </div>
 
       <div className="p-8">
         <div className="mb-2 flex items-center justify-between gap-4">
-          <div className="h-7 w-48 animate-pulse rounded-lg bg-gray-200" />
-          <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200" />
+          <div className="h-7 w-48 animate-pulse rounded-lg bg-gray-200 dark:bg-neutral-800" />
+          <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
         </div>
-        <div className="mb-6 h-6 w-32 animate-pulse rounded-lg bg-gray-200" />
-        <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6">
+        <div className="mb-6 h-6 w-32 animate-pulse rounded-lg bg-gray-200 dark:bg-neutral-800" />
+        <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6">
           <div className="flex items-center gap-2">
-            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200" />
-            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200" />
+            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200" />
-            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200" />
+            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
           </div>
         </div>
       </div>
@@ -144,7 +144,7 @@ export default function VendorsGrid() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-center text-red-600">
+      <div className="rounded-3xl border border-red-200 dark:border-red-950 bg-red-50 dark:bg-red-950/20 p-6 text-center text-red-600 dark:text-red-400">
         {error}
       </div>
     );
@@ -152,8 +152,8 @@ export default function VendorsGrid() {
 
   if (!vendors.length) {
     return (
-      <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center">
-        <h3 className="text-xl font-semibold text-gray-700">
+      <div className="rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-10 text-center">
+        <h3 className="text-xl font-semibold text-gray-700 dark:text-neutral-200">
           {t("noVendorsFound")}
         </h3>
       </div>
@@ -177,7 +177,7 @@ export default function VendorsGrid() {
           <button
             onClick={() => setPage((prev) => prev - 1)}
             disabled={page === 1}
-            className="rounded-xl border border-gray-200 px-5 py-2.5 font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-gray-200 dark:border-neutral-800 px-5 py-2.5 font-medium text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t("previous")}
           </button>
@@ -189,10 +189,10 @@ export default function VendorsGrid() {
               <button
                 key={pageNumber}
                 onClick={() => setPage(pageNumber)}
-                className={`h-11 w-11 rounded-xl font-semibold transition-all ${
+                className={`h-11 w-11 rounded-xl font-semibold transition-all cursor-pointer ${
                   page === pageNumber
                     ? "bg-[#b0004a] text-white"
-                    : "border border-gray-200 bg-white hover:border-[#b0004a]"
+                    : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:border-[#b0004a] dark:hover:border-pink-500"
                 }`}
               >
                 {pageNumber}
@@ -203,7 +203,7 @@ export default function VendorsGrid() {
           <button
             onClick={() => setPage((prev) => prev + 1)}
             disabled={page === totalPages}
-            className="rounded-xl border border-gray-200 px-5 py-2.5 font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-gray-200 dark:border-neutral-800 px-5 py-2.5 font-medium text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t("next")}
           </button>
