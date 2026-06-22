@@ -1,230 +1,3 @@
-// /* eslint-disable @typescript-eslint/no-unused-vars */
-// "use client";
-
-// import { useEffect, useState } from "react";
-// import Image from "next/image";
-// import Link from "next/link";
-// import { ChevronRight, Plus } from "lucide-react";
-// import { apiClient } from "@/lib/apiClient";
-// import { getAccessToken } from "@/lib/authCookies";
-// import { useProductCategoryStore } from "@/stores/productCategoryStore";
-// import { useTranslation } from "@/hooks/useTranslation";
-// type Category = {
-//   _id: string;
-//   name: string;
-//   slug: string;
-//   description?: string;
-//   icon: string;
-//   businessCategoryId: string;
-//   isActive: boolean;
-//   isDeleted: boolean;
-//   createdAt: string;
-//   updatedAt: string;
-// };
-
-// type ApiResponse = {
-//   success: boolean;
-//   message: string;
-//   data: {
-//     meta: {
-//       page: number;
-//       limit: number;
-//       total: number;
-//       totalPage: number;
-//     };
-//     data: Category[];
-//   };
-// };
-
-// // Open endpoint: meta at root level, data is a flat array
-// type OpenApiResponse = {
-//   success: boolean;
-//   message: string;
-//   meta: {
-//     page: number;
-//     limit: number;
-//     total: number;
-//     totalPage: number;
-//   };
-//   data: Category[];
-// };
-
-// export default function CategoriesSection() {
-//   const { t } = useTranslation();
-//   const [categories, setCategories] = useState<Category[]>([]);
-//   const [loading, setLoading] = useState(true);
-//   const [errorKey, setErrorKey] = useState<string | null>(null);
-//   const { selectedCategory, setSelectedCategory } = useProductCategoryStore();
-
-//   useEffect(() => {
-//     let alive = true;
-
-//     async function fetchInitialCategories() {
-//       const token = getAccessToken();
-
-//       try {
-//         let activeCategories: Category[] = [];
-
-//         if (token) {
-//           // Authenticated: two-step fetch to get ALL categories
-//           const initialRes = await apiClient.get<ApiResponse>(
-//             "/categories/productCategory?page=1&limit=1",
-//             { headers: { Authorization: `Bearer ${token}` } }
-//           );
-//           const total = initialRes.data.data.meta.total;
-
-//           const response = await apiClient.get<ApiResponse>(
-//             `/categories/productCategory?page=1&limit=${total}`,
-//             { headers: { Authorization: `Bearer ${token}` } }
-//           );
-//           activeCategories = (response.data.data?.data ?? []).filter(
-//             (cat) => cat.isActive && !cat.isDeleted
-//           );
-//         } else {
-//           // Open endpoint — meta is at ROOT level, data is a flat array
-//           // Step 1: get total count
-//           const countRes = await apiClient.get<OpenApiResponse>(
-//             "/categories/productCategory/open?page=1&limit=1"
-//           );
-//           const total = countRes.data.meta.total;
-
-//           // Step 2: fetch all in one request
-//           const response = await apiClient.get<OpenApiResponse>(
-//             `/categories/productCategory/open?page=1&limit=${total}`
-//           );
-//           activeCategories = (response.data?.data ?? []).filter(
-//             (cat) => cat.isActive && !cat.isDeleted
-//           );
-//         }
-
-//         if (alive) {
-//           setCategories(activeCategories);
-//           setErrorKey(null);
-//         }
-//       } catch (err) {
-//         if (alive) setErrorKey("unableToLoadCategories");
-//       } finally {
-//         if (alive) setLoading(false);
-//       }
-//     }
-
-//     fetchInitialCategories();
-
-//     return () => {
-//       alive = false;
-//     };
-//   }, []);
-
-//   const handleCategoryClick = (category: Category) => {
-//     if (selectedCategory?._id === category._id) {
-//       setSelectedCategory(null);
-//     } else {
-//       setSelectedCategory({
-//         _id: category._id,
-//         name: category.name,
-//         slug: category.slug,
-//         icon: category.icon,
-//       });
-//     }
-//   };
-
-//   const displayedCategories = categories.slice(0, 10);
-
-//   if (loading && categories.length === 0) {
-//     return (
-//       <section>
-//         <div className="mb-10 flex items-center justify-between">
-//           <div className="h-10 w-72 animate-pulse rounded-full bg-gray-200" />
-//           <div className="hidden h-7 w-24 animate-pulse rounded-full bg-gray-200 sm:block" />
-//         </div>
-//         <div className="-mx-4 flex gap-12 overflow-hidden px-4 pb-6 lg:-mx-16 lg:px-16">
-//           {Array.from({ length: 8 }).map((_, index) => (
-//             <div key={index} className="flex min-w-35 flex-col items-center gap-4">
-//               <div className="h-32 w-32 animate-pulse rounded-full bg-gray-200" />
-//               <div className="h-4 w-24 animate-pulse rounded-full bg-gray-200" />
-//             </div>
-//           ))}
-//         </div>
-//       </section>
-//     );
-//   }
-
-//   if (errorKey && categories.length === 0) {
-//     return (
-//       <section>
-//         <div className="mb-10 flex items-center justify-between">
-//           <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
-//             {t("whatsOnYourMind")}
-//           </h2>
-//         </div>
-//         <div className="flex h-40 items-center justify-center">
-//           <div className="text-center text-red-500">{t(errorKey)}</div>
-//         </div>
-//       </section>
-//     );
-//   }
-
-//   return (
-//     <section>
-//       <div className="mb-10 flex items-center justify-between">
-//         <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
-//           {t("whatsOnYourMind")}
-//         </h2>
-//         <Link
-//           href="/categories"
-//           className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline"
-//         >
-//           {t("viewAll")} <ChevronRight size={20} />
-//         </Link>
-//       </div>
-
-//       <div className="-mx-4 flex gap-12 overflow-x-auto px-4 pb-6 lg:-mx-16 lg:px-16 [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-//         {displayedCategories.map((category) => {
-//           const isActive = selectedCategory?._id === category._id;
-//           return (
-//             <div
-//               key={category._id}
-//               onClick={() => handleCategoryClick(category)}
-//               className="group flex min-w-35 cursor-pointer flex-col items-center gap-4"
-//             >
-//               <div
-//                 className={`h-32 w-32 rounded-full p-1 shadow-md transition-all ${
-//                   isActive
-//                     ? "bg-[#b0004a] ring-4 ring-[#ffd9de]"
-//                     : "bg-[#e7e8e9] group-hover:bg-[#b0004a]"
-//                 }`}
-//               >
-//                 <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#ffffff]">
-//                   {category.icon ? (
-//                     <Image
-//                       alt={category.name}
-//                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-//                       height={128}
-//                       width={128}
-//                       src={category.icon}
-//                     />
-//                   ) : (
-//                     <Plus size={48} className="text-[#5a4044]" />
-//                   )}
-//                 </div>
-//               </div>
-//               <span
-//                 className={`text-center text-[12px] font-bold leading-4 tracking-[0.16em] uppercase transition-colors ${
-//                   isActive
-//                     ? "text-[#b0004a]"
-//                     : "text-[#191c1d] group-hover:text-[#b0004a]"
-//                 }`}
-//               >
-//                 {category.name}
-//               </span>
-//             </div>
-//           );
-//         })}
-//       </div>
-//     </section>
-//   );
-// }
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -399,7 +172,7 @@ export default function CategoriesSection() {
   return (
     <section>
       <div className="mb-10 flex items-center justify-between">
-        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
           {t("whatsOnYourMind")}
         </h2>
         {/* <button
@@ -432,17 +205,17 @@ export default function CategoriesSection() {
                 <div
                   className={`h-32 w-32 rounded-full p-1 shadow-md transition-all duration-300 ${
                     isActive
-                      ? "bg-[#b0004a] ring-4 ring-[#ffd9de]"
-                      : "bg-[#e7e8e9] group-hover:bg-[#b0004a]"
+                      ? "bg-[#b0004a] ring-4 ring-[#ffd9de] dark:ring-pink-500/20"
+                      : "bg-[#e7e8e9] dark:bg-neutral-800 group-hover:bg-[#b0004a]"
                   }`}
                 >
-                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#ffffff] transition-all duration-300">
+                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white dark:border-neutral-900 bg-[#ffffff] dark:bg-neutral-900 transition-all duration-300">
                     <Icon
                       size={40}
                       className={`transition-all duration-300 ${
                         isActive
-                          ? "text-[#b0004a] scale-110"
-                          : "text-[#5a4044] group-hover:text-[#b0004a] group-hover:scale-110"
+                          ? "text-[#b0004a] dark:text-pink-500 scale-110"
+                          : "text-[#5a4044] dark:text-neutral-300 group-hover:text-[#b0004a] group-hover:scale-110"
                       }`}
                     />
                   </div>
@@ -450,8 +223,8 @@ export default function CategoriesSection() {
                 <span
                   className={`text-center text-[12px] font-bold leading-4 tracking-[0.16em] uppercase transition-colors ${
                     isActive
-                      ? "text-[#b0004a]"
-                      : "text-[#191c1d] group-hover:text-[#b0004a]"
+                      ? "text-[#b0004a] dark:text-pink-500"
+                      : "text-[#191c1d] dark:text-neutral-100 group-hover:text-[#b0004a] dark:group-hover:text-pink-500"
                   }`}
                 >
                   {t(item.labelKey)}
@@ -469,16 +242,16 @@ export default function CategoriesSection() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl max-h-[80vh] flex flex-col overflow-hidden animate-scaleIn"
+            className="relative w-full max-w-md bg-white dark:bg-neutral-900 border dark:border-neutral-800 rounded-2xl shadow-2xl max-h-[80vh] flex flex-col overflow-hidden animate-scaleIn"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-              <h3 className="text-xl font-bold text-[#191c1d]">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 px-6 py-4">
+              <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-100">
                 {t("allCategories")}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors cursor-pointer"
+                className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-neutral-800 hover:text-gray-600 dark:hover:text-neutral-300 transition-colors cursor-pointer"
                 aria-label="Close"
               >
                 <X size={20} />
@@ -499,8 +272,8 @@ export default function CategoriesSection() {
                     }}
                     className={`group flex w-full items-center justify-between rounded-xl border p-4 transition-all duration-300 cursor-pointer ${
                       isActive
-                        ? "border-[#b0004a] bg-[#ffd9de]/30 text-[#b0004a]"
-                        : "border-gray-100 bg-white hover:bg-[#ffd9de]/10 hover:border-[#ffd9de] text-[#191c1d]"
+                        ? "border-[#b0004a] bg-[#ffd9de]/30 dark:bg-pink-950/20 text-[#b0004a] dark:text-pink-500"
+                        : "border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 hover:bg-[#ffd9de]/10 dark:hover:bg-neutral-800 hover:border-[#ffd9de] text-[#191c1d] dark:text-neutral-200"
                     }`}
                   >
                     <div className="flex items-center gap-4">
@@ -508,7 +281,7 @@ export default function CategoriesSection() {
                         className={`flex h-12 w-12 items-center justify-center rounded-full border transition-all duration-300 ${
                           isActive
                             ? "bg-[#b0004a] border-[#b0004a] text-white"
-                            : "bg-[#e7e8e9] border-white text-[#5a4044] group-hover:bg-[#b0004a] group-hover:text-white"
+                            : "bg-[#e7e8e9] dark:bg-neutral-800 border-white dark:border-neutral-900 text-[#5a4044] dark:text-neutral-300 group-hover:bg-[#b0004a] group-hover:text-white"
                         }`}
                       >
                         <Icon
@@ -519,8 +292,8 @@ export default function CategoriesSection() {
                       <span
                         className={`text-sm font-bold tracking-widest uppercase transition-colors ${
                           isActive
-                            ? "text-[#b0004a]"
-                            : "text-[#191c1d] group-hover:text-[#b0004a]"
+                            ? "text-[#b0004a] dark:text-pink-500"
+                            : "text-[#191c1d] dark:text-neutral-200 group-hover:text-[#b0004a] dark:group-hover:text-pink-500"
                         }`}
                       >
                         {t(item.labelKey)}
@@ -533,7 +306,7 @@ export default function CategoriesSection() {
                     ) : (
                       <ChevronRight
                         size={18}
-                        className="text-gray-300 group-hover:text-[#b0004a] transition-colors"
+                        className="text-gray-300 dark:text-neutral-600 group-hover:text-[#b0004a] dark:group-hover:text-pink-500 transition-colors"
                       />
                     )}
                   </button>
