@@ -486,7 +486,7 @@ export default function RestaurantsSection() {
               href={`/vendors/${vendor.userId}`}
               className="block"
             >
-              <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] dark:hover:border-neutral-850 hover:shadow-2xl">
+              <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl">
                 <div className="relative aspect-16/10 overflow-hidden">
                   <Image
                     fill

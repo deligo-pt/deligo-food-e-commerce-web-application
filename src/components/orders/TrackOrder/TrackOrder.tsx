@@ -793,7 +793,7 @@ export default function TrackOrder() {
                 </div>
                 <div className="mt-6 bg-[#edeeef] dark:bg-neutral-950 p-4 rounded-2xl flex items-center justify-between transition-colors duration-200">
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[#5a4044] dark:text-neutral-450">
+                    <span className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400">
                       {t("paymentMethod")}
                     </span>
                     <span className="text-[#191c1d] dark:text-neutral-300 font-extrabold">

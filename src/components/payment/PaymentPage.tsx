@@ -339,7 +339,7 @@ export default function PaymentPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Delivery From */}
                 <div>
-                  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-450">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-400">
                     {t("deliveryFrom")}
                   </p>
                   <div className="flex items-center gap-3">
@@ -827,7 +827,7 @@ export default function PaymentPage() {
           />
 
           {/* Panel */}
-          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white dark:bg-neutral-900 border border-gray-150 dark:border-neutral-850 shadow-2xl overflow-hidden">
+          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white dark:bg-neutral-900 border border-gray-150 dark:border-neutral-800 shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between bg-linear-to-r from-pink-600 to-pink-500 dark:from-pink-700 dark:to-pink-600 px-6 py-5">
               <div className="flex items-center gap-2">

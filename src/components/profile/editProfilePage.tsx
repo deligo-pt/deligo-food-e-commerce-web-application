@@ -82,7 +82,7 @@ export default function EditProfilePage() {
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
-          <div className="border-b border-neutral-200 dark:border-neutral-850 px-6 py-10">
+          <div className="border-b border-neutral-200 dark:border-neutral-800 px-6 py-10">
             <div className="flex flex-col items-center">
               <div className="relative">
                 <div className="h-24 w-24 overflow-hidden rounded-full bg-pink-50 dark:bg-pink-950/40 flex items-center justify-center border border-neutral-200 dark:border-neutral-800">
@@ -103,7 +103,7 @@ export default function EditProfilePage() {
                 {t("myProfile")}
               </h1>
 
-              <p className="mt-1 text-sm text-[#5a4044] dark:text-neutral-450">
+              <p className="mt-1 text-sm text-[#5a4044] dark:text-neutral-400">
                 {t("viewAccountDetails")}
               </p>
             </div>

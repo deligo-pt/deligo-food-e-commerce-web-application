@@ -214,7 +214,7 @@ export default function CartProductRow({
         {/* Quantity and price */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1">
-            <span className="text-sm text-gray-500 dark:text-neutral-450">{t("qty")}:</span>
+            <span className="text-sm text-gray-500 dark:text-neutral-400">{t("qty")}:</span>
             <span className="font-semibold text-gray-900 dark:text-neutral-100">{item.itemSummary.quantity}</span>
           </div>
           <div className="text-right">

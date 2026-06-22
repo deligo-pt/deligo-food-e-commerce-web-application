@@ -267,7 +267,7 @@ export default function EditProfileFormPage() {
         </div>
 
         <div className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
-          <div className="flex flex-col items-center border-b border-neutral-200/50 dark:border-neutral-850 bg-linear-to-b from-neutral-50 dark:from-neutral-800/10 to-transparent py-10">
+          <div className="flex flex-col items-center border-b border-neutral-200/50 dark:border-neutral-800 bg-linear-to-b from-neutral-50 dark:from-neutral-800/10 to-transparent py-10">
             <div className="relative">
               <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white dark:border-neutral-800 shadow-lg flex items-center justify-center bg-pink-50 dark:bg-pink-950/30">
                 {imagePreview ? (
@@ -282,7 +282,7 @@ export default function EditProfileFormPage() {
                   <User className="h-16 w-16 text-[#b0004a] dark:text-pink-400" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white dark:border-neutral-850 bg-[#b0004a] dark:bg-pink-650 p-2 text-white shadow-lg">
+              <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white dark:border-neutral-800 bg-[#b0004a] dark:bg-pink-650 p-2 text-white shadow-lg">
                 <Pencil size={18} />
                 <input
                   type="file"
@@ -303,7 +303,7 @@ export default function EditProfileFormPage() {
               )}
             </div>
             <h1 className="text-2xl font-bold mt-4 text-gray-900 dark:text-neutral-50">{t("editProfile")}</h1>
-            <p className="text-sm text-[#5a4044] dark:text-neutral-450">{t("manageAccountInfo")}</p>
+            <p className="text-sm text-[#5a4044] dark:text-neutral-400">{t("manageAccountInfo")}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-10 p-8 md:p-12 bg-white dark:bg-neutral-900">

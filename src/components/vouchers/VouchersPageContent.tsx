@@ -205,7 +205,7 @@ export default function VouchersPageContent() {
                     {offer.title}
                   </h3>
 
-                  <p className="text-sm text-[#5a4044] dark:text-neutral-450">{offer.description}</p>
+                  <p className="text-sm text-[#5a4044] dark:text-neutral-400">{offer.description}</p>
                 </div>
               </div>
 
@@ -225,7 +225,7 @@ export default function VouchersPageContent() {
               </div>
 
               <div className="mt-4 flex items-center justify-between border-t border-[#e7e8e9] dark:border-neutral-800 pt-4">
-                <div className="flex items-center gap-1 text-xs text-[#5a4044] dark:text-neutral-450">
+                <div className="flex items-center gap-1 text-xs text-[#5a4044] dark:text-neutral-400">
                   <Clock3 size={12} />
                   <span>{getRemainingDays(offer.expiresAt)}</span>
                 </div>

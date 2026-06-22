@@ -393,9 +393,7 @@ export default function OrdersPage() {
             )}
           </div>
         )}
-      </div>
-
-      {/* Rating Modal */}
+      </div>      {/* Rating Modal */}
       {activeRatingOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 dark:bg-black/60 p-4 backdrop-blur-xs transition-all duration-300">
           <div className="relative flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 shadow-2xl transition-all duration-300 max-h-[90vh]">
@@ -405,7 +403,7 @@ export default function OrdersPage() {
                 <h3 className="text-lg font-bold text-[#191c1d] dark:text-neutral-50">
                   {t("rateYourOrder")}
                 </h3>
-                <p className="text-xs text-gray-500 dark:text-neutral-450">
+                <p className="text-xs text-gray-500 dark:text-neutral-400">
                   {t("order")} #{activeRatingOrder.orderId}
                 </p>
               </div>
@@ -420,7 +418,7 @@ export default function OrdersPage() {
             {/* Modal Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white dark:bg-neutral-900">
               {/* Product / Food Rating Section */}
-              <div className="rounded-2xl border border-pink-100/55 dark:border-pink-900/20 bg-linear-to-b from-white dark:from-neutral-900 to-pink-50/10 dark:to-pink-950/5 p-5 space-y-4 shadow-xs">
+              <div className="rounded-2xl border border-pink-100/55 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-5 space-y-4 shadow-xs">
                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-2">
                   <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-[#b0004a] dark:text-pink-400 uppercase tracking-wider">
                     {t("foodReview")}
@@ -466,7 +464,7 @@ export default function OrdersPage() {
 
               {/* Rider / Delivery Partner Rating Section */}
               {activeRatingOrder.deliveryPartnerId && (
-                <div className="rounded-2xl border border-pink-100/55 dark:border-pink-900/20 bg-linear-to-b from-white dark:from-neutral-900 to-pink-50/10 dark:to-pink-950/5 p-5 space-y-4 shadow-xs">
+                <div className="rounded-2xl border border-pink-100/55 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-5 space-y-4 shadow-xs">
                   <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-2">
                     <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-[#b0004a] dark:text-pink-400 uppercase tracking-wider">
                       {t("deliveryReview")}
@@ -513,12 +511,12 @@ export default function OrdersPage() {
             </div>
 
             {/* Modal Footer Actions */}
-            <div className="flex items-center justify-end gap-3 border-t border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-850 px-6 py-4">
+            <div className="flex items-center justify-end gap-3 border-t border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-950 px-6 py-4">
               <button
                 type="button"
                 onClick={() => setActiveRatingOrder(null)}
                 disabled={submittingRating}
-                className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-neutral-350 hover:bg-gray-100 dark:hover:bg-neutral-800 transition disabled:opacity-50"
+                className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-neutral-800 transition disabled:opacity-50"
               >
                 {t("cancel")}
               </button>
