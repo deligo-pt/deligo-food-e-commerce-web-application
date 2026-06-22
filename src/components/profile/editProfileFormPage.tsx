@@ -282,7 +282,7 @@ export default function EditProfileFormPage() {
                   <User className="h-16 w-16 text-[#b0004a] dark:text-pink-400" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white dark:border-neutral-800 bg-[#b0004a] dark:bg-pink-650 p-2 text-white shadow-lg">
+              <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white dark:border-neutral-800 bg-[#b0004a] dark:bg-pink-600 p-2 text-white shadow-lg">
                 <Pencil size={18} />
                 <input
                   type="file"
@@ -395,7 +395,7 @@ export default function EditProfileFormPage() {
                         type="button"
                         onClick={handleSendMobileOtp}
                         disabled={sendingMobileOtp || mobileNumber === originalMobile}
-                        className="whitespace-nowrap rounded bg-[#b0004a] dark:bg-pink-650 hover:bg-[#90003b] dark:hover:bg-pink-700 px-4 py-2 text-white disabled:opacity-50 transition"
+                        className="whitespace-nowrap rounded bg-[#b0004a] dark:bg-pink-600 hover:bg-[#90003b] dark:hover:bg-pink-700 px-4 py-2 text-white disabled:opacity-50 transition"
                       >
                         {sendingMobileOtp ? t("sending") : t("sendOtp")}
                       </button>

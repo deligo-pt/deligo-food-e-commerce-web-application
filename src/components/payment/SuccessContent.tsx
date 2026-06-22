@@ -43,17 +43,17 @@ export default function SuccessContent() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md rounded-lg bg-white p-6 text-center shadow-md">
-          <h1 className="text-2xl font-bold text-red-600">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-neutral-950 px-4 transition-colors duration-200">
+        <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 p-6 text-center shadow-md border border-neutral-200 dark:border-neutral-800">
+          <h1 className="text-2xl font-bold text-red-600 dark:text-red-500">
             Order Creation Failed
           </h1>
 
-          <p className="mt-3 text-gray-600">{error}</p>
+          <p className="mt-3 text-gray-600 dark:text-neutral-400">{error}</p>
 
           <button
             onClick={() => router.replace("/payment-failed")}
-            className="mt-6 rounded-lg bg-pink-600 px-6 py-2 text-white"
+            className="mt-6 w-full rounded-xl bg-pink-600 hover:bg-pink-700 px-6 py-3 text-white font-semibold transition"
           >
             Continue
           </button>
@@ -63,15 +63,15 @@ export default function SuccessContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-neutral-950 transition-colors duration-200">
       <div className="text-center">
         <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-pink-600 border-t-transparent" />
 
-        <h2 className="mt-4 text-lg font-semibold text-gray-800">
+        <h2 className="mt-4 text-lg font-semibold text-gray-800 dark:text-neutral-200">
           Payment Successful
         </h2>
 
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-gray-600 dark:text-neutral-400">
           Creating your order...
         </p>
       </div>

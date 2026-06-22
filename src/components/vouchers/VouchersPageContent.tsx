@@ -196,7 +196,7 @@ export default function VouchersPageContent() {
               className="rounded-xl border border-[#f3f4f5] dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-[0_4px_20px_rgba(0,0,0,0.05)] dark:shadow-none transition-all hover:shadow-[0_8px_30px_rgba(176,0,74,0.08)] dark:hover:border-neutral-700"
             >
               <div className="mb-4 flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b0004a] dark:bg-pink-650">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b0004a] dark:bg-pink-600">
                   <Ticket size={18} className="text-white" />
                 </div>
 
@@ -218,7 +218,7 @@ export default function VouchersPageContent() {
 
                 <button
                   onClick={() => handleCopy(offer.code)}
-                  className="rounded-lg bg-[#b0004a] dark:bg-pink-650 px-4 py-2 text-sm font-semibold text-white hover:bg-[#d81b60] dark:hover:bg-pink-700 transition"
+                  className="rounded-lg bg-[#b0004a] dark:bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-[#d81b60] dark:hover:bg-pink-700 transition"
                 >
                   {copiedCode === offer.code ? t("copied") : t("copy")}
                 </button>

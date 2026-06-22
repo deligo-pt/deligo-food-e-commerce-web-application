@@ -822,7 +822,7 @@ export default function TrackOrder() {
                 </div>
               </div>
               <Link href="/help-center">
-                <button className="bg-[#b0004a] dark:bg-pink-650 text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg hover:opacity-90 transition-all active:scale-95">
+                <button className="bg-[#b0004a] dark:bg-pink-600 text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg hover:opacity-90 transition-all active:scale-95">
                   <Headphones className="w-4 h-4" />
                   <span className="font-bold">{t("support")}</span>
                 </button>
@@ -847,7 +847,7 @@ export default function TrackOrder() {
                     )}
                     <div
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shadow-md ${isCompleted || isCurrent
-                        ? "bg-[#b0004a] dark:bg-pink-650 text-white"
+                        ? "bg-[#b0004a] dark:bg-pink-600 text-white"
                         : "bg-[#f3f4f5] dark:bg-neutral-950 text-[#8e6f74] dark:text-neutral-500 border border-[#e3bdc3] dark:border-neutral-800"
                         } ${isCurrent ? "border-4 border-[#ffd9de] dark:border-pink-950/40" : ""}`}
                     >
@@ -858,7 +858,7 @@ export default function TrackOrder() {
                         className={`text-xl font-bold ${isCompleted || isCurrent
                           ? "text-[#191c1d] dark:text-neutral-50"
                           : "text-[#8e6f74] dark:text-neutral-500"
-                          } ${isCurrent ? "text-[#b0004a] dark:text-pink-450" : ""}`}
+                          } ${isCurrent ? "text-[#b0004a] dark:text-pink-400" : ""}`}
                       >
                         {step.label}
                       </h4>

@@ -531,7 +531,7 @@ export default function OrdersPage() {
                       ? deliveryRating === 0
                       : true))
                 }
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#b0004a] dark:bg-pink-650 px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#90003c] transition disabled:opacity-50 disabled:cursor-not-allowed min-w-30"
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#b0004a] dark:bg-pink-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#90003c] transition disabled:opacity-50 disabled:cursor-not-allowed min-w-30"
               >
                 {submittingRating ? (
                   <>

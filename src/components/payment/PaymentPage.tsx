@@ -651,7 +651,7 @@ export default function PaymentPage() {
                 </p>
                 <button
                   onClick={() => setShowSupportModal(true)}
-                  className="font-semibold text-pink-600 dark:text-pink-400 hover:text-pink-750 dark:hover:text-pink-350"
+                  className="font-semibold text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300"
                 >
                   {t("contactSupport")}
                 </button>

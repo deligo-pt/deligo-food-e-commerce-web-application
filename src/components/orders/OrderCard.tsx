@@ -114,7 +114,7 @@ export default function OrderCard({
 
         <div className="h-1.5 rounded-full bg-gray-200 dark:bg-neutral-800">
           <div
-            className="h-full rounded-full bg-[#b0004a] dark:bg-pink-650"
+            className="h-full rounded-full bg-[#b0004a] dark:bg-pink-600"
             style={{
               width: `${progress}%`,
             }}
@@ -131,7 +131,7 @@ export default function OrderCard({
             className={`flex w-full items-center justify-center gap-2 rounded-lg py-3 text-center text-sm transition ${
               isRated
                 ? "bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400 cursor-default"
-                : "bg-[#b0004a] dark:bg-pink-650 text-white font-semibold hover:opacity-90"
+                : "bg-[#b0004a] dark:bg-pink-600 text-white font-semibold hover:opacity-90"
             }`}
           >
             <Star size={16} className={isRated ? "fill-[#f6c344] text-[#f6c344]" : "fill-white text-white"} />
@@ -140,7 +140,7 @@ export default function OrderCard({
         ) : (
           <Link
             href={`/orders/track-order/${orderId}`}
-            className="block w-full rounded-lg bg-[#b0004a] dark:bg-pink-650 py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
+            className="block w-full rounded-lg bg-[#b0004a] dark:bg-pink-600 py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
           >
             {t("trackOrder")}
           </Link>
