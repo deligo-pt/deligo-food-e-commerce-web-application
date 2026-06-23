@@ -42,6 +42,8 @@ const pt = {
   viewAll: "Ver Todos",
   unableToLoadCategories:
     "Não foi possível carregar as categorias. Tente novamente.",
+  unableToLoadCuisines:
+    "Não foi possível carregar as cozinhas. Tente novamente.",
   nearYou: "Perto de Você",
 
   noVendorsFoundFor: "Nenhum fornecedor encontrado para",

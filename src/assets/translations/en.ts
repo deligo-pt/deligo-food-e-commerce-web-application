@@ -38,6 +38,7 @@ const en = {
   whatsOnYourMind: "What's on your mind?",
   viewAll: "View All",
   unableToLoadCategories: "Unable to load categories. Please try again.",
+  unableToLoadCuisines: "Unable to load cuisines. Please try again.",
   nearYou: "Near You",
 
   noVendorsFoundFor: "No vendors found for",
