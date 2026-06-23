@@ -228,9 +228,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
+import { apiClient } from "@/lib/apiClient";
+import { getAccessToken } from "@/lib/authCookies";
 import {
   Utensils,
   Flame,
@@ -244,6 +247,30 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
+
+// Cuisine data contract for the dynamic "What's on your mind?" section.
+type Cuisine = {
+  _id: string;
+  name: string;
+  slug: string;
+  imageUrl: string;
+  isActive: boolean;
+  isDeleted: boolean;
+};
+
+// Cuisine endpoints (both authenticated and open) return meta at root level,
+// with data as a flat array.
+type CuisineOpenApiResponse = {
+  success: boolean;
+  message: string;
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPage: number;
+  };
+  data: Cuisine[];
+};
 
 const CUISINE_OPTIONS = [
   {
@@ -324,6 +351,72 @@ export default function CategoriesSection() {
   const { selectedCuisines, toggleCuisine, clearCuisines } =
     useCuisineFilterStore();
 
+  // Dynamic cuisines fetched from the API for the "What's on your mind?" cards.
+  const [cuisines, setCuisines] = useState<Cuisine[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function fetchCuisines() {
+      const token = getAccessToken();
+
+      try {
+        let activeCuisines: Cuisine[] = [];
+
+        if (token) {
+          // Authenticated: meta is at ROOT level, data is a flat array
+          // Step 1: get total count
+          const countRes = await apiClient.get<CuisineOpenApiResponse>(
+            "/categories/cuisine?page=1&limit=1",
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          const total = countRes.data.meta.total;
+
+          // Step 2: fetch all in one request
+          const response = await apiClient.get<CuisineOpenApiResponse>(
+            `/categories/cuisine?page=1&limit=${total}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          activeCuisines = (response.data?.data ?? []).filter(
+            (cuisine) => cuisine.isActive && !cuisine.isDeleted
+          );
+        } else {
+          // Open endpoint — meta is at ROOT level, data is a flat array
+          // Step 1: get total count
+          const countRes = await apiClient.get<CuisineOpenApiResponse>(
+            "/categories/cuisine/open?page=1&limit=1"
+          );
+          const total = countRes.data.meta.total;
+
+          // Step 2: fetch all in one request
+          const response = await apiClient.get<CuisineOpenApiResponse>(
+            `/categories/cuisine/open?page=1&limit=${total}`
+          );
+          activeCuisines = (response.data?.data ?? []).filter(
+            (cuisine) => cuisine.isActive && !cuisine.isDeleted
+          );
+        }
+
+        if (alive) {
+          setCuisines(activeCuisines);
+          setErrorKey(null);
+        }
+      } catch {
+        if (alive) setErrorKey("unableToLoadCuisines");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    fetchCuisines();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -396,6 +489,46 @@ export default function CategoriesSection() {
     return null;
   }
 
+  if (loading && cuisines.length === 0) {
+    return (
+      <section>
+        <div className="mb-10 flex items-center justify-between">
+          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
+            {t("whatsOnYourMind")}
+          </h2>
+        </div>
+        <div className="overflow-hidden pb-6">
+          <div className="-mx-4 flex gap-8 overflow-hidden px-4 pb-4 lg:-mx-16 lg:px-16">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div
+                key={index}
+                className="flex min-w-35 shrink-0 flex-col items-center gap-4"
+              >
+                <div className="h-32 w-32 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+                <div className="h-4 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (errorKey && cuisines.length === 0) {
+    return (
+      <section>
+        <div className="mb-10 flex items-center justify-between">
+          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
+            {t("whatsOnYourMind")}
+          </h2>
+        </div>
+        <div className="flex h-40 items-center justify-center">
+          <div className="text-center text-red-500">{t(errorKey)}</div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section>
       <div className="mb-10 flex items-center justify-between">
@@ -420,13 +553,12 @@ export default function CategoriesSection() {
           onMouseMove={handleMouseMove}
           className="-mx-4 flex gap-8 overflow-x-auto px-4 pb-4 lg:-mx-16 lg:px-16 select-none cursor-grab active:cursor-grabbing [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
-          {CUISINE_OPTIONS.map((item) => {
-            const isActive = selectedCuisines.includes(item.value);
-            const Icon = item.icon;
+          {cuisines.map((cuisine) => {
+            const isActive = selectedCuisines.includes(cuisine.name);
             return (
               <div
-                key={item.value}
-                onClick={() => handleCuisineClick(item.value)}
+                key={cuisine._id}
+                onClick={() => handleCuisineClick(cuisine.name)}
                 className="group flex min-w-35 shrink-0 select-none cursor-pointer flex-col items-center gap-4"
               >
                 <div
@@ -436,13 +568,23 @@ export default function CategoriesSection() {
                     }`}
                 >
                   <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white dark:border-neutral-900 bg-[#ffffff] dark:bg-neutral-900 transition-all duration-300">
-                    <Icon
-                      size={40}
-                      className={`transition-all duration-300 ${isActive
-                          ? "text-[#b0004a] dark:text-pink-500 scale-110"
-                          : "text-[#5a4044] dark:text-neutral-300 group-hover:text-[#b0004a] group-hover:scale-110"
-                        }`}
-                    />
+                    {cuisine.imageUrl ? (
+                      <Image
+                        alt={cuisine.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        height={128}
+                        width={128}
+                        src={cuisine.imageUrl}
+                      />
+                    ) : (
+                      <Utensils
+                        size={40}
+                        className={`transition-all duration-300 ${isActive
+                            ? "text-[#b0004a] dark:text-pink-500 scale-110"
+                            : "text-[#5a4044] dark:text-neutral-300 group-hover:text-[#b0004a] group-hover:scale-110"
+                          }`}
+                      />
+                    )}
                   </div>
                 </div>
                 <span
@@ -451,7 +593,7 @@ export default function CategoriesSection() {
                       : "text-[#191c1d] dark:text-neutral-100 group-hover:text-[#b0004a] dark:group-hover:text-pink-500"
                     }`}
                 >
-                  {t(item.labelKey)}
+                  {cuisine.name}
                 </span>
               </div>
             );
