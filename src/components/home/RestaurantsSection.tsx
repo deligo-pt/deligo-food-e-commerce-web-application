@@ -327,25 +327,25 @@ export default function RestaurantsSection() {
     return (
       <section>
         <div className="mb-10 flex items-center justify-between">
-          <div className="h-10 w-40 animate-pulse rounded-full bg-gray-200" />
-          <div className="hidden h-7 w-24 animate-pulse rounded-full bg-gray-200 sm:block" />
+          <div className="h-10 w-40 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+          <div className="hidden h-7 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800 sm:block" />
         </div>
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
-              className="overflow-hidden rounded-4xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)]"
+              className="overflow-hidden rounded-4xl bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)]"
             >
-              <div className="aspect-16/10 animate-pulse bg-gray-200" />
+              <div className="aspect-16/10 animate-pulse bg-gray-200 dark:bg-neutral-800" />
               <div className="space-y-5 p-8">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="h-7 w-2/3 animate-pulse rounded-full bg-gray-200" />
-                  <div className="h-6 w-6 animate-pulse rounded-full bg-gray-200" />
+                  <div className="h-7 w-2/3 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+                  <div className="h-6 w-6 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
                 </div>
-                <div className="h-5 w-1/2 animate-pulse rounded-full bg-gray-200" />
-                <div className="flex gap-4 border-t border-[#edeeef] pt-6">
-                  <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200" />
-                  <div className="h-5 w-32 animate-pulse rounded-full bg-gray-200" />
+                <div className="h-5 w-1/2 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+                <div className="flex gap-4 border-t border-[#edeeef] dark:border-neutral-800 pt-6">
+                  <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+                  <div className="h-5 w-32 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
                 </div>
               </div>
             </div>
@@ -358,7 +358,7 @@ export default function RestaurantsSection() {
   if (error) {
     return (
       <section>
-        <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-red-600">
+        <div className="rounded-3xl border border-red-200 dark:border-red-950 bg-red-50 dark:bg-red-950/20 p-6 text-red-600 dark:text-red-400">
           {error}
         </div>
       </section>
@@ -369,12 +369,12 @@ export default function RestaurantsSection() {
     return (
       <section>
         <div className="mb-10 flex items-center justify-between">
-          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
             {t("nearYou")}
           </h2>
           <Link
             href="/vendors"
-            className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline"
+            className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] dark:text-pink-500 hover:underline"
           >
             {t("viewAll")} <ChevronRight size={20} />
           </Link>
@@ -413,7 +413,7 @@ export default function RestaurantsSection() {
               ))}
             </div>
           )}
-        <div className="py-12 text-center text-gray-500">
+        <div className="py-12 text-center text-gray-500 dark:text-neutral-400">
           {selectedProductCategory
             ? `${t("noVendorsFoundFor")} "${selectedProductCategory.name}"`
             : t("noVendorsFoundForCategory")}
@@ -425,12 +425,12 @@ export default function RestaurantsSection() {
   return (
     <section>
       <div className="mb-10 flex items-center justify-between">
-        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
           {t("nearYou")}
         </h2>
         <Link
           href="/vendors"
-          className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline"
+          className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] dark:text-pink-500 hover:underline"
         >
           {t("viewAll")} <ChevronRight size={20} />
         </Link>
@@ -486,7 +486,7 @@ export default function RestaurantsSection() {
               href={`/vendors/${vendor.userId}`}
               className="block"
             >
-              <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] hover:shadow-2xl">
+              <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl">
                 <div className="relative aspect-16/10 overflow-hidden">
                   <Image
                     fill
@@ -500,7 +500,7 @@ export default function RestaurantsSection() {
                   />
 
                   <div className="absolute left-5 top-5">
-                    <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 px-4 py-2 text-sm font-bold text-[#191c1d] shadow-lg backdrop-blur-md">
+                    <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 dark:bg-neutral-900/95 px-4 py-2 text-sm font-bold text-[#191c1d] dark:text-white shadow-lg backdrop-blur-md">
                       <Star size={18} className="text-[#f6c344]" />
                       {vendor.rating?.average ?? 0}
                     </span>
@@ -515,7 +515,7 @@ export default function RestaurantsSection() {
 
                 <div className="p-8">
                   <div className="mb-2 flex items-center justify-between gap-4">
-                    <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d]">
+                    <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d] dark:text-neutral-100">
                       {vendor.businessDetails.businessName}
                     </h3>
                     <Heart
@@ -524,19 +524,19 @@ export default function RestaurantsSection() {
                     />
                   </div>
 
-                  <p className="mb-6 text-lg text-[#5a4044]">
+                  <p className="mb-6 text-lg text-[#5a4044] dark:text-neutral-400">
                     {vendor.businessDetails.restaurantCuisineType ||
                       vendor.businessDetails.businessType}
                   </p>
 
-                  <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-sm font-medium text-[#5a4044]">
-                    <span className="flex items-center gap-2 text-[#b0004a]">
+                  <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-sm font-medium text-[#5a4044] dark:text-neutral-400">
+                    <span className="flex items-center gap-2 text-[#b0004a] dark:text-pink-500">
                       <Truck size={18} />
                       {vendor.businessDetails.isStoreOpen
                         ? t("openNow")
                         : t("closed")}
                     </span>
-                    <span className="flex items-center gap-2 text-[#b70052]">
+                    <span className="flex items-center gap-2 text-[#b70052] dark:text-pink-400">
                       <Check size={18} />
                       {vendor.businessLocation.city},{" "}
                       {vendor.businessLocation.country}

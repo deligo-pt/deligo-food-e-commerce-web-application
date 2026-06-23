@@ -147,15 +147,15 @@ export default function LocationPicker({
     <div className="space-y-4">
       <div
         ref={mapRef}
-        className="h-87.5 w-full overflow-hidden rounded-2xl border border-pink-200 shadow-sm"
+        className="h-87.5 w-full overflow-hidden rounded-2xl border border-pink-200 dark:border-neutral-800 shadow-sm"
       />
 
-      <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-        <h4 className="mb-2 text-sm font-semibold text-green-700">
+      <div className="rounded-xl border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 p-4 transition-colors duration-200">
+        <h4 className="mb-2 text-sm font-semibold text-green-700 dark:text-green-400">
           Selected Location
         </h4>
 
-        <div className="space-y-1 text-sm text-green-900">
+        <div className="space-y-1 text-sm text-green-900 dark:text-green-100">
           <p>
             <span className="font-medium">Latitude:</span>{" "}
             {coordinates.lat.toFixed(6)}

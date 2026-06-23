@@ -101,21 +101,21 @@ export default function HeroSection() {
     <section className="group relative mt-8">
       {loading ? (
         <div>
-          <div className="relative overflow-hidden rounded-4xl bg-gray-100">
+          <div className="relative overflow-hidden rounded-4xl bg-gray-100 dark:bg-neutral-800">
             <div className="relative aspect-video animate-pulse lg:aspect-21/8">
-              <div className="absolute inset-0 bg-linear-to-r from-gray-100 via-gray-200 to-gray-100" />
-              <div className="absolute left-6 top-6 h-9 w-40 rounded-full bg-white/80 lg:left-16 lg:top-8" />
+              <div className="absolute inset-0 bg-linear-to-r from-gray-100 dark:from-neutral-800 via-gray-200 dark:via-neutral-700 to-gray-100 dark:to-neutral-800" />
+              <div className="absolute left-6 top-6 h-9 w-40 rounded-full bg-white/80 dark:bg-neutral-900/80 lg:left-16 lg:top-8" />
               <div className="absolute bottom-8 left-6 right-6 space-y-4 lg:left-16 lg:max-w-xl">
-                <div className="h-8 w-3/4 rounded-full bg-white/80 lg:h-11" />
-                <div className="h-4 w-full rounded-full bg-white/70" />
-                <div className="h-4 w-2/3 rounded-full bg-white/70" />
+                <div className="h-8 w-3/4 rounded-full bg-white/80 dark:bg-neutral-900/80 lg:h-11" />
+                <div className="h-4 w-full rounded-full bg-white/70 dark:bg-neutral-900/70" />
+                <div className="h-4 w-2/3 rounded-full bg-white/70 dark:bg-neutral-900/70" />
               </div>
             </div>
           </div>
           <div className="mt-5 flex justify-center gap-3 pb-1">
-            <span className="h-2.5 w-12 animate-pulse rounded-full bg-[#b70052]/20" />
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20" />
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20" />
+            <span className="h-2.5 w-12 animate-pulse rounded-full bg-[#b70052]/20 dark:bg-pink-600/20" />
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20 dark:bg-pink-600/20" />
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20 dark:bg-pink-600/20" />
           </div>
         </div>
       ) : hasSlides ? (
@@ -158,7 +158,7 @@ export default function HeroSection() {
                   "rounded-full transition-all",
                   index === selectedIndex
                     ? "h-2.5 w-12 bg-[#b70052]"
-                    : "h-2.5 w-2.5 bg-[#b70052]/30",
+                    : "h-2.5 w-2.5 bg-[#b70052]/30 dark:bg-[#b70052]/50",
                 ].join(" ")}
               />
             ))}

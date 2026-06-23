@@ -217,17 +217,17 @@ export default function AddAddressPage() {
     );
 
   return (
-    <section className="bg-[#f8f9fa] py-8">
+    <section className="bg-[#f8f9fa] dark:bg-neutral-950 py-8 min-h-screen transition-colors duration-200">
       <Toaster position="top-center" richColors />
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="mb-8 flex items-center gap-4">
           <button
             onClick={() => router.back()}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm hover:bg-gray-100"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 shadow-sm hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors duration-200"
           >
             <ArrowLeft className="h-5 w-5 text-[#b0004a]" />
           </button>
-          <h1 className="text-3xl font-bold text-[#191c1d]">
+          <h1 className="text-3xl font-bold text-[#191c1d] dark:text-neutral-50">
             {t("addNewAddress")}
           </h1>
         </div>
@@ -235,12 +235,12 @@ export default function AddAddressPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left Panel – Map */}
           <div className="lg:col-span-5">
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
               <div className="mb-6">
-                <h2 className="mb-2 text-2xl font-bold text-[#191c1d]">
+                <h2 className="mb-2 text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
                   {t("confirmLocation")}
                 </h2>
-                <p className="text-sm text-[#5a4044]">
+                <p className="text-sm text-[#5a4044] dark:text-neutral-400">
                   {t("confirmLocationDescription")}
                 </p>
               </div>
@@ -248,7 +248,7 @@ export default function AddAddressPage() {
               {/* Search with Autocomplete Suggestions */}
               <div ref={searchContainerRef} className="relative mb-6">
                 <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-neutral-500 z-10"
                   size={18}
                 />
                 <input
@@ -257,13 +257,13 @@ export default function AddAddressPage() {
                   onChange={handleSearchChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder")}
-                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-10 outline-none focus:border-[#b0004a]"
+                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#b0004a] dark:focus:border-[#b0004a]"
                   autoComplete="off"
                 />
                 {searchValue && (
                   <button
                     onClick={clearSearch}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-neutral-500 hover:text-gray-600 dark:hover:text-neutral-300"
                   >
                     <X size={16} />
                   </button>
@@ -271,26 +271,26 @@ export default function AddAddressPage() {
 
                 {/* Suggestions Dropdown */}
                 {showSuggestions && suggestions.length > 0 && (
-                  <ul className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#e3bdc3] bg-white shadow-xl">
+                  <ul className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl dark:shadow-none">
                     {suggestions.map((s, idx) => (
                       <li key={s.placeId}>
                         <button
                           type="button"
                           onClick={() => handleSuggestionClick(s)}
-                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] ${idx !== suggestions.length - 1
-                            ? "border-b border-[#f5e0e5]"
+                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] dark:hover:bg-neutral-800/50 ${idx !== suggestions.length - 1
+                            ? "border-b border-[#f5e0e5] dark:border-neutral-800"
                             : ""
                             }`}
                         >
-                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5]">
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5] dark:bg-[#b0004a]/10">
                             <Search size={13} className="text-[#b0004a]" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-[#191c1d]">
+                            <span className="block truncate text-sm font-semibold text-[#191c1d] dark:text-neutral-200">
                               {s.mainText}
                             </span>
                             {s.secondaryText && (
-                              <span className="block truncate text-xs text-[#5a4044]">
+                              <span className="block truncate text-xs text-[#5a4044] dark:text-neutral-400">
                                 {s.secondaryText}
                               </span>
                             )}
@@ -312,16 +312,16 @@ export default function AddAddressPage() {
               </div>
 
               {/* Status Card */}
-              <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
-                <CheckCircle className="mt-0.5 text-green-600" size={20} />
+              <div className="flex items-start gap-3 rounded-xl border border-green-200 dark:border-green-900/50 bg-green-50 dark:bg-green-950/20 p-4">
+                <CheckCircle className="mt-0.5 text-green-600 dark:text-green-500" size={20} />
                 <div>
-                  <p className="font-bold text-green-800">
+                  <p className="font-bold text-green-800 dark:text-green-400">
                     {coordinates
                       ? t("locationConfirmed")
                       : "Waiting for location..."}
                   </p>
                   {coordinates && (
-                    <p className="text-sm text-green-700">
+                    <p className="text-sm text-green-700 dark:text-green-500">
                       Lat: {coordinates.lat.toFixed(6)} | Lng:{" "}
                       {coordinates.lng.toFixed(6)}
                     </p>

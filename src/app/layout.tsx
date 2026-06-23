@@ -21,8 +21,36 @@ export default function RootLayout({
     <html
       lang="en"
       className={cn("light h-full antialiased", "font-sans", geist.variable)}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-[#f8f9fa] font-sans text-[#191c1d]">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var themeState = localStorage.getItem('app-theme');
+                  var theme = 'light';
+                  if (themeState) {
+                    var parsed = JSON.parse(themeState);
+                    if (parsed && parsed.state && parsed.state.theme) {
+                      theme = parsed.state.theme;
+                    }
+                  }
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
+                  } else {
+                    document.documentElement.classList.add('light');
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-[#f8f9fa] dark:bg-neutral-950 font-sans text-[#191c1d] dark:text-neutral-100 transition-colors duration-200">
         {children}
         <Toaster position="top-center" richColors />
         <FCMProvider />

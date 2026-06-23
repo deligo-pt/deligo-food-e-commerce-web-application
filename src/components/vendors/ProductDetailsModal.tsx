@@ -208,12 +208,12 @@ export default function ProductDetailsModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative flex w-full max-w-145 flex-col overflow-hidden rounded-4xl bg-white shadow-2xl"
+        className="relative flex w-full max-w-145 flex-col overflow-hidden rounded-4xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 shadow-2xl dark:shadow-none"
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 transition hover:bg-gray-200"
+          className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 transition hover:bg-gray-200 dark:hover:bg-neutral-700"
         >
           <X size={20} />
         </button>
@@ -244,7 +244,7 @@ export default function ProductDetailsModal({
               </div>
 
               {/* Category Badge */}
-              <div className="mb-6 flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 text-green-700">
+              <div className="mb-6 flex items-center gap-2 rounded-full bg-green-50 dark:bg-green-950/30 px-4 py-2 text-green-700 dark:text-green-400 border dark:border-green-900/30">
                 <span className="text-xs font-bold uppercase tracking-wider">
                   {product.category?.name || t("product")}
                 </span>
@@ -253,22 +253,22 @@ export default function ProductDetailsModal({
               {/* Product Info */}
               <div className="mb-8 w-full">
                 <div className="flex items-start justify-between gap-4">
-                  <h2 className="max-w-[70%] text-3xl font-bold leading-tight text-gray-900">
+                  <h2 className="max-w-[70%] text-3xl font-bold leading-tight text-gray-900 dark:text-white">
                     {product.name}
                   </h2>
                   <div className="text-right">
-                    <p className="text-3xl font-bold text-pink-600">
+                    <p className="text-3xl font-bold text-pink-600 dark:text-pink-400">
                       {formatPrice(unitPrice, currency)}
                     </p>
                     {hasDiscount && (
-                      <p className="text-gray-400 line-through">
+                      <p className="text-gray-400 dark:text-neutral-500 line-through">
                         {formatPrice(currentOriginalUnitPrice, currency)}
                       </p>
                     )}
                   </div>
                 </div>
                 {hasDiscount && (
-                  <div className="mt-3 flex items-center gap-2 text-pink-600">
+                  <div className="mt-3 flex items-center gap-2 text-pink-600 dark:text-pink-400">
                     <span className="text-sm font-semibold">
                       Save{" "}
                       {formatPrice(
@@ -286,7 +286,7 @@ export default function ProductDetailsModal({
                 <div className="mb-8 w-full space-y-4">
                   {groupedOptions.map((group) => (
                     <div key={group.groupName}>
-                      <h3 className="mb-2 text-base font-semibold text-gray-900">
+                      <h3 className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
                         {group.groupName}
                       </h3>
                       <div className="space-y-2">
@@ -298,28 +298,28 @@ export default function ProductDetailsModal({
                             <div
                               key={`${opt.groupName}-${opt.label}`}
                               onClick={() => handleOptionClick(opt)}
-                              className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-100 p-3 transition hover:bg-gray-50"
+                              className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-100 dark:border-neutral-800 p-3 transition bg-white dark:bg-neutral-900 hover:bg-gray-50 dark:hover:bg-neutral-800"
                             >
                               <div className="flex items-center gap-3">
                                 {isSelected ? (
                                   <CheckCircle
                                     size={20}
-                                    className="text-pink-600"
+                                    className="text-pink-600 dark:text-pink-400"
                                   />
                                 ) : (
-                                  <Circle size={20} className="text-gray-400" />
+                                  <Circle size={20} className="text-gray-400 dark:text-neutral-500" />
                                 )}
-                                <span className="text-gray-800">
+                                <span className="text-gray-800 dark:text-neutral-200">
                                   {opt.label}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 {hasDiscount && (
-                                  <span className="text-sm text-gray-400 line-through">
+                                  <span className="text-sm text-gray-400 dark:text-neutral-500 line-through">
                                     {formatPrice(opt.price, currency)}
                                   </span>
                                 )}
-                                <span className="font-medium text-pink-600">
+                                <span className="font-medium text-pink-600 dark:text-pink-400">
                                   {formatPrice(opt.price * (1 - discountPercentage / 100), currency)}
                                 </span>
                               </div>
@@ -336,11 +336,11 @@ export default function ProductDetailsModal({
               <div className="mb-8 flex w-full items-center justify-end gap-4">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:bg-gray-50"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 transition hover:bg-gray-50 dark:hover:bg-neutral-800"
                 >
                   <Minus size={16} />
                 </button>
-                <span className="w-8 text-center text-xl font-bold">
+                <span className="w-8 text-center text-xl font-bold text-gray-950 dark:text-white">
                   {quantity}
                 </span>
                 <button
@@ -352,21 +352,21 @@ export default function ProductDetailsModal({
               </div>
 
               {/* Summary */}
-              <div className="mb-6 w-full rounded-3xl border border-gray-200 bg-gray-50 p-6">
+              <div className="mb-6 w-full rounded-3xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-6">
                 <div className="space-y-3">
-                  <div className="flex justify-between text-gray-600">
+                  <div className="flex justify-between text-gray-600 dark:text-neutral-400">
                     <span>{t("subtotal")}</span>
                     <span>{formatPrice(subtotal, currency)}</span>
                   </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-3 text-gray-600">
+                  <div className="flex justify-between border-b border-gray-200 dark:border-neutral-800 pb-3 text-gray-600 dark:text-neutral-400">
                     <span>
                       {t("tax")} ({taxRate}%)
                     </span>
                     <span>{formatPrice(taxAmount, currency)}</span>
                   </div>
                   <div className="flex justify-between pt-1">
-                    <span className="text-lg font-semibold">{t("total")}</span>
-                    <span className="text-lg font-bold text-pink-600">
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">{t("total")}</span>
+                    <span className="text-lg font-bold text-pink-600 dark:text-pink-400">
                       {formatPrice(total, currency)}
                     </span>
                   </div>
@@ -374,27 +374,27 @@ export default function ProductDetailsModal({
               </div>
 
               {/* Customization (placeholder) */}
-              <div className="mb-8 flex w-full cursor-pointer items-center gap-4 rounded-3xl border border-pink-200 bg-pink-50 p-5 transition hover:bg-pink-100">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm">
-                  <Sparkles size={20} className="text-pink-600" />
+              <div className="mb-8 flex w-full cursor-pointer items-center gap-4 rounded-3xl border border-pink-200 dark:border-pink-900/30 bg-pink-50 dark:bg-pink-950/20 p-5 transition hover:bg-pink-100 dark:hover:bg-pink-950/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white dark:bg-neutral-900 shadow-sm">
+                  <Sparkles size={20} className="text-pink-600 dark:text-pink-400" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
                     {t("customizeYourOrder")}
                   </h4>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-neutral-400">
                     {t("chooseToppingsAndExtras")}
                   </p>
                 </div>
               </div>
 
               {/* Details */}
-              <div className="w-full">
+              <div className="w-full text-gray-900 dark:text-white">
                 <div className="mb-4 flex items-center gap-2">
                   <FileText size={18} />
                   <h3 className="text-lg font-semibold">{t("details")}</h3>
                 </div>
-                <p className="leading-7 text-gray-600">
+                <p className="leading-7 text-gray-600 dark:text-neutral-400">
                   {product.description ||
                     t("freshlyPreparedWithPremiumIngredients")}
                 </p>
@@ -405,7 +405,7 @@ export default function ProductDetailsModal({
 
         {/* Sticky Footer */}
         {!loading && !error && product && (
-          <div className="border-t bg-white p-8">
+          <div className="border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-8">
             <button
               onClick={handleAddToCart}
               disabled={cartLoading}

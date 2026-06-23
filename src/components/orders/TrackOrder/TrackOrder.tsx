@@ -556,15 +556,15 @@ export default function TrackOrder() {
 
   if (loading) {
     return (
-      <main className="bg-[#f8f9fa] text-[#191c1d] min-h-screen font-sans overflow-x-hidden">
+      <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-[#191c1d] dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-24">
           <div className="animate-pulse space-y-6">
-            <div className="h-100 bg-gray-200 rounded-4xl" />
+            <div className="h-100 bg-gray-200 dark:bg-neutral-800 rounded-4xl" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="h-32 bg-gray-200 rounded-3xl" />
-              <div className="h-32 bg-gray-200 rounded-3xl" />
+              <div className="h-32 bg-gray-200 dark:bg-neutral-800 rounded-3xl" />
+              <div className="h-32 bg-gray-200 dark:bg-neutral-800 rounded-3xl" />
             </div>
-            <div className="h-64 bg-gray-200 rounded-3xl" />
+            <div className="h-64 bg-gray-200 dark:bg-neutral-800 rounded-3xl" />
           </div>
         </div>
       </main>
@@ -573,9 +573,9 @@ export default function TrackOrder() {
 
   if (error || !order) {
     return (
-      <main className="bg-[#f8f9fa] text-[#191c1d] min-h-screen font-sans overflow-x-hidden">
+      <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-[#191c1d] dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-24 text-center">
-          <p className="text-red-500">{error || "Order not found"}</p>
+          <p className="text-red-500 dark:text-red-400">{error || "Order not found"}</p>
         </div>
       </main>
     );
@@ -628,7 +628,7 @@ export default function TrackOrder() {
   const steps = getOrderStep(order.orderStatus, t);
 
   return (
-    <main className="bg-[#f8f9fa] text-[#191c1d] min-h-screen font-sans overflow-x-hidden">
+    <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-[#191c1d] dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column */}
@@ -647,9 +647,9 @@ export default function TrackOrder() {
 
             {/* Rider Details Card (Dynamic Live view) */}
             {order.deliveryPartnerId && (
-              <div className="bg-white rounded-3xl shadow-md p-6 flex flex-col md:flex-row items-center justify-between gap-6 border-l-4 border-[#008080] animate-fadeIn transition-all duration-500 hover:shadow-lg">
+              <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex flex-col md:flex-row items-center justify-between gap-6 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-[#008080] animate-fadeIn transition-all duration-500 hover:shadow-lg">
                 <div className="flex items-center gap-4 w-full md:w-auto">
-                  <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-[#008080] bg-gray-100 shrink-0">
+                  <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-[#008080] bg-gray-100 dark:bg-neutral-950 shrink-0">
                     {order.deliveryPartnerId.profilePhoto ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -658,19 +658,19 @@ export default function TrackOrder() {
                         className="w-full h-full object-cover animate-scaleIn"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-[#e0f2f1] text-[#008080]">
+                      <div className="w-full h-full flex items-center justify-center bg-[#e0f2f1] dark:bg-teal-950/20 text-[#008080]">
                         <Bike className="w-8 h-8" />
                       </div>
                     )}
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-[#5a4044] tracking-wide uppercase">
+                    <p className="text-xs font-bold text-[#5a4044] dark:text-neutral-400 tracking-wide uppercase">
                       {t("yourRider") || "Your Rider"}
                     </p>
-                    <h3 className="text-xl font-extrabold text-[#191c1d]">
+                    <h3 className="text-xl font-extrabold text-[#191c1d] dark:text-neutral-50">
                       {`${order.deliveryPartnerId.name?.firstName || ""} ${order.deliveryPartnerId.name?.lastName || ""}`.trim()}
                     </h3>
-                    <p className="text-sm font-semibold text-[#5a4044] flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
                       {order.orderStatus === "DELIVERED"
                         ? t("orderHasBeenDelivered")
@@ -683,7 +683,7 @@ export default function TrackOrder() {
                 {order.deliveryPartnerId.contactNumber && (
                   <a
                     href={`tel:${order.deliveryPartnerId.contactNumber}`}
-                    className="w-full md:w-auto text-center bg-[#008080] hover:bg-[#006666] text-white font-extrabold px-6 py-3.5 rounded-full transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 hover:shadow-lg"
+                    className="w-full md:w-auto text-center bg-[#008080] hover:bg-[#006666] dark:bg-teal-600 dark:hover:bg-teal-700 text-white font-extrabold px-6 py-3.5 rounded-full transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 hover:shadow-lg"
                   >
                     <Navigation className="w-4 h-4 rotate-45" />
                     {t("callRider") || "Call Rider"} ({order.deliveryPartnerId.contactNumber})
@@ -694,34 +694,34 @@ export default function TrackOrder() {
 
             {/* Restaurant & Delivery Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-3xl shadow-md p-6 flex gap-4">
-                <div className="h-12 w-12 rounded-full bg-[#ffd9de] flex items-center justify-center shrink-0">
-                  <Utensils className="w-6 h-6 text-[#b0004a]" />
+              <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800">
+                <div className="h-12 w-12 rounded-full bg-[#ffd9de] dark:bg-pink-950/30 flex items-center justify-center shrink-0">
+                  <Utensils className="w-6 h-6 text-[#b0004a] dark:text-pink-400" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-[#5a4044] tracking-wide">
+                  <p className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400 tracking-wide">
                     {t("restaurant")}
                   </p>
-                  <h3 className="text-xl font-bold text-[#191c1d]">
+                  <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50">
                     {vendorName || t("restaurant")}
                   </h3>
-                  <p className="text-sm font-semibold text-[#5a4044] leading-relaxed">
+                  <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 leading-relaxed">
                     {restaurantAddress}
                   </p>
                 </div>
               </div>
-              <div className="bg-white rounded-3xl shadow-md p-6 flex gap-4 border-l-4 border-[#b70052]">
-                <div className="h-12 w-12 rounded-full bg-[#ffd9df] flex items-center justify-center shrink-0">
-                  <MapPin className="w-6 h-6 text-[#b70052]" />
+              <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-l-[#b70052] dark:border-l-[#b70052]">
+                <div className="h-12 w-12 rounded-full bg-[#ffd9df] dark:bg-pink-950/30 flex items-center justify-center shrink-0">
+                  <MapPin className="w-6 h-6 text-[#b70052] dark:text-pink-400" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-[#5a4044]">
+                  <p className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400">
                     {t("deliveryTo")}
                   </p>
-                  <h3 className="text-xl font-bold text-[#191c1d]">
+                  <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50">
                     {deliveryAddress?.city || t("location")}
                   </h3>
-                  <p className="text-sm font-semibold text-[#5a4044]">
+                  <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400">
                     {addressString || t("addressNotProvided")}
                   </p>
                 </div>
@@ -730,12 +730,12 @@ export default function TrackOrder() {
 
             {/* Order Items & Bill Summary */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              <div className="md:col-span-5 bg-white rounded-3xl shadow-md p-6">
+              <div className="md:col-span-5 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-[#ffd9de] rounded-xl">
-                    <ShoppingBag className="w-5 h-5 text-[#b0004a]" />
+                  <div className="p-2 bg-[#ffd9de] dark:bg-pink-950/30 rounded-xl">
+                    <ShoppingBag className="w-5 h-5 text-[#b0004a] dark:text-pink-400" />
                   </div>
-                  <h4 className="text-sm font-semibold text-[#5a4044]">
+                  <h4 className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400">
                     {t("items")} ({totalItems})
                   </h4>
                 </div>
@@ -746,61 +746,61 @@ export default function TrackOrder() {
                       className="flex items-center justify-between"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-[#b0004a] font-bold">
+                        <span className="text-[#b0004a] dark:text-pink-400 font-bold">
                           {item.itemSummary?.quantity}x
                         </span>
-                        <span className="text-[#191c1d] font-semibold">
+                        <span className="text-[#191c1d] dark:text-neutral-300 font-semibold">
                           {item.name}
                         </span>
                       </div>
-                      <span className="text-[#191c1d] font-bold">
+                      <span className="text-[#191c1d] dark:text-neutral-250 font-bold">
                         €{item.itemSummary?.grandTotal?.toFixed(2)}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="md:col-span-7 bg-white rounded-3xl shadow-md p-6">
+              <div className="md:col-span-7 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-[#ffd9df] rounded-xl">
-                    <Receipt className="w-5 h-5 text-[#b70052]" />
+                  <div className="p-2 bg-[#ffd9df] dark:bg-pink-950/30 rounded-xl">
+                    <Receipt className="w-5 h-5 text-[#b70052] dark:text-pink-400" />
                   </div>
-                  <h4 className="text-sm font-semibold text-[#5a4044] uppercase tracking-wider">
+                  <h4 className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 uppercase tracking-wider">
                     {t("billSummary")}
                   </h4>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-[#5a4044]">
+                  <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
                     <span>{t("subtotal")}</span>
                     <span>€{subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-[#5a4044]">
+                  <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
                     <span>{t("deliveryFee")}</span>
                     <span>€{deliveryFee.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-[#5a4044]">
+                  <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
                     <span>{t("tax")}</span>
                     <span>€{tax.toFixed(2)}</span>
                   </div>
-                  <div className="pt-4 mt-2 border-t border-[#e3bdc3] flex justify-between items-center">
-                    <span className="text-2xl font-extrabold text-[#191c1d]">
+                  <div className="pt-4 mt-2 border-t border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
+                    <span className="text-2xl font-extrabold text-[#191c1d] dark:text-neutral-50">
                       {t("totalAmount")}
                     </span>
-                    <span className="text-2xl font-extrabold text-[#b70052]">
+                    <span className="text-2xl font-extrabold text-[#b70052] dark:text-pink-400">
                       €{grandTotal.toFixed(2)}
                     </span>
                   </div>
                 </div>
-                <div className="mt-6 bg-[#edeeef] p-4 rounded-2xl flex items-center justify-between">
+                <div className="mt-6 bg-[#edeeef] dark:bg-neutral-950 p-4 rounded-2xl flex items-center justify-between transition-colors duration-200">
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[#5a4044]">
+                    <span className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400">
                       {t("paymentMethod")}
                     </span>
-                    <span className="text-[#191c1d] font-extrabold">
+                    <span className="text-[#191c1d] dark:text-neutral-300 font-extrabold">
                       {order.paymentMethod || t("notAvailable")}
                     </span>
                   </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full border border-green-200">
+                  <span className="px-3 py-1 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-[10px] font-bold rounded-full border border-green-200 dark:border-green-900/30">
                     {order.paymentStatus || t("paid")}
                   </span>
                 </div>
@@ -809,20 +809,20 @@ export default function TrackOrder() {
           </div>
 
           {/* Right Column: Timeline */}
-          <aside className="lg:col-span-5 bg-white rounded-3xl shadow-md p-6 h-full min-h-175">
+          <aside className="lg:col-span-5 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6 h-full min-h-175 transition-colors duration-200">
             <div className="flex justify-between items-start mb-8">
               <div>
-                <h2 className="text-2xl font-extrabold text-[#191c1d]">
+                <h2 className="text-2xl font-extrabold text-[#191c1d] dark:text-neutral-50">
                   {t("orderStatus")}
                 </h2>
-                <div className="flex items-center gap-2 mt-1 text-[#5a4044] text-xs font-semibold">
+                <div className="flex items-center gap-2 mt-1 text-[#5a4044] dark:text-neutral-400 text-xs font-semibold">
                   <span className="font-bold">{order.orderId}</span>
                   <span>•</span>
                   <span>{new Date(order.createdAt).toLocaleString()}</span>
                 </div>
               </div>
               <Link href="/help-center">
-                <button className="bg-[#b0004a] text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg hover:opacity-90 transition-all active:scale-95">
+                <button className="bg-[#b0004a] dark:bg-pink-600 text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg hover:opacity-90 transition-all active:scale-95">
                   <Headphones className="w-4 h-4" />
                   <span className="font-bold">{t("support")}</span>
                 </button>
@@ -841,35 +841,35 @@ export default function TrackOrder() {
                   >
                     {idx < steps.length - 1 && (
                       <div
-                        className={`absolute left-5 top-10 bottom-0 w-0.5 ${isCompleted ? "bg-[#b0004a]" : "bg-[#e3bdc3]"
-                          } ${isCurrent && idx !== steps.length - 1 ? "border-l-2 border-dashed border-[#e3bdc3]" : ""}`}
+                        className={`absolute left-5 top-10 bottom-0 w-0.5 ${isCompleted ? "bg-[#b0004a] dark:bg-pink-600" : "bg-[#e3bdc3] dark:bg-neutral-800"
+                          } ${isCurrent && idx !== steps.length - 1 ? "border-l-2 border-dashed border-[#e3bdc3] dark:border-neutral-800" : ""}`}
                       />
                     )}
                     <div
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shadow-md ${isCompleted || isCurrent
-                        ? "bg-[#b0004a] text-white"
-                        : "bg-[#f3f4f5] text-[#8e6f74] border border-[#e3bdc3]"
-                        } ${isCurrent ? "border-4 border-[#ffd9de]" : ""}`}
+                        ? "bg-[#b0004a] dark:bg-pink-600 text-white"
+                        : "bg-[#f3f4f5] dark:bg-neutral-950 text-[#8e6f74] dark:text-neutral-500 border border-[#e3bdc3] dark:border-neutral-800"
+                        } ${isCurrent ? "border-4 border-[#ffd9de] dark:border-pink-950/40" : ""}`}
                     >
                       <Icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1">
                       <h4
                         className={`text-xl font-bold ${isCompleted || isCurrent
-                          ? "text-[#191c1d]"
-                          : "text-[#8e6f74]"
-                          } ${isCurrent ? "text-[#b0004a]" : ""}`}
+                          ? "text-[#191c1d] dark:text-neutral-50"
+                          : "text-[#8e6f74] dark:text-neutral-500"
+                          } ${isCurrent ? "text-[#b0004a] dark:text-pink-400" : ""}`}
                       >
                         {step.label}
                       </h4>
                       <p
-                        className={`text-base ${isCompleted || isCurrent ? "text-[#5a4044]" : "text-[#e3bdc3]"}`}
+                        className={`text-base ${isCompleted || isCurrent ? "text-[#5a4044] dark:text-neutral-400" : "text-[#e3bdc3] dark:text-neutral-600"}`}
                       >
                         {step.description}
                       </p>
                       {isCurrent && step.key !== "DELIVERED" && step.key !== "CANCELLED" && step.key !== "REJECTED" && (
-                        <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] text-[#b0004a] rounded-full text-xs font-bold">
-                          <span className="w-1.5 h-1.5 bg-[#b0004a] rounded-full animate-pulse" />
+                        <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] dark:bg-pink-950/40 text-[#b0004a] dark:text-pink-400 rounded-full text-xs font-bold">
+                          <span className="w-1.5 h-1.5 bg-[#b0004a] dark:bg-pink-500 rounded-full animate-pulse" />
                           {t("inProgress")}
                         </span>
                       )}

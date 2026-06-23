@@ -147,9 +147,9 @@ export default function CartPage() {
       <div className="mx-auto max-w-7xl px-6 py-10">
         {/* Header skeleton */}
         <div className="mb-10">
-          <div className="mb-3 h-4 w-32 animate-pulse rounded bg-gray-200" />
-          <div className="h-10 w-72 animate-pulse rounded bg-gray-200" />
-          <div className="mt-3 h-4 w-40 animate-pulse rounded bg-gray-200" />
+          <div className="mb-3 h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
+          <div className="h-10 w-72 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
+          <div className="mt-3 h-4 w-40 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
         </div>
 
         {/* Store cards skeleton */}
@@ -157,40 +157,40 @@ export default function CartPage() {
           {Array.from({ length: 2 }).map((_, idx) => (
             <div
               key={idx}
-              className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm"
+              className="rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm"
             >
               <div className="mb-6 flex items-start justify-between">
                 <div className="flex gap-4">
-                  <div className="h-20 w-20 animate-pulse rounded-full bg-gray-200" />
+                  <div className="h-20 w-20 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
                   <div>
-                    <div className="h-8 w-56 animate-pulse rounded bg-gray-200" />
+                    <div className="h-8 w-56 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
                     <div className="mt-3 flex gap-3">
-                      <div className="h-10 w-24 animate-pulse rounded-xl bg-gray-200" />
-                      <div className="h-10 w-28 animate-pulse rounded-xl bg-gray-200" />
+                      <div className="h-10 w-24 animate-pulse rounded-xl bg-gray-200 dark:bg-neutral-800" />
+                      <div className="h-10 w-28 animate-pulse rounded-xl bg-gray-200 dark:bg-neutral-800" />
                     </div>
                   </div>
                 </div>
-                <div className="h-6 w-6 animate-pulse rounded bg-gray-200" />
+                <div className="h-6 w-6 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
               </div>
               {/* Product rows skeleton */}
               <div className="space-y-4">
                 {[1, 2].map((i) => (
                   <div key={i} className="flex gap-4">
-                    <div className="h-24 w-24 animate-pulse rounded-2xl bg-gray-200" />
+                    <div className="h-24 w-24 animate-pulse rounded-2xl bg-gray-200 dark:bg-neutral-800" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
-                      <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                      <div className="h-6 w-48 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
+                      <div className="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
                       <div className="flex justify-between">
-                        <div className="h-10 w-28 animate-pulse rounded-2xl bg-gray-200" />
-                        <div className="h-8 w-20 animate-pulse rounded bg-gray-200" />
+                        <div className="h-10 w-28 animate-pulse rounded-2xl bg-gray-200 dark:bg-neutral-800" />
+                        <div className="h-8 w-20 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex animate-pulse items-center justify-between rounded-3xl bg-gray-200 px-6 py-5">
-                <div className="h-7 w-40 rounded bg-gray-300" />
-                <div className="h-10 w-24 rounded-xl bg-gray-300" />
+              <div className="mt-4 flex animate-pulse items-center justify-between rounded-3xl bg-gray-200 dark:bg-neutral-800 px-6 py-5">
+                <div className="h-7 w-40 rounded bg-gray-300 dark:bg-neutral-700" />
+                <div className="h-10 w-24 rounded-xl bg-gray-300 dark:bg-neutral-700" />
               </div>
             </div>
           ))}
@@ -201,29 +201,31 @@ export default function CartPage() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-500">
-        {error}
+      <div className="mx-auto max-w-7xl px-6 py-10">
+        <div className="rounded-2xl border border-red-200 dark:border-red-950 bg-red-50 dark:bg-red-950/20 p-6 text-red-500 dark:text-red-400">
+          {error}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10">
+    <div className="mx-auto max-w-7xl px-6 py-10 transition-colors duration-200">
       <div className="mb-10">
-        <p className="mb-3 text-sm text-gray-500">{t("cartBreadcrumb")}</p>
-        <h1 className="text-4xl font-extrabold text-gray-900">
+        <p className="mb-3 text-sm text-gray-500 dark:text-neutral-400">{t("cartBreadcrumb")}</p>
+        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-neutral-50">
           {t("myShoppingCart")}
         </h1>
-        <p className="mt-2 text-gray-500">
+        <p className="mt-2 text-gray-500 dark:text-neutral-400">
           {cart?.totalItems ?? 0} {t("itemsInCart")}
         </p>
       </div>
 
       <div className="space-y-6">
         {stores.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-gray-300 p-12 text-center">
+          <div className="rounded-3xl border border-dashed border-gray-300 dark:border-neutral-800 p-12 text-center text-neutral-800 dark:text-neutral-200">
             <h3 className="text-xl font-semibold">{t("yourCartIsEmpty")}</h3>
-            <p className="mt-2 text-gray-500">{t("addProductsToContinue")}</p>
+            <p className="mt-2 text-gray-500 dark:text-neutral-400">{t("addProductsToContinue")}</p>
           </div>
         ) : (
           stores.map((store: any) => (

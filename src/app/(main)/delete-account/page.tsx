@@ -47,22 +47,22 @@ export default function DeleteAccountPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#e1e3e4] px-4 py-4 md:py-8">
-      <div className="mx-auto max-w-lg rounded-3xl bg-white p-6 shadow-xl md:p-8">
+    <div className="min-h-screen bg-[#e1e3e4] dark:bg-neutral-950 px-4 py-4 md:py-8 transition-colors duration-200">
+      <div className="mx-auto max-w-lg rounded-3xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-xl dark:shadow-none md:p-8">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-black text-[#b0004a] md:text-3xl">
+          <h1 className="text-2xl font-black text-[#b0004a] dark:text-[#c2185b] md:text-3xl">
             {t("deleteAccount")}
           </h1>
           <Link
             href="/"
-            className="rounded-full p-2 text-[#5a4044] transition-colors hover:bg-[#e3bdc3]/30 hover:text-[#b0004a]"
+            className="rounded-full p-2 text-[#5a4044] dark:text-neutral-400 transition-colors hover:bg-[#e3bdc3]/30 dark:hover:bg-neutral-800 hover:text-[#b0004a] dark:hover:text-neutral-200"
           >
             <X size={24} />
           </Link>
         </div>
 
-        <p className="mb-8 text-[16px] text-[#5a4044]">
+        <p className="mb-8 text-[16px] text-[#5a4044] dark:text-neutral-400">
           {t("deleteAccountWarning")}
         </p>
 
@@ -70,7 +70,7 @@ export default function DeleteAccountPage() {
           <div>
             <label
               htmlFor="name"
-              className="mb-1 block text-sm font-semibold text-[#191c1d]"
+              className="mb-1 block text-sm font-semibold text-[#191c1d] dark:text-neutral-200"
             >
               {t("fullName")}
             </label>
@@ -81,7 +81,7 @@ export default function DeleteAccountPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-[#e3bdc3] bg-white px-4 py-3 text-[#191c1d] outline-none transition focus:border-[#b0004a] focus:ring-1 focus:ring-[#b0004a]"
+              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#b0004a] focus:ring-1 focus:ring-[#b0004a]"
               placeholder="John Doe"
             />
           </div>
@@ -89,7 +89,7 @@ export default function DeleteAccountPage() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1 block text-sm font-semibold text-[#191c1d]"
+              className="mb-1 block text-sm font-semibold text-[#191c1d] dark:text-neutral-200"
             >
               {t("emailAddress")}
             </label>
@@ -100,7 +100,7 @@ export default function DeleteAccountPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-[#e3bdc3] bg-white px-4 py-3 text-[#191c1d] outline-none transition focus:border-[#b0004a] focus:ring-1 focus:ring-[#b0004a]"
+              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#b0004a] focus:ring-1 focus:ring-[#b0004a]"
               placeholder="you@example.com"
             />
           </div>
@@ -108,7 +108,7 @@ export default function DeleteAccountPage() {
           <div>
             <label
               htmlFor="contactNumber"
-              className="mb-1 block text-sm font-semibold text-[#191c1d]"
+              className="mb-1 block text-sm font-semibold text-[#191c1d] dark:text-neutral-200"
             >
               {t("contactNumber")}
             </label>
@@ -119,7 +119,7 @@ export default function DeleteAccountPage() {
               value={formData.contactNumber}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-[#e3bdc3] bg-white px-4 py-3 text-[#191c1d] outline-none transition focus:border-[#b0004a] focus:ring-1 focus:ring-[#b0004a]"
+              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#b0004a] focus:ring-1 focus:ring-[#b0004a]"
               placeholder="+1234567890"
             />
           </div>
@@ -133,8 +133,8 @@ export default function DeleteAccountPage() {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-[#5a4044]">
-          <Link href="/" className="underline hover:text-[#b0004a]">
+        <div className="mt-6 text-center text-sm text-[#5a4044] dark:text-neutral-400">
+          <Link href="/" className="underline hover:text-[#b0004a] dark:hover:text-[#c2185b]">
             {t("returnToHome")}
           </Link>
         </div>
@@ -143,15 +143,15 @@ export default function DeleteAccountPage() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="relative mx-auto w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-2xl md:p-8">
+          <div className="relative mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 text-center shadow-2xl dark:shadow-none md:p-8">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-4 top-4 text-[#5a4044] hover:text-[#b0004a]"
+              className="absolute right-4 top-4 text-[#5a4044] dark:text-neutral-400 hover:text-[#b0004a] dark:hover:text-neutral-200"
             >
               <X size={20} />
             </button>
             <div className="mb-4 flex justify-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400">
                 <svg
                   className="h-6 w-6"
                   fill="none"
@@ -167,16 +167,16 @@ export default function DeleteAccountPage() {
                 </svg>
               </div>
             </div>
-            <h3 className="mb-2 text-xl font-bold text-[#191c1d]">
+            <h3 className="mb-2 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
               {t("requestSubmitted")}
             </h3>
-            <p className="mb-6 text-[16px] text-[#5a4044]">
+            <p className="mb-6 text-[16px] text-[#5a4044] dark:text-neutral-400">
               {t("deleteAccountRequestReceived")}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-xl border border-[#b0004a] px-6 py-2 font-semibold text-[#b0004a] transition-colors hover:bg-[#b0004a] hover:text-white cursor-pointer"
+                className="rounded-xl border border-[#b0004a] px-6 py-2 font-semibold text-[#b0004a] dark:text-[#b0004a] transition-colors hover:bg-[#b0004a] hover:text-white dark:hover:text-white cursor-pointer"
               >
                 {t("close")}
               </button>

@@ -71,21 +71,21 @@ export default function EditProfilePage() {
   if (error) return <ErrorState message={error} />;
 
   return (
-    <section className="bg-[#f8f9fa] py-10">
+    <section className="bg-[#f8f9fa] dark:bg-neutral-950 py-10 transition-colors duration-200">
       <div className="mx-auto max-w-5xl px-4">
-        <div className="mb-6 flex items-center gap-2 text-xs text-[#5a4044]">
+        <div className="mb-6 flex items-center gap-2 text-xs text-[#5a4044] dark:text-neutral-400">
           <span>{t("home")}</span>
           <span>{t("settings")}</span>
-          <span className="font-semibold text-[#191c1d]">
+          <span className="font-semibold text-[#191c1d] dark:text-neutral-200">
             {t("editProfile")}
           </span>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-[#e3bdc3] bg-white shadow-sm">
-          <div className="border-b border-[#e3bdc3] px-6 py-10">
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
+          <div className="border-b border-neutral-200 dark:border-neutral-800 px-6 py-10">
             <div className="flex flex-col items-center">
               <div className="relative">
-                <div className="h-24 w-24 overflow-hidden rounded-full bg-pink-50 flex items-center justify-center border border-[#e3bdc3]">
+                <div className="h-24 w-24 overflow-hidden rounded-full bg-pink-50 dark:bg-pink-950/40 flex items-center justify-center border border-neutral-200 dark:border-neutral-800">
                   {profile?.profilePhoto ? (
                     <Image
                       src={profile.profilePhoto}
@@ -95,15 +95,15 @@ export default function EditProfilePage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <User className="h-12 w-12 text-[#b0004a]" />
+                    <User className="h-12 w-12 text-[#b0004a] dark:text-pink-400" />
                   )}
                 </div>
               </div>
-              <h1 className="mt-5 text-3xl font-bold text-[#191c1d]">
+              <h1 className="mt-5 text-3xl font-bold text-[#191c1d] dark:text-neutral-50">
                 {t("myProfile")}
               </h1>
 
-              <p className="mt-1 text-sm text-[#5a4044]">
+              <p className="mt-1 text-sm text-[#5a4044] dark:text-neutral-400">
                 {t("viewAccountDetails")}
               </p>
             </div>
@@ -162,10 +162,10 @@ export default function EditProfilePage() {
               </div>
             </div>
 
-            <div className="mt-6 border-t border-[#e3bdc3] pt-8">
+            <div className="mt-6 border-t border-neutral-200 dark:border-neutral-800 pt-8">
               <div className="flex justify-end">
                 <Link href="/edit-profile-form">
-                  <button className="flex items-center justify-center gap-2 rounded-xl bg-[#b0004a] px-10 py-3 font-semibold text-white hover:bg-[#90003b]">
+                  <button className="flex items-center justify-center gap-2 rounded-xl bg-[#b0004a] dark:bg-pink-600 hover:bg-[#90003b] dark:hover:bg-pink-700 px-10 py-3 font-semibold text-white transition">
                     {t("editProfile")} <Pencil size={18} />
                   </button>
                 </Link>
@@ -180,8 +180,8 @@ export default function EditProfilePage() {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <section className="bg-[#f8f9fa] py-10">
-      <div className="mx-auto max-w-5xl px-4 text-center text-red-600">
+    <section className="bg-[#f8f9fa] dark:bg-neutral-950 py-10 transition-colors duration-200 min-h-screen flex items-center justify-center text-gray-900 dark:text-neutral-100">
+      <div className="mx-auto max-w-5xl px-4 text-center text-red-600 dark:text-red-400">
         Error: {message}
       </div>
     </section>
@@ -201,20 +201,20 @@ function InputField({
 }: any) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-[#5a4044]">
-        {label} {required && <span className="text-[#b0004a]">*</span>}
+      <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
+        {label} {required && <span className="text-[#b0004a] dark:text-pink-400">*</span>}
         {optional && (
-          <span className="text-xs text-gray-400"> ({optionalText})</span>
+          <span className="text-xs text-gray-400 dark:text-neutral-500"> ({optionalText})</span>
         )}
       </label>
-      <div className="flex h-14 items-center rounded-xl border border-[#e3bdc3] bg-white px-4">
-        {icon}
+      <div className="flex h-14 items-center rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4">
+        <span className="text-gray-500 dark:text-neutral-400">{icon}</span>
         <input
           type={type}
           value={value}
           readOnly={readOnly}
           placeholder={placeholder}
-          className="ml-3 w-full border-none bg-transparent text-sm outline-none read-only:text-gray-500"
+          className="ml-3 w-full border-none bg-transparent text-sm outline-none text-gray-900 dark:text-neutral-100 read-only:text-gray-500 dark:read-only:text-neutral-400"
         />
       </div>
     </div>

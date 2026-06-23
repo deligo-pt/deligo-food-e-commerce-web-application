@@ -110,20 +110,20 @@ export default function ShopSection() {
     return (
       <section>
         <div className="mb-8 flex items-center justify-between">
-          <div className="h-10 w-64 animate-pulse rounded-full bg-gray-200" />
+          <div className="h-10 w-64 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:gap-6">
           {Array.from({ length: 2 }).map((_, index) => (
             <div
               key={index}
-              className="flex items-center gap-10 rounded-4xl bg-white p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
+              className="flex items-center gap-10 rounded-4xl bg-white dark:bg-neutral-900 p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
             >
-              <div className="h-40 w-40 shrink-0 animate-pulse rounded-3xl bg-gray-200" />
+              <div className="h-40 w-40 shrink-0 animate-pulse rounded-3xl bg-gray-200 dark:bg-neutral-800" />
               <div className="flex-1 space-y-4">
-                <div className="h-8 w-36 animate-pulse rounded-full bg-gray-200" />
-                <div className="h-5 w-full animate-pulse rounded-full bg-gray-200" />
-                <div className="h-5 w-3/4 animate-pulse rounded-full bg-gray-200" />
+                <div className="h-8 w-36 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+                <div className="h-5 w-full animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+                <div className="h-5 w-3/4 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
               </div>
             </div>
           ))}
@@ -136,7 +136,7 @@ export default function ShopSection() {
     return (
       <section>
         <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
             {t("shopOnDeligo")}
           </h2>
         </div>
@@ -152,7 +152,7 @@ export default function ShopSection() {
   return (
     <section>
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
           {t("shopOnDeligo")}
         </h2>
 
@@ -175,16 +175,16 @@ export default function ShopSection() {
               onClick={() => setSelectedCategory(category)}
               className={`
                 group flex cursor-pointer items-center gap-10 rounded-4xl 
-                bg-[#ffffff] p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] 
+                bg-[#ffffff] dark:bg-neutral-900 p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] 
                 transition-all duration-300 hover:shadow-2xl
                 ${
                   isActive
-                    ? "border-2 border-[#b0004a] shadow-lg"
-                    : "border-2 border-transparent hover:border-[#ffd9de]"
+                    ? "border-2 border-[#b0004a] dark:border-pink-500 shadow-lg"
+                    : "border-2 border-transparent hover:border-[#ffd9de] dark:hover:border-neutral-800"
                 }
               `}
             >
-              <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-3xl bg-gray-100 shadow-inner transition-transform duration-500 group-hover:scale-105">
+              <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-3xl bg-gray-100 dark:bg-neutral-800 shadow-inner transition-transform duration-500 group-hover:scale-105">
                 {category.icon ? (
                   <Image
                     alt={category.name}
@@ -195,18 +195,18 @@ export default function ShopSection() {
                     src={category.icon}
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-gray-400">
+                  <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-gray-400 dark:text-neutral-500">
                     {category.name.charAt(0)}
                   </div>
                 )}
               </div>
 
               <div className="flex-1">
-                <h3 className="mb-3 text-[24px] font-black leading-8 text-[#191c1d]">
+                <h3 className="mb-3 text-[24px] font-black leading-8 text-[#191c1d] dark:text-neutral-100">
                   {category.name}
                 </h3>
                 {category.description && (
-                  <p className="text-[18px] leading-7 text-[#5a4044]">
+                  <p className="text-[18px] leading-7 text-[#5a4044] dark:text-neutral-400">
                     {category.description}
                   </p>
                 )}

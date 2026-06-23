@@ -258,18 +258,18 @@ export default function EditProfileFormPage() {
   }
 
   return (
-    <section className="bg-[#f8f9fa] py-8">
+    <section className="bg-[#f8f9fa] dark:bg-neutral-950 py-8 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-250 px-4">
-        <div className="mb-6 flex items-center gap-2 text-sm text-[#5a4044]">
+        <div className="mb-6 flex items-center gap-2 text-sm text-[#5a4044] dark:text-neutral-400">
           <span>{t("home")}</span>
           <span>{t("account")}</span>
           <span>{t("editProfile")}</span>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-[#e3bdc3] bg-white shadow-sm">
-          <div className="flex flex-col items-center border-b border-[#e3bdc3]/30 bg-linear-to-b from-[#b0004a]/5 to-transparent py-10">
+        <div className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
+          <div className="flex flex-col items-center border-b border-neutral-200/50 dark:border-neutral-800 bg-linear-to-b from-neutral-50 dark:from-neutral-800/10 to-transparent py-10">
             <div className="relative">
-              <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white shadow-lg flex items-center justify-center bg-pink-50">
+              <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white dark:border-neutral-800 shadow-lg flex items-center justify-center bg-pink-50 dark:bg-pink-950/30">
                 {imagePreview ? (
                   <Image
                     src={imagePreview}
@@ -279,10 +279,10 @@ export default function EditProfileFormPage() {
                     height={128}
                   />
                 ) : (
-                  <User className="h-16 w-16 text-[#b0004a]" />
+                  <User className="h-16 w-16 text-[#b0004a] dark:text-pink-400" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white bg-[#b0004a] p-2 text-white shadow-lg">
+              <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white dark:border-neutral-800 bg-[#b0004a] dark:bg-pink-600 p-2 text-white shadow-lg">
                 <Pencil size={18} />
                 <input
                   type="file"
@@ -302,43 +302,43 @@ export default function EditProfileFormPage() {
                 </button>
               )}
             </div>
-            <h1>{t("editProfile")}</h1>
-            <p>{t("manageAccountInfo")}</p>
+            <h1 className="text-2xl font-bold mt-4 text-gray-900 dark:text-neutral-50">{t("editProfile")}</h1>
+            <p className="text-sm text-[#5a4044] dark:text-neutral-400">{t("manageAccountInfo")}</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-10 p-8 md:p-12">
+          <form onSubmit={handleSubmit} className="space-y-10 p-8 md:p-12 bg-white dark:bg-neutral-900">
             {/* Basic Information */}
             <section className="space-y-6">
               <div className="flex items-center gap-3">
-                <h2 className="text-xl font-semibold">{t("basicInformation")}</h2>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-neutral-50">{t("basicInformation")}</h2>
               </div>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#5a4044]">
+                  <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
                     {t("firstName")} *
                   </label>
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full rounded border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
+                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#5a4044]">
+                  <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
                     {t("lastName")} ({t("optional")})
                   </label>
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full rounded border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
+                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
                   />
                 </div>
               </div>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#5a4044]">
+                  <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
                     {t("emailAddress")}
                   </label>
                   <div className="flex gap-2">
@@ -346,14 +346,14 @@ export default function EditProfileFormPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="flex-1 rounded border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
+                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
                     />
                     {!emailOtpSent ? (
                       <button
                         type="button"
                         onClick={handleSendEmailOtp}
                         disabled={sendingEmailOtp || email === originalEmail}
-                        className="whitespace-nowrap rounded bg-[#b0004a] px-4 py-2 text-white disabled:opacity-50"
+                        className="whitespace-nowrap rounded bg-[#b0004a] dark:bg-pink-600 hover:bg-[#90003b] dark:hover:bg-pink-700 px-4 py-2 text-white disabled:opacity-50 transition"
                       >
                         {sendingEmailOtp ? t("sending") : t("sendOtp")}
                       </button>
@@ -364,13 +364,13 @@ export default function EditProfileFormPage() {
                           placeholder={t("otp")}
                           value={emailOtp}
                           onChange={(e) => setEmailOtp(e.target.value)}
-                          className="w-24 rounded border border-[#e3bdc3] px-2 py-2 text-center outline-none focus:border-[#b0004a]"
+                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
                         />
                         <button
                           type="button"
                           onClick={handleVerifyEmailOtp}
                           disabled={verifyingEmail}
-                          className="whitespace-nowrap rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50"
+                          className="whitespace-nowrap rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50 transition"
                         >
                           {verifyingEmail ? t("verifying") : t("verify")}
                         </button>
@@ -379,7 +379,7 @@ export default function EditProfileFormPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#5a4044]">
+                  <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
                     {t("mobileNumber")} *
                   </label>
                   <div className="flex gap-2">
@@ -388,14 +388,14 @@ export default function EditProfileFormPage() {
                       placeholder={t("mobilePlaceholder")}
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}
-                      className="flex-1 rounded border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
+                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
                     />
                     {!mobileOtpSent ? (
                       <button
                         type="button"
                         onClick={handleSendMobileOtp}
                         disabled={sendingMobileOtp || mobileNumber === originalMobile}
-                        className="whitespace-nowrap rounded bg-[#b0004a] px-4 py-2 text-white disabled:opacity-50"
+                        className="whitespace-nowrap rounded bg-[#b0004a] dark:bg-pink-600 hover:bg-[#90003b] dark:hover:bg-pink-700 px-4 py-2 text-white disabled:opacity-50 transition"
                       >
                         {sendingMobileOtp ? t("sending") : t("sendOtp")}
                       </button>
@@ -406,13 +406,13 @@ export default function EditProfileFormPage() {
                           placeholder={t("otp")}
                           value={mobileOtp}
                           onChange={(e) => setMobileOtp(e.target.value)}
-                          className="w-24 rounded border border-[#e3bdc3] px-2 py-2 text-center outline-none focus:border-[#b0004a]"
+                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
                         />
                         <button
                           type="button"
                           onClick={handleVerifyMobileOtp}
                           disabled={verifyingMobile}
-                          className="whitespace-nowrap rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50"
+                          className="whitespace-nowrap rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50 transition"
                         >
                           {verifyingMobile ? t("verifying") : t("verify")}
                         </button>
@@ -422,30 +422,30 @@ export default function EditProfileFormPage() {
                 </div>
               </div>
               <div className="max-w-md">
-                <label className="mb-2 block text-sm font-medium text-[#5a4044]">
+                <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
                   {t("nifTaxId")}
                 </label>
                 <input
                   type="text"
                   value={nif}
                   onChange={(e) => setNif(e.target.value)}
-                  className="w-full rounded border border-[#e3bdc3] px-4 py-3 outline-none focus:border-[#b0004a]"
+                  className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
                 />
               </div>
             </section>
 
-            <div className="flex flex-col justify-end gap-4 border-t border-[#e3bdc3]/30 pt-8 sm:flex-row">
+            <div className="flex flex-col justify-end gap-4 border-t border-neutral-200/50 dark:border-neutral-800 pt-8 sm:flex-row">
               <button
                 type="button"
                 onClick={() => window.history.back()}
-                className="px-8 py-3 font-bold text-[#b0004a]"
+                className="px-8 py-3 font-bold text-[#b0004a] dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 transition"
               >
                 {t("cancel")}
               </button>
               <button
                 type="submit"
                 disabled={submitting || imageUploading}
-                className="rounded bg-[#b0004a] px-12 py-3 font-bold text-white shadow-lg disabled:opacity-50"
+                className="rounded bg-[#b0004a] dark:bg-pink-600 hover:bg-[#90003b] dark:hover:bg-pink-700 px-12 py-3 font-bold text-white shadow-lg disabled:opacity-50 transition"
               >
                 {imageUploading
                   ? t("uploadingImage")

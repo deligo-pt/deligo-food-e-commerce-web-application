@@ -60,11 +60,11 @@ export default function CartStoreCard({
   const inactiveCount = items.length - activeItems.length;
 
   return (
-    <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm transition-colors duration-200">
       {/* Store header */}
       <div className="mb-6 flex items-start justify-between">
         <div className="flex gap-4">
-          <div className="relative h-20 w-20 overflow-hidden rounded-full border-4 border-pink-100">
+          <div className="relative h-20 w-20 overflow-hidden rounded-full border-4 border-pink-100 dark:border-pink-950">
             <Image
               src={image}
               alt={businessName}
@@ -73,23 +73,23 @@ export default function CartStoreCard({
             />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-gray-900">{businessName}</h3>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-neutral-100">{businessName}</h3>
             <div className="mt-3 flex flex-wrap gap-3">
-              <div className="flex items-center gap-2 rounded-xl bg-yellow-50 px-3 py-2">
+              <div className="flex items-center gap-2 rounded-xl bg-yellow-50 dark:bg-yellow-950/20 px-3 py-2">
                 <Star size={16} className="fill-yellow-500 text-yellow-500" />
-                <span className="font-semibold text-yellow-700">
+                <span className="font-semibold text-yellow-700 dark:text-yellow-400">
                   {rating > 0 ? rating.toFixed(1) : t("new")}
                 </span>
               </div>
-              <div className="flex items-center gap-2 rounded-xl bg-pink-50 px-3 py-2">
-                <UtensilsCrossed size={16} className="text-pink-600" />
-                <span className="font-semibold text-pink-600">
+              <div className="flex items-center gap-2 rounded-xl bg-pink-50 dark:bg-pink-950/20 px-3 py-2">
+                <UtensilsCrossed size={16} className="text-pink-600 dark:text-pink-400" />
+                <span className="font-semibold text-pink-600 dark:text-pink-400">
                   {activeItems.length} / {items.length} {t("active")}
                 </span>
               </div>
               {inactiveCount > 0 && (
-                <div className="flex items-center gap-2 rounded-xl bg-gray-100 px-3 py-2">
-                  <span className="text-sm font-medium text-gray-600">
+                <div className="flex items-center gap-2 rounded-xl bg-gray-100 dark:bg-neutral-800 px-3 py-2">
+                  <span className="text-sm font-medium text-gray-600 dark:text-neutral-400">
                     {inactiveCount} {t("inactive")}
                   </span>
                 </div>
@@ -121,10 +121,10 @@ export default function CartStoreCard({
               toast.error(t("cannotCheckoutNoActiveItems"));
             }
           }}
-          className={`flex items-center justify-between rounded-3xl px-6 py-5 text-white transition ${
+          className={`flex items-center justify-between rounded-3xl px-6 py-5 text-white transition cursor-pointer ${
             hasActive
               ? "bg-linear-to-r from-pink-500 to-pink-700 hover:from-pink-600 hover:to-pink-800"
-              : "cursor-not-allowed bg-gray-400"
+              : "cursor-not-allowed bg-gray-400 dark:bg-neutral-750 text-neutral-200 dark:text-neutral-400"
           }`}
         >
           <span className="text-xl font-bold">{t("goToCheckout")}</span>
@@ -133,7 +133,7 @@ export default function CartStoreCard({
           </div>
         </Link>
         {!hasActive && (
-          <p className="mt-2 text-center text-sm text-gray-500">
+          <p className="mt-2 text-center text-sm text-gray-500 dark:text-neutral-400">
             {t("activateAtLeastOneProduct")}
           </p>
         )}

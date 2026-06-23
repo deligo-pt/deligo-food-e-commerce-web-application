@@ -399,7 +399,7 @@ export default function CategoriesSection() {
   return (
     <section>
       <div className="mb-10 flex items-center justify-between">
-        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
           {t("whatsOnYourMind")}
         </h2>
         {/* <button
@@ -430,29 +430,26 @@ export default function CategoriesSection() {
                 className="group flex min-w-35 shrink-0 select-none cursor-pointer flex-col items-center gap-4"
               >
                 <div
-                  className={`h-32 w-32 rounded-full p-1 shadow-md transition-all duration-300 ${
-                    isActive
-                      ? "bg-[#b0004a] ring-4 ring-[#ffd9de]"
-                      : "bg-[#e7e8e9] group-hover:bg-[#b0004a]"
-                  }`}
+                  className={`h-32 w-32 rounded-full p-1 shadow-md transition-all duration-300 ${isActive
+                      ? "bg-[#b0004a] ring-4 ring-[#ffd9de] dark:ring-pink-500/20"
+                      : "bg-[#e7e8e9] dark:bg-neutral-800 group-hover:bg-[#b0004a]"
+                    }`}
                 >
-                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#ffffff] transition-all duration-300">
+                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white dark:border-neutral-900 bg-[#ffffff] dark:bg-neutral-900 transition-all duration-300">
                     <Icon
                       size={40}
-                      className={`transition-all duration-300 ${
-                        isActive
-                          ? "text-[#b0004a] scale-110"
-                          : "text-[#5a4044] group-hover:text-[#b0004a] group-hover:scale-110"
-                      }`}
+                      className={`transition-all duration-300 ${isActive
+                          ? "text-[#b0004a] dark:text-pink-500 scale-110"
+                          : "text-[#5a4044] dark:text-neutral-300 group-hover:text-[#b0004a] group-hover:scale-110"
+                        }`}
                     />
                   </div>
                 </div>
                 <span
-                  className={`text-center text-[12px] font-bold leading-4 tracking-[0.16em] uppercase transition-colors ${
-                    isActive
-                      ? "text-[#b0004a]"
-                      : "text-[#191c1d] group-hover:text-[#b0004a]"
-                  }`}
+                  className={`text-center text-[12px] font-bold leading-4 tracking-[0.16em] uppercase transition-colors ${isActive
+                      ? "text-[#b0004a] dark:text-pink-500"
+                      : "text-[#191c1d] dark:text-neutral-100 group-hover:text-[#b0004a] dark:group-hover:text-pink-500"
+                    }`}
                 >
                   {t(item.labelKey)}
                 </span>
@@ -469,16 +466,16 @@ export default function CategoriesSection() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl max-h-[80vh] flex flex-col overflow-hidden animate-scaleIn"
+            className="relative w-full max-w-md bg-white dark:bg-neutral-900 border dark:border-neutral-800 rounded-2xl shadow-2xl max-h-[80vh] flex flex-col overflow-hidden animate-scaleIn"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-              <h3 className="text-xl font-bold text-[#191c1d]">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 px-6 py-4">
+              <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-100">
                 {t("allCategories")}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors cursor-pointer"
+                className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-neutral-800 hover:text-gray-600 dark:hover:text-neutral-300 transition-colors cursor-pointer"
                 aria-label="Close"
               >
                 <X size={20} />
@@ -497,19 +494,17 @@ export default function CategoriesSection() {
                       handleCuisineClick(item.value);
                       setIsModalOpen(false);
                     }}
-                    className={`group flex w-full items-center justify-between rounded-xl border p-4 transition-all duration-300 cursor-pointer ${
-                      isActive
-                        ? "border-[#b0004a] bg-[#ffd9de]/30 text-[#b0004a]"
-                        : "border-gray-100 bg-white hover:bg-[#ffd9de]/10 hover:border-[#ffd9de] text-[#191c1d]"
-                    }`}
+                    className={`group flex w-full items-center justify-between rounded-xl border p-4 transition-all duration-300 cursor-pointer ${isActive
+                        ? "border-[#b0004a] bg-[#ffd9de]/30 dark:bg-pink-950/20 text-[#b0004a] dark:text-pink-500"
+                        : "border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 hover:bg-[#ffd9de]/10 dark:hover:bg-neutral-800 hover:border-[#ffd9de] text-[#191c1d] dark:text-neutral-200"
+                      }`}
                   >
                     <div className="flex items-center gap-4">
                       <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-full border transition-all duration-300 ${
-                          isActive
+                        className={`flex h-12 w-12 items-center justify-center rounded-full border transition-all duration-300 ${isActive
                             ? "bg-[#b0004a] border-[#b0004a] text-white"
-                            : "bg-[#e7e8e9] border-white text-[#5a4044] group-hover:bg-[#b0004a] group-hover:text-white"
-                        }`}
+                            : "bg-[#e7e8e9] dark:bg-neutral-800 border-white dark:border-neutral-900 text-[#5a4044] dark:text-neutral-300 group-hover:bg-[#b0004a] group-hover:text-white"
+                          }`}
                       >
                         <Icon
                           size={24}
@@ -517,11 +512,10 @@ export default function CategoriesSection() {
                         />
                       </div>
                       <span
-                        className={`text-sm font-bold tracking-widest uppercase transition-colors ${
-                          isActive
-                            ? "text-[#b0004a]"
-                            : "text-[#191c1d] group-hover:text-[#b0004a]"
-                        }`}
+                        className={`text-sm font-bold tracking-widest uppercase transition-colors ${isActive
+                            ? "text-[#b0004a] dark:text-pink-500"
+                            : "text-[#191c1d] dark:text-neutral-200 group-hover:text-[#b0004a] dark:group-hover:text-pink-500"
+                          }`}
                       >
                         {t(item.labelKey)}
                       </span>
@@ -533,7 +527,7 @@ export default function CategoriesSection() {
                     ) : (
                       <ChevronRight
                         size={18}
-                        className="text-gray-300 group-hover:text-[#b0004a] transition-colors"
+                        className="text-gray-300 dark:text-neutral-600 group-hover:text-[#b0004a] dark:group-hover:text-pink-500 transition-colors"
                       />
                     )}
                   </button>

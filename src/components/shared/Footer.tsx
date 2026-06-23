@@ -82,7 +82,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="w-full border-t border-[#e3bdc3]/20 bg-[#e1e3e4] px-4 py-20 md:px-8 lg:px-16">
+    <footer className="w-full border-t border-[#e3bdc3]/20 dark:border-neutral-800 bg-[#e1e3e4] dark:bg-neutral-900 px-4 py-20 md:px-8 lg:px-16 transition-colors duration-200">
       <div className="mb-20 grid w-full grid-cols-1 gap-16 md:grid-cols-12">
         {/* Brand */}
         <div className="md:col-span-4">
@@ -95,12 +95,12 @@ export default function Footer() {
               priority
             />
 
-            <span className=" block text-[40px] font-black text-[#b0004a]">
+            <span className=" block text-[40px] font-black text-[#b0004a] dark:text-[#d81b60]">
               DeliGo
             </span>
           </Link>
 
-          <p className="text-[18px] leading-7 text-[#5a4044]">
+          <p className="text-[18px] leading-7 text-[#5a4044] dark:text-neutral-400">
             {t("footerDescription")}
           </p>
 
@@ -110,7 +110,7 @@ export default function Footer() {
               href="https://www.facebook.com/deligo.pt"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm transition-all hover:bg-[#b0004a] hover:text-white"
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-[#b0004a] dark:hover:bg-pink-600 hover:text-white dark:hover:text-white"
               aria-label="Facebook"
             >
               <FacebookIcon size={24} />
@@ -119,7 +119,7 @@ export default function Footer() {
               href="https://www.instagram.com/deligo.pt/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm transition-all hover:bg-[#b0004a] hover:text-white"
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-[#b0004a] dark:hover:bg-pink-600 hover:text-white dark:hover:text-white"
               aria-label="Instagram"
             >
               <InstagramIcon size={24} />
@@ -128,7 +128,7 @@ export default function Footer() {
               href="https://www.tiktok.com/@deligo.pt"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm transition-all hover:bg-[#b0004a] hover:text-white"
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-[#b0004a] dark:hover:bg-pink-600 hover:text-white dark:hover:text-white"
               aria-label="TikTok"
             >
               <TiktokIcon size={24} />
@@ -137,7 +137,7 @@ export default function Footer() {
               href="https://www.youtube.com/@DeliGoPT"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm transition-all hover:bg-[#b0004a] hover:text-white"
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-[#b0004a] dark:hover:bg-pink-600 hover:text-white dark:hover:text-white"
               aria-label="YouTube"
             >
               <YoutubeIcon size={24} />
@@ -147,13 +147,13 @@ export default function Footer() {
 
         {/* Company */}
         <div className="md:col-span-2">
-          <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d]">
+          <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white">
             {t("company")}
           </h4>
           <nav className="flex flex-col gap-5">
             <Link
               href="/about-us"
-              className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
+              className="text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
             >
               {t("aboutUs")}
             </Link>
@@ -161,7 +161,7 @@ export default function Footer() {
               href="https://vendor-food.deligo.pt/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
+              className="text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
             >
               {t("partnerWithUs")}
             </a>
@@ -169,13 +169,13 @@ export default function Footer() {
               href="https://fleet-food.deligo.pt/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
+              className="text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
             >
               {t("fleetManager")}
             </a>
             <Link
               href="/delete-account"
-              className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
+              className="text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
             >
               {t("deleteAccount")}
             </Link>
@@ -184,7 +184,7 @@ export default function Footer() {
 
         {/* Support */}
         <div className="md:col-span-2">
-          <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d]">
+          <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white">
             {t("support")}
           </h4>
           <nav className="flex flex-col gap-5">
@@ -192,7 +192,7 @@ export default function Footer() {
               <Link
                 key={label}
                 href={href}
-                className="text-[16px] leading-6 text-[#5a4044] transition-colors hover:text-[#b0004a]"
+                className="text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
               >
                 {label}
               </Link>
@@ -202,10 +202,10 @@ export default function Footer() {
 
         {/* App Store Badges using Next.js Image with consistent size */}
         <div className="md:col-span-4">
-          <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d]">
+          <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white">
             {t("getTheApp")}
           </h4>
-          <p className="mb-6 text-[16px] leading-6 text-[#5a4044]">
+          <p className="mb-6 text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400">
             {t("mobileExperience")}
           </p>
           <div className="flex flex-col gap-4">
@@ -244,23 +244,23 @@ export default function Footer() {
       </div>
 
       {/* Divider */}
-      <div className="mb-10 h-px w-full bg-[#e3bdc3]/30" />
+      <div className="mb-10 h-px w-full bg-[#e3bdc3]/30 dark:bg-neutral-800" />
 
       {/* Bottom */}
-      <div className="flex w-full flex-col items-center justify-between gap-6 text-[14px] leading-5 text-[#5a4044] md:flex-row">
+      <div className="flex w-full flex-col items-center justify-between gap-6 text-[14px] leading-5 text-[#5a4044] dark:text-neutral-400 md:flex-row">
         <div>
           © {currentYear} DeliGo PIXELMIRACLE, LDA. {t("allRightsReserved")}
         </div>
         <div className="flex flex-wrap justify-center gap-8">
           <Link
             href="/privacy"
-            className="transition-colors hover:text-[#b0004a]"
+            className="transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
           >
             {t("privacyPolicy")}
           </Link>
           <Link
             href="/terms"
-            className="transition-colors hover:text-[#b0004a]"
+            className="transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
           >
             {t("termsOfService")}
           </Link>

@@ -279,11 +279,11 @@ export default function EditAddressPage({ addressId }: Props) {
 
   if (error || !address) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#f8f9fa]">
-        <p className="text-lg text-red-500">{error || "Address not found"}</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#f8f9fa] dark:bg-neutral-950">
+        <p className="text-lg text-red-500 dark:text-red-400">{error || "Address not found"}</p>
         <button
           onClick={() => router.back()}
-          className="rounded-lg bg-[#b0004a] px-6 py-2 text-white"
+          className="rounded-lg bg-[#b0004a] px-6 py-2 text-white transition hover:opacity-90 active:scale-95"
         >
           Go Back
         </button>
@@ -292,7 +292,7 @@ export default function EditAddressPage({ addressId }: Props) {
   }
 
   return (
-    <section className="bg-[#f8f9fa] py-8">
+    <section className="bg-[#f8f9fa] dark:bg-neutral-950 py-8 min-h-screen transition-colors duration-200">
       <Toaster position="top-center" richColors />
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {/* Page Title */}
@@ -300,11 +300,11 @@ export default function EditAddressPage({ addressId }: Props) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm transition hover:bg-gray-100"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 shadow-sm transition hover:bg-gray-100 dark:hover:bg-neutral-800"
           >
             <ArrowLeft className="h-5 w-5 text-[#b0004a]" />
           </button>
-          <h1 className="text-3xl font-bold text-[#191c1d]">
+          <h1 className="text-3xl font-bold text-[#191c1d] dark:text-neutral-50">
             {t("editAddress")}
           </h1>
         </div>
@@ -313,11 +313,11 @@ export default function EditAddressPage({ addressId }: Props) {
           {/* Left Panel */}
           <div className="lg:col-span-5 flex flex-col gap-6">
             {/* Quick Instant GPS Update Card (Original Functionality preserved) */}
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
-              <h2 className="mb-2 text-xl font-bold text-[#191c1d]">
+            <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
+              <h2 className="mb-2 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
                 {t("myCurrentLocation") || "My Current Location"}
               </h2>
-              <p className="text-sm text-[#5a4044] mb-4">
+              <p className="text-sm text-[#5a4044] dark:text-neutral-400 mb-4">
                 {t("currentLocationDescription") || "Use your device's GPS to update your delivery location instantly."}
               </p>
               <button
@@ -341,12 +341,12 @@ export default function EditAddressPage({ addressId }: Props) {
             </div>
 
             {/* Interactive Location Confirmation Card */}
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
               <div className="mb-6">
-                <h2 className="mb-2 text-xl font-bold text-[#191c1d]">
+                <h2 className="mb-2 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
                   {t("confirmLocation")}
                 </h2>
-                <p className="text-sm text-[#5a4044]">
+                <p className="text-sm text-[#5a4044] dark:text-neutral-400">
                   {t("confirmLocationDescription")}
                 </p>
               </div>
@@ -354,7 +354,7 @@ export default function EditAddressPage({ addressId }: Props) {
               {/* Autocomplete Search input */}
               <div ref={searchContainerRef} className="relative mb-6">
                 <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-neutral-500 z-10"
                   size={18}
                 />
                 <input
@@ -363,13 +363,13 @@ export default function EditAddressPage({ addressId }: Props) {
                   onChange={handleSearchChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder")}
-                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-10 outline-none focus:border-[#b0004a]"
+                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#b0004a] dark:focus:border-[#b0004a]"
                   autoComplete="off"
                 />
                 {searchValue && (
                   <button
                     onClick={clearSearch}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-neutral-500 hover:text-gray-600 dark:hover:text-neutral-300"
                   >
                     <X size={16} />
                   </button>
@@ -377,26 +377,26 @@ export default function EditAddressPage({ addressId }: Props) {
 
                 {/* Suggestions Dropdown */}
                 {showSuggestions && suggestions.length > 0 && (
-                  <ul className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#e3bdc3] bg-white shadow-xl">
+                  <ul className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl dark:shadow-none">
                     {suggestions.map((s, idx) => (
                       <li key={s.placeId}>
                         <button
                           type="button"
                           onClick={() => handleSuggestionClick(s)}
-                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] ${idx !== suggestions.length - 1
-                              ? "border-b border-[#f5e0e5]"
+                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] dark:hover:bg-neutral-800/50 ${idx !== suggestions.length - 1
+                              ? "border-b border-[#f5e0e5] dark:border-neutral-800"
                               : ""
                             }`}
                         >
-                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5]">
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5] dark:bg-[#b0004a]/10">
                             <Search size={13} className="text-[#b0004a]" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-[#191c1d]">
+                            <span className="block truncate text-sm font-semibold text-[#191c1d] dark:text-neutral-200">
                               {s.mainText}
                             </span>
                             {s.secondaryText && (
-                              <span className="block truncate text-xs text-[#5a4044]">
+                              <span className="block truncate text-xs text-[#5a4044] dark:text-neutral-400">
                                 {s.secondaryText}
                               </span>
                             )}
@@ -414,14 +414,14 @@ export default function EditAddressPage({ addressId }: Props) {
               <div id="map-section" className="mb-6">
                 {coordinates ? (
                   <LocationPicker
-                    defaultCenter={coordinates}
+                     defaultCenter={coordinates}
                     onCoordinatesChange={(lat, lng) =>
                       setCoordinates({ lat, lng })
                     }
                   />
                 ) : (
-                  <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50">
-                    <div className="flex flex-col items-center gap-3 text-gray-400">
+                  <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50 dark:bg-neutral-950 border border-transparent dark:border-neutral-800/50">
+                    <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-neutral-500">
                       <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
                       <p className="text-sm">Detecting your location…</p>
                     </div>
@@ -448,7 +448,7 @@ export default function EditAddressPage({ addressId }: Props) {
 
         {/* Divider + Add New Address */}
         <div className="mt-10">
-          <hr className="border-t border-[#e3bdc3]" />
+          <hr className="border-t border-[#e3bdc3] dark:border-neutral-800" />
           <div className="mt-6 flex items-center justify-center">
             <Link
               href="/add-address"

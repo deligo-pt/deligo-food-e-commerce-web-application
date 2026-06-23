@@ -73,20 +73,20 @@ export default function FAQPage() {
     const [open, setOpen] = useState(false);
 
     return (
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none">
         <button
           onClick={() => setOpen(!open)}
           className="flex w-full items-center justify-between gap-4 p-5 text-left"
         >
-          <span className="font-semibold text-slate-900">{question}</span>
+          <span className="font-semibold text-slate-900 dark:text-neutral-100">{question}</span>
           <ChevronDown
-            className={`h-5 w-5 transition-transform ${
+            className={`h-5 w-5 text-slate-400 dark:text-neutral-500 transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />
         </button>
         {open && (
-          <div className="border-t border-slate-100 px-5 py-4 text-slate-600">
+          <div className="border-t border-slate-100 dark:border-neutral-800 px-5 py-4 text-slate-600 dark:text-neutral-300 bg-slate-50/50 dark:bg-neutral-950/20">
             {answer}
           </div>
         )}
@@ -108,7 +108,7 @@ export default function FAQPage() {
         .filter((category) => category.faqs.length > 0);
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white dark:bg-neutral-950 text-slate-800 dark:text-neutral-200 transition-colors duration-200">
       {/* Hero */}
       <section className="bg-[#E91E7F]">
         <div className="mx-auto max-w-7xl px-6 py-20 text-center">
@@ -125,12 +125,12 @@ export default function FAQPage() {
           <p className="mt-4 text-lg text-pink-100">{t("faqSubtitle")}</p>
           <div className="mx-auto mt-10 max-w-2xl">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-neutral-500" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("faqSearchPlaceholder")}
-                className="h-14 w-full rounded-2xl border-0 bg-white pl-12 pr-4 text-slate-900 outline-none"
+                className="h-14 w-full rounded-2xl border-0 bg-white dark:bg-neutral-900 pl-12 pr-4 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-[#E91E7F]/30"
               />
             </div>
           </div>
@@ -145,11 +145,11 @@ export default function FAQPage() {
             return (
               <div
                 key={category.id}
-                className="rounded-3xl border border-slate-200 p-6 transition hover:shadow-lg"
+                className="rounded-3xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 transition hover:shadow-lg dark:hover:shadow-none dark:hover:bg-neutral-800/30"
               >
                 <Icon className="mb-4 h-8 w-8 text-[#E91E7F]" />
-                <h3 className="mb-2 text-xl font-bold">{category.title}</h3>
-                <p className="text-slate-500">
+                <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-neutral-100">{category.title}</h3>
+                <p className="text-slate-500 dark:text-neutral-400">
                   {category.faqs.length} {t("faqQuestions")}
                 </p>
               </div>

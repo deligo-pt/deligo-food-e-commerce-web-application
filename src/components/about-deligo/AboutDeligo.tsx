@@ -43,7 +43,7 @@ export default function AboutDeliGo() {
   ];
 
   return (
-    <main className="bg-white text-slate-800">
+    <main className="bg-white dark:bg-neutral-950 text-slate-800 dark:text-neutral-200 transition-colors duration-200">
       {/* Hero Section */}
       <section className="bg-[#e91e7f] text-white">
         <div className="mx-auto max-w-7xl px-6 py-20 text-center">
@@ -69,43 +69,43 @@ export default function AboutDeliGo() {
         <h2 className="mb-6 text-3xl font-bold text-[#e91e7f]">
           {t("techMarketplaceTitle")}
         </h2>
-        <div className="rounded-2xl border-l-4 border-[#e91e7f] bg-pink-50 p-8 md:p-10">
-          <p className="text-lg leading-8 text-slate-700">
+        <div className="rounded-2xl border-l-4 border-[#e91e7f] bg-pink-50 dark:bg-pink-950/10 p-8 md:p-10">
+          <p className="text-lg leading-8 text-slate-700 dark:text-neutral-300">
             {t("techMarketplaceText")}
           </p>
         </div>
 
-        <div className="mt-10 rounded-2xl bg-slate-50 p-8">
+        <div className="mt-10 rounded-2xl bg-slate-50 dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-8">
           <h3 className="mb-3 text-2xl font-semibold text-[#e91e7f]">
             {t("regulatoryClarificationTitle")}
           </h3>
-          <p className="text-lg leading-8 text-slate-700">
+          <p className="text-lg leading-8 text-slate-700 dark:text-neutral-300">
             {t("regulatoryClarificationText")}
           </p>
         </div>
       </section>
 
       {/* 2. Multi-Service Super App Architecture */}
-      <section className="bg-slate-50 py-16">
+      <section className="bg-slate-50 dark:bg-neutral-900 border-t border-b border-transparent dark:border-neutral-800/80 py-16">
         <div className="mx-auto max-w-7xl px-6">
           <h2 className="mb-6 text-3xl font-bold text-[#e91e7f]">
             {t("superAppTitle")}
           </h2>
-          <p className="mb-8 text-lg text-slate-700">{t("superAppIntro")}</p>
+          <p className="mb-8 text-lg text-slate-700 dark:text-neutral-300">{t("superAppIntro")}</p>
           <div className="grid gap-4 md:grid-cols-2">
             {services.map((service, idx) => (
               <div
                 key={idx}
-                className="flex items-start gap-3 rounded-xl bg-white p-5 shadow-sm"
+                className="flex items-start gap-3 rounded-xl bg-white dark:bg-neutral-950 border border-transparent dark:border-neutral-800/50 p-5 shadow-sm dark:shadow-none"
               >
                 <span className="mt-1 text-[#e91e7f]">
                   <Smartphone className="h-5 w-5" />
                 </span>
-                <span className="text-slate-700">{service}</span>
+                <span className="text-slate-700 dark:text-neutral-300">{service}</span>
               </div>
             ))}
           </div>
-          <p className="mt-8 text-center italic text-slate-500">
+          <p className="mt-8 text-center italic text-slate-500 dark:text-neutral-400">
             {t("superAppFooter")}
           </p>
         </div>
@@ -120,14 +120,14 @@ export default function AboutDeliGo() {
           {merchantBullets.map((bullet, idx) => (
             <div key={idx} className="flex items-start gap-3">
               <Store className="mt-1 h-5 w-5 shrink-0 text-[#e91e7f]" />
-              <span className="text-slate-700">{bullet}</span>
+              <span className="text-slate-700 dark:text-neutral-300">{bullet}</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* 4. Independent Courier Framework */}
-      <section className="bg-slate-50 py-16">
+      <section className="bg-slate-50 dark:bg-neutral-900 border-t border-b border-transparent dark:border-neutral-800/80 py-16">
         <div className="mx-auto max-w-7xl px-6">
           <h2 className="mb-6 text-3xl font-bold text-[#e91e7f]">
             {t("courierTitle")}
@@ -136,10 +136,10 @@ export default function AboutDeliGo() {
             {courierBullets.map((bullet, idx) => (
               <div
                 key={idx}
-                className="flex items-start gap-3 rounded-xl bg-white p-6 shadow-sm"
+                className="flex items-start gap-3 rounded-xl bg-white dark:bg-neutral-950 border border-transparent dark:border-neutral-800/50 p-6 shadow-sm dark:shadow-none"
               >
                 <Bike className="mt-1 h-5 w-5 shrink-0 text-[#e91e7f]" />
-                <span className="text-slate-700">{bullet}</span>
+                <span className="text-slate-700 dark:text-neutral-300">{bullet}</span>
               </div>
             ))}
           </div>
@@ -152,51 +152,51 @@ export default function AboutDeliGo() {
           {t("advancedTechTitle")}
         </h2>
         <div className="grid gap-8 md:grid-cols-3">
-          <div className="rounded-2xl border p-6 shadow-sm">
+          <div className="rounded-2xl border dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm dark:shadow-none">
             <Zap className="mb-4 h-8 w-8 text-[#e91e7f]" />
-            <h3 className="mb-3 text-xl font-bold">{t("aiSmartMatching")}</h3>
-            <p className="text-slate-600">{t("aiSmartMatchingText")}</p>
+            <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-neutral-100">{t("aiSmartMatching")}</h3>
+            <p className="text-slate-600 dark:text-neutral-400">{t("aiSmartMatchingText")}</p>
           </div>
-          <div className="rounded-2xl border p-6 shadow-sm">
+          <div className="rounded-2xl border dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm dark:shadow-none">
             <Globe className="mb-4 h-8 w-8 text-[#e91e7f]" />
-            <h3 className="mb-3 text-xl font-bold">
+            <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-neutral-100">
               {t("realTimeTransparency")}
             </h3>
-            <p className="text-slate-600">{t("realTimeTransparencyText")}</p>
+            <p className="text-slate-600 dark:text-neutral-400">{t("realTimeTransparencyText")}</p>
           </div>
-          <div className="rounded-2xl border p-6 shadow-sm">
+          <div className="rounded-2xl border dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm dark:shadow-none">
             <ChartColumn className="mb-4 h-8 w-8 text-[#e91e7f]" />
-            <h3 className="mb-3 text-xl font-bold">{t("dataIntelligence")}</h3>
-            <p className="text-slate-600">{t("dataIntelligenceText")}</p>
+            <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-neutral-100">{t("dataIntelligence")}</h3>
+            <p className="text-slate-600 dark:text-neutral-400">{t("dataIntelligenceText")}</p>
           </div>
         </div>
       </section>
 
       {/* 6. Scalability, Sustainability & Security */}
-      <section className="bg-slate-50 py-16">
+      <section className="bg-slate-50 dark:bg-neutral-900 border-t border-b border-transparent dark:border-neutral-800/80 py-16">
         <div className="mx-auto max-w-7xl px-6">
           <h2 className="mb-10 text-3xl font-bold text-[#e91e7f]">
             {t("scalabilityTitle")}
           </h2>
           <div className="grid gap-8 md:grid-cols-3">
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="rounded-2xl bg-white dark:bg-neutral-950 border border-transparent dark:border-neutral-800/50 p-6 shadow-sm dark:shadow-none">
               <Building2 className="mb-4 h-8 w-8 text-[#e91e7f]" />
-              <h3 className="mb-3 text-xl font-bold">
+              <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-neutral-100">
                 {t("expansionStrategy")}
               </h3>
-              <p className="text-slate-600">{t("expansionStrategyText")}</p>
+              <p className="text-slate-600 dark:text-neutral-400">{t("expansionStrategyText")}</p>
             </div>
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="rounded-2xl bg-white dark:bg-neutral-950 border border-transparent dark:border-neutral-800/50 p-6 shadow-sm dark:shadow-none">
               <Leaf className="mb-4 h-8 w-8 text-[#e91e7f]" />
-              <h3 className="mb-3 text-xl font-bold">
+              <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-neutral-100">
                 {t("sustainableInfra")}
               </h3>
-              <p className="text-slate-600">{t("sustainableInfraText")}</p>
+              <p className="text-slate-600 dark:text-neutral-400">{t("sustainableInfraText")}</p>
             </div>
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="rounded-2xl bg-white dark:bg-neutral-950 border border-transparent dark:border-neutral-800/50 p-6 shadow-sm dark:shadow-none">
               <ShieldCheck className="mb-4 h-8 w-8 text-[#e91e7f]" />
-              <h3 className="mb-3 text-xl font-bold">{t("secureProtocols")}</h3>
-              <p className="text-slate-600">{t("secureProtocolsText")}</p>
+              <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-neutral-100">{t("secureProtocols")}</h3>
+              <p className="text-slate-600 dark:text-neutral-400">{t("secureProtocolsText")}</p>
             </div>
           </div>
         </div>
@@ -207,7 +207,7 @@ export default function AboutDeliGo() {
         <h2 className="mb-8 text-3xl font-bold text-[#e91e7f]">
           {t("contactsTitle")}
         </h2>
-        <div className="grid gap-4 rounded-2xl bg-pink-50 p-8 md:grid-cols-2">
+        <div className="grid gap-4 rounded-2xl bg-pink-50 dark:bg-pink-950/10 border border-transparent dark:border-pink-900/10 p-8 md:grid-cols-2 text-slate-700 dark:text-neutral-300">
           <div className="flex items-center gap-3">
             <Globe className="h-5 w-5 text-[#e91e7f]" />
             <span>{t("website")}</span>

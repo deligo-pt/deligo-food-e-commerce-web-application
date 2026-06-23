@@ -191,28 +191,28 @@ function useUserAddress() {
 // Skeleton component matching the exact layout of VendorCard
 function VendorCardSkeleton() {
   return (
-    <article className="group cursor-pointer overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all">
+    <article className="group cursor-pointer overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all">
       <div className="relative aspect-16/10 overflow-hidden">
-        <div className="h-full w-full animate-pulse bg-gray-200" />
+        <div className="h-full w-full animate-pulse bg-gray-200 dark:bg-neutral-800" />
         <div className="absolute left-5 top-5">
-          <div className="h-9 w-16 animate-pulse rounded-2xl bg-white/95 shadow-lg backdrop-blur-md" />
+          <div className="h-9 w-16 animate-pulse rounded-2xl bg-white/95 dark:bg-neutral-900/95 shadow-lg backdrop-blur-md" />
         </div>
       </div>
 
       <div className="p-8">
         <div className="mb-2 flex items-center justify-between gap-4">
-          <div className="h-7 w-48 animate-pulse rounded-lg bg-gray-200" />
-          <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200" />
+          <div className="h-7 w-48 animate-pulse rounded-lg bg-gray-200 dark:bg-neutral-800" />
+          <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
         </div>
-        <div className="mb-6 h-6 w-32 animate-pulse rounded-lg bg-gray-200" />
-        <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6">
+        <div className="mb-6 h-6 w-32 animate-pulse rounded-lg bg-gray-200 dark:bg-neutral-800" />
+        <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6">
           <div className="flex items-center gap-2">
-            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200" />
-            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200" />
+            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200" />
-            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200" />
+            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
           </div>
         </div>
       </div>
@@ -305,7 +305,7 @@ export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
 
   return (
     <Link href={`/vendors/${vendor.userId}`} className="block">
-      <article className="group cursor-pointer overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all hover:border-[#ffd9de] hover:shadow-2xl">
+      <article className="group cursor-pointer overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl">
         <div className="relative aspect-16/10 overflow-hidden">
           <Image
             fill
@@ -315,7 +315,7 @@ export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
             className="object-cover transition-transform duration-1000 group-hover:scale-110"
           />
           <div className="absolute left-5 top-5">
-            <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 px-4 py-2 text-[14px] font-bold text-[#191c1d] shadow-lg backdrop-blur-md">
+            <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 dark:bg-neutral-900/95 px-4 py-2 text-[14px] font-bold text-[#191c1d] dark:text-white shadow-lg backdrop-blur-md">
               <Star size={18} className="text-[#f6c344]" />
               {vendor.rating?.average ?? 0}
             </span>
@@ -324,7 +324,7 @@ export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
 
         <div className="p-8">
           <div className="mb-2 flex items-center justify-between gap-4">
-            <h3 className="line-clamp-1 text-[24px] font-bold leading-8 text-[#191c1d]">
+            <h3 className="line-clamp-1 text-[24px] font-bold leading-8 text-[#191c1d] dark:text-neutral-100">
               {vendor.businessDetails.businessName}
             </h3>
             <Heart
@@ -332,16 +332,16 @@ export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
               className="text-[#d81b60] transition-colors group-hover:fill-current"
             />
           </div>
-          <p className="mb-6 text-[18px] leading-7 text-[#5a4044]">
+          <p className="mb-6 text-[18px] leading-7 text-[#5a4044] dark:text-neutral-400">
             {vendor.businessDetails.restaurantCuisineType ||
               vendor.businessDetails.businessType}
           </p>
-          <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-[14px] font-medium">
-            <span className="flex items-center gap-2 text-[#b0004a]">
+          <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-[14px] font-medium">
+            <span className="flex items-center gap-2 text-[#b0004a] dark:text-pink-500">
               <Truck size={20} />
               {displayTime}
             </span>
-            <span className="flex items-center gap-2 text-[#b70052]">
+            <span className="flex items-center gap-2 text-[#b70052] dark:text-pink-400">
               <Check size={20} />
               {vendor.businessLocation.city}, {vendor.businessLocation.country}
             </span>

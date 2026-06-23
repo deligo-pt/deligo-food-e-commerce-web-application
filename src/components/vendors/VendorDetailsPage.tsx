@@ -410,7 +410,7 @@ export default function VendorDetailsPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
+    <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-full px-4 py-6 lg:px-8">
         {/* Hero Section */}
         <section className="mb-6">
@@ -425,9 +425,9 @@ export default function VendorDetailsPage({
               />
               <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8">
-                <div className="rounded-2xl bg-white p-5 shadow-xl">
+                <div className="rounded-2xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 p-5 shadow-xl dark:shadow-none">
                   <div className="mb-1 flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-gray-900">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                       {vendor.businessDetails.businessName}
                     </h1>
                     <span
@@ -437,14 +437,14 @@ export default function VendorDetailsPage({
                         }`}
                     />
                   </div>
-                  <p className="mb-4 text-sm text-gray-500">
+                  <p className="mb-4 text-sm text-gray-500 dark:text-neutral-400">
                     {vendor.businessDetails.restaurantCuisineType ||
                       vendor.businessDetails.businessType}
                   </p>
                   <div className="flex flex-wrap items-center gap-4 text-sm">
                     <button
                       onClick={() => setIsVendorModalOpen(true)}
-                      className="font-semibold text-pink-600"
+                      className="font-semibold text-pink-600 dark:text-pink-400"
                     >
                       {t("moreInfo")} →
                     </button>
@@ -453,11 +453,11 @@ export default function VendorDetailsPage({
                         size={16}
                         className="fill-yellow-400 text-yellow-400"
                       />
-                      <span className="font-medium">
+                      <span className="font-medium text-gray-900 dark:text-neutral-100">
                         {vendor.rating?.average?.toFixed(1) || "New"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 text-gray-500">
+                    <div className="flex items-center gap-1 text-gray-500 dark:text-neutral-400">
                       <Bike size={16} />
                       <span>{displayTime}</span>
                     </div>
@@ -476,7 +476,7 @@ export default function VendorDetailsPage({
                 onClick={() => setSelectedCategory(cat)}
                 className={`rounded-lg px-5 py-2 text-sm font-semibold transition ${selectedCategory === cat
                   ? "bg-pink-600 text-white"
-                  : "border border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+                  : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-gray-500 dark:text-neutral-400 hover:bg-gray-50 dark:hover:bg-neutral-800"
                   }`}
               >
                 {cat}
@@ -492,21 +492,21 @@ export default function VendorDetailsPage({
         />
 
         <section>
-          <h2 className="mb-6 text-xl font-bold text-gray-900">{t("menu")}</h2>
+          <h2 className="mb-6 text-xl font-bold text-gray-900 dark:text-white">{t("menu")}</h2>
 
           {productsLoading && (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-48 animate-pulse rounded-2xl bg-gray-100"
+                  className="h-48 animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800"
                 />
               ))}
             </div>
           )}
 
           {productsError && (
-            <div className="rounded-2xl bg-red-50 p-6 text-center text-red-600">
+            <div className="rounded-2xl bg-red-50 dark:bg-red-950/20 border dark:border-red-900/30 p-6 text-center text-red-600 dark:text-red-400">
               {productsError}
             </div>
           )}
@@ -514,7 +514,7 @@ export default function VendorDetailsPage({
           {!productsLoading &&
             !productsError &&
             filteredProducts.length === 0 && (
-              <div className="rounded-2xl bg-gray-50 p-6 text-center text-gray-500">
+              <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
                 {t("noItemsFoundInCategory")}
               </div>
             )}
@@ -532,7 +532,7 @@ export default function VendorDetailsPage({
                   return (
                     <div
                       key={product.id}
-                      className="group flex overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-lg"
+                      className="group flex overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none transition hover:shadow-lg dark:hover:bg-neutral-800/30"
                     >
                       <div className="relative h-36 w-32 shrink-0">
                         <Image
@@ -551,21 +551,21 @@ export default function VendorDetailsPage({
                       </div>
                       <div className="flex flex-1 flex-col justify-between p-4">
                         <div>
-                          <h3 className="font-semibold text-gray-900">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
                             {product.name}
                           </h3>
-                          <p className="mt-1 line-clamp-2 text-xs text-gray-500">
+                          <p className="mt-1 line-clamp-2 text-xs text-gray-500 dark:text-neutral-400">
                             {product.description ||
                               t("deliciousMenuItem")}
                           </p>
                         </div>
                         <div className="mt-4 flex items-end justify-between">
                           <div>
-                            <p className="text-xl font-bold text-pink-600">
+                            <p className="text-xl font-bold text-pink-600 dark:text-pink-400">
                               {formatPrice(finalPrice, currency)}
                             </p>
                             {hasDiscount && (
-                              <p className="text-xs text-gray-400 line-through">
+                              <p className="text-xs text-gray-400 dark:text-neutral-500 line-through">
                                 {formatPrice(originalPrice, currency)}
                               </p>
                             )}
