@@ -15,12 +15,22 @@ import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { X } from "lucide-react";
 
+// Normalize cuisine strings for matching: lowercase, trim, strip accents.
+// Lets dynamic cuisine names match vendor restaurantCuisineType despite
+// casing/spacing/accent differences between the two data sources.
+const normalizeCuisine = (value: unknown) =>
+  String(value ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim()
+    .toLowerCase();
+
 interface Vendor {
   userId: string;
   businessDetails: {
     businessName: string;
     businessType: string;
-    restaurantCuisineType?: string;
+    restaurantCuisineType?: string[] | string;
     openingHours: string;
     closingHours: string;
     isStoreOpen: boolean;
@@ -215,11 +225,14 @@ export default function RestaurantsSection() {
       );
     }
     if (selectedCuisines.length > 0) {
-      filtered = filtered.filter((vendor) =>
-        selectedCuisines.includes(
-          vendor.businessDetails.restaurantCuisineType || "",
-        ),
-      );
+      const normalizedSelected = selectedCuisines.map(normalizeCuisine);
+      filtered = filtered.filter((vendor) => {
+        const types = vendor.businessDetails.restaurantCuisineType;
+        const list = Array.isArray(types) ? types : [types];
+        return list.some((type) =>
+          normalizedSelected.includes(normalizeCuisine(type)),
+        );
+      });
     }
 
     return filtered;
@@ -525,7 +538,9 @@ export default function RestaurantsSection() {
                   </div>
 
                   <p className="mb-6 text-lg text-[#5a4044] dark:text-neutral-400">
-                    {vendor.businessDetails.restaurantCuisineType ||
+                    {(Array.isArray(vendor.businessDetails.restaurantCuisineType)
+                      ? vendor.businessDetails.restaurantCuisineType.join(", ")
+                      : vendor.businessDetails.restaurantCuisineType) ||
                       vendor.businessDetails.businessType}
                   </p>
 
