@@ -612,6 +612,7 @@ const pt = {
 
   dietaryPreferences: "Preferências Alimentares",
   noneSet: "Nenhuma definida",
+  comingSoon: "Em breve",
 
   legal: "Legal",
 
@@ -1121,6 +1122,28 @@ const pt = {
   categoryDeliGoBusiness: "DeliGo Empresas",
   categoryVendors: "Fornecedores",
   categoryOther: "Outros",
+
+  // Páginas de detalhe das categorias de termos
+  termsBackToCategories: "Voltar aos Termos",
+  termsCategorySupplementNote:
+    "Estes termos complementam os Termos e Condições gerais para Clientes da DeliGo, que também se aplicam a este serviço.",
+  termsViewGeneralTerms: "Ver os Termos gerais para Clientes",
+  termsCatRidesBody:
+    "Estes termos regem a sua utilização do DeliGo Rides. Abrangem a reserva de viagens, estimativas e preço final, conduta do motorista e do passageiro, cancelamentos e as expetativas de segurança que se aplicam em cada viagem.",
+  termsCatMicromobilityBody:
+    "Estes termos regem os serviços DeliGo Micromobility, como trotinetes e bicicletas elétricas. Abrangem o desbloqueio e o fim de uma viagem, regras de estacionamento, cuidados com a bateria e o veículo, regras de trânsito locais e a sua responsabilidade por uma condução segura.",
+  termsCatDriveBody:
+    "Estes termos aplicam-se aos motoristas que utilizam o DeliGo Drive. Abrangem o registo e a elegibilidade, a aceitação de viagens, os ganhos e pagamentos, os padrões de avaliação e a conduta esperada ao concluir viagens ou entregas.",
+  termsCatDeliveryBody:
+    "Estes termos regem as entregas de comida e encomendas da DeliGo. Abrangem a realização de pedidos, estimativas de tempo de entrega, manuseamento e entrega, artigos em falta ou incorretos e o processo de reembolso quando algo corre mal.",
+  termsCatInsuranceBody:
+    "Estes termos descrevem a cobertura de Seguro que pode aplicar-se a viagens e entregas elegíveis. Explicam o que está e o que não está coberto, como comunicar um incidente e os passos necessários para apresentar uma reclamação.",
+  termsCatBusinessBody:
+    "Estes termos aplicam-se às contas DeliGo Business. Abrangem a gestão de equipas e despesas, a faturação centralizada, as políticas de utilização pelos colaboradores e os controlos administrativos disponíveis para a sua organização.",
+  termsCatVendorsBody:
+    "Estes termos regem os Fornecedores e lojas parceiras na DeliGo. Abrangem a exatidão do menu e dos preços, os padrões de preparação de pedidos, a segurança alimentar e o embalamento, as comissões e os calendários de pagamento.",
+  termsCatOtherBody:
+    "Estes termos abrangem produtos e serviços adicionais da DeliGo não listados nas outras categorias. Para tudo o que não esteja aqui previsto, aplicam-se os nossos Termos e Condições gerais para Clientes.",
 
   // Term cards
   termAccountRegistrationTitle: "Registo de Conta",

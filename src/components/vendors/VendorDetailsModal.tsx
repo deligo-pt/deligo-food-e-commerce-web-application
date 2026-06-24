@@ -43,7 +43,7 @@ interface VendorData {
     storeClosedAt: string | null;
     deliveryZoneId: string;
     preparationTimeMinutes: number;
-    restaurantCuisineType: string;
+    restaurantCuisineType: string[] | string;
   };
   businessLocation: {
     street: string;

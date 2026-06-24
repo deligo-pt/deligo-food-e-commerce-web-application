@@ -224,7 +224,7 @@ export default function AccountPage() {
     "Unnamed User";
 
   return (
-    <section className="bg-[#f7f7f7] dark:bg-neutral-950 min-h-screen p-4 md:p-6 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
+    <section className="bg-[#f7f7f7] dark:bg-neutral-950 p-4 md:p-6 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
           {/* LEFT */}

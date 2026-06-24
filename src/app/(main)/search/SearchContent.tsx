@@ -10,26 +10,8 @@ import Image from "next/image";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { Star, Truck, Heart, Check } from "lucide-react";
-
-interface Vendor {
-  userId: string;
-  businessDetails: {
-    businessName: string;
-    businessType: string;
-    restaurantCuisineType?: string;
-    openingHours: string;
-    closingHours: string;
-    isStoreOpen: boolean;
-  };
-  businessLocation: {
-    city: string;
-    country: string;
-    latitude?: number;
-    longitude?: number;
-  };
-  storePhoto: string[];
-  rating: { average: number };
-}
+import type { Vendor } from "@/types/vendor";
+import { formatCuisine } from "@/lib/cuisine";
 
 interface Product {
   _id: string;
@@ -174,7 +156,11 @@ export default function SearchContent() {
 
         const filteredVendors = allVendors.filter((v) => {
           const name = v.businessDetails.businessName.toLowerCase();
-          const cuisine = (v.businessDetails.restaurantCuisineType || "").toLowerCase();
+          // restaurantCuisineType is an array (sometimes a string / absent);
+          // formatCuisine flattens it safely so .toLowerCase() never throws.
+          const cuisine = formatCuisine(
+            v.businessDetails.restaurantCuisineType,
+          ).toLowerCase();
           const type = v.businessDetails.businessType.toLowerCase();
           const city = v.businessLocation.city.toLowerCase();
           const country = v.businessLocation.country.toLowerCase();
@@ -335,7 +321,8 @@ export default function SearchContent() {
                         <Heart size={22} className="text-[#d81b60] transition-transform group-hover:scale-110" />
                       </div>
                       <p className="mb-6 text-lg text-[#5a4044]">
-                        {vendor.businessDetails.restaurantCuisineType || vendor.businessDetails.businessType}
+                        {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
+                          vendor.businessDetails.businessType}
                       </p>
                       <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-sm font-medium text-[#5a4044]">
                         <span className="flex items-center gap-2 text-[#b0004a]">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   ChevronRight,
   Moon,
@@ -11,17 +12,33 @@ import {
   UtensilsCrossed,
   ExternalLink,
   Trash2,
+  Check,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTheme } from "@/hooks/useTheme";
+import { useStore } from "@/stores/translationStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
   const { theme, setTheme, mounted } = useTheme();
-  const [notifications, setNotifications] = useState(true);
-  const [locationServices, setLocationServices] = useState(true);
+
+  const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
+  const setNotificationsEnabled = useSettingsStore(
+    (s) => s.setNotificationsEnabled,
+  );
+  const locationServicesEnabled = useSettingsStore(
+    (s) => s.locationServicesEnabled,
+  );
+  const setLocationServicesEnabled = useSettingsStore(
+    (s) => s.setLocationServicesEnabled,
+  );
 
   const isDarkMode = mounted ? theme === "dark" : false;
+  // Persisted preferences hydrate on the client; fall back to the store default
+  // until mounted so the server/client markup matches (avoids hydration mismatch).
+  const notificationsChecked = mounted ? notificationsEnabled : true;
+  const locationServicesChecked = mounted ? locationServicesEnabled : true;
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 transition-colors duration-200">
@@ -56,23 +73,23 @@ export default function SettingsPage() {
                 icon={<Bell size={22} />}
                 title={t("notifications")}
                 description={t("notificationsDescription")}
-                checked={notifications}
-                onChange={() => setNotifications(!notifications)}
+                checked={notificationsChecked}
+                onChange={() =>
+                  setNotificationsEnabled(!notificationsChecked)
+                }
               />
 
               <ToggleRow
                 icon={<MapPin size={22} />}
                 title={t("locationServices")}
                 description={t("locationServicesDescription")}
-                checked={locationServices}
-                onChange={() => setLocationServices(!locationServices)}
+                checked={locationServicesChecked}
+                onChange={() =>
+                  setLocationServicesEnabled(!locationServicesChecked)
+                }
               />
 
-              <LinkRow
-                icon={<Languages size={22} />}
-                title={t("language")}
-                description="English"
-              />
+              <LanguageRow />
             </div>
           </section>
 
@@ -87,12 +104,14 @@ export default function SettingsPage() {
                 icon={<Clock3 size={22} />}
                 title={t("defaultDeliveryTime")}
                 description={t("asap")}
+                disabled
               />
 
               <LinkRow
                 icon={<UtensilsCrossed size={22} />}
                 title={t("dietaryPreferences")}
                 description={t("noneSet")}
+                disabled
                 isLast
               />
             </div>
@@ -105,8 +124,8 @@ export default function SettingsPage() {
             </h2>
 
             <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm transition-colors duration-200">
-              <ExternalRow title={t("termsOfService")} />
-              <ExternalRow title={t("privacyPolicy")} />
+              <ExternalRow title={t("termsOfService")} href="/terms" />
+              <ExternalRow title={t("privacyPolicy")} href="/privacy" />
 
               <div className="flex items-center justify-between px-5 py-5">
                 <span className="font-medium text-neutral-900 dark:text-neutral-100">
@@ -193,12 +212,41 @@ function LinkRow({
   title,
   description,
   isLast,
+  disabled,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   isLast?: boolean;
+  disabled?: boolean;
 }) {
+  const { t } = useTranslation();
+
+  // Target screen not built yet — render as clearly disabled (with a badge)
+  // instead of a silently dead button, per the settings roadmap.
+  if (disabled) {
+    return (
+      <div
+        className={`flex w-full items-center justify-between px-5 py-5 opacity-60 ${
+          !isLast ? "border-b border-neutral-100 dark:border-neutral-800" : ""
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <div className="text-pink-600">{icon}</div>
+
+          <div>
+            <p className="font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
+          </div>
+        </div>
+
+        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+          {t("comingSoon")}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <button
       className={`group flex w-full items-center justify-between px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors ${
@@ -222,12 +270,80 @@ function LinkRow({
   );
 }
 
-function ExternalRow({ title }: { title: string }) {
+// Endonyms so each language reads in its own name regardless of the active UI
+// language — matches the EN/PT convention used by the navbar LanguageSwitcher.
+const LANGUAGES: { code: "en" | "pt"; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "pt", label: "Português" },
+];
+
+function LanguageRow() {
+  const { t } = useTranslation();
+  const lang = useStore((s) => s.lang);
+  const setLang = useStore((s) => s.setLang);
+  const [open, setOpen] = useState(false);
+
+  const currentLabel =
+    LANGUAGES.find((l) => l.code === lang)?.label ?? LANGUAGES[0].label;
+
   return (
-    <button className="flex w-full items-center justify-between border-b border-neutral-100 dark:border-neutral-800 px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors last:border-b-0">
+    <div>
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        className="group flex w-full items-center justify-between px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
+      >
+        <div className="flex items-center gap-4">
+          <div className="text-pink-600">
+            <Languages size={22} />
+          </div>
+
+          <div>
+            <p className="font-medium text-neutral-900 dark:text-neutral-100">{t("language")}</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">{currentLabel}</p>
+          </div>
+        </div>
+
+        <ChevronRight
+          size={18}
+          className={`text-neutral-400 dark:text-neutral-500 transition-transform ${
+            open ? "rotate-90" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-800/30">
+          {LANGUAGES.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => {
+                setLang(l.code);
+                setOpen(false);
+              }}
+              className="flex w-full items-center justify-between py-3.5 pl-16 pr-5 text-left text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
+            >
+              <span className={lang === l.code ? "font-semibold text-pink-600" : ""}>
+                {l.label}
+              </span>
+              {lang === l.code && <Check size={16} className="text-pink-600" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExternalRow({ title, href }: { title: string; href: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex w-full items-center justify-between border-b border-neutral-100 dark:border-neutral-800 px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors last:border-b-0"
+    >
       <span className="font-medium text-neutral-900 dark:text-neutral-100">{title}</span>
 
       <ExternalLink size={18} className="text-neutral-400 dark:text-neutral-500" />
-    </button>
+    </Link>
   );
 }

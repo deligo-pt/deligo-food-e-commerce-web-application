@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Star, Heart, Truck, Check } from "lucide-react";
+import { ChevronRight, Star, Truck, Check } from "lucide-react";
 
 import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
@@ -14,44 +14,8 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { X } from "lucide-react";
-
-// Normalize cuisine strings for matching: lowercase, trim, strip accents.
-// Lets dynamic cuisine names match vendor restaurantCuisineType despite
-// casing/spacing/accent differences between the two data sources.
-const normalizeCuisine = (value: unknown) =>
-  String(value ?? "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim()
-    .toLowerCase();
-
-interface Vendor {
-  userId: string;
-  businessDetails: {
-    businessName: string;
-    businessType: string;
-    restaurantCuisineType?: string[] | string;
-    openingHours: string;
-    closingHours: string;
-    isStoreOpen: boolean;
-  };
-  businessLocation: {
-    city: string;
-    country: string;
-    latitude?: number;
-    longitude?: number;
-  };
-  storePhoto: string[];
-  rating: {
-    average: number;
-    totalReviews: number;
-  };
-  availableCategories?: {
-    _id: string;
-    name: string;
-    icon: string;
-  }[];
-}
+import type { Vendor } from "@/types/vendor";
+import { cuisineMatches, formatCuisine } from "@/lib/cuisine";
 
 function getDistanceKm(
   lat1: number,
@@ -225,14 +189,12 @@ export default function RestaurantsSection() {
       );
     }
     if (selectedCuisines.length > 0) {
-      const normalizedSelected = selectedCuisines.map(normalizeCuisine);
-      filtered = filtered.filter((vendor) => {
-        const types = vendor.businessDetails.restaurantCuisineType;
-        const list = Array.isArray(types) ? types : [types];
-        return list.some((type) =>
-          normalizedSelected.includes(normalizeCuisine(type)),
-        );
-      });
+      filtered = filtered.filter((vendor) =>
+        cuisineMatches(
+          vendor.businessDetails.restaurantCuisineType,
+          selectedCuisines,
+        ),
+      );
     }
 
     return filtered;
@@ -527,21 +489,16 @@ export default function RestaurantsSection() {
                 </div>
 
                 <div className="p-8">
-                  <div className="mb-2 flex items-center justify-between gap-4">
+                  <div className="mb-2 flex items-center gap-4">
                     <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d] dark:text-neutral-100">
                       {vendor.businessDetails.businessName}
                     </h3>
-                    <Heart
-                      size={22}
-                      className="text-[#d81b60] transition-transform group-hover:scale-110"
-                    />
                   </div>
 
                   <p className="mb-6 text-lg text-[#5a4044] dark:text-neutral-400">
-                    {(Array.isArray(vendor.businessDetails.restaurantCuisineType)
-                      ? vendor.businessDetails.restaurantCuisineType.join(", ")
-                      : vendor.businessDetails.restaurantCuisineType) ||
-                      vendor.businessDetails.businessType}
+                    {formatCuisine(
+                      vendor.businessDetails.restaurantCuisineType,
+                    ) || vendor.businessDetails.businessType}
                   </p>
 
                   <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-sm font-medium text-[#5a4044] dark:text-neutral-400">

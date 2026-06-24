@@ -12,7 +12,6 @@ import {
   ChevronDown,
   Search,
   ShoppingCart,
-  Menu,
   Bell,
   User,
   LogOut,
@@ -40,6 +39,7 @@ export default function Navbar() {
   const [addressText, setAddressText] = useState("Add Address");
   const [primaryAddressId, setPrimaryAddressId] = useState<string | null>(null);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -91,6 +91,7 @@ export default function Navbar() {
       }
 
       setProfilePhoto(profile?.profilePhoto || null);
+      setFirstName(profile?.name?.firstName || null);
     } catch (error) {
       console.error("Failed to fetch profile:", error);
     }
@@ -364,6 +365,8 @@ export default function Navbar() {
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
     useLocationStore.getState().setHasAutoSavedAddress(false);
     setIsLoggedIn(false);
+    setFirstName(null);
+    setProfilePhoto(null);
     setShowAccountDropdown(false);
     router.push("/");
   };
@@ -379,18 +382,23 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-[#b0004a] text-white transition-all duration-300 dark:bg-[#d81b60] px-4 py-3 lg:px-16 lg:py-4">
       {/* Desktop Layout & Mobile Row 1 */}
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full items-center justify-between gap-2">
         {/* Brand / Logo */}
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-1">
-            <Image
-              src="/deligoLogo.png"
-              alt="DeliGo Logo"
-              width={40}
-              height={40}
-              priority
-            />
-            <span className="text-[20px] font-black md:text-[24px]">
+        <div className="flex min-w-0 items-center gap-8">
+          <Link href="/" className="flex shrink-0 items-center gap-2.5">
+            {/* Logo sits in a white "chip" so the pink mark stays crisp on the
+                #b0004a header instead of blending pink-on-pink. */}
+            <span className="flex items-center justify-center rounded-xl bg-white p-1 shadow-[0_2px_8px_rgba(0,0,0,0.18)] ring-1 ring-black/5">
+              <Image
+                src="/deligoLogo.png"
+                alt="DeliGo Logo"
+                width={34}
+                height={34}
+                priority
+                className="rounded-lg"
+              />
+            </span>
+            <span className="text-[20px] font-black tracking-tight md:text-[24px]">
               DeliGo
             </span>
           </Link>
@@ -442,14 +450,18 @@ export default function Navbar() {
         </div>
 
         {/* Actions (Desktop and Mobile) */}
-        <div className="flex items-center gap-4 lg:gap-6">
-          <div className="flex items-center gap-2 lg:gap-4">
-            <LanguageSwitcher />
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4 lg:gap-6">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2 lg:gap-4">
+            {/* Language toggle is redundant on phones (also in Settings) and the
+                navbar row is tight there, so hide it below sm. */}
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
             <Link href="/notifications">
-              <button className="relative rounded-full p-2 text-white transition-colors hover:bg-white/10">
+              <button className="relative rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:p-2">
                 <Bell size={22} />
                 {unreadCount > 0 && (
-                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#b70052] text-[10px] font-medium text-white">
+                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#b0004a] ring-2 ring-white">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -457,10 +469,10 @@ export default function Navbar() {
             </Link>
 
             <Link href="/cart">
-              <button className="relative rounded-full p-2 text-white transition-colors hover:bg-white/10">
+              <button className="relative rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:p-2">
                 <ShoppingCart size={22} />
                 {vendorCount > 0 && (
-                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#b70052] text-[10px] font-medium text-white">
+                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#b0004a] ring-2 ring-white">
                     {vendorCount > 9 ? "9+" : vendorCount}
                   </span>
                 )}
@@ -468,12 +480,12 @@ export default function Navbar() {
             </Link>
           </div>
 
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative min-w-0" ref={dropdownRef}>
             <button
               onClick={handleAccountClick}
-              className="flex items-center gap-3 rounded-full p-1.5 text-white transition-colors hover:bg-white/10"
+              className="flex min-w-0 items-center gap-2 rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:gap-3"
             >
-              <div className="h-9 w-9 overflow-hidden rounded-full border-2 border-white/20 bg-[#edeeef] flex items-center justify-center">
+              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-white/20 bg-[#edeeef] flex items-center justify-center">
                 {!mounted ? (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -508,12 +520,12 @@ export default function Navbar() {
                   <User size={22} className="text-[#b0004a]" />
                 )}
               </div>
-              <span className="hidden text-[14px] font-semibold leading-5 xl:block">
-                {t("account")}
+              <span className="min-w-0 truncate text-[14px] font-semibold leading-5 sm:max-w-[140px]">
+                {mounted && isLoggedIn && firstName ? firstName : t("account")}
               </span>
             </button>
             {isLoggedIn && showAccountDropdown && (
-              <div className="absolute right-0 mt-2 w-48 rounded-md bg-white dark:bg-neutral-800 py-1 shadow-lg ring-1 ring-black/5 dark:ring-white/10 transition-all">
+              <div className="absolute right-0 z-50 mt-2 w-48 rounded-md bg-white dark:bg-neutral-800 py-1 shadow-lg ring-1 ring-black/5 dark:ring-white/10 transition-all">
                 <Link
                   href="/profile"
                   className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-neutral-200 hover:bg-gray-100 dark:hover:bg-neutral-700/50 transition-colors"
@@ -532,10 +544,6 @@ export default function Navbar() {
               </div>
             )}
           </div>
-
-          <button className="text-white lg:hidden">
-            <Menu size={26} />
-          </button>
         </div>
       </div>
 
