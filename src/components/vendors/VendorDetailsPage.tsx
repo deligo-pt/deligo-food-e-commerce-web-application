@@ -12,6 +12,7 @@ import VendorDetailsModal from "./VendorDetailsModal";
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
+import { formatCuisine } from "@/lib/cuisine";
 
 function getDistanceKm(
   lat1: number,
@@ -161,7 +162,7 @@ interface Vendor {
     openingHours: string;
     closingHours: string;
     preparationTimeMinutes: number;
-    restaurantCuisineType?: string;
+    restaurantCuisineType?: string[] | string;
     isStoreOpen: boolean;
   };
   businessLocation?: {
@@ -221,21 +222,16 @@ export default function VendorDetailsPage({
         const token = getAccessToken();
 
         if (token) {
-          let foundVendor: Vendor | null = null;
-          let currentPage = 1;
-          while (!foundVendor) {
-            const { data } = await apiClient.get(
-              `/vendors/customer?page=${currentPage}&limit=50`,
-            );
-            const vendors: Vendor[] = data.data;
-            if (vendors.length === 0) break;
-            foundVendor = vendors.find((v) => v.userId === vendorId) || null;
-            if (foundVendor) break;
-            if (currentPage >= (data.meta?.totalPage || 1)) break;
-            currentPage++;
-          }
-          if (!foundVendor) throw new Error("Vendor not found");
-          setVendor(foundVendor);
+          // Authenticated: resolve the vendor directly by id instead of paging
+          // through the whole customer list. This makes shared links open
+          // regardless of proximity and issues a single request. Mirrors the
+          // proven pattern in VendorDetailsModal.
+          const { data } = await apiClient.get(`/vendors/customer/${vendorId}`);
+          const raw = data.data;
+          if (!raw) throw new Error("Vendor not found");
+          // Normalize _id → id so downstream (product fetch, etc.) works uniformly
+          const vendor: Vendor = { ...raw, id: raw.id ?? raw._id ?? "" };
+          setVendor(vendor);
         } else {
           // Unauthenticated: use the dedicated open single-vendor endpoint
           const { data } = await apiClient.get(
@@ -438,7 +434,7 @@ export default function VendorDetailsPage({
                     />
                   </div>
                   <p className="mb-4 text-sm text-gray-500 dark:text-neutral-400">
-                    {vendor.businessDetails.restaurantCuisineType ||
+                    {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
                       vendor.businessDetails.businessType}
                   </p>
                   <div className="flex flex-wrap items-center gap-4 text-sm">

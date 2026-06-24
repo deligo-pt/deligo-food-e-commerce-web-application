@@ -2,21 +2,18 @@
 
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
+import { TERMS_CATEGORIES } from "@/lib/termsCategories";
 
 export default function TermsPage() {
   const { t } = useTranslation();
 
-  // Categories with static icons and translated names
-  const categories = [
-    { name: t("categoryRides"), icon: "🚗", href: "/terms/rides" },
-    { name: t("categoryMicromobility"), icon: "🛴", href: "/terms/micromobility" },
-    { name: t("categoryDeliGoDrive"), icon: "🚕", href: "/terms/drive" },
-    { name: t("categoryDelivery"), icon: "🍔", href: "/terms/delivery" },
-    { name: t("categoryInsurance"), icon: "🛡️", href: "/terms/insurance" },
-    { name: t("categoryDeliGoBusiness"), icon: "💼", href: "/terms/business" },
-    { name: t("categoryVendors"), icon: "🏪", href: "/terms/vendors" },
-    { name: t("categoryOther"), icon: "📄", href: "/terms/other" },
-  ];
+  // Built from the shared category list so card links always match the real
+  // /terms/[category] routes (single source of truth — see lib/termsCategories).
+  const categories = TERMS_CATEGORIES.map((category) => ({
+    name: t(category.titleKey),
+    icon: category.icon,
+    href: `/terms/${category.slug}`,
+  }));
 
   // Customer terms with static icons and translated titles/texts
   const customerTerms = [

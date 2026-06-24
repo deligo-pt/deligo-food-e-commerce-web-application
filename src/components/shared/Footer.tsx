@@ -86,16 +86,21 @@ export default function Footer() {
       <div className="mb-20 grid w-full grid-cols-1 gap-16 md:grid-cols-12">
         {/* Brand */}
         <div className="md:col-span-4">
-          <Link href="/" className="flex items-center gap-1 mb-8">
-            <Image
-              src="/deligoLogo.png"
-              alt="DeliGo Logo"
-              width={50}
-              height={50}
-              priority
-            />
+          <Link href="/" className="flex items-center gap-3 mb-8">
+            {/* Same white "chip" lockup as the navbar so the brand mark reads
+                consistently and gets some depth instead of a flat tile. */}
+            <span className="flex items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 p-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.08)] ring-1 ring-black/5 dark:ring-white/10">
+              <Image
+                src="/deligoLogo.png"
+                alt="DeliGo Logo"
+                width={44}
+                height={44}
+                priority
+                className="rounded-xl"
+              />
+            </span>
 
-            <span className=" block text-[40px] font-black text-[#b0004a] dark:text-[#d81b60]">
+            <span className=" block text-[40px] font-black tracking-tight text-[#b0004a] dark:text-[#d81b60]">
               DeliGo
             </span>
           </Link>

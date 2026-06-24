@@ -125,11 +125,24 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f2f5] dark:bg-neutral-950 px-4 py-8 text-[#191c1d] dark:text-neutral-100 sm:px-6 lg:px-8 lg:py-10 transition-colors duration-200">
+      {/* Explicit path back to the homepage */}
+      <Link
+        href="/"
+        className="mx-auto mb-5 flex w-full max-w-5xl items-center gap-2 text-sm font-medium text-[#242424]/70 dark:text-neutral-400 hover:text-[#ef2f7a] dark:hover:text-[#ef2f7a] transition-colors"
+      >
+        <ArrowLeft size={16} />
+        {t("returnToHome")}
+      </Link>
+
       <section className="mx-auto flex w-full max-w-5xl flex-col overflow-hidden rounded-4xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 shadow-[0_18px_70px_rgba(16,24,40,0.12)] dark:shadow-none lg:min-h-[calc(100vh-5rem)] lg:flex-row">
         {/* Left side - same as before */}
         <div className="flex items-center justify-center bg-[#ef2f7a] px-6 py-12 text-center text-white sm:px-10 lg:min-h-full lg:w-[42%] lg:px-12 lg:py-16">
           <div className="flex w-full max-w-sm flex-col items-center">
-            <div className="overflow-hidden rounded-[28px] shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+            <Link
+              href="/"
+              aria-label={t("returnToHome")}
+              className="overflow-hidden rounded-[28px] shadow-[0_18px_40px_rgba(0,0,0,0.18)] transition-transform hover:scale-105"
+            >
               <Image
                 src="/deligoLogo.png"
                 alt="DeliGo logo"
@@ -138,7 +151,7 @@ export default function LoginPage() {
                 className="h-20 w-20 object-cover sm:h-24 sm:w-24 lg:h-28 lg:w-28"
                 priority
               />
-            </div>
+            </Link>
             <h1 className="mt-6 text-[40px] font-extrabold tracking-[-0.03em] text-white sm:text-[46px]">
               DeliGo
             </h1>

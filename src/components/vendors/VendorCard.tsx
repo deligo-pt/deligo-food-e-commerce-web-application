@@ -4,11 +4,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Star, Truck, Check } from "lucide-react";
+import { Star, Truck, Check } from "lucide-react";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useLocationStore } from "@/stores/locationStore";
+import { formatCuisine } from "@/lib/cuisine";
 
 export interface Vendor {
   id: string;
@@ -16,7 +17,7 @@ export interface Vendor {
   businessDetails: {
     businessName: string;
     businessType: string;
-    restaurantCuisineType?: string;
+    restaurantCuisineType?: string[] | string;
     openingHours: string;
     closingHours: string;
     isStoreOpen: boolean;
@@ -323,17 +324,13 @@ export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
         </div>
 
         <div className="p-8">
-          <div className="mb-2 flex items-center justify-between gap-4">
+          <div className="mb-2 flex items-center gap-4">
             <h3 className="line-clamp-1 text-[24px] font-bold leading-8 text-[#191c1d] dark:text-neutral-100">
               {vendor.businessDetails.businessName}
             </h3>
-            <Heart
-              size={22}
-              className="text-[#d81b60] transition-colors group-hover:fill-current"
-            />
           </div>
           <p className="mb-6 text-[18px] leading-7 text-[#5a4044] dark:text-neutral-400">
-            {vendor.businessDetails.restaurantCuisineType ||
+            {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
               vendor.businessDetails.businessType}
           </p>
           <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-[14px] font-medium">

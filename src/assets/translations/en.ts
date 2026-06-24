@@ -588,6 +588,7 @@ const en = {
 
   dietaryPreferences: "Dietary Preferences",
   noneSet: "None set",
+  comingSoon: "Coming soon",
 
   legal: "Legal",
 
@@ -1115,6 +1116,28 @@ const en = {
   categoryDeliGoBusiness: "DeliGo Business",
   categoryVendors: "Vendors",
   categoryOther: "Other",
+
+  // Terms category detail pages
+  termsBackToCategories: "Back to Terms",
+  termsCategorySupplementNote:
+    "These terms supplement DeliGo's general Customer Terms & Conditions, which also apply to this service.",
+  termsViewGeneralTerms: "View general Customer Terms",
+  termsCatRidesBody:
+    "These terms govern your use of DeliGo Rides. They cover booking a trip, fare estimates and final pricing, driver and rider conduct, cancellations, and the safety expectations that apply during every journey.",
+  termsCatMicromobilityBody:
+    "These terms govern DeliGo Micromobility services such as scooters and e-bikes. They cover unlocking and ending a ride, parking rules, battery and vehicle care, local traffic regulations, and your responsibility for safe operation.",
+  termsCatDriveBody:
+    "These terms apply to drivers using DeliGo Drive. They cover onboarding and eligibility, accepting trips, earnings and payouts, rating standards, and the conduct expected while completing rides or deliveries.",
+  termsCatDeliveryBody:
+    "These terms govern DeliGo food and parcel Delivery. They cover placing orders, delivery time estimates, handling and handoff, missing or incorrect items, and the refund process when something goes wrong.",
+  termsCatInsuranceBody:
+    "These terms describe the Insurance coverage that may apply to eligible trips and deliveries. They explain what is and is not covered, how to report an incident, and the steps required to make a claim.",
+  termsCatBusinessBody:
+    "These terms apply to DeliGo Business accounts. They cover team and expense management, centralized billing, employee usage policies, and the administrative controls available to your organization.",
+  termsCatVendorsBody:
+    "These terms govern Vendors and partner stores on DeliGo. They cover menu and pricing accuracy, order preparation standards, food safety and packaging, commissions, and payout schedules.",
+  termsCatOtherBody:
+    "These terms cover additional DeliGo products and services not listed in the other categories. For anything not addressed here, our general Customer Terms & Conditions apply.",
 
   // Term cards
   termAccountRegistrationTitle: "Account Registration",

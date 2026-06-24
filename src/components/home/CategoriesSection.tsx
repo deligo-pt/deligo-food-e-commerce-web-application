@@ -234,19 +234,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
-import {
-  Utensils,
-  Flame,
-  Leaf,
-  Fish,
-  Check,
-  ChefHat,
-  Pizza,
-  Soup,
-  UtensilsCrossed,
-  ChevronRight,
-  X,
-} from "lucide-react";
+import { Utensils, Check, ChevronRight, X } from "lucide-react";
 
 // Cuisine data contract for the dynamic "What's on your mind?" section.
 type Cuisine = {
@@ -271,79 +259,6 @@ type CuisineOpenApiResponse = {
   };
   data: Cuisine[];
 };
-
-const CUISINE_OPTIONS = [
-  {
-    value: "Portuguese Food",
-    labelKey: "cuisinePortugueseFood",
-    icon: ChefHat,
-  },
-  {
-    value: "Sushi",
-    labelKey: "cuisineSushi",
-    icon: Fish,
-  },
-  {
-    value: "Kebab",
-    labelKey: "cuisineKebab",
-    icon: UtensilsCrossed,
-  },
-  {
-    value: "Barbecue",
-    labelKey: "cuisineBarbecue",
-    icon: Flame,
-  },
-  {
-    value: "Indian Food",
-    labelKey: "cuisineIndianFood",
-    icon: Utensils,
-  },
-  {
-    value: "Italian Food",
-    labelKey: "cuisineItalianFood",
-    icon: Pizza,
-  },
-  {
-    value: "Vegetarian Food",
-    labelKey: "cuisineVegetarianFood",
-    icon: Leaf,
-  },
-  {
-    value: "Thai Food",
-    labelKey: "cuisineThaiFood",
-    icon: Soup,
-  },
-  {
-    value: "Japanese Food",
-    labelKey: "cuisineJapaneseFood",
-    icon: Soup,
-  },
-  {
-    value: "Ramen",
-    labelKey: "cuisineRamen",
-    icon: Soup,
-  },
-  {
-    value: "Seafood",
-    labelKey: "cuisineSeafood",
-    icon: Fish,
-  },
-  {
-    value: "Burger",
-    labelKey: "cuisineBurger",
-    icon: UtensilsCrossed,
-  },
-  {
-    value: "Halal",
-    labelKey: "cuisineHalal",
-    icon: Check,
-  },
-  {
-    value: "Others",
-    labelKey: "cuisineOthers",
-    icon: Utensils,
-  },
-];
 
 export default function CategoriesSection() {
   const { t } = useTranslation();
@@ -626,14 +541,13 @@ export default function CategoriesSection() {
 
             {/* Modal Body */}
             <div className="overflow-y-auto p-6 flex flex-col gap-3 max-h-[60vh] [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              {CUISINE_OPTIONS.map((item) => {
-                const isActive = selectedCuisines.includes(item.value);
-                const Icon = item.icon;
+              {cuisines.map((cuisine) => {
+                const isActive = selectedCuisines.includes(cuisine.name);
                 return (
                   <button
-                    key={item.value}
+                    key={cuisine._id}
                     onClick={() => {
-                      handleCuisineClick(item.value);
+                      handleCuisineClick(cuisine.name);
                       setIsModalOpen(false);
                     }}
                     className={`group flex w-full items-center justify-between rounded-xl border p-4 transition-all duration-300 cursor-pointer ${isActive
@@ -643,15 +557,25 @@ export default function CategoriesSection() {
                   >
                     <div className="flex items-center gap-4">
                       <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-full border transition-all duration-300 ${isActive
+                        className={`flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border transition-all duration-300 ${isActive
                             ? "bg-[#b0004a] border-[#b0004a] text-white"
                             : "bg-[#e7e8e9] dark:bg-neutral-800 border-white dark:border-neutral-900 text-[#5a4044] dark:text-neutral-300 group-hover:bg-[#b0004a] group-hover:text-white"
                           }`}
                       >
-                        <Icon
-                          size={24}
-                          className="transition-transform duration-300 group-hover:scale-110"
-                        />
+                        {cuisine.imageUrl ? (
+                          <Image
+                            alt={cuisine.name}
+                            className="h-full w-full rounded-full object-cover transition-transform duration-300 group-hover:scale-110"
+                            height={48}
+                            width={48}
+                            src={cuisine.imageUrl}
+                          />
+                        ) : (
+                          <Utensils
+                            size={24}
+                            className="transition-transform duration-300 group-hover:scale-110"
+                          />
+                        )}
                       </div>
                       <span
                         className={`text-sm font-bold tracking-widest uppercase transition-colors ${isActive
@@ -659,7 +583,7 @@ export default function CategoriesSection() {
                             : "text-[#191c1d] dark:text-neutral-200 group-hover:text-[#b0004a] dark:group-hover:text-pink-500"
                           }`}
                       >
-                        {t(item.labelKey)}
+                        {cuisine.name}
                       </span>
                     </div>
                     {isActive ? (
