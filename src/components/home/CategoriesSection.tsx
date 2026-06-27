@@ -400,7 +400,7 @@ export default function CategoriesSection() {
     }
   };
 
-  if (selectedCategory && selectedCategory.name !== "RESTAURANT") {
+  if (selectedCategory && selectedCategory.name?.toUpperCase() !== "RESTAURANT") {
     return null;
   }
 
@@ -469,11 +469,12 @@ export default function CategoriesSection() {
           className="-mx-4 flex gap-8 overflow-x-auto px-4 pb-4 lg:-mx-16 lg:px-16 select-none cursor-grab active:cursor-grabbing [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           {cuisines.map((cuisine) => {
-            const isActive = selectedCuisines.includes(cuisine.name);
+            const cuisineLabel = cuisine.name?.trim() || cuisine.slug;
+            const isActive = selectedCuisines.includes(cuisineLabel);
             return (
               <div
                 key={cuisine._id}
-                onClick={() => handleCuisineClick(cuisine.name)}
+                onClick={() => handleCuisineClick(cuisineLabel)}
                 className="group flex min-w-35 shrink-0 select-none cursor-pointer flex-col items-center gap-4"
               >
                 <div
@@ -485,7 +486,7 @@ export default function CategoriesSection() {
                   <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white dark:border-neutral-900 bg-[#ffffff] dark:bg-neutral-900 transition-all duration-300">
                     {cuisine.imageUrl ? (
                       <Image
-                        alt={cuisine.name}
+                        alt={cuisineLabel}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                         height={128}
                         width={128}
@@ -508,7 +509,7 @@ export default function CategoriesSection() {
                       : "text-[#191c1d] dark:text-neutral-100 group-hover:text-[#b0004a] dark:group-hover:text-pink-500"
                     }`}
                 >
-                  {cuisine.name}
+                  {cuisineLabel}
                 </span>
               </div>
             );
@@ -542,12 +543,13 @@ export default function CategoriesSection() {
             {/* Modal Body */}
             <div className="overflow-y-auto p-6 flex flex-col gap-3 max-h-[60vh] [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {cuisines.map((cuisine) => {
-                const isActive = selectedCuisines.includes(cuisine.name);
+                const cuisineLabel = cuisine.name?.trim() || cuisine.slug;
+                const isActive = selectedCuisines.includes(cuisineLabel);
                 return (
                   <button
                     key={cuisine._id}
                     onClick={() => {
-                      handleCuisineClick(cuisine.name);
+                      handleCuisineClick(cuisineLabel);
                       setIsModalOpen(false);
                     }}
                     className={`group flex w-full items-center justify-between rounded-xl border p-4 transition-all duration-300 cursor-pointer ${isActive
@@ -564,7 +566,7 @@ export default function CategoriesSection() {
                       >
                         {cuisine.imageUrl ? (
                           <Image
-                            alt={cuisine.name}
+                            alt={cuisineLabel}
                             className="h-full w-full rounded-full object-cover transition-transform duration-300 group-hover:scale-110"
                             height={48}
                             width={48}
@@ -583,7 +585,7 @@ export default function CategoriesSection() {
                             : "text-[#191c1d] dark:text-neutral-200 group-hover:text-[#b0004a] dark:group-hover:text-pink-500"
                           }`}
                       >
-                        {cuisine.name}
+                        {cuisineLabel}
                       </span>
                     </div>
                     {isActive ? (

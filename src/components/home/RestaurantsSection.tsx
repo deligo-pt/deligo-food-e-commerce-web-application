@@ -163,7 +163,7 @@ export default function RestaurantsSection() {
   useEffect(() => {
     if (
       selectedBusinessCategory &&
-      selectedBusinessCategory.name !== "RESTAURANT"
+      selectedBusinessCategory.name?.toUpperCase() !== "RESTAURANT"
     ) {
       clearCuisines();
     }
@@ -177,7 +177,8 @@ export default function RestaurantsSection() {
     if (selectedBusinessCategory) {
       filtered = filtered.filter(
         (vendor) =>
-          vendor.businessDetails.businessType === selectedBusinessCategory.name,
+          vendor.businessDetails.businessType?.toUpperCase() ===
+          selectedBusinessCategory.name?.toUpperCase(),
       );
     }
 

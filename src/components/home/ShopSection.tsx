@@ -11,18 +11,21 @@ import {
 } from "@/stores/businessCategoryStore";
 import { useTranslation } from "@/hooks/useTranslation";
 // import RestaurantFilterModal from "./RestaurantFilterModal";
+type Meta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPage: number;
+};
+
+// The backend returns the flat envelope ({ meta, data: [...] }), but older
+// deployments nested it ({ data: { meta, data: [...] } }). Tolerate both so the
+// authenticated path keeps working regardless of which the API returns.
 type ApiResponse = {
   success: boolean;
   message: string;
-  data: {
-    meta: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPage: number;
-    };
-    data: BusinessCategory[];
-  };
+  meta?: Meta;
+  data: BusinessCategory[] | { meta?: Meta; data: BusinessCategory[] };
 };
 
 export default function ShopSection() {
@@ -54,7 +57,11 @@ export default function ShopSection() {
             },
           );
           const payload = response.data;
-          activeCategories = (payload.data?.data ?? []).filter(
+          // Flat shape → payload.data is the array; nested shape → payload.data.data.
+          const rawList = Array.isArray(payload.data)
+            ? payload.data
+            : payload.data?.data ?? [];
+          activeCategories = rawList.filter(
             (cat) => cat.isActive && !cat.isDeleted,
           );
         } else {
@@ -77,7 +84,7 @@ export default function ShopSection() {
             activeCategories.length > 0
           ) {
             const restaurantCategory = activeCategories.find(
-              (cat) => cat.name === "RESTAURANT",
+              (cat) => cat.name?.toUpperCase() === "RESTAURANT",
             );
 
             if (restaurantCategory) {
