@@ -1,8 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { useStore } from "@/stores/translationStore";
+
+// Hydration-safe "is the client mounted yet" flag. Returns false on the server
+// and during the first hydration render, then true — without a setState-in-effect
+// (which triggers cascading renders). Lets us defer to the persisted store value
+// only after hydration so the label matches the real saved language.
+const noopSubscribe = () => () => {};
+function useHydrated() {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+}
 
 export default function LanguageSwitcher() {
   const lang = useStore((state) => state.lang);
@@ -10,6 +23,12 @@ export default function LanguageSwitcher() {
 
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // The language lives in a persisted (localStorage) store, so the server
+  // renders the default while the client rehydrates to the real saved value.
+  // Only show the store value after hydration so the label always matches the
+  // active language instead of getting stuck on the server-rendered default.
+  const mounted = useHydrated();
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -32,9 +51,10 @@ export default function LanguageSwitcher() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
+        suppressHydrationWarning
         className="flex items-center gap-1 rounded-xl border border-white/20 bg-white/10 px-2.5 py-2 text-sm font-medium text-white hover:bg-white/20 sm:gap-2 sm:px-3"
       >
-        {lang.toUpperCase()}
+        {mounted ? lang.toUpperCase() : "PT"}
         <ChevronDown size={16} />
       </button>
 

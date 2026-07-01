@@ -400,7 +400,9 @@ export default function CategoriesSection() {
     }
   };
 
-  if (selectedCategory && selectedCategory.name?.toUpperCase() !== "RESTAURANT") {
+  // Compare on the stable slug, not the localized name (which is "Restaurante"
+  // in PT and would wrongly hide this section when Portuguese is selected).
+  if (selectedCategory && selectedCategory.slug?.toLowerCase() !== "restaurant") {
     return null;
   }
 

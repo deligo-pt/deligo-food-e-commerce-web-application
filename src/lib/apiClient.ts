@@ -1,5 +1,6 @@
 import axios from "axios";
 import { clearAuthTokens } from "./authCookies";
+import { useStore } from "@/stores/translationStore";
 
 type ApiErrorResponse = {
   success?: boolean;
@@ -33,6 +34,12 @@ apiClient.interceptors.request.use((config) => {
     if (accessToken) {
       headers.set("Authorization", `Bearer ${accessToken}`);
     }
+  }
+
+  // Tell the backend which language to resolve bilingual fields into. Read the
+  // current language per request so it always reflects the latest switch.
+  if (!headers.has("Accept-Language")) {
+    headers.set("Accept-Language", useStore.getState().lang ?? "pt");
   }
 
   config.headers = headers;

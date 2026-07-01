@@ -159,11 +159,13 @@ export default function RestaurantsSection() {
     fetchVendors();
   }, [geoCoords, permissionStatus]);
 
-  // Clear cuisines filter if selected category is not RESTAURANT
+  // Clear cuisines filter if selected category is not RESTAURANT. Compare on the
+  // stable slug — the name is localized ("Restaurante" in PT) and would trip this
+  // check in Portuguese, wrongly clearing the cuisine filter.
   useEffect(() => {
     if (
       selectedBusinessCategory &&
-      selectedBusinessCategory.name?.toUpperCase() !== "RESTAURANT"
+      selectedBusinessCategory.slug?.toLowerCase() !== "restaurant"
     ) {
       clearCuisines();
     }
