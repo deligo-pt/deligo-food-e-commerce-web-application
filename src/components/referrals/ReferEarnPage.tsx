@@ -69,14 +69,14 @@ export default function ReferEarnPage() {
       await navigator.clipboard.writeText(referralData.myReferralCode);
 
       setCopied(true);
-      toast.success("Referral code copied to clipboard");
+      toast.success(t("referralCodeCopied"));
 
       setTimeout(() => {
         setCopied(false);
       }, 2000);
     } catch (error) {
       console.error("Copy failed:", error);
-      toast.error("Failed to copy referral code");
+      toast.error(t("failedToCopyReferralCode"));
     }
   };
 
@@ -93,11 +93,11 @@ export default function ReferEarnPage() {
         });
       } else {
         await navigator.clipboard.writeText(shareText);
-        toast.success("Referral information copied to clipboard");
+        toast.success(t("referralInfoCopied"));
       }
     } catch (error) {
       console.error("Share failed:", error);
-      toast.error("Failed to share referral code");
+      toast.error(t("failedToShareReferralCode"));
     }
   };
 

@@ -184,11 +184,11 @@ export default function AccountPage() {
         if (response.data.success) {
           setProfile(response.data.data);
         } else {
-          setError("Failed to load profile");
+          setError(t("failedToLoadProfile"));
         }
       } catch (err: any) {
         console.error(err);
-        setError(err.message || "Something went wrong");
+        setError(err.message || t("somethingWentWrong"));
       } finally {
         setLoading(false);
       }
@@ -197,7 +197,7 @@ export default function AccountPage() {
     fetchProfile();
     fetchVoucherCount();
     fetchRewardPoints();
-  }, [router]);
+  }, [router, t]);
 
   const handleLogout = () => {
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
@@ -213,7 +213,7 @@ export default function AccountPage() {
     return (
       <section className="bg-[#f7f7f7] dark:bg-neutral-950 min-h-screen p-4 md:p-6 flex items-center justify-center text-gray-900 dark:text-neutral-100 transition-colors duration-200">
         <div className="text-red-500 dark:text-red-400 text-lg">
-          Error: {error || "Profile not found"}
+          Error: {error || t("profileNotFound")}
         </div>
       </section>
     );
@@ -221,7 +221,7 @@ export default function AccountPage() {
 
   const fullName =
     [profile.name.firstName, profile.name.lastName].filter(Boolean).join(" ") ||
-    "Unnamed User";
+    t("unnamedUser");
 
   return (
     <section className="bg-[#f7f7f7] dark:bg-neutral-950 p-4 md:p-6 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
@@ -410,9 +410,9 @@ export default function AccountPage() {
               <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/20">
                 <Star className="h-7 w-7 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-white">Unlock Exclusive Features</h3>
+              <h3 className="text-xl font-bold text-white">{t("unlockExclusiveFeatures")}</h3>
               <p className="mt-2 text-sm text-white/85 leading-relaxed">
-                Use the app regularly and place more orders to unlock and enjoy these exclusive features.
+                {t("unlockExclusiveFeaturesDesc")}
               </p>
             </div>
 

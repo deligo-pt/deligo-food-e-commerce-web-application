@@ -84,7 +84,9 @@ export default function ShopSection() {
             activeCategories.length > 0
           ) {
             const restaurantCategory = activeCategories.find(
-              (cat) => cat.name?.toUpperCase() === "RESTAURANT",
+              // Match on the stable, non-localized slug — the name is localized
+              // (e.g. "Restaurante" in PT) and would fail this check.
+              (cat) => cat.slug?.toLowerCase() === "restaurant",
             );
 
             if (restaurantCategory) {

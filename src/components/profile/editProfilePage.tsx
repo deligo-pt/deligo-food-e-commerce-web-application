@@ -58,14 +58,14 @@ export default function EditProfilePage() {
           throw new Error("Invalid response");
         }
       } catch (err) {
-        setError(getApiErrorMessage(err, "Failed to load profile"));
+        setError(getApiErrorMessage(err, t("failedToLoadProfile")));
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, []);
+  }, [t]);
 
   if (loading) return <EditProfileSkeleton />;
   if (error) return <ErrorState message={error} />;

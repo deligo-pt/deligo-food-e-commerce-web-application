@@ -1,6 +1,7 @@
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import LocationPromptModal from "@/components/shared/LocationPromptModal";
+import LanguageBoundary from "@/components/shared/LanguageBoundary";
 
 export default function MainLayout({
   children,
@@ -12,7 +13,9 @@ export default function MainLayout({
       <Navbar />
       <LocationPromptModal />
 
-      <main className="flex-1">{children}</main>
+      <main className="flex-1">
+        <LanguageBoundary>{children}</LanguageBoundary>
+      </main>
 
       <Footer />
     </>

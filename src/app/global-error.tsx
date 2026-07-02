@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // Root-level error boundary. This replaces the root layout when the layout itself
 // (or something it renders) throws, so it must render its own <html>/<body> and
@@ -12,12 +13,13 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t, i18n } = useTranslation();
   useEffect(() => {
     console.error(error);
   }, [error]);
 
   return (
-    <html lang="en">
+    <html lang={i18n.language}>
       <body
         style={{
           margin: 0,
@@ -34,10 +36,10 @@ export default function GlobalError({
         }}
       >
         <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>
-          Something went wrong
+          {t("somethingWentWrong")}
         </h1>
         <p style={{ maxWidth: 420, color: "#5a4044", marginTop: "0.5rem" }}>
-          A critical error occurred. Please try again.
+          {t("criticalError")}
         </p>
         <button
           onClick={reset}
@@ -53,7 +55,7 @@ export default function GlobalError({
             cursor: "pointer",
           }}
         >
-          Try again
+          {t("tryAgain")}
         </button>
       </body>
     </html>

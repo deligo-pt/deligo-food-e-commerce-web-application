@@ -100,7 +100,7 @@ export default function VouchersPageContent() {
         setCopiedCode("");
       }, 2000);
     } catch {
-      toast.error("Failed to copy code");
+      toast.error(t("failedToCopyCode"));
     }
   };
 

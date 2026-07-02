@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useLocationStore } from "@/stores/locationStore";
+import { useTranslation } from "@/hooks/useTranslation";
 
 declare global {
   interface Window {
@@ -33,6 +34,7 @@ export default function LocationPicker({
   defaultCenter = DEFAULT_CENTER,
   onCoordinatesChange,
 }: LocationPickerProps) {
+  const { t } = useTranslation();
   const mapRef = useRef<HTMLDivElement | null>(null);
   const markerRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -152,17 +154,17 @@ export default function LocationPicker({
 
       <div className="rounded-xl border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 p-4 transition-colors duration-200">
         <h4 className="mb-2 text-sm font-semibold text-green-700 dark:text-green-400">
-          Selected Location
+          {t("selectedLocation")}
         </h4>
 
         <div className="space-y-1 text-sm text-green-900 dark:text-green-100">
           <p>
-            <span className="font-medium">Latitude:</span>{" "}
+            <span className="font-medium">{t("latitude")}:</span>{" "}
             {coordinates.lat.toFixed(6)}
           </p>
 
           <p>
-            <span className="font-medium">Longitude:</span>{" "}
+            <span className="font-medium">{t("longitude")}:</span>{" "}
             {coordinates.lng.toFixed(6)}
           </p>
         </div>

@@ -147,23 +147,23 @@ export default function AddressForm({
   const handleSave = async () => {
     if (isGuestMode) {
       if (!coordinates) {
-        toast.error("Location not detected yet. Please wait or use GPS.");
+        toast.error(t("locationNotDetected"));
         return;
       }
       if (!formData.street.trim()) {
-        toast.error("Street address is required.");
+        toast.error(t("streetRequired"));
         return;
       }
       if (!formData.city.trim()) {
-        toast.error("City is required.");
+        toast.error(t("cityRequired"));
         return;
       }
       if (!formData.state.trim()) {
-        toast.error("Region/State is required.");
+        toast.error(t("regionRequired"));
         return;
       }
       if (!formData.country.trim()) {
-        toast.error("Country is required.");
+        toast.error(t("countryRequired"));
         return;
       }
 
@@ -182,10 +182,10 @@ export default function AddressForm({
         };
         useLocationStore.getState().setGuestAddress(guestAddress);
         window.dispatchEvent(new Event("addressUpdated"));
-        toast.success("Location saved locally!");
+        toast.success(t("locationSavedLocally"));
         onSuccess?.();
       } catch (err: any) {
-        toast.error("Failed to save location.");
+        toast.error(t("failedToSaveLocation"));
       } finally {
         setIsSaving(false);
       }
@@ -193,28 +193,28 @@ export default function AddressForm({
     }
 
     if (!getAccessToken()) {
-      toast.info("Please log in to save your address.");
+      toast.info(t("pleaseLogInToSaveAddress"));
       router.push("/login");
       return;
     }
     if (!coordinates) {
-      toast.error("Location not detected yet. Please wait or use GPS.");
+      toast.error(t("locationNotDetected"));
       return;
     }
     if (!formData.street.trim()) {
-      toast.error("Street address is required.");
+      toast.error(t("streetRequired"));
       return;
     }
     if (!formData.city.trim()) {
-      toast.error("City is required.");
+      toast.error(t("cityRequired"));
       return;
     }
     if (!formData.state.trim()) {
-      toast.error("Region/State is required.");
+      toast.error(t("regionRequired"));
       return;
     }
     if (!formData.country.trim()) {
-      toast.error("Country is required.");
+      toast.error(t("countryRequired"));
       return;
     }
 
@@ -223,7 +223,7 @@ export default function AddressForm({
       if (isEditMode) {
         // PATCH — update live location + primary address
         if (!userId) {
-          toast.error("User not loaded. Please refresh.");
+          toast.error(t("userNotLoaded"));
           setIsSaving(false);
           return;
         }
@@ -309,7 +309,7 @@ export default function AddressForm({
         </div>
         {isEditMode && (
           <p className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
-            Note: Edit mode updates the PRIMARY address regardless of type selected.
+            {t("editModePrimaryNote")}
           </p>
         )}
       </div>
@@ -448,14 +448,14 @@ export default function AddressForm({
 
       {!isLoggedIn && !isGuestMode && (
         <div className="mb-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-400">
-          <strong>Not signed in.</strong> You can explore the map and pick a location, but you need to{" "}
+          <strong>{t("notSignedIn")}</strong> {t("notSignedInExplore")}{" "}
           <button
             onClick={() => router.push("/login")}
             className="font-semibold underline hover:text-amber-900 dark:hover:text-amber-200"
           >
-            log in
+            {t("logInLink")}
           </button>{" "}
-          to save your address.
+          {t("notSignedInSaveSuffix")}
         </div>
       )}
 
