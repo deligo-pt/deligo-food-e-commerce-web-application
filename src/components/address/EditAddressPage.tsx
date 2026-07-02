@@ -81,7 +81,7 @@ export default function EditAddressPage({ addressId }: Props) {
         );
 
         if (!foundAddress) {
-          setError("Address not found");
+          setError(t("addressNotFound"));
           return;
         }
 
@@ -98,7 +98,7 @@ export default function EditAddressPage({ addressId }: Props) {
     };
 
     fetchAddress();
-  }, [addressId]);
+  }, [addressId, t]);
 
   // Click outside to hide suggestions dropdown
   useEffect(() => {
@@ -246,7 +246,7 @@ export default function EditAddressPage({ addressId }: Props) {
       (position) => {
         const { latitude, longitude } = position.coords;
         setCoordinates({ lat: latitude, lng: longitude });
-        toast.success("Current location loaded on map.");
+        toast.success(t("currentLocationLoadedOnMap"));
         setLoadingCurrentLocation(false);
       },
       (err) => {
@@ -280,12 +280,12 @@ export default function EditAddressPage({ addressId }: Props) {
   if (error || !address) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#f8f9fa] dark:bg-neutral-950">
-        <p className="text-lg text-red-500 dark:text-red-400">{error || "Address not found"}</p>
+        <p className="text-lg text-red-500 dark:text-red-400">{error || t("addressNotFound")}</p>
         <button
           onClick={() => router.back()}
           className="rounded-lg bg-[#b0004a] px-6 py-2 text-white transition hover:opacity-90 active:scale-95"
         >
-          Go Back
+          {t("goBack")}
         </button>
       </div>
     );

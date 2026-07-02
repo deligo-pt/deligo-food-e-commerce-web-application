@@ -106,7 +106,7 @@ export default function CategoriesPage() {
         }
       } catch {
         if (alive) {
-          setError("Unable to load categories. Please try again.");
+          setError(t("unableToLoadCategories"));
         }
       } finally {
         if (alive) setLoading(false);
@@ -118,7 +118,7 @@ export default function CategoriesPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [t]);
 
   const handleCategoryClick = (category: Category) => {
     setSelectedCategory({

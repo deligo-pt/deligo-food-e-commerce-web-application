@@ -57,7 +57,7 @@ export default function PrivacyPolicyPage() {
           <aside className="lg:w-80 shrink-0">
             <div className="lg:sticky lg:top-24 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm dark:shadow-none">
               <span className="text-xs font-bold text-gray-400 dark:text-neutral-500 uppercase tracking-wider block mb-4">
-                On this page
+                {t("onThisPage")}
               </span>
               <nav className="space-y-2">
                 <NavLink href="#who-we-are">{t("privacyNavWhoWeAre")}</NavLink>
@@ -89,7 +89,7 @@ export default function PrivacyPolicyPage() {
             <div className="lg:hidden mb-8">
               <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm dark:shadow-none">
                 <span className="text-xs font-bold text-gray-400 dark:text-neutral-500 uppercase tracking-wider block mb-4">
-                  On this page
+                  {t("onThisPage")}
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <NavLink href="#who-we-are">{t("privacyNavWhoWeAre")}</NavLink>

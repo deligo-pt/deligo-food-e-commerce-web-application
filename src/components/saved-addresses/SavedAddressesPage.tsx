@@ -87,9 +87,9 @@ export default function SavedAddressesPage() {
 
       await fetchAddresses();
       window.dispatchEvent(new Event("addressUpdated"));
-      toast.success("Primary address updated successfully");
+      toast.success(t("primaryAddressUpdated"));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to update primary address"));
+      toast.error(getApiErrorMessage(error, t("failedToUpdatePrimaryAddress")));
     } finally {
       setUpdatingId(null);
     }
@@ -110,9 +110,9 @@ export default function SavedAddressesPage() {
 
       await fetchAddresses();
       window.dispatchEvent(new Event("addressUpdated"));
-      toast.success("Address deleted successfully");
+      toast.success(t("addressDeleted"));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to delete address"));
+      toast.error(getApiErrorMessage(error, t("failedToDeleteAddress")));
     } finally {
       setDeletingId(null);
     }
@@ -291,15 +291,15 @@ export default function SavedAddressesPage() {
       <AlertDialog open={addressToDelete !== null} onOpenChange={(open) => !open && setAddressToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Address</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteAddress")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this address? This action cannot be undone.
+              {t("deleteAddressConfirm")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteAddress} className="bg-[#C2185B] hover:bg-[#A01248] dark:bg-pink-600 dark:hover:bg-pink-700 text-white">
-              Delete
+              {t("deleteLabel")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

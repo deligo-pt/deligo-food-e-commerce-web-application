@@ -205,7 +205,12 @@ export default function VendorDetailsPage({
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  // Category filter selection. Keyed by a stable value — the sentinels "all" /
+  // "popular", or a category's (localized) name for real categories — decoupled
+  // from the translated display label. A language switch remounts this page via
+  // LanguageBoundary, which re-inits this back to "all", so no stale (old
+  // language) selection can survive and match nothing.
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     null,
   );
@@ -301,7 +306,7 @@ export default function VendorDetailsPage({
           : null;
 
       if (!vendorCoords || !userCoords) {
-        setEstimatedTime("Under 10 min");
+        setEstimatedTime(t("under10Min"));
         timeFetchedRef.current = true;
         return;
       }
@@ -330,13 +335,13 @@ export default function VendorDetailsPage({
           const estimatedMinutes = Math.round((distance / 30) * 60);
           setEstimatedTime(
             estimatedMinutes < 10
-              ? "Under 10 min"
+              ? t("under10Min")
               : formatTimeRange(estimatedMinutes),
           );
         }
       } catch (err) {
         console.error("Time estimation error", err);
-        setEstimatedTime("Under 10 min");
+        setEstimatedTime(t("under10Min"));
       } finally {
         setLoadingTime(false);
         timeFetchedRef.current = true;
@@ -344,7 +349,7 @@ export default function VendorDetailsPage({
     };
 
     fetchTime();
-  }, [vendor, userCoords, userLoading]);
+  }, [vendor, userCoords, userLoading, t]);
 
   useEffect(() => {
     timeFetchedRef.current = false;
@@ -370,8 +375,8 @@ export default function VendorDetailsPage({
     vendor.storePhoto?.[0] || productVendorPhoto || "/placeholder-store.jpg";
 
   const displayTime = loadingTime
-    ? "Calculating..."
-    : estimatedTime || "Under 10 min";
+    ? t("calculating")
+    : estimatedTime || t("under10Min");
 
   const vendorCategoryNames =
     vendor.availableCategories?.map((cat) => cat.name) || [];
@@ -385,16 +390,22 @@ export default function VendorDetailsPage({
         ),
       ]
       : [];
-  const categories = [
-    "All",
-    "POPULAR",
+  // Each tab pairs a stable `key` (used for state + filtering) with a `label`
+  // (what the user sees). "all"/"popular" get translated labels; real categories
+  // key on their name (the only field shared with a product's category here,
+  // since Product.category has no id/slug), which is language-consistent within a
+  // render.
+  const categoryTabs = [
+    { key: "all", label: t("all") },
+    { key: "popular", label: t("popular") },
     ...(vendorCategoryNames.length > 0
       ? vendorCategoryNames
-      : productCategoryNames),
+      : productCategoryNames
+    ).map((name) => ({ key: name, label: name })),
   ];
 
   const filteredProducts = products.filter((product) => {
-    if (selectedCategory === "All" || selectedCategory === "POPULAR")
+    if (selectedCategory === "all" || selectedCategory === "popular")
       return true;
     const productCategory = product.category?.name;
     if (!productCategory) return false;
@@ -466,16 +477,16 @@ export default function VendorDetailsPage({
 
         <section className="mb-8 overflow-x-auto">
           <div className="flex min-w-max gap-3">
-            {categories.map((cat) => (
+            {categoryTabs.map((tab) => (
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`rounded-lg px-5 py-2 text-sm font-semibold transition ${selectedCategory === cat
+                key={tab.key}
+                onClick={() => setSelectedCategory(tab.key)}
+                className={`rounded-lg px-5 py-2 text-sm font-semibold uppercase transition ${selectedCategory === tab.key
                   ? "bg-pink-600 text-white"
                   : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-gray-500 dark:text-neutral-400 hover:bg-gray-50 dark:hover:bg-neutral-800"
                   }`}
               >
-                {cat}
+                {tab.label}
               </button>
             ))}
           </div>

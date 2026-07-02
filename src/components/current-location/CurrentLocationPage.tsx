@@ -232,7 +232,7 @@ export default function CurrentLocationPage() {
       (position) => {
         const { latitude, longitude } = position.coords;
         setCoordinates({ lat: latitude, lng: longitude });
-        toast.success("Current location loaded on map.");
+        toast.success(t("currentLocationLoadedOnMap"));
         setLoadingCurrentLocation(false);
       },
       (err) => {

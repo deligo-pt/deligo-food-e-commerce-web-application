@@ -95,7 +95,7 @@ export default function OrdersPage() {
       foodRating === 0 &&
       (activeRatingOrder.deliveryPartnerId ? deliveryRating === 0 : true)
     ) {
-      toast.error("Please provide at least one rating.");
+      toast.error(t("provideAtLeastOneRating"));
       return;
     }
 

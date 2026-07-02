@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import CartStoreCard from "./CartStoreCard";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
+import { getCartVendorId, getCartVendorName } from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCartStore } from "@/stores/cartStore";
 
@@ -97,7 +98,7 @@ export default function CartPage() {
 
     // Sync Navbar badge instantly — recalculate unique vendors from the new items
     const newVendorCount = new Set(
-      newItems.map((item: any) => item.vendorId?._id)
+      newItems.map((item) => getCartVendorId(item.vendorId))
     ).size;
     useCartStore.setState({
       vendorCount: newVendorCount,
@@ -115,15 +116,21 @@ export default function CartPage() {
 
     const grouped = cart.items.reduce(
       (acc, item) => {
-        const vendorId = item.vendorId._id;
-        const vendorInfo = vendors.find((vendor) => vendor.id === vendorId);
+        const vendorId = getCartVendorId(item.vendorId);
+        // Vendors from /vendors/customer may key on either `id` or `_id`, so match on both.
+        const vendorInfo = vendors.find(
+          (vendor) => (vendor.id ?? vendor._id) === vendorId,
+        );
 
         if (!acc[vendorId]) {
+          // The cart endpoint doesn't always populate vendorId.name, so fall back
+          // to a placeholder rather than crashing on a missing name.
+          const fallbackName = getCartVendorName(item.vendorId) ?? t("store");
+
           acc[vendorId] = {
             vendorId,
             businessName:
-              vendorInfo?.businessDetails?.businessName ||
-              `${item.vendorId.name.firstName} ${item.vendorId.name.lastName}`,
+              vendorInfo?.businessDetails?.businessName || fallbackName,
             image: vendorInfo?.storePhoto?.[0] || "/placeholder-store.jpg",
             rating: vendorInfo?.rating?.average || 0,
             items: [],
@@ -140,7 +147,7 @@ export default function CartPage() {
     );
 
     return Object.values(grouped);
-  }, [cart, vendors]);
+  }, [cart, vendors, t]);
 
   if (loading) {
     return (

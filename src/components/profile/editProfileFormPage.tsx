@@ -82,13 +82,13 @@ export default function EditProfileFormPage() {
           throw new Error("Invalid response");
         }
       } catch (err) {
-        toast.error(getApiErrorMessage(err, "Failed to load profile"));
+        toast.error(getApiErrorMessage(err, t("failedToLoadProfile")));
       } finally {
         setLoading(false);
       }
     };
     fetchProfile();
-  }, []);
+  }, [t]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -107,14 +107,14 @@ export default function EditProfileFormPage() {
   // Send OTP for email
   const handleSendEmailOtp = async () => {
     if (!email || email === originalEmail) {
-      toast.error("Please enter a new email address to update");
+      toast.error(t("enterNewEmailToUpdate"));
       return;
     }
     setSendingEmailOtp(true);
     try {
       await apiClient.patch("/profile/send-otp", { email });
       setEmailOtpSent(true);
-      toast.success("OTP sent to your new email address");
+      toast.success(t("otpSentToNewEmail"));
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to send OTP"));
     } finally {
@@ -125,7 +125,7 @@ export default function EditProfileFormPage() {
   // Verify OTP and update email
   const handleVerifyEmailOtp = async () => {
     if (!emailOtp) {
-      toast.error("Please enter OTP");
+      toast.error(t("pleaseEnterOtp"));
       return;
     }
     setVerifyingEmail(true);
@@ -137,7 +137,7 @@ export default function EditProfileFormPage() {
       setOriginalEmail(email);
       setEmailOtpSent(false);
       setEmailOtp("");
-      toast.success("Email updated successfully");
+      toast.success(t("emailUpdatedSuccessfully"));
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to verify OTP"));
     } finally {
@@ -148,14 +148,14 @@ export default function EditProfileFormPage() {
   // Send OTP for mobile
   const handleSendMobileOtp = async () => {
     if (!mobileNumber || mobileNumber === originalMobile) {
-      toast.error("Please enter a new mobile number to update");
+      toast.error(t("enterNewMobileToUpdate"));
       return;
     }
     setSendingMobileOtp(true);
     try {
       await apiClient.patch("/profile/send-otp", { contactNumber: mobileNumber });
       setMobileOtpSent(true);
-      toast.success("OTP sent to your new mobile number");
+      toast.success(t("otpSentToNewMobile"));
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to send OTP"));
     } finally {
@@ -166,7 +166,7 @@ export default function EditProfileFormPage() {
   // Verify OTP and update mobile
   const handleVerifyMobileOtp = async () => {
     if (!mobileOtp) {
-      toast.error("Please enter OTP");
+      toast.error(t("pleaseEnterOtp"));
       return;
     }
     setVerifyingMobile(true);
@@ -178,7 +178,7 @@ export default function EditProfileFormPage() {
       setOriginalMobile(mobileNumber);
       setMobileOtpSent(false);
       setMobileOtp("");
-      toast.success("Mobile number updated successfully");
+      toast.success(t("mobileUpdatedSuccessfully"));
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to verify OTP"));
     } finally {
@@ -189,7 +189,7 @@ export default function EditProfileFormPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profileData?.userId) {
-      toast.error("User ID not found");
+      toast.error(t("userIdNotFound"));
       return;
     }
 
@@ -225,7 +225,7 @@ export default function EditProfileFormPage() {
 
       await apiClient.patch(`/customers/${profileData.userId}`, payload);
 
-      toast.success("Profile updated successfully!");
+      toast.success(t("profileUpdatedSuccessfully"));
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 

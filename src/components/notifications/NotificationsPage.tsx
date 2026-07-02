@@ -255,7 +255,7 @@ export default function NotificationsPage() {
           <button
             onClick={handleMarkAllAsRead}
             disabled={unreadCount === 0 || markingAll}
-            title="Mark all as read"
+            title={t("markAllAsRead")}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffe9ef] dark:bg-pink-950/40 text-[#c1005b] dark:text-pink-400 disabled:opacity-40 dark:disabled:opacity-20 transition cursor-pointer"
           >
             <CheckCheck size={18} />

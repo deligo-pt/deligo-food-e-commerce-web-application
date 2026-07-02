@@ -12,6 +12,7 @@ import { getAccessToken } from "@/lib/authCookies";
 import { Star, Truck, Heart, Check } from "lucide-react";
 import type { Vendor } from "@/types/vendor";
 import { formatCuisine } from "@/lib/cuisine";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Product {
   _id: string;
@@ -112,6 +113,7 @@ function useUserAddress() {
 }
 
 export default function SearchContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -142,7 +144,7 @@ export default function SearchContent() {
       try {
         const token = getAccessToken();
         if (!token) {
-          if (isMounted) setError("Please log in to search.");
+          if (isMounted) setError(t("pleaseLogInToSearch"));
           if (isMounted) setLoading(false);
           return;
         }
@@ -189,7 +191,7 @@ export default function SearchContent() {
         if (isMounted) setProducts(filteredProducts);
       } catch (err) {
         console.error(err);
-        if (isMounted) setError("Failed to load search results.");
+        if (isMounted) setError(t("failedToLoadSearchResults"));
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -200,16 +202,16 @@ export default function SearchContent() {
     return () => {
       isMounted = false;
     };
-  }, [query]);
+  }, [query, t]);
 
   const estimateDeliveryTime = useCallback(async (vendor: Vendor) => {
     if (!userCoords) {
-      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: t("under10Min") }));
       return;
     }
     const vendorCoords = getVendorCoords(vendor);
     if (!vendorCoords) {
-      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: t("under10Min") }));
       return;
     }
 
@@ -226,15 +228,15 @@ export default function SearchContent() {
       }
       const distance = getDistanceKm(vendorCoords.lat, vendorCoords.lng, userCoords.lat, userCoords.lng);
       const estimatedMinutes = Math.round((distance / 30) * 60);
-      const timeStr = estimatedMinutes < 10 ? "Under 10 min" : formatTimeRange(estimatedMinutes);
+      const timeStr = estimatedMinutes < 10 ? t("under10Min") : formatTimeRange(estimatedMinutes);
       setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: timeStr }));
     } catch (err) {
       console.error("Time estimation error", err);
-      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: t("under10Min") }));
     } finally {
       setLoadingTimes(prev => ({ ...prev, [vendor.userId]: false }));
     }
-  }, [userCoords]);
+  }, [userCoords, t]);
 
   useEffect(() => {
     if (!userLoading && vendors.length > 0) {
@@ -282,12 +284,12 @@ export default function SearchContent() {
 
       {totalVendors > 0 && (
         <section className="mb-12">
-          <h2 className="text-xl font-bold mb-4">Places</h2>
+          <h2 className="text-xl font-bold mb-4">{t("places")}</h2>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {vendors.map((vendor) => {
               const deliveryTime = deliveryTimes[vendor.userId];
               const isTimeLoading = loadingTimes[vendor.userId];
-              const displayTime = isTimeLoading ? "Calculating..." : (deliveryTime || "Under 10 min");
+              const displayTime = isTimeLoading ? "Calculating..." : (deliveryTime || t("under10Min"));
 
               return (
                 <Link key={vendor.userId} href={`/vendors/${vendor.userId}`} className="block">
@@ -345,7 +347,7 @@ export default function SearchContent() {
 
       {totalProducts > 0 && (
         <section>
-          <h2 className="text-xl font-bold mb-4">Dishes</h2>
+          <h2 className="text-xl font-bold mb-4">{t("dishes")}</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <Link key={product._id} href={`/vendors/${product.vendorId.userId}`}>

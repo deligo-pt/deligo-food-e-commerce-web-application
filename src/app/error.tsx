@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { AlertTriangle, RotateCcw, Home } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // Route-segment error boundary. Catches unhandled render errors thrown anywhere
 // below the root layout (e.g. a malformed record) and shows a branded, recoverable
@@ -14,6 +15,7 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useTranslation();
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -24,11 +26,10 @@ export default function Error({
         <AlertTriangle className="h-8 w-8 text-[#b0004a] dark:text-pink-400" />
       </div>
       <h1 className="mt-6 text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
-        Something went wrong
+        {t("somethingWentWrong")}
       </h1>
       <p className="mt-2 max-w-md text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400">
-        An unexpected error occurred while loading this page. You can try again or
-        head back to the homepage.
+        {t("errorPageDesc")}
       </p>
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <button
@@ -36,14 +37,14 @@ export default function Error({
           className="inline-flex items-center justify-center gap-2 rounded-full bg-[#b0004a] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#8a0038]"
         >
           <RotateCcw size={18} />
-          Try again
+          {t("tryAgain")}
         </button>
         <Link
           href="/"
           className="inline-flex items-center justify-center gap-2 rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-900 px-6 py-3 font-semibold text-[#5a4044] dark:text-neutral-300 transition-colors hover:bg-gray-50 dark:hover:bg-neutral-800"
         >
           <Home size={18} />
-          Back to home
+          {t("backToHome")}
         </Link>
       </div>
     </div>

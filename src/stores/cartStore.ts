@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { apiClient } from "@/lib/apiClient";
+import { getCartVendorId } from "@/lib/cart";
 
 interface CartStore {
   vendorCount: number;
@@ -19,8 +20,8 @@ export const useCartStore = create<CartStore>((set) => ({
       const cartData = response.data?.data;
 
       const uniqueVendors = new Set(
-        (cartData?.items || []).map(
-          (item: any) => item.vendorId?._id
+        (cartData?.items || []).map((item: any) =>
+          getCartVendorId(item.vendorId)
         )
       );
 

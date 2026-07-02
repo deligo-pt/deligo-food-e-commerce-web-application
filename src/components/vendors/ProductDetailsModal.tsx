@@ -162,7 +162,7 @@ export default function ProductDetailsModal({
     // Redirect guests to login
     const token = getAccessToken();
     if (!token) {
-      toast.error("Please log in to add items to your cart.");
+      toast.error(t("pleaseLogInToAddToCart"));
       onClose();
       router.push("/login");
       return;
@@ -189,7 +189,7 @@ export default function ProductDetailsModal({
       if (response.data.success) {
         await fetchCart();
 
-        toast.success("Item added to cart successfully!");
+        toast.success(t("itemAddedToCart"));
 
         onClose();
       } else {

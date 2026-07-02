@@ -3,8 +3,10 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/apiClient";
+import { useTranslation } from "@/hooks/useTranslation";
 
 function PaymentFailedContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -30,17 +32,16 @@ function PaymentFailedContent() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-neutral-950 px-4 transition-colors duration-200">
       <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 p-6 text-center shadow-md border border-neutral-200 dark:border-neutral-800">
         <h1 className="text-2xl font-bold text-red-600 dark:text-red-500">
-          Payment Failed
+          {t("paymentFailed")}
         </h1>
 
         <p className="mt-3 text-gray-600 dark:text-neutral-400">
-          We could not process your payment. Please try again or use another
-          payment method.
+          {t("paymentFailedDesc")}
         </p>
 
         {summaryId && (
           <p className="mt-2 text-sm text-gray-500 dark:text-neutral-500">
-            Reference: {summaryId}
+            {t("referenceLabel")}: {summaryId}
           </p>
         )}
 
@@ -49,14 +50,14 @@ function PaymentFailedContent() {
             onClick={() => router.push("/cart")}
             className="flex-1 rounded-xl bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 px-6 py-3 text-gray-800 dark:text-neutral-200 font-semibold transition"
           >
-            Go Back
+            {t("goBack")}
           </button>
 
           <button
             onClick={() => router.push("/")}
             className="flex-1 rounded-xl bg-pink-600 hover:bg-pink-700 px-6 py-3 text-white font-semibold transition"
           >
-            Home
+            {t("home")}
           </button>
         </div>
       </div>
@@ -65,11 +66,12 @@ function PaymentFailedContent() {
 }
 
 export default function PaymentFailedPage() {
+  const { t } = useTranslation();
   return (
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-neutral-950 text-gray-800 dark:text-neutral-200 transition-colors duration-200">
-          Loading payment details...
+          {t("loadingPaymentDetails")}
         </div>
       }
     >

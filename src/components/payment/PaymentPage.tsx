@@ -147,7 +147,7 @@ export default function PaymentPage() {
 
   useEffect(() => {
     if (!checkoutId) {
-      setError("No checkout ID provided");
+      setError(t("noCheckoutIdProvided"));
       setLoading(false);
       return;
     }
@@ -204,7 +204,7 @@ export default function PaymentPage() {
     };
 
     fetchData();
-  }, [checkoutId]);
+  }, [checkoutId, t]);
 
   const handleOpenOfferModal = async () => {
     if (!summary) return;

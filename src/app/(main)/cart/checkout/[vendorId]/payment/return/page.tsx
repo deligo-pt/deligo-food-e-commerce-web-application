@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function PaymentReturnPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export default function PaymentReturnPage() {
       }
 
       if (!summaryId || !token) {
-        setError("Missing payment information. Please contact support.");
+        setError(t("missingPaymentInfo"));
         setStatus("error");
         return;
       }
@@ -59,14 +61,14 @@ export default function PaymentReturnPage() {
     };
 
     finalizeOrder();
-  }, [router, searchParams]);
+  }, [router, searchParams, t]);
 
   if (status === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-pink-600 border-t-transparent mx-auto" />
-          <p className="mt-4 text-gray-600">Finalizing your order...</p>
+          <p className="mt-4 text-gray-600">{t("finalizingYourOrder")}</p>
         </div>
       </div>
     );
@@ -76,20 +78,20 @@ export default function PaymentReturnPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center max-w-md">
-          <h2 className="text-xl font-bold text-red-600">Payment Failed</h2>
+          <h2 className="text-xl font-bold text-red-600">{t("paymentFailed")}</h2>
           <p className="mt-2 text-gray-700">{error}</p>
           <div className="mt-4 flex gap-3 justify-center">
             <button
               onClick={() => router.push("/cart")}
               className="rounded-lg bg-gray-600 px-4 py-2 text-white"
             >
-              Return to Cart
+              {t("returnToCart")}
             </button>
             <button
               onClick={() => router.push("/contact")}
               className="rounded-lg bg-pink-600 px-4 py-2 text-white"
             >
-              Contact Support
+              {t("contactSupport")}
             </button>
           </div>
         </div>
@@ -102,7 +104,7 @@ export default function PaymentReturnPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="text-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-pink-600 border-t-transparent mx-auto" />
-        <p className="mt-4 text-gray-600">Order confirmed! Redirecting...</p>
+        <p className="mt-4 text-gray-600">{t("orderConfirmedRedirecting")}</p>
       </div>
     </div>
   );

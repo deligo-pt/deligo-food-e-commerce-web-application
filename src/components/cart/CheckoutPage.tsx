@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
+import { getCartVendorId } from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCartStore } from "@/stores/cartStore";
 
@@ -127,7 +128,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const vendorItems = useMemo(() => {
     return (
       cart?.items.filter(
-        (item) => item.vendorId._id === vendorId && item.isActive === true,
+        (item) => getCartVendorId(item.vendorId) === vendorId && item.isActive === true,
       ) || []
     );
   }, [cart, vendorId]);
@@ -273,7 +274,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
   const handleProceedToCheckout = async () => {
     if (!vendorId) {
-      toast.error("Vendor information missing");
+      toast.error(t("vendorInfoMissing"));
       return;
     }
     try {

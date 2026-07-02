@@ -5,14 +5,19 @@ export interface CartItem {
   variationSku: string | null;
   isActive: boolean;
 
-  vendorId: {
-    _id: string;
-    userId: string;
-    name: {
-      firstName: string;
-      lastName: string;
-    };
-  };
+  // /carts/view-cart may return this populated as an object or as a bare id
+  // string. Use getCartVendorId()/getCartVendorName() to read it safely.
+  vendorId:
+    | string
+    | {
+        _id?: string;
+        id?: string;
+        userId?: string;
+        name?: {
+          firstName: string;
+          lastName: string;
+        };
+      };
 
   productPricing: {
     originalPrice: number;
