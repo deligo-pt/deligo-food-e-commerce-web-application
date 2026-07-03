@@ -52,7 +52,7 @@ type OpenApiResponse = {
 };
 
 export default function CategoriesPage() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +118,7 @@ export default function CategoriesPage() {
     return () => {
       alive = false;
     };
-  }, [t]);
+  }, [t, langVersion]);
 
   const handleCategoryClick = (category: Category) => {
     setSelectedCategory({

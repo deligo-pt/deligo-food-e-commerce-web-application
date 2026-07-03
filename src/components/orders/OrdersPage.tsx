@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import OrderCard from "./OrderCard";
 import OrdersPageSkeleton from "./OrdersPageSkeleton";
@@ -47,7 +47,8 @@ function StarRating({ value, onChange, size = 28 }: StarRatingProps) {
 }
 
 export default function OrdersPage() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
+  const prevLangVersionRef = useRef(langVersion);
   const [activeTab, setActiveTab] = useState<"ongoing" | "history">("ongoing");
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,9 +85,12 @@ export default function OrdersPage() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchOrdersAndRatings(true);
-  }, [fetchOrdersAndRatings]);
+    // On a language switch, re-fetch silently (showLoading=false) so the orders
+    // list stays on screen and just updates its localized text in place.
+    const isLangChange = prevLangVersionRef.current !== langVersion;
+    prevLangVersionRef.current = langVersion;
+    fetchOrdersAndRatings(!isLangChange);
+  }, [fetchOrdersAndRatings, langVersion]);
 
   const handleSubmitReview = async () => {
     if (!activeRatingOrder) return;

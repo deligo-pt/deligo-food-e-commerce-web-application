@@ -84,9 +84,13 @@ function getVendorCoords(vendor: Vendor): { lat: number; lng: number } | null {
 }
 
 export default function RestaurantsSection() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const [allVendors, setAllVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
+  // Show the skeleton only on the first load. On a language switch (or a coords
+  // change) we re-fetch in the background and keep the current list visible
+  // until the new data arrives, instead of flashing back to the loading state.
+  const hasLoadedRef = useRef(false);
   const [error, setError] = useState("");
   const [deliveryTimes, setDeliveryTimes] = useState<Record<string, string>>({});
   const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
@@ -109,7 +113,7 @@ export default function RestaurantsSection() {
 
     const fetchVendors = async () => {
       try {
-        setLoading(true);
+        if (!hasLoadedRef.current) setLoading(true);
         setError("");
 
         const token = getAccessToken();
@@ -153,11 +157,12 @@ export default function RestaurantsSection() {
         setError(getApiErrorMessage(err, "Unable to load nearby restaurants."));
       } finally {
         setLoading(false);
+        hasLoadedRef.current = true;
       }
     };
 
     fetchVendors();
-  }, [geoCoords, permissionStatus]);
+  }, [geoCoords, permissionStatus, langVersion]);
 
   // Clear cuisines filter if selected category is not RESTAURANT. Compare on the
   // stable slug — the name is localized ("Restaurante" in PT) and would trip this

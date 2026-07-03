@@ -29,7 +29,7 @@ type ApiResponse = {
 };
 
 export default function ShopSection() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const [categories, setCategories] = useState<BusinessCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,7 +113,7 @@ export default function ShopSection() {
     return () => {
       alive = false;
     };
-  }, [selectedCategory, setSelectedCategory, hasInitialized]);
+  }, [selectedCategory, setSelectedCategory, hasInitialized, langVersion]);
 
   if (loading) {
     return (

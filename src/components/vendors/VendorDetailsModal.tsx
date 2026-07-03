@@ -65,19 +65,24 @@ export default function VendorDetailsModal({
   onClose,
   vendorId,
 }: VendorDetailsModalProps) {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const [vendorData, setVendorData] = useState<VendorData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
+  const prevLangVersionRef = useRef(langVersion);
 
   useEffect(() => {
     if (!isOpen || !vendorId) return;
 
+    const isLangChange = prevLangVersionRef.current !== langVersion;
+    prevLangVersionRef.current = langVersion;
+
     const fetchVendor = async () => {
-      setLoading(true);
+      // Re-fetch in the new language without blanking the open modal.
+      if (!isLangChange) setLoading(true);
       setError(null);
       try {
         const token = getAccessToken();
@@ -100,7 +105,7 @@ export default function VendorDetailsModal({
     };
 
     fetchVendor();
-  }, [isOpen, vendorId]);
+  }, [isOpen, vendorId, langVersion]);
 
   // Close share dropdown when clicking outside
   useEffect(() => {

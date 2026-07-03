@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -113,12 +113,15 @@ function useUserAddress() {
 }
 
 export default function SearchContent() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(!!query.trim());
+  // On a language switch, re-run the search but keep the current results
+  // visible instead of flashing the loading state.
+  const prevLangVersionRef = useRef(langVersion);
   const [error, setError] = useState("");
   const [deliveryTimes, setDeliveryTimes] = useState<Record<string, string>>({});
   const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
@@ -137,9 +140,12 @@ export default function SearchContent() {
       return;
     }
 
+    const isLangChange = prevLangVersionRef.current !== langVersion;
+    prevLangVersionRef.current = langVersion;
+
     const fetchResults = async () => {
       if (!isMounted) return;
-      setLoading(true);
+      if (!isLangChange) setLoading(true);
       setError("");
       try {
         const token = getAccessToken();
@@ -202,7 +208,7 @@ export default function SearchContent() {
     return () => {
       isMounted = false;
     };
-  }, [query, t]);
+  }, [query, t, langVersion]);
 
   const estimateDeliveryTime = useCallback(async (vendor: Vendor) => {
     if (!userCoords) {

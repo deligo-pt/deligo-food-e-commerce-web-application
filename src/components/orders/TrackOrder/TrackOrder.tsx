@@ -461,7 +461,7 @@ function getOrderStep(orderStatus: string, t: (key: string) => string) {
 }
 
 export default function TrackOrder() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const { orderId } = useParams<{ orderId: string }>();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -527,7 +527,9 @@ export default function TrackOrder() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [orderId]);
+    // langVersion: re-fetch the order in the new language (keeps the current
+    // order on screen since loading only toggles on the initial load).
+  }, [orderId, langVersion]);
 
   // Animation observer
   useEffect(() => {

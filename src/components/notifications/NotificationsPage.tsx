@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   CheckCheck,
   Bike,
@@ -87,7 +87,8 @@ const getIconByType = (type: Notification["type"]) => {
 };
 
 export default function NotificationsPage() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
+  const prevLangVersionRef = useRef(langVersion);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [meta, setMeta] = useState<Meta>({
     page: 1,
@@ -138,6 +139,14 @@ export default function NotificationsPage() {
   useEffect(() => {
     fetchNotifications(1, "initial");
   }, [fetchNotifications]);
+
+  // On a language switch, re-fetch the current page silently so the list stays
+  // visible and just updates its localized notification text in place.
+  useEffect(() => {
+    if (prevLangVersionRef.current === langVersion) return;
+    prevLangVersionRef.current = langVersion;
+    fetchNotifications(currentPage, "none");
+  }, [langVersion, currentPage, fetchNotifications]);
 
   useEffect(() => {
     const handleNotificationsUpdate = (e: Event) => {

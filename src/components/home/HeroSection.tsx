@@ -21,7 +21,7 @@ type SponsorshipResponse = {
 };
 
 export default function HeroSection() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const [slides, setSlides] = useState<Sponsorship[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -66,7 +66,7 @@ export default function HeroSection() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [langVersion]);
 
   useEffect(() => {
     if (!emblaApi) return;

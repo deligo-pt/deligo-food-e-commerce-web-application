@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, Ticket } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -26,7 +26,8 @@ type OffersResponse = {
 };
 
 export default function VouchersPageContent() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
+  const prevLangVersionRef = useRef(langVersion);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -36,9 +37,13 @@ export default function VouchersPageContent() {
   );
 
   useEffect(() => {
+    const isLangChange = prevLangVersionRef.current !== langVersion;
+    prevLangVersionRef.current = langVersion;
+
     const fetchOffers = async () => {
       try {
-        setLoading(true);
+        // Keep the current offers visible while re-fetching for a language switch.
+        if (!isLangChange) setLoading(true);
         setError("");
 
         const response = await apiClient.get<OffersResponse>("/offers");
@@ -52,7 +57,7 @@ export default function VouchersPageContent() {
     };
 
     fetchOffers();
-  }, []);
+  }, [langVersion]);
 
   const availableOffers = useMemo(() => {
     return offers.filter(

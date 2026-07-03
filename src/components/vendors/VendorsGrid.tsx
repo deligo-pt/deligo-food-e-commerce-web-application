@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import VendorCard, { Vendor } from "./VendorCard";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
@@ -55,8 +55,12 @@ function VendorCardSkeleton() {
 }
 
 export default function VendorsGrid() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  // Track the last language we fetched for. On a language switch we re-fetch but
+  // keep the current grid visible (no skeleton); page/coords changes still show
+  // the skeleton as before.
+  const prevLangVersionRef = useRef(langVersion);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -70,9 +74,14 @@ export default function VendorsGrid() {
   useEffect(() => {
     if (permissionStatus === "loading") return;
 
+    const isLangChange = prevLangVersionRef.current !== langVersion;
+    prevLangVersionRef.current = langVersion;
+
     const fetchVendors = async () => {
       try {
-        setLoading(true);
+        // On a language switch, re-fetch silently and keep the current grid on
+        // screen; only show the skeleton for first load / page / coords changes.
+        if (!isLangChange) setLoading(true);
         setError("");
 
         const token = getAccessToken();
@@ -131,7 +140,7 @@ export default function VendorsGrid() {
     };
 
     fetchVendors();
-  }, [page, geoCoords, permissionStatus]);
+  }, [page, geoCoords, permissionStatus, langVersion]);
   if (loading) {
     return (
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">

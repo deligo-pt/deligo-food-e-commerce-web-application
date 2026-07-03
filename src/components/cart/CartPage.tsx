@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import CartStoreCard from "./CartStoreCard";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
@@ -11,7 +11,8 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useCartStore } from "@/stores/cartStore";
 
 export default function CartPage() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
+  const prevLangVersionRef = useRef(langVersion);
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,9 +108,12 @@ export default function CartPage() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    refreshCart(true);
-  }, []);
+    // On a language switch, re-fetch silently so the cart stays on screen and
+    // just updates its localized product/store text in place.
+    const isLangChange = prevLangVersionRef.current !== langVersion;
+    prevLangVersionRef.current = langVersion;
+    refreshCart(!isLangChange);
+  }, [langVersion]);
 
   const stores = useMemo(() => {
     if (!cart?.items) return [];

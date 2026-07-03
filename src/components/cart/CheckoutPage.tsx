@@ -25,8 +25,9 @@ interface CheckoutPageProps {
 }
 
 export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const router = useRouter();
+  const prevLangVersionRef = useRef(langVersion);
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [vendor, setVendor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -115,9 +116,12 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchCheckoutData(true);
-  }, [fetchCheckoutData]);
+    // On a language switch, re-fetch silently so the checkout stays on screen
+    // and just updates its localized text in place.
+    const isLangChange = prevLangVersionRef.current !== langVersion;
+    prevLangVersionRef.current = langVersion;
+    fetchCheckoutData(!isLangChange);
+  }, [fetchCheckoutData, langVersion]);
 
   useEffect(() => {
     const timeouts = syncTimeoutRef.current;

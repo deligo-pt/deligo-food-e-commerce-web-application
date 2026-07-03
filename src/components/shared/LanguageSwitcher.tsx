@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { useStore } from "@/stores/translationStore";
 
@@ -23,6 +29,18 @@ export default function LanguageSwitcher() {
 
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Mark the language change as a non-urgent transition so React keeps the
+  // current (old-language) UI painted and interactive while components re-fetch
+  // in the background, instead of dropping straight to loading states.
+  const [, startLangTransition] = useTransition();
+
+  const changeLanguage = (nextLang: "en" | "pt") => {
+    startLangTransition(() => {
+      setLang(nextLang);
+    });
+    setOpen(false);
+  };
 
   // The language lives in a persisted (localStorage) store, so the server
   // renders the default while the client rehydrates to the real saved value.
@@ -61,10 +79,7 @@ export default function LanguageSwitcher() {
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-24 overflow-hidden rounded-xl bg-white shadow-lg">
           <button
-            onClick={() => {
-              setLang("en");
-              setOpen(false);
-            }}
+            onClick={() => changeLanguage("en")}
             className="flex w-full items-center justify-between px-4 py-3 text-sm text-black hover:bg-gray-100"
           >
             EN
@@ -72,10 +87,7 @@ export default function LanguageSwitcher() {
           </button>
 
           <button
-            onClick={() => {
-              setLang("pt");
-              setOpen(false);
-            }}
+            onClick={() => changeLanguage("pt")}
             className="flex w-full items-center justify-between px-4 py-3 text-sm text-black hover:bg-gray-100"
           >
             PT

@@ -261,7 +261,7 @@ type CuisineOpenApiResponse = {
 };
 
 export default function CategoriesSection() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const { selectedCategory } = useBusinessCategoryStore();
   const { selectedCuisines, toggleCuisine, clearCuisines } =
     useCuisineFilterStore();
@@ -330,7 +330,7 @@ export default function CategoriesSection() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [langVersion]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 

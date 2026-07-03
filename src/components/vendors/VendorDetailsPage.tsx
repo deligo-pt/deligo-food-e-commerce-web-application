@@ -198,12 +198,15 @@ interface VendorDetailsPageProps {
 export default function VendorDetailsPage({
   vendorId,
 }: VendorDetailsPageProps) {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  // On a language switch we re-fetch the menu but keep the current products
+  // visible instead of dropping back to the loading skeleton.
+  const prevLangVersionRef = useRef(langVersion);
   const [productsError, setProductsError] = useState("");
   // Category filter selection. Keyed by a stable value — the sentinels "all" /
   // "popular", or a category's (localized) name for real categories — decoupled
@@ -254,14 +257,19 @@ export default function VendorDetailsPage({
       }
     };
     fetchVendor();
-  }, [vendorId]);
+  }, [vendorId, langVersion]);
 
   useEffect(() => {
     if (!vendor) return;
 
+    const isLangChange = prevLangVersionRef.current !== langVersion;
+    prevLangVersionRef.current = langVersion;
+
     const fetchProducts = async () => {
       try {
-        setProductsLoading(true);
+        // Keep the current menu on screen while re-fetching for a language
+        // switch; only show the skeleton on the first/normal load.
+        if (!isLangChange) setProductsLoading(true);
         const token = getAccessToken();
 
         if (token) {
@@ -290,7 +298,7 @@ export default function VendorDetailsPage({
       }
     };
     fetchProducts();
-  }, [vendor]);
+  }, [vendor, langVersion]);
 
   useEffect(() => {
     if (!vendor || userLoading) return;
