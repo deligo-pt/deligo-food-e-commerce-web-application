@@ -296,7 +296,7 @@ export default function AddressForm({
               type="button"
               onClick={() => setAddressType(type)}
               className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-medium transition ${addressType === type
-                ? "border-[#b0004a] dark:border-[#b0004a] bg-[#fff2f5] dark:bg-[#b0004a]/10 text-[#b0004a]"
+                ? "border-[#f9186b] dark:border-[#f9186b] bg-[#fff2f5] dark:bg-[#f9186b]/10 text-[#f9186b]"
                 : "border-[#e3bdc3] dark:border-neutral-800 text-[#5a4044] dark:text-neutral-300 bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800"
                 }`}
             >
@@ -320,7 +320,7 @@ export default function AddressForm({
           <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
             {getLabelText("streetAddress")}
           </label>
-          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#b0004a]">
+          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#f9186b]">
             <MapPin size={18} className="mr-3 text-[#5a4044] dark:text-neutral-500" />
             <input
               type="text"
@@ -337,7 +337,7 @@ export default function AddressForm({
           <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
             {getLabelText("houseApartmentFloor")}
           </label>
-          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#b0004a]">
+          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#f9186b]">
             <Building2 size={18} className="mr-3 text-[#5a4044] dark:text-neutral-500" />
             <input
               type="text"
@@ -363,7 +363,7 @@ export default function AddressForm({
             value={formData.city}
             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
             placeholder={t("enterCity")}
-            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#b0004a]"
+            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
           />
         </div>
         <div>
@@ -377,7 +377,7 @@ export default function AddressForm({
               setFormData({ ...formData, postalCode: e.target.value })
             }
             placeholder="1000-001"
-            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#b0004a]"
+            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
           />
         </div>
       </div>
@@ -395,14 +395,14 @@ export default function AddressForm({
               setFormData({ ...formData, state: e.target.value })
             }
             placeholder="Lisbon"
-            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#b0004a]"
+            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
           />
         </div>
         <div>
           <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
             {getLabelText("country")}
           </label>
-          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#b0004a]">
+          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#f9186b]">
             <Globe size={18} className="mr-3 text-[#5a4044] dark:text-neutral-500" />
             <input
               type="text"
@@ -421,7 +421,7 @@ export default function AddressForm({
       {/* Coordinates Card */}
       <div className="mb-8 rounded-2xl border border-[#e3bdc3] dark:border-neutral-800 bg-[#fafafa] dark:bg-[#fafafa]/5 p-5">
         <div className="mb-4 flex items-center gap-2">
-          <Navigation size={18} className="text-[#b0004a]" />
+          <Navigation size={18} className="text-[#f9186b]" />
           <h3 className="font-semibold text-[#191c1d] dark:text-neutral-200">
             {t("gpsCoordinates")}
           </h3>
@@ -462,7 +462,7 @@ export default function AddressForm({
       <button
         onClick={handleSave}
         disabled={isSaving}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#b0004a] py-4 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#f9186b] py-4 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
       >
         <Save size={18} />
         {isGuestMode

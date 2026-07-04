@@ -459,8 +459,8 @@ const en = {
   creditDebitCard: "Credit/Debit Card",
   visaMastercardMaestro: "Visa, Mastercard, Maestro",
 
-  mbway: "MB WAY",
-  fastMobilePayment: "Fast mobile payment",
+  googlePay: "Google Pay",
+  fastSecureCheckout: "Fast, secure checkout",
 
   applePay: "Apple Pay",
   oneTapCheckout: "One-tap checkout",
@@ -469,8 +469,6 @@ const en = {
   paypalGooglePayEtc: "PayPal, Google Pay, etc.",
 
   recommended: "Recommended",
-
-  confirmPaymentMethod: "Confirm Payment Method",
 
   paymentInfoSecure: "Your payment information is encrypted and secure",
   yourReferralCode: "Your Referral Code",
@@ -1167,20 +1165,6 @@ const en = {
   filter: "Filter",
   clearAll: "Clear all",
 
-  cuisinePortugueseFood: "Portuguese Food",
-  cuisineSushi: "Sushi",
-  cuisineKebab: "Kebab",
-  cuisineBarbecue: "Barbecue",
-  cuisineIndianFood: "Indian Food",
-  cuisineItalianFood: "Italian Food",
-  cuisineVegetarianFood: "Vegetarian Food",
-  cuisineThaiFood: "Thai Food",
-  cuisineJapaneseFood: "Japanese Food",
-  cuisineRamen: "Ramen",
-  cuisineSeafood: "Seafood",
-  cuisineBurger: "Burger",
-  cuisineHalal: "Halal",
-  cuisineOthers: "Others",
   // en.ts
   faqTitle: "Frequently Asked Questions",
   faqSubtitle: "Everything you need to know about DeliGo",

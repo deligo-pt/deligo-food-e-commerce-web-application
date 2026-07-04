@@ -1,12 +1,12 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw, Home, Pencil, Trash2 } from "lucide-react";
+import { RefreshCw, Home, Pencil, Trash2 } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
 import SavedAddressesSkeleton from "./SavedAddressesSkeleton";
 import { toast } from "sonner";
 import {
@@ -53,29 +53,24 @@ interface ProfileResponse {
 export default function SavedAddressesPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [addresses, setAddresses] = useState<DeliveryAddress[]>([]);
-  const [profileAddress, setProfileAddress] = useState<ProfileAddress | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [addressToDelete, setAddressToDelete] = useState<string | null>(null);
 
-  const fetchAddresses = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  // Shared, cached profile query — addresses populate instantly if the Navbar
+  // (or another page) already loaded the profile.
+  const {
+    data: profile,
+    isLoading: loading,
+    error: profileError,
+  } = useProfile<ProfileResponse["data"]>();
+  const invalidateProfile = useInvalidateProfile();
 
-      const response = await apiClient.get<ProfileResponse>("/profile");
-
-      setProfileAddress(response.data.data.address || null);
-      setAddresses(response.data.data.deliveryAddresses || []);
-    } catch (error) {
-      setError(getApiErrorMessage(error, "Failed to load addresses"));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const addresses = profile?.deliveryAddresses ?? [];
+  const profileAddress = profile?.address ?? null;
+  const error = profileError
+    ? getApiErrorMessage(profileError, "Failed to load addresses")
+    : "";
 
   const handleSetPrimaryAddress = async (addressId: string) => {
     try {
@@ -85,7 +80,7 @@ export default function SavedAddressesPage() {
         `/customers/toggle-delivery-address-status/${addressId}`,
       );
 
-      await fetchAddresses();
+      await invalidateProfile();
       window.dispatchEvent(new Event("addressUpdated"));
       toast.success(t("primaryAddressUpdated"));
     } catch (error) {
@@ -108,7 +103,7 @@ export default function SavedAddressesPage() {
 
       await apiClient.delete(`/customers/delete-delivery-address/${addressId}`);
 
-      await fetchAddresses();
+      await invalidateProfile();
       window.dispatchEvent(new Event("addressUpdated"));
       toast.success(t("addressDeleted"));
     } catch (error) {
@@ -119,10 +114,8 @@ export default function SavedAddressesPage() {
   };
 
   useEffect(() => {
-    fetchAddresses();
-
     const handleFocus = () => {
-      fetchAddresses();
+      invalidateProfile();
     };
 
     window.addEventListener("focus", handleFocus);
@@ -130,7 +123,7 @@ export default function SavedAddressesPage() {
     return () => {
       window.removeEventListener("focus", handleFocus);
     };
-  }, []);
+  }, [invalidateProfile]);
   if (loading) {
     return <SavedAddressesSkeleton />;
   }
@@ -148,16 +141,12 @@ export default function SavedAddressesPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.back()}>
-            <ArrowLeft className="h-5 w-5 text-black dark:text-neutral-200" />
-          </button>
-
           <h1 className="text-3xl font-bold text-black dark:text-neutral-50">
             {t("savedAddresses")}
           </h1>
         </div>
 
-        <button onClick={fetchAddresses}>
+        <button onClick={() => invalidateProfile()}>
           <RefreshCw className="h-4 w-4 text-black dark:text-neutral-200" />
         </button>
       </div>

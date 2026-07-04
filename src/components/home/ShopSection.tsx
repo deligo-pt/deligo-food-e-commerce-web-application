@@ -10,7 +10,6 @@ import {
   BusinessCategory,
 } from "@/stores/businessCategoryStore";
 import { useTranslation } from "@/hooks/useTranslation";
-// import RestaurantFilterModal from "./RestaurantFilterModal";
 type Meta = {
   page: number;
   limit: number;
@@ -168,7 +167,7 @@ export default function ShopSection() {
         {/* {selectedCategory?.name === "RESTAURANT" && (
           <button
             onClick={() => setShowFilterModal(true)}
-            className="rounded-full border border-[#ffd9de] px-6 py-3 text-[#b0004a]"
+            className="rounded-full border border-[#ffd9de] px-6 py-3 text-[#f9186b]"
           >
             {t("filter")}
           </button>
@@ -183,17 +182,18 @@ export default function ShopSection() {
               key={category._id}
               onClick={() => setSelectedCategory(category)}
               className={`
-                group flex cursor-pointer items-center gap-10 rounded-4xl 
-                bg-[#ffffff] dark:bg-neutral-900 p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] 
+                group flex cursor-pointer items-center gap-4 rounded-4xl
+                bg-[#ffffff] dark:bg-neutral-900 p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)]
                 transition-all duration-300 hover:shadow-2xl
+                sm:gap-6 sm:p-7 lg:gap-10 lg:p-10
                 ${
                   isActive
-                    ? "border-2 border-[#b0004a] dark:border-pink-500 shadow-lg"
+                    ? "border-2 border-[#f9186b] dark:border-pink-500 shadow-lg"
                     : "border-2 border-transparent hover:border-[#ffd9de] dark:hover:border-neutral-800"
                 }
               `}
             >
-              <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-3xl bg-gray-100 dark:bg-neutral-800 shadow-inner transition-transform duration-500 group-hover:scale-105">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-100 dark:bg-neutral-800 shadow-inner transition-transform duration-500 group-hover:scale-105 sm:h-28 sm:w-28 sm:rounded-3xl lg:h-40 lg:w-40">
                 {category.icon ? (
                   <Image
                     alt={category.name}
@@ -211,24 +211,14 @@ export default function ShopSection() {
               </div>
 
               <div className="flex-1">
-                <h3 className="mb-3 text-[24px] font-black leading-8 text-[#191c1d] dark:text-neutral-100">
+                <h3 className="text-lg font-black leading-tight text-[#191c1d] dark:text-neutral-100 sm:text-xl lg:text-[24px] lg:leading-8">
                   {category.name}
                 </h3>
-                {category.description && (
-                  <p className="text-[18px] leading-7 text-[#5a4044] dark:text-neutral-400">
-                    {category.description}
-                  </p>
-                )}
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* <RestaurantFilterModal
-        open={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-      /> */}
     </section>
   );
 }

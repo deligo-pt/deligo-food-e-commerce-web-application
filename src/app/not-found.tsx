@@ -102,7 +102,7 @@ export default function NotFound() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
             <Link
               href="/"
-              className="group relative px-8 py-4 bg-[#DC3173] text-white rounded-full font-bold text-lg shadow-lg shadow-[#DC317330] overflow-hidden flex items-center gap-2 hover:bg-[#b0004a] transition-all duration-300 transform hover:scale-105 active:scale-95"
+              className="group relative px-8 py-4 bg-[#DC3173] text-white rounded-full font-bold text-lg shadow-lg shadow-[#DC317330] overflow-hidden flex items-center gap-2 hover:bg-[#f9186b] transition-all duration-300 transform hover:scale-105 active:scale-95"
             >
               <Home size={20} />
               {t("backToHomeCap")}

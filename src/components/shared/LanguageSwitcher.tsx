@@ -70,10 +70,11 @@ export default function LanguageSwitcher() {
       <button
         onClick={() => setOpen(!open)}
         suppressHydrationWarning
-        className="flex items-center gap-1 rounded-xl border border-white/20 bg-white/10 px-2.5 py-2 text-sm font-medium text-white hover:bg-white/20 sm:gap-2 sm:px-3"
+        aria-label="Change language"
+        className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/10 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
       >
         {mounted ? lang.toUpperCase() : "PT"}
-        <ChevronDown size={16} />
+        <ChevronDown size={16} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
       </button>
 
       {open && (

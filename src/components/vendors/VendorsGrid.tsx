@@ -1,27 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import VendorCard, { Vendor } from "./VendorCard";
-import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
-import { getAccessToken } from "@/lib/authCookies";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
+import { useActiveAddressCoords } from "@/hooks/queries/useProfile";
+import { useVendorsNearby } from "@/hooks/queries/useVendors";
 
 const ITEMS_PER_PAGE = 10;
-
-type VendorsResponse = {
-  success: boolean;
-  message: string;
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPage: number;
-  };
-  data: Vendor[];
-};
 
 function VendorCardSkeleton() {
   return (
@@ -55,92 +43,39 @@ function VendorCardSkeleton() {
 }
 
 export default function VendorsGrid() {
-  const { t, langVersion } = useTranslation();
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  // Track the last language we fetched for. On a language switch we re-fetch but
-  // keep the current grid visible (no skeleton); page/coords changes still show
-  // the skeleton as before.
-  const prevLangVersionRef = useRef(langVersion);
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [resolvedCoords, setResolvedCoords] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
   const { coords: geoCoords, permissionStatus } = useLocationStore();
 
-  useEffect(() => {
-    if (permissionStatus === "loading") return;
+  // Resolve coords from the cached active delivery address, falling back to GPS.
+  const activeCoords = useActiveAddressCoords();
+  const resolvedCoords = useMemo(
+    () =>
+      activeCoords ??
+      (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null),
+    [activeCoords, geoCoords],
+  );
 
-    const isLangChange = prevLangVersionRef.current !== langVersion;
-    prevLangVersionRef.current = langVersion;
+  const {
+    data,
+    isLoading,
+    error: queryError,
+  } = useVendorsNearby<Vendor>(resolvedCoords, {
+    page,
+    limit: ITEMS_PER_PAGE,
+    enabled: permissionStatus !== "loading",
+  });
 
-    const fetchVendors = async () => {
-      try {
-        // On a language switch, re-fetch silently and keep the current grid on
-        // screen; only show the skeleton for first load / page / coords changes.
-        if (!isLangChange) setLoading(true);
-        setError("");
+  const vendors = data?.data ?? [];
+  const totalPages = data?.totalPage ?? 1;
+  // Skeleton while permissions resolve or the first coords-backed fetch runs.
+  // A language switch keeps the current grid (keepPreviousData), no skeleton.
+  const loading =
+    permissionStatus === "loading" || (!!resolvedCoords && isLoading);
+  const error = queryError
+    ? getApiErrorMessage(queryError, "Unable to load vendors. Please try again.")
+    : "";
 
-        const token = getAccessToken();
-        let activeCoords: { lat: number; lng: number } | null = null;
-        if (token) {
-          try {
-            const { data } = await apiClient.get("/profile");
-            const active = data?.data?.deliveryAddresses?.find(
-              (a: any) => a.isActive === true,
-            );
-            if (active?.latitude && active?.longitude) {
-              activeCoords = { lat: active.latitude, lng: active.longitude };
-            }
-          } catch {
-            // Profile fetch failed — fall through to GPS / default
-          }
-        }
-        const coords =
-          activeCoords ??
-          (geoCoords
-            ? { lat: geoCoords.latitude, lng: geoCoords.longitude }
-            : null);
-
-        setResolvedCoords(coords);
-
-        if (!coords) {
-          setVendors([]);
-          setTotalPages(1);
-          setLoading(false);
-          return;
-        }
-
-        const url = "/vendors/nearby/open";
-        const params = {
-          page,
-          limit: ITEMS_PER_PAGE,
-          latitude: coords.lat,
-          longitude: coords.lng,
-        };
-
-        const response = await apiClient.get<VendorsResponse>(url, { params });
-
-        setVendors(response.data.data || []);
-        setTotalPages(response.data.meta?.totalPage || 1);
-      } catch (error) {
-        console.error("Failed to fetch vendors:", error);
-        setError(
-          getApiErrorMessage(
-            error,
-            "Unable to load vendors. Please try again.",
-          ),
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchVendors();
-  }, [page, geoCoords, permissionStatus, langVersion]);
   if (loading) {
     return (
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
@@ -200,8 +135,8 @@ export default function VendorsGrid() {
                 onClick={() => setPage(pageNumber)}
                 className={`h-11 w-11 rounded-xl font-semibold transition-all cursor-pointer ${
                   page === pageNumber
-                    ? "bg-[#b0004a] text-white"
-                    : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:border-[#b0004a] dark:hover:border-pink-500"
+                    ? "bg-[#f9186b] text-white"
+                    : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:border-[#f9186b] dark:hover:border-pink-500"
                 }`}
               >
                 {pageNumber}

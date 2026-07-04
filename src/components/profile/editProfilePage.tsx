@@ -4,10 +4,11 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { FileText, Mail, MapPin, Pencil, Phone, User } from "lucide-react";
-import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiClient";
 import Link from "next/link";
 import EditProfileSkeleton from "./EditProfileSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useProfile } from "@/hooks/queries/useProfile";
 
 interface ProfileData {
   name: { firstName: string; lastName: string };
@@ -20,9 +21,15 @@ interface ProfileData {
 
 export default function EditProfilePage() {
   const { t } = useTranslation();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Shared, cached profile — populates instantly if already loaded elsewhere.
+  const {
+    data: profile,
+    isLoading: loading,
+    error: profileErrorObj,
+  } = useProfile<ProfileData>();
+  const error = profileErrorObj
+    ? getApiErrorMessage(profileErrorObj, t("failedToLoadProfile"))
+    : null;
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -33,39 +40,23 @@ export default function EditProfilePage() {
     address: "",
   });
 
+  // Populate the form once the profile arrives from the cache/network.
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const { data } = await apiClient.get("/profile");
-        if (data.success && data.data) {
-          const profileData = data.data;
-          setProfile(profileData);
-
-          const addr = profileData.address || {};
-          const fullAddress = [addr.street, addr.city, addr.postalCode]
-            .filter(Boolean)
-            .join(", ");
-
-          setFormData({
-            firstName: profileData.name?.firstName || "",
-            lastName: profileData.name?.lastName || "",
-            email: profileData.email || "",
-            mobile: profileData.contactNumber || "",
-            nif: profileData.NIF || "",
-            address: fullAddress,
-          });
-        } else {
-          throw new Error("Invalid response");
-        }
-      } catch (err) {
-        setError(getApiErrorMessage(err, t("failedToLoadProfile")));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [t]);
+    if (!profile) return;
+    const addr = profile.address || {};
+    const fullAddress = [addr.street, addr.city, addr.postalCode]
+      .filter(Boolean)
+      .join(", ");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFormData({
+      firstName: profile.name?.firstName || "",
+      lastName: profile.name?.lastName || "",
+      email: profile.email || "",
+      mobile: profile.contactNumber || "",
+      nif: profile.NIF || "",
+      address: fullAddress,
+    });
+  }, [profile]);
 
   if (loading) return <EditProfileSkeleton />;
   if (error) return <ErrorState message={error} />;
@@ -95,7 +86,7 @@ export default function EditProfilePage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <User className="h-12 w-12 text-[#b0004a] dark:text-pink-400" />
+                    <User className="h-12 w-12 text-[#f9186b] dark:text-pink-400" />
                   )}
                 </div>
               </div>
@@ -165,7 +156,7 @@ export default function EditProfilePage() {
             <div className="mt-6 border-t border-neutral-200 dark:border-neutral-800 pt-8">
               <div className="flex justify-end">
                 <Link href="/edit-profile-form">
-                  <button className="flex items-center justify-center gap-2 rounded-xl bg-[#b0004a] dark:bg-pink-600 hover:bg-[#90003b] dark:hover:bg-pink-700 px-10 py-3 font-semibold text-white transition">
+                  <button className="flex items-center justify-center gap-2 rounded-xl bg-[#f9186b] dark:bg-pink-600 hover:bg-[#d4145b] dark:hover:bg-pink-700 px-10 py-3 font-semibold text-white transition">
                     {t("editProfile")} <Pencil size={18} />
                   </button>
                 </Link>
@@ -202,7 +193,7 @@ function InputField({
   return (
     <div>
       <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
-        {label} {required && <span className="text-[#b0004a] dark:text-pink-400">*</span>}
+        {label} {required && <span className="text-[#f9186b] dark:text-pink-400">*</span>}
         {optional && (
           <span className="text-xs text-gray-400 dark:text-neutral-500"> ({optionalText})</span>
         )}

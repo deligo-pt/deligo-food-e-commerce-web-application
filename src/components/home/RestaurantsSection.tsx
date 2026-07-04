@@ -1,18 +1,18 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import Image from "next/image";
+import { memo, useEffect, useState, useCallback, useMemo, useRef } from "react";
+import SafeImage from "@/components/shared/SafeImage";
 import Link from "next/link";
-import { ChevronRight, Star, Truck, Check } from "lucide-react";
+import { ChevronRight, Star, Truck, Check, Store } from "lucide-react";
 
-import { apiClient, getApiErrorMessage } from "../../lib/apiClient";
-import { getAccessToken } from "@/lib/authCookies";
+import { getApiErrorMessage } from "../../lib/apiClient";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
 import { useProductCategoryStore } from "@/stores/productCategoryStore";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useLocationStore } from "@/stores/locationStore";
+import { useActiveAddressCoords } from "@/hooks/queries/useProfile";
+import { useVendorsNearby } from "@/hooks/queries/useVendors";
 import { X } from "lucide-react";
 import type { Vendor } from "@/types/vendor";
 import { cuisineMatches, formatCuisine } from "@/lib/cuisine";
@@ -83,19 +83,81 @@ function getVendorCoords(vendor: Vendor): { lat: number; lng: number } | null {
   return latitude && longitude ? { lat: latitude, lng: longitude } : null;
 }
 
+// Memoized card — delivery-time estimates resolve one vendor at a time, so
+// without this every resolution would re-render the whole grid. Now only the
+// card whose `deliveryTime`/`isTimeLoading` changed re-renders.
+const RestaurantCard = memo(function RestaurantCard({
+  vendor,
+  deliveryTime,
+  isTimeLoading,
+}: {
+  vendor: Vendor;
+  deliveryTime?: string;
+  isTimeLoading?: boolean;
+}) {
+  const { t } = useTranslation();
+  const displayTime = isTimeLoading
+    ? t("calculating")
+    : deliveryTime || t("under10Min");
+
+  return (
+    <Link href={`/vendors/${vendor.userId}`} className="block">
+      <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl">
+        <div className="relative aspect-16/10 overflow-hidden">
+          <SafeImage
+            src={vendor.storePhoto?.[0]}
+            alt={vendor.businessDetails.businessName}
+            sizes="(max-width:1024px) 100vw, 33vw"
+            className="object-cover transition-transform duration-700 group-hover:scale-110"
+            fallbackIcon={<Store className="h-12 w-12" />}
+          />
+
+          <div className="absolute left-5 top-5">
+            <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 dark:bg-neutral-900/95 px-4 py-2 text-sm font-bold text-[#191c1d] dark:text-white shadow-lg backdrop-blur-md">
+              <Star size={18} className="text-[#f6c344]" />
+              {vendor.rating?.average ?? 0}
+            </span>
+          </div>
+          <div className="absolute bottom-5 right-5">
+            <span className="flex items-center gap-2 rounded-2xl bg-black/70 px-4 py-2 text-sm text-white backdrop-blur-md">
+              <Truck size={18} />
+              {displayTime}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-8">
+          <div className="mb-2 flex items-center gap-4">
+            <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d] dark:text-neutral-100">
+              {vendor.businessDetails.businessName}
+            </h3>
+          </div>
+
+          <p className="mb-6 text-lg text-[#5a4044] dark:text-neutral-400">
+            {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
+              vendor.businessDetails.businessType}
+          </p>
+
+          <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-sm font-medium text-[#5a4044] dark:text-neutral-400">
+            <span className="flex items-center gap-2 text-[#f9186b] dark:text-pink-500">
+              <Truck size={18} />
+              {vendor.businessDetails.isStoreOpen ? t("openNow") : t("closed")}
+            </span>
+            <span className="flex items-center gap-2 text-[#f9186b] dark:text-pink-400">
+              <Check size={18} />
+              {vendor.businessLocation.city}, {vendor.businessLocation.country}
+            </span>
+          </div>
+        </div>
+      </article>
+    </Link>
+  );
+});
+
 export default function RestaurantsSection() {
-  const { t, langVersion } = useTranslation();
-  const [allVendors, setAllVendors] = useState<Vendor[]>([]);
-  const [loading, setLoading] = useState(true);
-  // Show the skeleton only on the first load. On a language switch (or a coords
-  // change) we re-fetch in the background and keep the current list visible
-  // until the new data arrives, instead of flashing back to the loading state.
-  const hasLoadedRef = useRef(false);
-  const [error, setError] = useState("");
+  const { t } = useTranslation();
   const [deliveryTimes, setDeliveryTimes] = useState<Record<string, string>>({});
   const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
-  // Active delivery address coords — fetched fresh every time the component mounts (no caching)
-  const [activeAddressCoords, setActiveAddressCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const { coords: geoCoords, permissionStatus } = useLocationStore();
   const {
@@ -108,61 +170,31 @@ export default function RestaurantsSection() {
   } = useProductCategoryStore();
   const { selectedCuisines, toggleCuisine, clearCuisines } = useCuisineFilterStore();
 
-  useEffect(() => {
-    if (permissionStatus === "loading") return;
+  // Active delivery-address coords from the shared cache, GPS as fallback.
+  const activeAddressCoords = useActiveAddressCoords();
+  const resolvedCoords = useMemo(
+    () =>
+      activeAddressCoords ??
+      (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null),
+    [activeAddressCoords, geoCoords],
+  );
 
-    const fetchVendors = async () => {
-      try {
-        if (!hasLoadedRef.current) setLoading(true);
-        setError("");
+  const {
+    data: nearbyData,
+    isLoading,
+    error: queryError,
+  } = useVendorsNearby<Vendor>(resolvedCoords, {
+    enabled: permissionStatus !== "loading",
+  });
 
-        const token = getAccessToken();
-
-        // Step 1: always fetch the active delivery address fresh from the API (no cache)
-        let activeCoords: { lat: number; lng: number } | null = null;
-        if (token) {
-          try {
-            const { data } = await apiClient.get("/profile");
-            const active = data?.data?.deliveryAddresses?.find(
-              (a: any) => a.isActive === true,
-            );
-            if (active?.latitude && active?.longitude) {
-              activeCoords = { lat: active.latitude, lng: active.longitude };
-            }
-          } catch {
-            // Profile fetch failed — fall through to GPS / default
-          }
-        }
-
-        setActiveAddressCoords(activeCoords);
-
-        // Step 2: pick the best coords for vendor lookup
-        // Priority: active delivery address > browser GPS
-        const coords =
-          activeCoords ??
-          (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null);
-
-        if (!coords) {
-          setAllVendors([]);
-          setLoading(false);
-          return;
-        }
-
-        const response = await apiClient.get("/vendors/nearby/open", {
-          params: { latitude: coords.lat, longitude: coords.lng },
-        });
-        setAllVendors(response.data?.data || []);
-      } catch (err) {
-        console.error("Failed to fetch vendors:", err);
-        setError(getApiErrorMessage(err, "Unable to load nearby restaurants."));
-      } finally {
-        setLoading(false);
-        hasLoadedRef.current = true;
-      }
-    };
-
-    fetchVendors();
-  }, [geoCoords, permissionStatus, langVersion]);
+  const allVendors = useMemo(() => nearbyData?.data ?? [], [nearbyData]);
+  // Skeleton only while permissions resolve or the first coords-backed fetch
+  // runs; a language switch keeps the current list (keepPreviousData).
+  const loading =
+    permissionStatus === "loading" || (!!resolvedCoords && isLoading);
+  const error = queryError
+    ? getApiErrorMessage(queryError, "Unable to load nearby restaurants.")
+    : "";
 
   // Clear cuisines filter if selected category is not RESTAURANT. Compare on the
   // stable slug — the name is localized ("Restaurante" in PT) and would trip this
@@ -357,7 +389,7 @@ export default function RestaurantsSection() {
           </h2>
           <Link
             href="/vendors"
-            className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] dark:text-pink-500 hover:underline"
+            className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#f9186b] dark:text-pink-500 hover:underline"
           >
             {t("viewAll")} <ChevronRight size={20} />
           </Link>
@@ -369,7 +401,7 @@ export default function RestaurantsSection() {
               {selectedBusinessCategory && (
                 <button
                   onClick={() => setSelectedBusinessCategory(null)}
-                  className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                  className="flex items-center gap-2 rounded-full bg-[#f9186b] px-4 py-2 text-white"
                 >
                   {selectedBusinessCategory.name}
                   <X size={16} />
@@ -378,7 +410,7 @@ export default function RestaurantsSection() {
               {selectedProductCategory && (
                 <button
                   onClick={() => setSelectedProductCategory(null)}
-                  className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                  className="flex items-center gap-2 rounded-full bg-[#f9186b] px-4 py-2 text-white"
                 >
                   {selectedProductCategory.name}
                   <X size={16} />
@@ -388,7 +420,7 @@ export default function RestaurantsSection() {
                 <button
                   key={cuisine}
                   onClick={() => toggleCuisine(cuisine)}
-                  className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                  className="flex items-center gap-2 rounded-full bg-[#f9186b] px-4 py-2 text-white"
                 >
                   {cuisine}
                   <X size={16} />
@@ -413,7 +445,7 @@ export default function RestaurantsSection() {
         </h2>
         <Link
           href="/vendors"
-          className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] dark:text-pink-500 hover:underline"
+          className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#f9186b] dark:text-pink-500 hover:underline"
         >
           {t("viewAll")} <ChevronRight size={20} />
         </Link>
@@ -425,7 +457,7 @@ export default function RestaurantsSection() {
             {selectedBusinessCategory && (
               <button
                 onClick={() => setSelectedBusinessCategory(null)}
-                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                className="flex items-center gap-2 rounded-full bg-[#f9186b] px-4 py-2 text-white"
               >
                 {selectedBusinessCategory.name}
                 <X size={16} />
@@ -435,7 +467,7 @@ export default function RestaurantsSection() {
             {selectedProductCategory && (
               <button
                 onClick={() => setSelectedProductCategory(null)}
-                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                className="flex items-center gap-2 rounded-full bg-[#f9186b] px-4 py-2 text-white"
               >
                 {selectedProductCategory.name}
                 <X size={16} />
@@ -446,7 +478,7 @@ export default function RestaurantsSection() {
               <button
                 key={cuisine}
                 onClick={() => toggleCuisine(cuisine)}
-                className="flex items-center gap-2 rounded-full bg-[#d81b60] px-4 py-2 text-white"
+                className="flex items-center gap-2 rounded-full bg-[#f9186b] px-4 py-2 text-white"
               >
                 {cuisine}
                 <X size={16} />
@@ -456,77 +488,14 @@ export default function RestaurantsSection() {
         )}
 
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
-        {filteredVendors.map((vendor) => {
-          const deliveryTime = deliveryTimes[vendor.userId];
-          const isTimeLoading = loadingTimes[vendor.userId];
-          const displayTime = isTimeLoading
-            ? t("calculating")
-            : deliveryTime || t("under10Min");
-
-          return (
-            <Link
-              key={vendor.userId}
-              href={`/vendors/${vendor.userId}`}
-              className="block"
-            >
-              <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl">
-                <div className="relative aspect-16/10 overflow-hidden">
-                  <Image
-                    fill
-                    sizes="(max-width:1024px) 100vw, 33vw"
-                    alt={vendor.businessDetails.businessName}
-                    src={
-                      vendor.storePhoto?.[0] ||
-                      "https://placehold.co/600x400/png"
-                    }
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-
-                  <div className="absolute left-5 top-5">
-                    <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 dark:bg-neutral-900/95 px-4 py-2 text-sm font-bold text-[#191c1d] dark:text-white shadow-lg backdrop-blur-md">
-                      <Star size={18} className="text-[#f6c344]" />
-                      {vendor.rating?.average ?? 0}
-                    </span>
-                  </div>
-                  <div className="absolute bottom-5 right-5">
-                    <span className="flex items-center gap-2 rounded-2xl bg-black/70 px-4 py-2 text-sm text-white backdrop-blur-md">
-                      <Truck size={18} />
-                      {displayTime}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-8">
-                  <div className="mb-2 flex items-center gap-4">
-                    <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d] dark:text-neutral-100">
-                      {vendor.businessDetails.businessName}
-                    </h3>
-                  </div>
-
-                  <p className="mb-6 text-lg text-[#5a4044] dark:text-neutral-400">
-                    {formatCuisine(
-                      vendor.businessDetails.restaurantCuisineType,
-                    ) || vendor.businessDetails.businessType}
-                  </p>
-
-                  <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-sm font-medium text-[#5a4044] dark:text-neutral-400">
-                    <span className="flex items-center gap-2 text-[#b0004a] dark:text-pink-500">
-                      <Truck size={18} />
-                      {vendor.businessDetails.isStoreOpen
-                        ? t("openNow")
-                        : t("closed")}
-                    </span>
-                    <span className="flex items-center gap-2 text-[#b70052] dark:text-pink-400">
-                      <Check size={18} />
-                      {vendor.businessLocation.city},{" "}
-                      {vendor.businessLocation.country}
-                    </span>
-                  </div>
-                </div>
-              </article>
-            </Link>
-          );
-        })}
+        {filteredVendors.map((vendor) => (
+          <RestaurantCard
+            key={vendor.userId}
+            vendor={vendor}
+            deliveryTime={deliveryTimes[vendor.userId]}
+            isTimeLoading={loadingTimes[vendor.userId]}
+          />
+        ))}
       </div>
     </section>
   );

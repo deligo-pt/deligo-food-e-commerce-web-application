@@ -113,9 +113,9 @@ export default function HeroSection() {
             </div>
           </div>
           <div className="mt-5 flex justify-center gap-3 pb-1">
-            <span className="h-2.5 w-12 animate-pulse rounded-full bg-[#b70052]/20 dark:bg-pink-600/20" />
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20 dark:bg-pink-600/20" />
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20 dark:bg-pink-600/20" />
+            <span className="h-2.5 w-12 animate-pulse rounded-full bg-[#f9186b]/20 dark:bg-pink-600/20" />
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#f9186b]/20 dark:bg-pink-600/20" />
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#f9186b]/20 dark:bg-pink-600/20" />
           </div>
         </div>
       ) : hasSlides ? (
@@ -157,8 +157,8 @@ export default function HeroSection() {
                 className={[
                   "rounded-full transition-all",
                   index === selectedIndex
-                    ? "h-2.5 w-12 bg-[#b70052]"
-                    : "h-2.5 w-2.5 bg-[#b70052]/30 dark:bg-[#b70052]/50",
+                    ? "h-2.5 w-12 bg-[#f9186b]"
+                    : "h-2.5 w-2.5 bg-[#f9186b]/30 dark:bg-[#f9186b]/50",
                 ].join(" ")}
               />
             ))}

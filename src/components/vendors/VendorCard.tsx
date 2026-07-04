@@ -1,14 +1,10 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import Image from "next/image";
+import SafeImage from "@/components/shared/SafeImage";
 import Link from "next/link";
-import { Star, Truck, Check } from "lucide-react";
-import { useCallback, useEffect, useState, useRef } from "react";
-import { apiClient } from "@/lib/apiClient";
-import { getAccessToken } from "@/lib/authCookies";
-import { useLocationStore } from "@/stores/locationStore";
+import { Star, Truck, Check, Store } from "lucide-react";
+import { memo, useCallback, useEffect, useState, useRef } from "react";
 import { formatCuisine } from "@/lib/cuisine";
 
 export interface Vendor {
@@ -108,127 +104,16 @@ function getVendorCoords(vendor: Vendor): { lat: number; lng: number } | null {
   return latitude && longitude ? { lat: latitude, lng: longitude } : null;
 }
 
-let cachedUserCoords: { lat: number; lng: number } | null = null;
-let userPromise: Promise<{ lat: number; lng: number } | null> | null = null;
-
-async function fetchUserPrimaryAddress() {
-  if (cachedUserCoords) return cachedUserCoords;
-  // Only call profile API if user is authenticated
-  const token = getAccessToken();
-  if (!token) return null;
-  try {
-    const { data } = await apiClient.get("/profile");
-    const primary = data?.data?.deliveryAddresses?.find(
-      (a: any) => a.isActive === true,
-    );
-    if (primary?.latitude && primary?.longitude) {
-      cachedUserCoords = { lat: primary.latitude, lng: primary.longitude };
-    }
-    return cachedUserCoords;
-  } catch (error) {
-    console.error("Failed to fetch user address", error);
-    return null;
-  }
-}
-
-function useUserAddress() {
-  const { coords: geoCoords, permissionStatus } = useLocationStore();
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
-    cachedUserCoords,
-  );
-  const [loading, setLoading] = useState(
-    !cachedUserCoords && permissionStatus === "loading",
-  );
-
-  useEffect(() => {
-    if (cachedUserCoords) {
-      setCoords(cachedUserCoords);
-      setLoading(false);
-      return;
-    }
-
-    const token = getAccessToken();
-    if (!token) {
-      if (permissionStatus !== "loading") {
-        if (geoCoords) {
-          setCoords({ lat: geoCoords.latitude, lng: geoCoords.longitude });
-        } else {
-          setCoords(null);
-        }
-        setLoading(false);
-      }
-      return;
-    }
-
-    setLoading(true);
-    if (!userPromise) {
-      userPromise = fetchUserPrimaryAddress();
-    }
-    userPromise
-      .then((profileCoords) => {
-        if (profileCoords) {
-          setCoords(profileCoords);
-        } else if (geoCoords) {
-          setCoords({ lat: geoCoords.latitude, lng: geoCoords.longitude });
-        } else {
-          setCoords(null);
-        }
-      })
-      .catch(() => {
-        if (geoCoords) {
-          setCoords({ lat: geoCoords.latitude, lng: geoCoords.longitude });
-        } else {
-          setCoords(null);
-        }
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [geoCoords, permissionStatus]);
-
-  return { coords, loading };
-}
-
-// Skeleton component matching the exact layout of VendorCard
-function VendorCardSkeleton() {
-  return (
-    <article className="group cursor-pointer overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all">
-      <div className="relative aspect-16/10 overflow-hidden">
-        <div className="h-full w-full animate-pulse bg-gray-200 dark:bg-neutral-800" />
-        <div className="absolute left-5 top-5">
-          <div className="h-9 w-16 animate-pulse rounded-2xl bg-white/95 dark:bg-neutral-900/95 shadow-lg backdrop-blur-md" />
-        </div>
-      </div>
-
-      <div className="p-8">
-        <div className="mb-2 flex items-center justify-between gap-4">
-          <div className="h-7 w-48 animate-pulse rounded-lg bg-gray-200 dark:bg-neutral-800" />
-          <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-        </div>
-        <div className="mb-6 h-6 w-32 animate-pulse rounded-lg bg-gray-200 dark:bg-neutral-800" />
-        <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6">
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
-  const { coords: internalCoords, loading: userLoading } = useUserAddress();
+// Memoized: the grid renders many cards, and each runs its own distance-matrix
+// estimate — so skip re-rendering a card whose `vendor`/`userCoords` are
+// unchanged when the parent re-renders (pagination, coords resolving, etc.).
+function VendorCard({ vendor, userCoords }: VendorCardProps) {
   const [estimatedTime, setEstimatedTime] = useState<string | null>(null);
   const [loadingTime, setLoadingTime] = useState(false);
 
-  const hasUserCoords = userCoords !== undefined;
-  const coordsToUse = hasUserCoords ? userCoords : internalCoords;
-  const isUserLoading = hasUserCoords ? false : userLoading;
+  // Coords are always resolved by the parent (VendorsGrid) from the shared,
+  // cached profile — no per-card /profile fetch.
+  const coordsToUse = userCoords ?? null;
 
   const fetchTime = useCallback(async () => {
     const vendorCoords = getVendorCoords(vendor);
@@ -280,7 +165,7 @@ export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
 
   useEffect(() => {
     if (!coordsToUse) {
-      if (!isUserLoading) setEstimatedTime("Under 10 min");
+      setEstimatedTime("Under 10 min");
       return;
     }
 
@@ -293,12 +178,7 @@ export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
       lastCoordsRef.current = coordsToUse;
       fetchTime();
     }
-  }, [coordsToUse, isUserLoading, fetchTime]);
-
-  // Show skeleton while user address is being fetched (initial load)
-  if (isUserLoading) {
-    return <VendorCardSkeleton />;
-  }
+  }, [coordsToUse, fetchTime]);
 
   const displayTime = loadingTime
     ? "Calculating..."
@@ -308,12 +188,12 @@ export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
     <Link href={`/vendors/${vendor.userId}`} className="block">
       <article className="group cursor-pointer overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl">
         <div className="relative aspect-16/10 overflow-hidden">
-          <Image
-            fill
-            sizes="(max-width: 1024px) 100vw, 33vw"
+          <SafeImage
+            src={vendor.storePhoto?.[0]}
             alt={vendor.businessDetails.businessName}
-            src={vendor.storePhoto?.[0] || "https://placehold.co/600x400/png"}
+            sizes="(max-width: 1024px) 100vw, 33vw"
             className="object-cover transition-transform duration-1000 group-hover:scale-110"
+            fallbackIcon={<Store className="h-12 w-12" />}
           />
           <div className="absolute left-5 top-5">
             <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 dark:bg-neutral-900/95 px-4 py-2 text-[14px] font-bold text-[#191c1d] dark:text-white shadow-lg backdrop-blur-md">
@@ -334,11 +214,11 @@ export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
               vendor.businessDetails.businessType}
           </p>
           <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-[14px] font-medium">
-            <span className="flex items-center gap-2 text-[#b0004a] dark:text-pink-500">
+            <span className="flex items-center gap-2 text-[#f9186b] dark:text-pink-500">
               <Truck size={20} />
               {displayTime}
             </span>
-            <span className="flex items-center gap-2 text-[#b70052] dark:text-pink-400">
+            <span className="flex items-center gap-2 text-[#f9186b] dark:text-pink-400">
               <Check size={20} />
               {vendor.businessLocation.city}, {vendor.businessLocation.country}
             </span>
@@ -348,3 +228,5 @@ export default function VendorCard({ vendor, userCoords }: VendorCardProps) {
     </Link>
   );
 }
+
+export default memo(VendorCard);

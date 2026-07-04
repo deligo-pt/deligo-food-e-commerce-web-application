@@ -1,43 +1,34 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useMemo } from "react";
 import CartStoreCard from "./CartStoreCard";
-import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
 import { getCartVendorId, getCartVendorName } from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCartStore } from "@/stores/cartStore";
+import { useCart, useCartCache } from "@/hooks/queries/useCart";
+import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 
 export default function CartPage() {
-  const { t, langVersion } = useTranslation();
-  const prevLangVersionRef = useRef(langVersion);
-  const [cart, setCart] = useState<CartResponse | null>(null);
-  const [vendors, setVendors] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { t } = useTranslation();
+  // Cached + deduped, keyed on language. React Query keeps the current cart on
+  // screen during a language-switch refetch, so no manual silent-refetch.
+  const {
+    data: cart = null,
+    isLoading: loading,
+    error: cartError,
+  } = useCart<CartResponse | null>();
+  const { data: vendors = [] } = useVendorsCustomer<any>({
+    page: 1,
+    limit: 100,
+  });
+  const { setCart, invalidate: invalidateCart } = useCartCache();
 
-  const refreshCart = async (showLoading = true) => {
-    try {
-      if (showLoading) setLoading(true);
-      setError("");
-
-      const [cartRes, vendorsRes] = await Promise.all([
-        apiClient.get("/carts/view-cart"),
-        apiClient.get("/vendors/customer?page=1&limit=100"),
-      ]);
-
-      setCart(cartRes.data.data);
-      setVendors(vendorsRes.data.data || []);
-    } catch (error) {
-      const errMsg = getApiErrorMessage(error, "Failed to load cart");
-      setError(errMsg);
-      toast.error(errMsg);
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  };
+  const error = cartError
+    ? getApiErrorMessage(cartError, "Failed to load cart")
+    : "";
 
   // Optimistic removal of a single product (used by product row)
   const removeProductFromCart = (
@@ -107,14 +98,6 @@ export default function CartPage() {
     });
   };
 
-  useEffect(() => {
-    // On a language switch, re-fetch silently so the cart stays on screen and
-    // just updates its localized product/store text in place.
-    const isLangChange = prevLangVersionRef.current !== langVersion;
-    prevLangVersionRef.current = langVersion;
-    refreshCart(!isLangChange);
-  }, [langVersion]);
-
   const stores = useMemo(() => {
     if (!cart?.items) return [];
 
@@ -135,7 +118,7 @@ export default function CartPage() {
             vendorId,
             businessName:
               vendorInfo?.businessDetails?.businessName || fallbackName,
-            image: vendorInfo?.storePhoto?.[0] || "/placeholder-store.jpg",
+            image: vendorInfo?.storePhoto?.[0] || "",
             rating: vendorInfo?.rating?.average || 0,
             items: [],
             total: 0,
@@ -248,7 +231,7 @@ export default function CartPage() {
               rating={store.rating}
               items={store.items}
               total={store.total}
-              onProductUpdate={() => refreshCart(false)}
+              onProductUpdate={() => invalidateCart()}
               onProductRemove={removeProductFromCart}
             />
           ))

@@ -19,11 +19,12 @@ import {
   Tag,
   ChevronRight,
   Percent,
+  UtensilsCrossed,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
-import Image from "next/image";
+import SafeImage from "@/components/shared/SafeImage";
 import { useTranslation } from "@/hooks/useTranslation";
 import Link from "next/link";
 
@@ -293,7 +294,7 @@ export default function PaymentPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 flex items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-pink-600 border-t-transparent" />
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
       </div>
     );
   }
@@ -344,19 +345,12 @@ export default function PaymentPage() {
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-pink-100 dark:bg-pink-950/40">
-                      {vendor?.storePhoto?.[0] ? (
-                        <Image
-                          src={vendor.storePhoto[0]}
-                          alt={vendor.businessDetails.businessName}
-                          className="h-full w-full object-cover"
-                          width={48}
-                          height={48}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Store className="h-5 w-5 text-pink-600 dark:text-pink-400" />
-                        </div>
-                      )}
+                      <SafeImage
+                        src={vendor?.storePhoto?.[0]}
+                        alt={vendor?.businessDetails?.businessName || "Store"}
+                        sizes="48px"
+                        fallbackIcon={<Store className="h-5 w-5" />}
+                      />
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-neutral-50">
@@ -406,7 +400,7 @@ export default function PaymentPage() {
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
-                      <Home className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                      <Home className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-neutral-50">{deliveryAddress.city}</p>
@@ -419,7 +413,7 @@ export default function PaymentPage() {
               </div>
 
               <div className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-pink-200 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
-                <MapPinned className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                <MapPinned className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
                 <div>
                   <p className="font-medium text-gray-900 dark:text-neutral-100">{t("distanceAndTime")}</p>
                   <p className="text-sm text-gray-500 dark:text-neutral-400">
@@ -436,7 +430,7 @@ export default function PaymentPage() {
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-neutral-50">{t("yourOrder")}</h2>
                 <Link href={`/vendors`}>
-                  <button className="text-sm font-semibold text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300">
+                  <button className="text-sm font-semibold text-[#f9186b] dark:text-pink-400 hover:text-[#d4145b] dark:hover:text-pink-300">
                     {t("addMoreItems")}
                   </button>
                 </Link>
@@ -449,14 +443,13 @@ export default function PaymentPage() {
                     className="flex items-center gap-4 py-4"
                   >
                     <div className="relative h-20 w-20 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
-                      <Image
+                      <SafeImage
                         src={item.image}
                         alt={item.name}
-                        className="h-full w-full object-cover"
-                        height={80}
-                        width={80}
+                        sizes="80px"
+                        fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
                       />
-                      <div className="absolute right-1 top-1 rounded-full bg-pink-600 dark:bg-pink-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                      <div className="absolute right-1 top-1 rounded-full bg-[#f9186b] dark:bg-pink-500 px-2 py-0.5 text-[10px] font-bold text-white">
                         {item.itemSummary.quantity}x
                       </div>
                     </div>
@@ -552,7 +545,7 @@ export default function PaymentPage() {
                     </div>
                     <button
                       onClick={handleOpenOfferModal}
-                      className="text-xs font-semibold text-pink-600 dark:text-pink-400 underline hover:text-pink-700 dark:hover:text-pink-300"
+                      className="text-xs font-semibold text-[#f9186b] dark:text-pink-400 underline hover:text-[#d4145b] dark:hover:text-pink-300"
                     >
                       {t("change")}
                     </button>
@@ -561,7 +554,7 @@ export default function PaymentPage() {
                   /* Apply voucher button */
                   <button
                     onClick={handleOpenOfferModal}
-                    className="mb-6 flex w-full items-center justify-between gap-2 rounded-lg border border-dashed border-pink-300 dark:border-pink-850/40 bg-pink-50 dark:bg-pink-950/10 px-4 py-3 text-pink-600 dark:text-pink-400 transition hover:bg-pink-100 dark:hover:bg-pink-950/25"
+                    className="mb-6 flex w-full items-center justify-between gap-2 rounded-lg border border-dashed border-pink-300 dark:border-pink-850/40 bg-pink-50 dark:bg-pink-950/10 px-4 py-3 text-[#f9186b] dark:text-pink-400 transition hover:bg-pink-100 dark:hover:bg-pink-950/25"
                   >
                     <div className="flex items-center gap-2">
                       <Ticket className="h-4 w-4" />
@@ -576,7 +569,7 @@ export default function PaymentPage() {
                 {/* Order Total */}
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-gray-900 dark:text-neutral-50">{t("orderTotal")}</span>
-                  <span className="text-3xl font-bold text-pink-600 dark:text-pink-400">
+                  <span className="text-3xl font-bold text-[#f9186b] dark:text-pink-400">
                     €{orderTotal.toFixed(2)}
                   </span>
                 </div>
@@ -602,7 +595,7 @@ export default function PaymentPage() {
                     key={method.value}
                     className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 transition ${
                       paymentMethod === method.value
-                        ? "border-pink-600 dark:border-pink-500 bg-pink-50 dark:bg-pink-950/20 text-gray-900 dark:text-neutral-50"
+                        ? "border-[#f9186b] dark:border-pink-500 bg-pink-50 dark:bg-pink-950/20 text-gray-900 dark:text-neutral-50"
                         : "border-gray-200 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300"
                     }`}
                   >
@@ -616,7 +609,7 @@ export default function PaymentPage() {
                       value={method.value}
                       checked={paymentMethod === method.value}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="h-4 w-4 text-pink-600 dark:text-pink-500 focus:ring-pink-500"
+                      className="h-4 w-4 text-[#f9186b] dark:text-pink-500 focus:ring-pink-500"
                     />
                   </label>
                 ))}
@@ -639,7 +632,7 @@ export default function PaymentPage() {
               <button
                 onClick={handlePlaceOrder}
                 disabled={isPlacingOrder}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-pink-600 dark:bg-pink-500 py-4 font-semibold text-white transition hover:bg-pink-700 dark:hover:bg-pink-600 disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#f9186b] py-4 font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
               >
                 {isPlacingOrder ? t("processing") : t("placeOrder")}
                 <ArrowRight className="h-5 w-5" />
@@ -651,7 +644,7 @@ export default function PaymentPage() {
                 </p>
                 <button
                   onClick={() => setShowSupportModal(true)}
-                  className="font-semibold text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300"
+                  className="font-semibold text-[#f9186b] dark:text-pink-400 hover:text-[#d4145b] dark:hover:text-pink-300"
                 >
                   {t("contactSupport")}
                 </button>
@@ -679,7 +672,7 @@ export default function PaymentPage() {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 px-6 py-4">
               <div className="flex items-center gap-2">
-                <Ticket className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                <Ticket className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
                 <h3 className="text-lg font-bold text-gray-900 dark:text-neutral-50">
                   {t("availableOffers")}
                 </h3>
@@ -714,7 +707,7 @@ export default function PaymentPage() {
                     disabled={
                       !manualCode.trim() || applyingOfferId === "manual"
                     }
-                    className="rounded-lg bg-pink-600 dark:bg-pink-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-pink-700 dark:hover:bg-pink-600 disabled:opacity-50"
+                    className="rounded-lg bg-[#f9186b] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50"
                   >
                     {applyingOfferId === "manual" ? t("applying") : t("apply")}
                   </button>
@@ -732,7 +725,7 @@ export default function PaymentPage() {
               {/* Available offer list */}
               {offersLoading ? (
                 <div className="flex justify-center py-10">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-600 border-t-transparent" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
                 </div>
               ) : offersError ? (
                 <p className="py-4 text-center text-sm text-red-500">
@@ -761,7 +754,7 @@ export default function PaymentPage() {
                         <div className="flex items-start gap-3">
                           {/* Icon badge */}
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/30">
-                            <Percent className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                            <Percent className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
                           </div>
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
@@ -776,7 +769,7 @@ export default function PaymentPage() {
                               {offer.description}
                             </p>
                             <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-neutral-500">
-                              <span className="font-medium text-pink-600 dark:text-pink-400">
+                              <span className="font-medium text-[#f9186b] dark:text-pink-400">
                                 {offer.offerType === "PERCENT"
                                   ? `${offer.discountValue}% off`
                                   : `€${offer.discountValue} off`}
@@ -803,7 +796,7 @@ export default function PaymentPage() {
                           disabled={
                             !offer.isEligible || applyingOfferId === offer._id
                           }
-                          className="shrink-0 rounded-lg bg-pink-600 dark:bg-pink-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-700 dark:hover:bg-pink-600 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="shrink-0 rounded-lg bg-[#f9186b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d4145b] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           {applyingOfferId === offer._id
                             ? t("applying")
@@ -829,7 +822,7 @@ export default function PaymentPage() {
           {/* Panel */}
           <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white dark:bg-neutral-900 border border-gray-150 dark:border-neutral-800 shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between bg-linear-to-r from-pink-600 to-pink-500 dark:from-pink-700 dark:to-pink-600 px-6 py-5">
+            <div className="flex items-center justify-between bg-linear-to-r from-[#f9186b] to-[#d4145b] px-6 py-5">
               <div className="flex items-center gap-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
                   <AlertCircle className="h-5 w-5 text-white" />
@@ -859,7 +852,7 @@ export default function PaymentPage() {
               >
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40 group-hover:bg-pink-200 dark:group-hover:bg-pink-900 transition">
                   <svg
-                    className="h-5 w-5 text-pink-600 dark:text-pink-400"
+                    className="h-5 w-5 text-[#f9186b] dark:text-pink-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -876,7 +869,7 @@ export default function PaymentPage() {
                   <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-neutral-500">
                     {t("email")}
                   </p>
-                  <p className="font-semibold text-gray-800 dark:text-neutral-200 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition">
+                  <p className="font-semibold text-gray-800 dark:text-neutral-200 group-hover:text-[#f9186b] dark:group-hover:text-pink-400 transition">
                     contact@deligo.pt
                   </p>
                 </div>
@@ -889,7 +882,7 @@ export default function PaymentPage() {
               >
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40 group-hover:bg-pink-200 dark:group-hover:bg-pink-900 transition">
                   <svg
-                    className="h-5 w-5 text-pink-600 dark:text-pink-400"
+                    className="h-5 w-5 text-[#f9186b] dark:text-pink-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -906,7 +899,7 @@ export default function PaymentPage() {
                   <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-neutral-500">
                     {t("phone")}
                   </p>
-                  <p className="font-semibold text-gray-800 dark:text-neutral-200 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition">
+                  <p className="font-semibold text-gray-800 dark:text-neutral-200 group-hover:text-[#f9186b] dark:group-hover:text-pink-400 transition">
                     +351 920 136 680
                   </p>
                 </div>

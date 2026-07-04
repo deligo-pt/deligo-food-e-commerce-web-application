@@ -172,7 +172,7 @@
 //         </h2>
 //         <Link
 //           href="/categories"
-//           className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline"
+//           className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#f9186b] hover:underline"
 //         >
 //           {t("viewAll")} <ChevronRight size={20} />
 //         </Link>
@@ -190,8 +190,8 @@
 //               <div
 //                 className={`h-32 w-32 rounded-full p-1 shadow-md transition-all ${
 //                   isActive
-//                     ? "bg-[#b0004a] ring-4 ring-[#ffd9de]"
-//                     : "bg-[#e7e8e9] group-hover:bg-[#b0004a]"
+//                     ? "bg-[#f9186b] ring-4 ring-[#ffd9de]"
+//                     : "bg-[#e7e8e9] group-hover:bg-[#f9186b]"
 //                 }`}
 //               >
 //                 <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#ffffff]">
@@ -211,8 +211,8 @@
 //               <span
 //                 className={`text-center text-[12px] font-bold leading-4 tracking-[0.16em] uppercase transition-colors ${
 //                   isActive
-//                     ? "text-[#b0004a]"
-//                     : "text-[#191c1d] group-hover:text-[#b0004a]"
+//                     ? "text-[#f9186b]"
+//                     : "text-[#191c1d] group-hover:text-[#f9186b]"
 //                 }`}
 //               >
 //                 {category.name}
@@ -455,7 +455,7 @@ export default function CategoriesSection() {
         {/* <button
           onClick={() => setIsModalOpen(true)}
           onMouseEnter={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#b0004a] hover:underline cursor-pointer"
+          className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#f9186b] hover:underline cursor-pointer"
         >
           {t("viewAll")} <ChevronRight size={20} />
         </button> */}
@@ -481,8 +481,8 @@ export default function CategoriesSection() {
               >
                 <div
                   className={`h-32 w-32 rounded-full p-1 shadow-md transition-all duration-300 ${isActive
-                      ? "bg-[#b0004a] ring-4 ring-[#ffd9de] dark:ring-pink-500/20"
-                      : "bg-[#e7e8e9] dark:bg-neutral-800 group-hover:bg-[#b0004a]"
+                      ? "bg-[#f9186b] ring-4 ring-[#ffd9de] dark:ring-pink-500/20"
+                      : "bg-[#e7e8e9] dark:bg-neutral-800 group-hover:bg-[#f9186b]"
                     }`}
                 >
                   <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white dark:border-neutral-900 bg-[#ffffff] dark:bg-neutral-900 transition-all duration-300">
@@ -498,8 +498,8 @@ export default function CategoriesSection() {
                       <Utensils
                         size={40}
                         className={`transition-all duration-300 ${isActive
-                            ? "text-[#b0004a] dark:text-pink-500 scale-110"
-                            : "text-[#5a4044] dark:text-neutral-300 group-hover:text-[#b0004a] group-hover:scale-110"
+                            ? "text-[#f9186b] dark:text-pink-500 scale-110"
+                            : "text-[#5a4044] dark:text-neutral-300 group-hover:text-[#f9186b] group-hover:scale-110"
                           }`}
                       />
                     )}
@@ -507,8 +507,8 @@ export default function CategoriesSection() {
                 </div>
                 <span
                   className={`text-center text-[12px] font-bold leading-4 tracking-[0.16em] uppercase transition-colors ${isActive
-                      ? "text-[#b0004a] dark:text-pink-500"
-                      : "text-[#191c1d] dark:text-neutral-100 group-hover:text-[#b0004a] dark:group-hover:text-pink-500"
+                      ? "text-[#f9186b] dark:text-pink-500"
+                      : "text-[#191c1d] dark:text-neutral-100 group-hover:text-[#f9186b] dark:group-hover:text-pink-500"
                     }`}
                 >
                   {cuisineLabel}
@@ -555,15 +555,15 @@ export default function CategoriesSection() {
                       setIsModalOpen(false);
                     }}
                     className={`group flex w-full items-center justify-between rounded-xl border p-4 transition-all duration-300 cursor-pointer ${isActive
-                        ? "border-[#b0004a] bg-[#ffd9de]/30 dark:bg-pink-950/20 text-[#b0004a] dark:text-pink-500"
+                        ? "border-[#f9186b] bg-[#ffd9de]/30 dark:bg-pink-950/20 text-[#f9186b] dark:text-pink-500"
                         : "border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 hover:bg-[#ffd9de]/10 dark:hover:bg-neutral-800 hover:border-[#ffd9de] text-[#191c1d] dark:text-neutral-200"
                       }`}
                   >
                     <div className="flex items-center gap-4">
                       <div
                         className={`flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border transition-all duration-300 ${isActive
-                            ? "bg-[#b0004a] border-[#b0004a] text-white"
-                            : "bg-[#e7e8e9] dark:bg-neutral-800 border-white dark:border-neutral-900 text-[#5a4044] dark:text-neutral-300 group-hover:bg-[#b0004a] group-hover:text-white"
+                            ? "bg-[#f9186b] border-[#f9186b] text-white"
+                            : "bg-[#e7e8e9] dark:bg-neutral-800 border-white dark:border-neutral-900 text-[#5a4044] dark:text-neutral-300 group-hover:bg-[#f9186b] group-hover:text-white"
                           }`}
                       >
                         {cuisine.imageUrl ? (
@@ -583,21 +583,21 @@ export default function CategoriesSection() {
                       </div>
                       <span
                         className={`text-sm font-bold tracking-widest uppercase transition-colors ${isActive
-                            ? "text-[#b0004a] dark:text-pink-500"
-                            : "text-[#191c1d] dark:text-neutral-200 group-hover:text-[#b0004a] dark:group-hover:text-pink-500"
+                            ? "text-[#f9186b] dark:text-pink-500"
+                            : "text-[#191c1d] dark:text-neutral-200 group-hover:text-[#f9186b] dark:group-hover:text-pink-500"
                           }`}
                       >
                         {cuisineLabel}
                       </span>
                     </div>
                     {isActive ? (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#b0004a] text-white">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#f9186b] text-white">
                         <Check size={14} />
                       </div>
                     ) : (
                       <ChevronRight
                         size={18}
-                        className="text-gray-300 dark:text-neutral-600 group-hover:text-[#b0004a] dark:group-hover:text-pink-500 transition-colors"
+                        className="text-gray-300 dark:text-neutral-600 group-hover:text-[#f9186b] dark:group-hover:text-pink-500 transition-colors"
                       />
                     )}
                   </button>

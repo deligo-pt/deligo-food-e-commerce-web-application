@@ -69,6 +69,5 @@ export const restaurantCards = [
     delivery: "€1.99 Delivery",
     secondary: "Trending",
     secondaryIcon: "trending_up",
-    favoriteFilled: true,
   },
 ];

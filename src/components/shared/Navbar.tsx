@@ -3,7 +3,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { apiClient } from "@/lib/apiClient";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -30,6 +29,25 @@ import { clearCachedFCMToken } from "@/lib/fcmToken";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useTranslation } from "@/hooks/useTranslation";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
+import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
+import {
+  useUnreadNotificationCount,
+  useInvalidateUnreadCount,
+} from "@/hooks/queries/useNotifications";
+
+type NavAddress = {
+  _id?: string;
+  isActive?: boolean;
+  street?: string;
+  detailedAddress?: string;
+  city?: string;
+};
+type NavProfile = {
+  userId?: string;
+  profilePhoto?: string | null;
+  name?: { firstName?: string };
+  deliveryAddresses?: NavAddress[];
+};
 
 export default function Navbar() {
   const { t } = useTranslation();
@@ -49,7 +67,11 @@ export default function Navbar() {
     return !!getAccessToken();
   });
 
-  const [unreadCount, setUnreadCount] = useState(0);
+  // Badge count: cached query that polls at 60s and pauses on hidden tabs.
+  const { data: unreadCount = 0 } = useUnreadNotificationCount({
+    enabled: isLoggedIn,
+  });
+  const invalidateUnreadCount = useInvalidateUnreadCount();
   const { vendorCount, fetchCart } = useCartStore();
   const { coords, permissionStatus, isAutoSavingAddress, guestAddress } = useLocationStore();
   const [guestGeocoding, setGuestGeocoding] = useState(false);
@@ -67,71 +89,67 @@ export default function Navbar() {
       : isLoggedIn
         ? "/add-address"
         : "/current-location";
-  const fetchProfile = useCallback(async () => {
-    if (!isLoggedIn) return;
-    try {
-      const res = await apiClient.get("/profile");
-      const profile = res.data?.data;
+  // Shared, cached profile query — no longer re-fetched on every navigation.
+  const { data: profile } = useProfile<NavProfile>({ enabled: isLoggedIn });
+  const invalidateProfile = useInvalidateProfile();
 
-      const activeAddress = profile?.deliveryAddresses?.find(
-        (addr: any) => addr.isActive === true,
-      );
-
-      const firstAddress = profile?.deliveryAddresses?.[0];
-      const resolved = activeAddress || firstAddress;
-
-      if (resolved) {
-        const street = resolved.street || resolved.detailedAddress || "";
-        const city = resolved.city || "";
-        const label = street && city ? `${street}, ${city}` : street || city;
-        if (label) setAddressText(label);
-        setPrimaryAddressId(resolved._id || null);
-      } else {
-        setPrimaryAddressId(null);
-      }
-
-      setProfilePhoto(profile?.profilePhoto || null);
-      setFirstName(profile?.name?.firstName || null);
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
-    }
-  }, [isLoggedIn]);
-
+  // Derive the navbar's logged-in display state from the shared profile data.
   useEffect(() => {
-    if (isLoggedIn) {
-      fetchProfile();
+    if (!isLoggedIn || !profile) return;
 
-      const guestAddressStr = typeof window !== "undefined" ? localStorage.getItem("deligo_guest_address") : null;
-      if (guestAddressStr) {
-        (async () => {
-          try {
-            const guestAddressObj = JSON.parse(guestAddressStr);
-            const profileRes = await apiClient.get("/profile");
-            const userId = profileRes.data?.data?.userId;
-            if (userId) {
-              await updateLiveLocation(userId, {
-                latitude: guestAddressObj.latitude,
-                longitude: guestAddressObj.longitude,
-                geoAccuracy: 10,
-                isMocked: false,
-                street: guestAddressObj.street,
-                city: guestAddressObj.city,
-                state: guestAddressObj.state,
-                country: guestAddressObj.country,
-                postalCode: guestAddressObj.postalCode,
-                detailedAddress: guestAddressObj.detailedAddress,
-              });
-              localStorage.removeItem("deligo_guest_address");
-              useLocationStore.getState().setGuestAddress(null);
-              window.dispatchEvent(new Event("addressUpdated"));
-            }
-          } catch (syncErr) {
-            console.error("Failed to sync guest address in Navbar:", syncErr);
-          }
-        })();
-      }
+    const activeAddress = profile.deliveryAddresses?.find(
+      (addr) => addr.isActive === true,
+    );
+    const firstAddress = profile.deliveryAddresses?.[0];
+    const resolved = activeAddress || firstAddress;
+
+    if (resolved) {
+      const street = resolved.street || resolved.detailedAddress || "";
+      const city = resolved.city || "";
+      const label = street && city ? `${street}, ${city}` : street || city;
+      if (label) setAddressText(label);
+      setPrimaryAddressId(resolved._id || null);
+    } else {
+      setPrimaryAddressId(null);
     }
-  }, [isLoggedIn, pathname, fetchProfile]);
+
+    setProfilePhoto(profile.profilePhoto || null);
+    setFirstName(profile.name?.firstName || null);
+  }, [isLoggedIn, profile]);
+
+  // One-time sync of a guest-entered address into the account after login.
+  // Uses the already-fetched profile's userId (no extra /profile request).
+  useEffect(() => {
+    if (!isLoggedIn || !profile?.userId) return;
+    const guestAddressStr =
+      typeof window !== "undefined"
+        ? localStorage.getItem("deligo_guest_address")
+        : null;
+    if (!guestAddressStr) return;
+
+    (async () => {
+      try {
+        const guestAddressObj = JSON.parse(guestAddressStr);
+        await updateLiveLocation(profile.userId!, {
+          latitude: guestAddressObj.latitude,
+          longitude: guestAddressObj.longitude,
+          geoAccuracy: 10,
+          isMocked: false,
+          street: guestAddressObj.street,
+          city: guestAddressObj.city,
+          state: guestAddressObj.state,
+          country: guestAddressObj.country,
+          postalCode: guestAddressObj.postalCode,
+          detailedAddress: guestAddressObj.detailedAddress,
+        });
+        localStorage.removeItem("deligo_guest_address");
+        useLocationStore.getState().setGuestAddress(null);
+        window.dispatchEvent(new Event("addressUpdated"));
+      } catch (syncErr) {
+        console.error("Failed to sync guest address in Navbar:", syncErr);
+      }
+    })();
+  }, [isLoggedIn, profile?.userId]);
 
   useEffect(() => {
     if (isLoggedIn) return;
@@ -222,14 +240,14 @@ export default function Navbar() {
       if (isLoggedIn) {
         // Keep spinner active while re-fetching so there's no "Add Address" flash
         setIsAddressRefetching(true);
-        await fetchProfile();
+        await invalidateProfile();
         setIsAddressRefetching(false);
       }
     };
     window.addEventListener("addressUpdated", handleAddressUpdate);
     return () =>
       window.removeEventListener("addressUpdated", handleAddressUpdate);
-  }, [isLoggedIn, fetchProfile]);
+  }, [isLoggedIn, invalidateProfile]);
 
   // Instantly reflect profile photo changes when the user saves from the edit profile form
   useEffect(() => {
@@ -316,42 +334,17 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Refresh the badge instantly when a notification is read/received elsewhere
+  // (FCM push or the notifications page) instead of polling aggressively.
   useEffect(() => {
-    if (!isLoggedIn) {
-      setUnreadCount(0);
-      return;
-    }
-
-    const fetchUnreadCount = async () => {
-      try {
-        const response = await apiClient.get(
-          "/notifications/my-notifications",
-          {
-            params: { limit: 100 },
-          },
-        );
-        const notifications = response.data?.data || [];
-        const unread = notifications.filter((n: any) => !n.isRead).length;
-        setUnreadCount(unread);
-      } catch (error) {
-        console.error("Failed to fetch notifications count:", error);
-        setUnreadCount(0);
-      }
-    };
-
-    fetchUnreadCount();
-
-    const handleNotificationsUpdate = () => {
-      fetchUnreadCount();
-    };
-    const intervalId = setInterval(fetchUnreadCount, 5000);
-
+    const handleNotificationsUpdate = () => invalidateUnreadCount();
     window.addEventListener("notificationsUpdated", handleNotificationsUpdate);
-    return () => {
-      clearInterval(intervalId);
-      window.removeEventListener("notificationsUpdated", handleNotificationsUpdate);
-    };
-  }, [isLoggedIn]);
+    return () =>
+      window.removeEventListener(
+        "notificationsUpdated",
+        handleNotificationsUpdate,
+      );
+  }, [invalidateUnreadCount]);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -380,14 +373,14 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#b0004a] text-white transition-all duration-300 dark:bg-[#d81b60] px-4 py-3 lg:px-16 lg:py-4">
+    <header className="sticky top-0 z-50 bg-[#f9186b] text-white transition-all duration-300 dark:bg-[#f9186b] px-4 py-3 lg:px-16 lg:py-4">
       {/* Desktop Layout & Mobile Row 1 */}
       <div className="flex w-full items-center justify-between gap-2">
         {/* Brand / Logo */}
-        <div className="flex min-w-0 items-center gap-8">
+        <div className="flex min-w-0 items-center gap-4 xl:gap-8">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
             {/* Logo sits in a white "chip" so the pink mark stays crisp on the
-                #b0004a header instead of blending pink-on-pink. */}
+                #f9186b header instead of blending pink-on-pink. */}
             <span className="flex items-center justify-center rounded-xl bg-white p-1 shadow-[0_2px_8px_rgba(0,0,0,0.18)] ring-1 ring-black/5">
               <Image
                 src="/deligoLogo.png"
@@ -403,39 +396,46 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop-only location button */}
-          <Link href={addressHref} className="hidden lg:block">
+          {/* Desktop-only location button. Capped width + truncation so a long
+              address ellipsizes instead of squeezing the search bar. */}
+          <Link
+            href={addressHref}
+            className="hidden min-w-0 lg:flex lg:max-w-[220px] xl:max-w-[280px]"
+          >
             <button
               suppressHydrationWarning
-              className="cursor-pointer flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20"
+              className="cursor-pointer flex w-full min-w-0 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20"
             >
-              <MapPin size={20} />
-              {!mounted ? (
-                "Add Address"
-              ) : isLoggedIn && (isAutoSavingAddress || isAddressRefetching) ? (
-                <span
-                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                  role="status"
-                  aria-label="Saving address"
-                />
-              ) : !isLoggedIn &&
-                !guestAddress &&
-                (permissionStatus === "loading" || guestGeocoding) ? (
-                <span
-                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                  role="status"
-                  aria-label="Locating"
-                />
-              ) : (
-                addressText
-              )}
-              <ChevronDown size={16} />
+              <MapPin size={20} className="shrink-0" />
+              <span className="min-w-0 truncate">
+                {!mounted ? (
+                  "Add Address"
+                ) : isLoggedIn && (isAutoSavingAddress || isAddressRefetching) ? (
+                  <span
+                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                    role="status"
+                    aria-label="Saving address"
+                  />
+                ) : !isLoggedIn &&
+                  !guestAddress &&
+                  (permissionStatus === "loading" || guestGeocoding) ? (
+                  <span
+                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                    role="status"
+                    aria-label="Locating"
+                  />
+                ) : (
+                  addressText
+                )}
+              </span>
+              <ChevronDown size={16} className="shrink-0" />
             </button>
           </Link>
         </div>
 
-        {/* Desktop-only Search Bar */}
-        <div className="mx-8 hidden flex-1 lg:block">
+        {/* Desktop-only Search Bar. min-w floor guarantees a usable input width
+            regardless of how long the location label is. */}
+        <div className="mx-4 hidden flex-1 lg:block lg:min-w-[240px] xl:mx-8 xl:min-w-[340px]">
           <div className="relative flex items-center">
             <Search size={18} className="absolute left-4 text-black/60" />
             <input
@@ -444,7 +444,7 @@ export default function Navbar() {
               value={localSearchTerm}
               onChange={onSearchChange}
               onKeyDown={onKeyDown}
-              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#dd2269]/50 transition-colors"
+              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
             />
           </div>
         </div>
@@ -452,16 +452,14 @@ export default function Navbar() {
         {/* Actions (Desktop and Mobile) */}
         <div className="flex min-w-0 items-center gap-2 sm:gap-4 lg:gap-6">
           <div className="flex shrink-0 items-center gap-1 sm:gap-2 lg:gap-4">
-            {/* Language toggle is redundant on phones (also in Settings) and the
-                navbar row is tight there, so hide it below sm. */}
-            <div className="hidden sm:block">
-              <LanguageSwitcher />
-            </div>
+            {/* Language toggle: styled to match the Bell/Cart icon buttons so it
+                sits inline with the other actions on every screen size. */}
+            <LanguageSwitcher />
             <Link href="/notifications">
               <button className="relative rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:p-2">
                 <Bell size={22} />
                 {unreadCount > 0 && (
-                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#b0004a] ring-2 ring-white">
+                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#f9186b] ring-2 ring-white">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -472,7 +470,7 @@ export default function Navbar() {
               <button className="relative rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:p-2">
                 <ShoppingCart size={22} />
                 {vendorCount > 0 && (
-                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#b0004a] ring-2 ring-white">
+                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#f9186b] ring-2 ring-white">
                     {vendorCount > 9 ? "9+" : vendorCount}
                   </span>
                 )}
@@ -512,12 +510,12 @@ export default function Navbar() {
                       className="h-full w-full"
                     >
                       <circle cx="18" cy="18" r="18" fill="#f9e4ec" />
-                      <circle cx="18" cy="14" r="6" fill="#b0004a" />
-                      <ellipse cx="18" cy="30" rx="10" ry="7" fill="#b0004a" />
+                      <circle cx="18" cy="14" r="6" fill="#f9186b" />
+                      <ellipse cx="18" cy="30" rx="10" ry="7" fill="#f9186b" />
                     </svg>
                   )
                 ) : (
-                  <User size={22} className="text-[#b0004a]" />
+                  <User size={22} className="text-[#f9186b]" />
                 )}
               </div>
               <span className="min-w-0 truncate text-[14px] font-semibold leading-5 sm:max-w-[140px]">
@@ -557,7 +555,7 @@ export default function Navbar() {
             value={localSearchTerm}
             onChange={onSearchChange}
             onKeyDown={onKeyDown}
-            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#dd2269]/50 transition-colors"
+            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
           />
         </div>
       </div>

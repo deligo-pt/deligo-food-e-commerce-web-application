@@ -11,6 +11,7 @@ export default function PromoBanner() {
         fill
         src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c"
         alt="Promo"
+        sizes="(max-width: 768px) 100vw, 33vw"
         className="object-cover transition-transform duration-700 group-hover:scale-105"
       />
 

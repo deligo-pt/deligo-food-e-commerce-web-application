@@ -478,8 +478,8 @@ const pt = {
   creditDebitCard: "Cartão de Crédito/Débito",
   visaMastercardMaestro: "Visa, Mastercard, Maestro",
 
-  mbway: "MB WAY",
-  fastMobilePayment: "Pagamento móvel rápido",
+  googlePay: "Google Pay",
+  fastSecureCheckout: "Pagamento rápido e seguro",
 
   applePay: "Apple Pay",
   oneTapCheckout: "Pagamento com um toque",
@@ -488,8 +488,6 @@ const pt = {
   paypalGooglePayEtc: "PayPal, Google Pay, etc.",
 
   recommended: "Recomendado",
-
-  confirmPaymentMethod: "Confirmar Método de Pagamento",
 
   paymentInfoSecure:
     "As suas informações de pagamento estão encriptadas e seguras",
@@ -1172,21 +1170,6 @@ const pt = {
     "A DeliGo pode atualizar estes Termos periodicamente. A utilização continuada da plataforma após alterações constitui aceitação. Será notificado de alterações materiais por email ou notificação na aplicação.",
   filter: "Filtro",
   clearAll: "Limpar tudo",
-
-  cuisinePortugueseFood: "Comida Portuguesa",
-  cuisineSushi: "Sushi",
-  cuisineKebab: "Kebab",
-  cuisineBarbecue: "Churrasco",
-  cuisineIndianFood: "Comida Indiana",
-  cuisineItalianFood: "Comida Italiana",
-  cuisineVegetarianFood: "Comida Vegetariana",
-  cuisineThaiFood: "Comida Tailandesa",
-  cuisineJapaneseFood: "Comida Japonesa",
-  cuisineRamen: "Ramen",
-  cuisineSeafood: "Marisco",
-  cuisineBurger: "Hambúrguer",
-  cuisineHalal: "Halal",
-  cuisineOthers: "Outros",
 
   faqTitle: "Perguntas Frequentes",
   faqSubtitle: "Tudo o que precisa de saber sobre a DeliGo",

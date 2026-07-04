@@ -9,6 +9,17 @@ import { apiClient } from "@/lib/apiClient";
 import { addDeliveryAddress } from "@/services/addressApi";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 
+// Minimal shapes for the fields we read off a Google Maps geocoder result
+// (the global `window.google` is untyped; this avoids `any` at the call sites).
+interface GeocoderAddressComponent {
+  long_name: string;
+  types: string[];
+}
+interface GeocoderResult {
+  address_components: GeocoderAddressComponent[];
+  formatted_address: string;
+}
+
 async function reverseGeocode(latitude: number, longitude: number): Promise<{
   street: string;
   city: string;
@@ -26,7 +37,7 @@ async function reverseGeocode(latitude: number, longitude: number): Promise<{
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode(
       { location: { lat: latitude, lng: longitude } },
-      (results: any, status: any) => {
+      (results: GeocoderResult[] | null, status: string) => {
         if (status !== "OK" || !results || !results[0]) {
           reject(new Error("Geocoding failed: " + status));
           return;
@@ -40,7 +51,7 @@ async function reverseGeocode(latitude: number, longitude: number): Promise<{
           postalCode = "",
           apartment = "";
 
-        comps.forEach((c: any) => {
+        comps.forEach((c: GeocoderAddressComponent) => {
           if (c.types.includes("subpremise") || c.types.includes("premise")) {
             apartment = c.long_name;
           }
@@ -172,9 +183,9 @@ export default function LocationPromptModal() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ffd9de]/50 opacity-75 duration-1000" />
             <span className="absolute inline-flex h-20 w-20 animate-pulse rounded-full bg-[#ffd9de]/70" />
             {isRequesting ? (
-              <Loader2 className="relative h-12 w-12 animate-spin text-[#b0004a]" />
+              <Loader2 className="relative h-12 w-12 animate-spin text-[#f9186b]" />
             ) : (
-              <MapPin className="relative h-12 w-12 text-[#b0004a] drop-shadow-md" />
+              <MapPin className="relative h-12 w-12 text-[#f9186b] drop-shadow-md" />
             )}
           </div>
 
@@ -190,7 +201,7 @@ export default function LocationPromptModal() {
             <button
               onClick={handleShareLocation}
               disabled={isRequesting}
-              className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-2xl bg-linear-to-r from-[#b0004a] to-[#d81b60] py-4 text-base font-bold text-white shadow-lg shadow-[#b0004a]/20 transition-all hover:opacity-95 hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-2xl bg-linear-to-r from-[#f9186b] to-[#f9186b] py-4 text-base font-bold text-white shadow-lg shadow-[#f9186b]/20 transition-all hover:opacity-95 hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isRequesting ? (
                 <>

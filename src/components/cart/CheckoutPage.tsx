@@ -1,44 +1,69 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
-  ArrowLeft,
   Minus,
   Plus,
   Trash2,
   ShoppingBag,
   MapPin,
   Loader2,
+  Store,
+  UtensilsCrossed,
 } from "lucide-react";
+import SafeImage from "@/components/shared/SafeImage";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
 import { getCartVendorId } from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCartStore } from "@/stores/cartStore";
+import { useCart } from "@/hooks/queries/useCart";
+import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 
 interface CheckoutPageProps {
   vendorId: string;
 }
 
 export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
-  const { t, langVersion } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
-  const prevLangVersionRef = useRef(langVersion);
   const [cart, setCart] = useState<CartResponse | null>(null);
-  const [vendor, setVendor] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [deletingItem, setDeletingItem] = useState<string | null>(null);
 
   const pendingUpdatesRef = useRef<Record<string, number>>({});
   const syncTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
   const isSyncingRef = useRef<Record<string, boolean>>({});
   const [instructions, setInstructions] = useState("");
-  const [error, setError] = useState("");
   const [isProceeding, setIsProceeding] = useState(false);
+
+  // Shared, cached cart + vendor list — deduped with CartPage, Navbar, etc.
+  const {
+    data: cartData,
+    isLoading: cartLoading,
+    error: cartError,
+    refetch: refetchCart,
+  } = useCart<CartResponse>();
+  const {
+    data: vendorList = [],
+    isLoading: vendorsLoading,
+    error: vendorsError,
+  } = useVendorsCustomer<any>();
+
+  const vendor = useMemo(
+    () =>
+      vendorList.find((v: any) => v.id === vendorId || v._id === vendorId) ??
+      null,
+    [vendorList, vendorId],
+  );
+
+  const loading = cartLoading || vendorsLoading;
+  const error =
+    cartError || vendorsError
+      ? getApiErrorMessage(cartError || vendorsError, "Failed to load checkout")
+      : "";
 
   const applyPendingUpdates = useCallback((cartData: CartResponse | null): CartResponse | null => {
     if (!cartData) return null;
@@ -82,46 +107,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     };
   }, []);
 
-  const fetchCheckoutData = useCallback(
-    async (showLoader = true) => {
-      try {
-        if (showLoader) {
-          setLoading(true);
-        }
-
-        setError("");
-
-        const [cartRes, vendorRes] = await Promise.all([
-          apiClient.get("/carts/view-cart"),
-          apiClient.get("/vendors/customer?page=1&limit=100"),
-        ]);
-
-        const cartData = cartRes.data.data;
-        setCart(applyPendingUpdates(cartData));
-
-        const foundVendor = vendorRes.data.data.find(
-          (v: any) => v.id === vendorId || v._id === vendorId,
-        );
-
-        setVendor(foundVendor);
-      } catch (error) {
-        setError(getApiErrorMessage(error, "Failed to load checkout"));
-      } finally {
-        if (showLoader) {
-          setLoading(false);
-        }
-      }
-    },
-    [vendorId, applyPendingUpdates],
-  );
-
+  // Seed the optimistic local cart from the cached query, re-applying any
+  // pending (debounced) quantity deltas so in-flight edits survive a refetch.
+  // A language switch just re-seeds with the newly-localized data in place.
   useEffect(() => {
-    // On a language switch, re-fetch silently so the checkout stays on screen
-    // and just updates its localized text in place.
-    const isLangChange = prevLangVersionRef.current !== langVersion;
-    prevLangVersionRef.current = langVersion;
-    fetchCheckoutData(!isLangChange);
-  }, [fetchCheckoutData, langVersion]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCart(applyPendingUpdates(cartData ?? null));
+  }, [cartData, applyPendingUpdates]);
 
   useEffect(() => {
     const timeouts = syncTimeoutRef.current;
@@ -176,11 +168,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
       await apiClient.patch("/carts/update-quantity", payload);
       
-      await fetchCheckoutData(false);
+      await refetchCart();
       useCartStore.getState().fetchCart();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to sync cart updates"));
-      await fetchCheckoutData(false);
+      await refetchCart();
     } finally {
       isSyncingRef.current[key] = false;
       if (pendingUpdatesRef.current[key] && pendingUpdatesRef.current[key] !== 0) {
@@ -268,7 +260,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         ],
       });
 
-      await fetchCheckoutData(false);
+      await refetchCart();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to remove item"));
     } finally {
@@ -297,12 +289,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       setIsProceeding(false);
     }
   };
-  const goBack = () => window.history.back();
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f8f9fa] dark:bg-neutral-950">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-pink-600 border-t-transparent" />
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
       </div>
     );
   }
@@ -324,14 +315,6 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-      <button
-        onClick={goBack}
-        className="mb-4 flex items-center gap-2 text-gray-500 transition hover:text-gray-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-      >
-        <ArrowLeft size={18} />
-        {t("back")}
-      </button>
-
       <h1 className="text-4xl font-extrabold text-gray-900 dark:text-neutral-50">
         {t("reviewYourCart")}
       </h1>
@@ -341,16 +324,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         <div className="p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center">
             <div className="relative h-24 w-24 overflow-hidden rounded-2xl bg-gray-100 dark:bg-neutral-800">
-              <Image
-                fill
+              <SafeImage
                 src={vendorImage}
                 alt={vendor?.businessDetails?.businessName || "Store"}
-                className="object-cover"
                 sizes="96px"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "https://placehold.co/400x400?text=No+Image";
-                }}
+                fallbackIcon={<Store className="h-8 w-8" />}
               />
             </div>
             <div className="flex-1">
@@ -358,7 +336,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 {vendor?.businessDetails?.businessName || "Store"}
               </h2>
               <div className="mt-3 flex flex-wrap gap-3">
-                <div className="flex items-center gap-2 rounded-xl bg-pink-50 dark:bg-pink-950/30 px-3 py-2 text-pink-600 dark:text-pink-400">
+                <div className="flex items-center gap-2 rounded-xl bg-pink-50 dark:bg-pink-950/30 px-3 py-2 text-[#f9186b] dark:text-pink-400">
                   <ShoppingBag size={16} />
                   <span className="font-medium">
                     {vendorItems.length} {t("products")}
@@ -390,12 +368,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 <div className="p-5">
                   <div className="flex flex-col gap-5 sm:flex-row">
                     <div className="relative h-28 w-full overflow-hidden rounded-2xl sm:w-28 bg-gray-100 dark:bg-neutral-800">
-                      <Image
-                        fill
+                      <SafeImage
                         src={item.image}
                         alt={item.name}
-                        className="object-cover"
                         sizes="112px"
+                        fallbackIcon={<UtensilsCrossed className="h-10 w-10" />}
                       />
                     </div>
                     <div className="flex-1">
@@ -449,7 +426,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                               item.itemSummary.quantity
                             ).toFixed(2)}
                           </p>
-                          <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                          <p className="text-2xl font-bold text-[#f9186b] dark:text-pink-400">
                             €{item.itemSummary.grandTotal.toFixed(2)}
                           </p>
                         </div>
@@ -492,7 +469,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               <div className="border-t border-dashed border-gray-200 dark:border-neutral-800 pt-4">
                 <div className="flex justify-between">
                   <span className="text-xl font-bold text-gray-900 dark:text-neutral-50">{t("total")}</span>
-                  <span className="text-3xl font-extrabold text-pink-600 dark:text-pink-400">
+                  <span className="text-3xl font-extrabold text-[#f9186b] dark:text-pink-400">
                     €{summary.total.toFixed(2)}
                   </span>
                 </div>
@@ -516,7 +493,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               <button
                 onClick={handleProceedToCheckout}
                 disabled={isProceeding || vendorItems.length === 0}
-                className="w-full rounded-2xl bg-pink-600 dark:bg-pink-500 py-4 text-lg font-semibold text-white transition hover:bg-pink-700 dark:hover:bg-pink-600 disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
+                className="w-full rounded-2xl bg-[#f9186b] py-4 text-lg font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
               >
                 {isProceeding ? t("processing") : t("proceedToCheckout")}
               </button>

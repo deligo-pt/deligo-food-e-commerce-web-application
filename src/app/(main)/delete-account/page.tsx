@@ -51,12 +51,12 @@ export default function DeleteAccountPage() {
       <div className="mx-auto max-w-lg rounded-3xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-xl dark:shadow-none md:p-8">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-black text-[#b0004a] dark:text-[#c2185b] md:text-3xl">
+          <h1 className="text-2xl font-black text-[#f9186b] dark:text-[#c2185b] md:text-3xl">
             {t("deleteAccount")}
           </h1>
           <Link
             href="/"
-            className="rounded-full p-2 text-[#5a4044] dark:text-neutral-400 transition-colors hover:bg-[#e3bdc3]/30 dark:hover:bg-neutral-800 hover:text-[#b0004a] dark:hover:text-neutral-200"
+            className="rounded-full p-2 text-[#5a4044] dark:text-neutral-400 transition-colors hover:bg-[#e3bdc3]/30 dark:hover:bg-neutral-800 hover:text-[#f9186b] dark:hover:text-neutral-200"
           >
             <X size={24} />
           </Link>
@@ -81,7 +81,7 @@ export default function DeleteAccountPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#b0004a] focus:ring-1 focus:ring-[#b0004a]"
+              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#f9186b] focus:ring-1 focus:ring-[#f9186b]"
               placeholder="John Doe"
             />
           </div>
@@ -100,7 +100,7 @@ export default function DeleteAccountPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#b0004a] focus:ring-1 focus:ring-[#b0004a]"
+              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#f9186b] focus:ring-1 focus:ring-[#f9186b]"
               placeholder="you@example.com"
             />
           </div>
@@ -119,7 +119,7 @@ export default function DeleteAccountPage() {
               value={formData.contactNumber}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#b0004a] focus:ring-1 focus:ring-[#b0004a]"
+              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#f9186b] focus:ring-1 focus:ring-[#f9186b]"
               placeholder="+1234567890"
             />
           </div>
@@ -127,14 +127,14 @@ export default function DeleteAccountPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-xl bg-[#b0004a] py-3 font-bold text-white transition-all hover:bg-[#8a0038] disabled:opacity-60 cursor-pointer"
+            className="w-full rounded-xl bg-[#f9186b] py-3 font-bold text-white transition-all hover:bg-[#8a0038] disabled:opacity-60 cursor-pointer"
           >
             {isSubmitting ? t("submitting") || "Submitting..." : t("requestDeletion")}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm text-[#5a4044] dark:text-neutral-400">
-          <Link href="/" className="underline hover:text-[#b0004a] dark:hover:text-[#c2185b]">
+          <Link href="/" className="underline hover:text-[#f9186b] dark:hover:text-[#c2185b]">
             {t("returnToHome")}
           </Link>
         </div>
@@ -146,7 +146,7 @@ export default function DeleteAccountPage() {
           <div className="relative mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 text-center shadow-2xl dark:shadow-none md:p-8">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-4 top-4 text-[#5a4044] dark:text-neutral-400 hover:text-[#b0004a] dark:hover:text-neutral-200"
+              className="absolute right-4 top-4 text-[#5a4044] dark:text-neutral-400 hover:text-[#f9186b] dark:hover:text-neutral-200"
             >
               <X size={20} />
             </button>
@@ -176,13 +176,13 @@ export default function DeleteAccountPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-xl border border-[#b0004a] px-6 py-2 font-semibold text-[#b0004a] dark:text-[#b0004a] transition-colors hover:bg-[#b0004a] hover:text-white dark:hover:text-white cursor-pointer"
+                className="rounded-xl border border-[#f9186b] px-6 py-2 font-semibold text-[#f9186b] dark:text-[#f9186b] transition-colors hover:bg-[#f9186b] hover:text-white dark:hover:text-white cursor-pointer"
               >
                 {t("close")}
               </button>
               <button
                 onClick={() => router.push("/")}
-                className="rounded-xl bg-[#b0004a] px-6 py-2 font-semibold text-white transition-colors hover:bg-[#8a0038] cursor-pointer"
+                className="rounded-xl bg-[#f9186b] px-6 py-2 font-semibold text-white transition-colors hover:bg-[#8a0038] cursor-pointer"
               >
                 {t("goBackHome")}
               </button>

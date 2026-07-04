@@ -6,12 +6,13 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Search, X, Navigation, MapPin, Plus, Loader2 } from "lucide-react";
-import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { Search, X, Navigation, MapPin, Plus, Loader2 } from "lucide-react";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import { Toaster, toast } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "./AddressForm";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useProfile } from "@/hooks/queries/useProfile";
 
 const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_LOCATION_API_KEY}&libraries=places`;
 
@@ -43,17 +44,29 @@ interface Suggestion {
 
 
 
+interface ProfileWithAddresses {
+  userId?: string;
+  deliveryAddresses?: Address[];
+}
+
 export default function EditAddressPage({ addressId }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
+  // Shared, cached profile — no per-mount /profile fetch (avoids the 429 loop).
+  const {
+    data: profile,
+    isLoading: loading,
+    error: profileErr,
+  } = useProfile<ProfileWithAddresses>();
   const [address, setAddress] = useState<Address | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [coordinates, setCoordinates] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
   const [userId, setUserId] = useState<string>("");
+  const error = profileErr
+    ? getApiErrorMessage(profileErr, "Failed to load address")
+    : "";
 
   // Suggestion & Search State
   const [searchValue, setSearchValue] = useState("");
@@ -67,38 +80,22 @@ export default function EditAddressPage({ addressId }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch address and profile details
+  // Pick the target address out of the cached profile whenever it (or the
+  // addressId) changes. A missing address falls through to `!address` in render.
   useEffect(() => {
-    const fetchAddress = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.get("/profile");
-        const userData = response.data.data;
-        setUserId(userData.userId || "");
-        const deliveryAddresses = userData.deliveryAddresses || [];
-        const foundAddress = deliveryAddresses.find(
-          (item: Address) => item._id === addressId,
-        );
-
-        if (!foundAddress) {
-          setError(t("addressNotFound"));
-          return;
-        }
-
-        setAddress(foundAddress);
-        setCoordinates({
-          lat: foundAddress.latitude ?? 23.8103,
-          lng: foundAddress.longitude ?? 90.4125,
-        });
-      } catch (err) {
-        setError(getApiErrorMessage(err, "Failed to load address"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAddress();
-  }, [addressId, t]);
+    if (!profile) return;
+    const found = (profile.deliveryAddresses || []).find(
+      (item) => item._id === addressId,
+    );
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUserId(profile.userId || "");
+    if (!found) return;
+    setAddress(found);
+    setCoordinates({
+      lat: found.latitude ?? 23.8103,
+      lng: found.longitude ?? 90.4125,
+    });
+  }, [profile, addressId]);
 
   // Click outside to hide suggestions dropdown
   useEffect(() => {
@@ -272,7 +269,7 @@ export default function EditAddressPage({ addressId }: Props) {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
       </div>
     );
   }
@@ -283,7 +280,7 @@ export default function EditAddressPage({ addressId }: Props) {
         <p className="text-lg text-red-500 dark:text-red-400">{error || t("addressNotFound")}</p>
         <button
           onClick={() => router.back()}
-          className="rounded-lg bg-[#b0004a] px-6 py-2 text-white transition hover:opacity-90 active:scale-95"
+          className="rounded-lg bg-[#f9186b] px-6 py-2 text-white transition hover:opacity-90 active:scale-95"
         >
           {t("goBack")}
         </button>
@@ -296,14 +293,7 @@ export default function EditAddressPage({ addressId }: Props) {
       <Toaster position="top-center" richColors />
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {/* Page Title */}
-        <div className="mb-8 flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 shadow-sm transition hover:bg-gray-100 dark:hover:bg-neutral-800"
-          >
-            <ArrowLeft className="h-5 w-5 text-[#b0004a]" />
-          </button>
+        <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#191c1d] dark:text-neutral-50">
             {t("editAddress")}
           </h1>
@@ -324,7 +314,7 @@ export default function EditAddressPage({ addressId }: Props) {
                 type="button"
                 onClick={handleUseCurrentLocation}
                 disabled={loadingCurrentLocation}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#b0004a] px-6 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-[#8c003b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#f9186b] px-6 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-[#d4145b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loadingCurrentLocation ? (
                   <>
@@ -363,7 +353,7 @@ export default function EditAddressPage({ addressId }: Props) {
                   onChange={handleSearchChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder")}
-                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#b0004a] dark:focus:border-[#b0004a]"
+                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b] dark:focus:border-[#f9186b]"
                   autoComplete="off"
                 />
                 {searchValue && (
@@ -388,8 +378,8 @@ export default function EditAddressPage({ addressId }: Props) {
                               : ""
                             }`}
                         >
-                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5] dark:bg-[#b0004a]/10">
-                            <Search size={13} className="text-[#b0004a]" />
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5] dark:bg-[#f9186b]/10">
+                            <Search size={13} className="text-[#f9186b]" />
                           </span>
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-semibold text-[#191c1d] dark:text-neutral-200">
@@ -422,7 +412,7 @@ export default function EditAddressPage({ addressId }: Props) {
                 ) : (
                   <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50 dark:bg-neutral-950 border border-transparent dark:border-neutral-800/50">
                     <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-neutral-500">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
                       <p className="text-sm">Detecting your location…</p>
                     </div>
                   </div>
@@ -452,7 +442,7 @@ export default function EditAddressPage({ addressId }: Props) {
           <div className="mt-6 flex items-center justify-center">
             <Link
               href="/add-address"
-              className="inline-flex items-center gap-2 rounded-full bg-[#b0004a] px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[#8c003b] active:scale-95"
+              className="inline-flex items-center gap-2 rounded-full bg-[#f9186b] px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[#d4145b] active:scale-95"
             >
               <span className="text-xl font-bold leading-none">+</span>
               {t("addNewAddress")}

@@ -79,7 +79,7 @@ export default function CartSummary({
               {t("grandTotal")}
             </span>
 
-            <span className="text-3xl font-extrabold text-pink-600">
+            <span className="text-3xl font-extrabold text-[#f9186b]">
               €{total.toFixed(2)}
             </span>
           </div>
@@ -88,7 +88,7 @@ export default function CartSummary({
 
       {/* Footer */}
       <div className="border-t border-gray-100 p-6">
-        <button className="w-full rounded-2xl bg-pink-600 py-4 text-lg font-semibold text-white transition-all hover:bg-pink-700">
+        <button className="w-full rounded-2xl bg-[#f9186b] py-4 text-lg font-semibold text-white transition-all hover:bg-[#d4145b]">
           {t("proceedToCheckout")}
         </button>
       </div>

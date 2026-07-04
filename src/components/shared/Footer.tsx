@@ -81,12 +81,58 @@ export default function Footer() {
   ];
   const currentYear = new Date().getFullYear();
 
+  const socials = [
+    {
+      label: "Facebook",
+      href: "https://www.facebook.com/deligo.pt",
+      Icon: FacebookIcon,
+    },
+    {
+      label: "Instagram",
+      href: "https://www.instagram.com/deligo.pt/",
+      Icon: InstagramIcon,
+    },
+    {
+      label: "TikTok",
+      href: "https://www.tiktok.com/@deligo.pt",
+      Icon: TiktokIcon,
+    },
+    {
+      label: "YouTube",
+      href: "https://www.youtube.com/@DeliGoPT",
+      Icon: YoutubeIcon,
+    },
+  ];
+
+  const companyLinks = [
+    { label: t("aboutUs"), href: "/about-us", external: false },
+    {
+      label: t("partnerWithUs"),
+      href: "https://vendor-food.deligo.pt/",
+      external: true,
+    },
+    {
+      label: t("fleetManager"),
+      href: "https://fleet-food.deligo.pt/",
+      external: true,
+    },
+    { label: t("deleteAccount"), href: "/delete-account", external: false },
+  ];
+
+  const linkClass =
+    "text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#f9186b] dark:hover:text-pink-500";
+  const headingClass =
+    "mb-4 md:mb-6 text-[13px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white";
+
   return (
-    <footer className="w-full border-t border-[#e3bdc3]/20 dark:border-neutral-800 bg-[#e1e3e4] dark:bg-neutral-900 px-4 py-20 md:px-8 lg:px-16 transition-colors duration-200">
-      <div className="mb-20 grid w-full grid-cols-1 gap-16 md:grid-cols-12">
+    <footer className="w-full border-t border-[#e3bdc3]/20 dark:border-neutral-800 bg-[#e1e3e4] dark:bg-neutral-900 px-6 py-12 sm:px-8 sm:py-14 md:py-16 lg:px-16 lg:py-20 transition-colors duration-200">
+      {/* On mobile: Brand spans full width, then Company | Support sit side by
+          side (2 cols), then the app section spans full width — avoids one very
+          tall stacked column. On md+ it's the original 12-col row. */}
+      <div className="mb-10 grid w-full grid-cols-2 gap-x-8 gap-y-10 md:mb-16 md:grid-cols-12 md:gap-10 lg:gap-16">
         {/* Brand */}
-        <div className="md:col-span-4">
-          <Link href="/" className="flex items-center gap-3 mb-8">
+        <div className="col-span-2 md:col-span-4">
+          <Link href="/" className="mb-6 flex items-center gap-3">
             {/* Same white "chip" lockup as the navbar so the brand mark reads
                 consistently and gets some depth instead of a flat tile. */}
             <span className="flex items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 p-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.08)] ring-1 ring-black/5 dark:ring-white/10">
@@ -95,137 +141,92 @@ export default function Footer() {
                 alt="DeliGo Logo"
                 width={44}
                 height={44}
-                priority
-                className="rounded-xl"
+                loading="lazy"
+                className="h-10 w-10 rounded-xl sm:h-11 sm:w-11"
               />
             </span>
 
-            <span className=" block text-[40px] font-black tracking-tight text-[#b0004a] dark:text-[#d81b60]">
+            <span className="block text-[32px] font-black tracking-tight text-[#f9186b] sm:text-[36px] lg:text-[40px]">
               DeliGo
             </span>
           </Link>
 
-          <p className="text-[18px] leading-7 text-[#5a4044] dark:text-neutral-400">
+          <p className="max-w-md text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-[16px]">
             {t("footerDescription")}
           </p>
 
           {/* Social Media Links */}
-          <div className="mt-10 flex gap-4">
-            <a
-              href="https://www.facebook.com/deligo.pt"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-[#b0004a] dark:hover:bg-pink-600 hover:text-white dark:hover:text-white"
-              aria-label="Facebook"
-            >
-              <FacebookIcon size={24} />
-            </a>
-            <a
-              href="https://www.instagram.com/deligo.pt/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-[#b0004a] dark:hover:bg-pink-600 hover:text-white dark:hover:text-white"
-              aria-label="Instagram"
-            >
-              <InstagramIcon size={24} />
-            </a>
-            <a
-              href="https://www.tiktok.com/@deligo.pt"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-[#b0004a] dark:hover:bg-pink-600 hover:text-white dark:hover:text-white"
-              aria-label="TikTok"
-            >
-              <TiktokIcon size={24} />
-            </a>
-            <a
-              href="https://www.youtube.com/@DeliGoPT"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-[#b0004a] dark:hover:bg-pink-600 hover:text-white dark:hover:text-white"
-              aria-label="YouTube"
-            >
-              <YoutubeIcon size={24} />
-            </a>
+          <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
+            {socials.map(({ label, href, Icon }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-[#f9186b] dark:hover:bg-pink-600 hover:text-white dark:hover:text-white sm:h-12 sm:w-12"
+                aria-label={label}
+              >
+                <Icon size={22} />
+              </a>
+            ))}
           </div>
         </div>
 
         {/* Company */}
-        <div className="md:col-span-2">
-          <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white">
-            {t("company")}
-          </h4>
-          <nav className="flex flex-col gap-5">
-            <Link
-              href="/about-us"
-              className="text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
-            >
-              {t("aboutUs")}
-            </Link>
-            <a
-              href="https://vendor-food.deligo.pt/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
-            >
-              {t("partnerWithUs")}
-            </a>
-            <a
-              href="https://fleet-food.deligo.pt/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
-            >
-              {t("fleetManager")}
-            </a>
-            <Link
-              href="/delete-account"
-              className="text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
-            >
-              {t("deleteAccount")}
-            </Link>
+        <div className="col-span-1 md:col-span-2">
+          <h4 className={headingClass}>{t("company")}</h4>
+          <nav className="flex flex-col gap-3 md:gap-4">
+            {companyLinks.map(({ label, href, external }) =>
+              external ? (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={linkClass}
+                >
+                  {label}
+                </a>
+              ) : (
+                <Link key={label} href={href} className={linkClass}>
+                  {label}
+                </Link>
+              ),
+            )}
           </nav>
         </div>
 
         {/* Support */}
-        <div className="md:col-span-2">
-          <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white">
-            {t("support")}
-          </h4>
-          <nav className="flex flex-col gap-5">
+        <div className="col-span-1 md:col-span-2">
+          <h4 className={headingClass}>{t("support")}</h4>
+          <nav className="flex flex-col gap-3 md:gap-4">
             {supportLinks.map(({ label, href }) => (
-              <Link
-                key={label}
-                href={href}
-                className="text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
-              >
+              <Link key={label} href={href} className={linkClass}>
                 {label}
               </Link>
             ))}
           </nav>
         </div>
 
-        {/* App Store Badges using Next.js Image with consistent size */}
-        <div className="md:col-span-4">
-          <h4 className="mb-8 text-[14px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white">
-            {t("getTheApp")}
-          </h4>
-          <p className="mb-6 text-[16px] leading-6 text-[#5a4044] dark:text-neutral-400">
+        {/* App Store Badges */}
+        <div className="col-span-2 md:col-span-4">
+          <h4 className={headingClass}>{t("getTheApp")}</h4>
+          <p className="mb-5 max-w-md text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-[16px]">
             {t("mobileExperience")}
           </p>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-row flex-wrap gap-3 sm:flex-col">
             <a
               href="https://apps.apple.com/pt/app/deligo-rider/id6769997602?l=en-GB"
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-fit transition-opacity hover:opacity-90"
+              className="block w-[150px] transition-opacity hover:opacity-90 sm:w-[180px]"
             >
               <Image
                 src="/app-store-badge.png"
                 alt="Download on the App Store"
                 width={320}
                 height={50}
-                className="h-auto w-auto"
+                className="h-auto w-full"
                 priority={false}
               />
             </a>
@@ -233,14 +234,14 @@ export default function Footer() {
               href="https://play.google.com/store/apps/details?id=com.deligo.customer"
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-fit transition-opacity hover:opacity-90"
+              className="block w-[150px] transition-opacity hover:opacity-90 sm:w-[180px]"
             >
               <Image
                 src="/google-play-badge.png"
                 alt="GET IT ON Google Play"
                 width={320}
                 height={50}
-                className="h-auto w-auto"
+                className="h-auto w-full"
                 priority={false}
               />
             </a>
@@ -249,23 +250,23 @@ export default function Footer() {
       </div>
 
       {/* Divider */}
-      <div className="mb-10 h-px w-full bg-[#e3bdc3]/30 dark:bg-neutral-800" />
+      <div className="mb-6 h-px w-full bg-[#e3bdc3]/30 dark:bg-neutral-800 md:mb-8" />
 
       {/* Bottom */}
-      <div className="flex w-full flex-col items-center justify-between gap-6 text-[14px] leading-5 text-[#5a4044] dark:text-neutral-400 md:flex-row">
+      <div className="flex w-full flex-col items-center justify-between gap-4 text-center text-[13px] leading-5 text-[#5a4044] dark:text-neutral-400 sm:text-[14px] md:flex-row md:text-left">
         <div>
           © {currentYear} DeliGo PIXELMIRACLE, LDA. {t("allRightsReserved")}
         </div>
-        <div className="flex flex-wrap justify-center gap-8">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
           <Link
             href="/privacy"
-            className="transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
+            className="transition-colors hover:text-[#f9186b] dark:hover:text-pink-500"
           >
             {t("privacyPolicy")}
           </Link>
           <Link
             href="/terms"
-            className="transition-colors hover:text-[#b0004a] dark:hover:text-pink-500"
+            className="transition-colors hover:text-[#f9186b] dark:hover:text-pink-500"
           >
             {t("termsOfService")}
           </Link>

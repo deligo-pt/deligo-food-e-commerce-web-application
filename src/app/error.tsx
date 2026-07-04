@@ -23,7 +23,7 @@ export default function Error({
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center bg-[#f7f2f5] dark:bg-neutral-950 px-4 py-16 text-center transition-colors duration-200">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#ffe1ea] dark:bg-pink-950/40">
-        <AlertTriangle className="h-8 w-8 text-[#b0004a] dark:text-pink-400" />
+        <AlertTriangle className="h-8 w-8 text-[#f9186b] dark:text-pink-400" />
       </div>
       <h1 className="mt-6 text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
         {t("somethingWentWrong")}
@@ -34,7 +34,7 @@ export default function Error({
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <button
           onClick={reset}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-[#b0004a] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#8a0038]"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f9186b] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#d4145b]"
         >
           <RotateCcw size={18} />
           {t("tryAgain")}

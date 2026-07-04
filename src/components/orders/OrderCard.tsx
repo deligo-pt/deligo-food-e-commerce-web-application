@@ -1,9 +1,9 @@
 "use client";
 
 import { CheckCircle, Clock3, UtensilsCrossed, Star } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
+import SafeImage from "@/components/shared/SafeImage";
 
 interface OrderCardProps {
   dbId: string;
@@ -40,13 +40,12 @@ export default function OrderCard({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex gap-3">
-          <div className="h-12 w-12 overflow-hidden rounded-full border border-gray-100 dark:border-neutral-800">
-            <Image
-              src={image || "/placeholder.png"}
+          <div className="relative h-12 w-12 overflow-hidden rounded-full border border-gray-100 dark:border-neutral-800">
+            <SafeImage
+              src={image}
               alt={restaurant}
-              className="h-full w-full object-cover"
-              width={80}
-              height={80}
+              sizes="48px"
+              fallbackIcon={<UtensilsCrossed className="h-5 w-5" />}
             />
           </div>
 
@@ -64,10 +63,10 @@ export default function OrderCard({
         </div>
 
         <div className="flex flex-col items-end gap-2">
-          <span className="font-semibold text-[#b0004a] dark:text-pink-400">{price}</span>
+          <span className="font-semibold text-[#f9186b] dark:text-pink-400">{price}</span>
 
           {status === "accepted" ? (
-            <div className="flex items-center gap-1 rounded-full bg-pink-50 dark:bg-pink-950/30 px-2 py-1 text-xs text-[#b0004a] dark:text-pink-400">
+            <div className="flex items-center gap-1 rounded-full bg-pink-50 dark:bg-pink-950/30 px-2 py-1 text-xs text-[#f9186b] dark:text-pink-400">
               <CheckCircle size={12} />
               {t("accepted")}
             </div>
@@ -93,7 +92,7 @@ export default function OrderCard({
       {/* Items */}
       <div className="mt-4 rounded-lg bg-[#f3f4f5] dark:bg-neutral-950 px-3 py-3 transition-colors duration-200">
         <div className="flex items-center gap-2">
-          <UtensilsCrossed size={15} className="text-[#b0004a] dark:text-pink-400" />
+          <UtensilsCrossed size={15} className="text-[#f9186b] dark:text-pink-400" />
           <p className="text-sm text-[#191c1d] dark:text-neutral-300">{items}</p>
         </div>
       </div>
@@ -104,7 +103,7 @@ export default function OrderCard({
           <span
             className={
               status === "accepted"
-                ? "font-medium text-[#b0004a] dark:text-pink-400"
+                ? "font-medium text-[#f9186b] dark:text-pink-400"
                 : "text-[#5a4044] dark:text-neutral-400"
             }
           >
@@ -114,7 +113,7 @@ export default function OrderCard({
 
         <div className="h-1.5 rounded-full bg-gray-200 dark:bg-neutral-800">
           <div
-            className="h-full rounded-full bg-[#b0004a] dark:bg-pink-600"
+            className="h-full rounded-full bg-[#f9186b] dark:bg-pink-600"
             style={{
               width: `${progress}%`,
             }}
@@ -131,7 +130,7 @@ export default function OrderCard({
             className={`flex w-full items-center justify-center gap-2 rounded-lg py-3 text-center text-sm transition ${
               isRated
                 ? "bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400 cursor-default"
-                : "bg-[#b0004a] dark:bg-pink-600 text-white font-semibold hover:opacity-90"
+                : "bg-[#f9186b] dark:bg-pink-600 text-white font-semibold hover:opacity-90"
             }`}
           >
             <Star size={16} className={isRated ? "fill-[#f6c344] text-[#f6c344]" : "fill-white text-white"} />
@@ -140,7 +139,7 @@ export default function OrderCard({
         ) : (
           <Link
             href={`/orders/track-order/${orderId}`}
-            className="block w-full rounded-lg bg-[#b0004a] dark:bg-pink-600 py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
+            className="block w-full rounded-lg bg-[#f9186b] dark:bg-pink-600 py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
           >
             {t("trackOrder")}
           </Link>

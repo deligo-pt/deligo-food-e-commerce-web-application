@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -22,7 +21,7 @@ import {
   LogOut,
   Star,
 } from "lucide-react";
-import { apiClient } from "@/lib/apiClient";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import {
   getAccessToken,
   ACCESS_TOKEN_COOKIE,
@@ -33,12 +32,12 @@ import Image from "next/image";
 import Link from "next/link";
 import ProfilePageSkeleton from "./profilePageSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
+import {
+  useProfile,
+  useOffersCount,
+  useRewardPoints,
+} from "@/hooks/queries/useProfile";
 
-interface Offer {
-  _id: string;
-  isActive: boolean;
-  isDeleted: boolean;
-}
 interface ProfileData {
   _id: string;
   userId: string;
@@ -70,21 +69,37 @@ interface ProfileData {
   createdAt: string;
   updatedAt: string;
 }
-interface PointsResponse {
-  currentPoints: number;
-  totalEarned: number;
-  totalSpent: number;
-}
 
 export default function AccountPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [voucherCount, setVoucherCount] = useState(0);
-  const [rewardPoints, setRewardPoints] = useState(0);
   const [showProModal, setShowProModal] = useState(false);
+
+  // Resolve auth after mount so SSR and the first client render agree (both
+  // show the skeleton), avoiding a hydration flash.
+  const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setMounted(true), []);
+  const isLoggedIn = mounted && !!getAccessToken();
+
+  useEffect(() => {
+    if (mounted && !getAccessToken()) router.push("/login");
+  }, [mounted, router]);
+
+  // Cached + deduped: the Navbar and other pages share these same queries
+  // instead of each re-fetching. This is what fixed the /profile 429 loop.
+  const {
+    data: profile,
+    isLoading,
+    error: profileError,
+  } = useProfile<ProfileData>({ enabled: isLoggedIn });
+  const { data: voucherCount = 0 } = useOffersCount({ enabled: isLoggedIn });
+  const { data: rewardPoints = 0 } = useRewardPoints({ enabled: isLoggedIn });
+
+  const loading = !mounted || isLoading;
+  const error = profileError
+    ? getApiErrorMessage(profileError, t("failedToLoadProfile"))
+    : null;
 
   const orderItems = [
     {
@@ -138,66 +153,6 @@ export default function AccountPage() {
       path: "/available-countries",
     },
   ];
-
-  useEffect(() => {
-    const token = getAccessToken();
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-
-    const fetchVoucherCount = async () => {
-      try {
-        const response = await apiClient.get("/offers");
-
-        const offers = response.data?.data || [];
-
-        const activeOffers = offers.filter(
-          (offer: Offer) => offer.isActive && !offer.isDeleted,
-        );
-
-        setVoucherCount(activeOffers.length);
-      } catch (error) {
-        console.error("Failed to fetch vouchers", error);
-      }
-    };
-    const fetchRewardPoints = async () => {
-      try {
-        const response = await apiClient.get<{
-          success: boolean;
-          data: PointsResponse;
-        }>("/points/my-points");
-
-        const points = response.data?.data?.currentPoints || 0;
-
-        setRewardPoints(points);
-      } catch (error) {
-        console.error("Failed to fetch reward points", error);
-      }
-    };
-    const fetchProfile = async () => {
-      try {
-        const response = await apiClient.get<{
-          success: boolean;
-          data: ProfileData;
-        }>("/profile");
-        if (response.data.success) {
-          setProfile(response.data.data);
-        } else {
-          setError(t("failedToLoadProfile"));
-        }
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || t("somethingWentWrong"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-    fetchVoucherCount();
-    fetchRewardPoints();
-  }, [router, t]);
 
   const handleLogout = () => {
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
@@ -256,7 +211,7 @@ export default function AccountPage() {
 
                 <Link href="/edit-profile" className="w-full">
                   {" "}
-                  <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#c1005a] hover:bg-[#a6004d] dark:hover:bg-[#d6116c] py-3 font-medium text-white transition">
+                  <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#f9186b] hover:bg-[#d4145b] dark:hover:bg-[#d4145b] py-3 font-medium text-white transition">
                     <Edit size={16} />
                     {t("editProfile")}
                   </button>
@@ -268,21 +223,21 @@ export default function AccountPage() {
             <div className="grid grid-cols-2 gap-4">
               <Link href="/vouchers">
                 <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-gray-100 dark:border-neutral-800 transition hover:shadow-md cursor-pointer">
-                  <Ticket className="mx-auto mb-2 text-[#c1005a] dark:text-pink-400" />
+                  <Ticket className="mx-auto mb-2 text-[#f9186b] dark:text-pink-400" />
                   <h3 className="font-bold text-gray-900 dark:text-neutral-50">{voucherCount}</h3>
                   <p className="text-sm text-gray-500 dark:text-neutral-400">{t("vouchers")}</p>
                 </div>
               </Link>
 
               <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-gray-100 dark:border-neutral-800">
-                <Gift className="mx-auto mb-2 text-[#c1005a] dark:text-pink-400" />
+                <Gift className="mx-auto mb-2 text-[#f9186b] dark:text-pink-400" />
                 <h3 className="font-bold text-gray-900 dark:text-neutral-50">{rewardPoints}</h3>
                 <p className="text-sm text-gray-500 dark:text-neutral-400">{t("rewardPoints")}</p>
               </div>
             </div>
 
             {/* Pro Banner */}
-            <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-[#c1005a] to-pink-500 p-6 text-white shadow-sm">
+            <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-[#f9186b] to-pink-500 p-6 text-white shadow-sm">
               <Star className="absolute -bottom-6 -right-6 h-28 w-28 opacity-10" />
 
               <h3 className="text-2xl font-bold">{t("deligoPro")}</h3>
@@ -293,7 +248,7 @@ export default function AccountPage() {
 
               <button
                 onClick={() => setShowProModal(true)}
-                className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-medium text-[#c1005a] transition hover:bg-pink-50"
+                className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-medium text-[#f9186b] transition hover:bg-pink-50"
               >
                 {t("learnMore")}
               </button>
@@ -320,7 +275,7 @@ export default function AccountPage() {
                     >
                       <div className="flex items-center gap-4">
                         <div className="rounded-full bg-pink-100 dark:bg-pink-950/40 p-3">
-                          <Icon className="h-5 w-5 text-[#c1005a] dark:text-pink-400" />
+                          <Icon className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
                         </div>
                         <div>
                           <h4 className="font-semibold text-gray-900 dark:text-neutral-100">{item.title}</h4>
@@ -404,7 +359,7 @@ export default function AccountPage() {
           {/* Panel */}
           <div className="relative z-10 w-full max-w-md mx-4 rounded-2xl bg-white dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#c1005a] to-pink-400 px-6 pt-8 pb-10 text-center">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#f9186b] to-pink-400 px-6 pt-8 pb-10 text-center">
               <Star className="absolute -bottom-6 -right-6 h-28 w-28 opacity-10" />
               <Star className="absolute -top-4 -left-4 h-20 w-20 opacity-10" />
               <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/20">

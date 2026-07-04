@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical, CheckCircle, Ban, Trash2, Loader2 } from "lucide-react";
+import {
+  MoreVertical,
+  CheckCircle,
+  Ban,
+  Trash2,
+  Loader2,
+  UtensilsCrossed,
+} from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
+import SafeImage from "@/components/shared/SafeImage";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   AlertDialog,
@@ -74,7 +81,7 @@ export default function CartProductRow({
     setIsToggling(true);
 
     try {
-      await apiClient.patch(`/carts/activate-item/${item.productId}`, {
+      await apiClient.patch(`/carts/toggle-item-status/${item.productId}`, {
         variationSku: item.variationSku ?? null,
       });
       const newState = item.isActive ? "deactivated" : "activated";
@@ -136,12 +143,11 @@ export default function CartProductRow({
     >
       {/* Product image */}
       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-200 dark:bg-neutral-800">
-        <Image
+        <SafeImage
           src={item.image}
           alt={item.name}
-          fill
-          className="object-cover"
           sizes="96px"
+          fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
         />
       </div>
 
@@ -226,7 +232,7 @@ export default function CartProductRow({
                 ).toFixed(2)}
               </p>
             )}
-            <p className="text-xl font-bold text-pink-600 dark:text-pink-400">
+            <p className="text-xl font-bold text-[#f9186b] dark:text-pink-400">
               €{item.itemSummary.grandTotal.toFixed(2)}
             </p>
           </div>
@@ -249,7 +255,7 @@ export default function CartProductRow({
             <AlertDialogAction onClick={(e) => {
               e?.stopPropagation();
               handleConfirmDelete();
-            }} className="bg-pink-600 hover:bg-pink-700 text-white cursor-pointer">
+            }} className="bg-[#f9186b] hover:bg-[#d4145b] text-white cursor-pointer">
               {t("remove") || "Remove"}
             </AlertDialogAction>
           </AlertDialogFooter>

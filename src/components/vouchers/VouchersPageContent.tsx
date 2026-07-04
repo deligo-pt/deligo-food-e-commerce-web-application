@@ -130,13 +130,13 @@ export default function VouchersPageContent() {
           onClick={() => setActiveTab("available")}
           className={`relative pb-4 text-sm font-semibold transition-colors duration-150 ${
             activeTab === "available"
-              ? "text-[#b0004a] dark:text-pink-500"
+              ? "text-[#f9186b] dark:text-pink-500"
               : "text-[#5a4044] dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
           }`}
         >
           {t("available")}
           {activeTab === "available" && (
-            <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#b0004a] dark:bg-pink-500" />
+            <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#f9186b] dark:bg-pink-500" />
           )}
         </button>
 
@@ -144,13 +144,13 @@ export default function VouchersPageContent() {
           onClick={() => setActiveTab("expired")}
           className={`relative pb-4 text-sm font-semibold transition-colors duration-150 ${
             activeTab === "expired"
-              ? "text-[#b0004a] dark:text-pink-500"
+              ? "text-[#f9186b] dark:text-pink-500"
               : "text-[#5a4044] dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
           }`}
         >
           {t("expired")}
           {activeTab === "expired" && (
-            <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#b0004a] dark:bg-pink-500" />
+            <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#f9186b] dark:bg-pink-500" />
           )}
         </button>
       </div>
@@ -201,7 +201,7 @@ export default function VouchersPageContent() {
               className="rounded-xl border border-[#f3f4f5] dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-[0_4px_20px_rgba(0,0,0,0.05)] dark:shadow-none transition-all hover:shadow-[0_8px_30px_rgba(176,0,74,0.08)] dark:hover:border-neutral-700"
             >
               <div className="mb-4 flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b0004a] dark:bg-pink-600">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f9186b] dark:bg-pink-600">
                   <Ticket size={18} className="text-white" />
                 </div>
 
@@ -215,15 +215,15 @@ export default function VouchersPageContent() {
               </div>
 
               <div className="mt-6 flex items-center justify-between">
-                <div className="rounded-lg border-2 border-dashed border-[#b0004a]/30 dark:border-pink-500/30 bg-[#b0004a]/5 dark:bg-pink-500/10 px-4 py-2">
-                  <span className="text-sm font-semibold tracking-widest text-[#b0004a] dark:text-pink-400">
+                <div className="rounded-lg border-2 border-dashed border-[#f9186b]/30 dark:border-pink-500/30 bg-[#f9186b]/5 dark:bg-pink-500/10 px-4 py-2">
+                  <span className="text-sm font-semibold tracking-widest text-[#f9186b] dark:text-pink-400">
                     {offer.code}
                   </span>
                 </div>
 
                 <button
                   onClick={() => handleCopy(offer.code)}
-                  className="rounded-lg bg-[#b0004a] dark:bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-[#d81b60] dark:hover:bg-pink-700 transition"
+                  className="rounded-lg bg-[#f9186b] dark:bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-[#f9186b] dark:hover:bg-pink-700 transition"
                 >
                   {copiedCode === offer.code ? t("copied") : t("copy")}
                 </button>
@@ -235,7 +235,7 @@ export default function VouchersPageContent() {
                   <span>{getRemainingDays(offer.expiresAt)}</span>
                 </div>
 
-                <button className="text-xs text-[#b0004a] dark:text-pink-400 hover:underline">
+                <button className="text-xs text-[#f9186b] dark:text-pink-400 hover:underline">
                   {t("termsAndConditions")}
                 </button>
               </div>

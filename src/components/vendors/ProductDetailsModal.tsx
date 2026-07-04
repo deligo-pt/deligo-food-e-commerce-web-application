@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import {
   X,
   Plus,
@@ -12,7 +11,9 @@ import {
   FileText,
   Circle,
   CheckCircle,
+  UtensilsCrossed,
 } from "lucide-react";
+import SafeImage from "@/components/shared/SafeImage";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
@@ -234,11 +235,11 @@ export default function ProductDetailsModal({
               <div className="relative mb-6 h-64 w-64">
                 <div className="absolute inset-0 rounded-full bg-pink-500/10 blur-3xl" />
                 <div className="relative h-full w-full overflow-hidden rounded-full border-4 border-white shadow-xl">
-                  <Image
-                    fill
-                    src={product.images?.[0] || "/placeholder-product.jpg"}
+                  <SafeImage
+                    src={product.images?.[0]}
                     alt={product.name}
-                    className="object-cover"
+                    sizes="256px"
+                    fallbackIcon={<UtensilsCrossed className="h-16 w-16" />}
                   />
                 </div>
               </div>

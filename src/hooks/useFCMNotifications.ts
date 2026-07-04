@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { onMessage, type MessagePayload } from "firebase/messaging";
+import { useEffect, useRef } from "react";
+import type { MessagePayload } from "firebase/messaging";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import { getFirebaseMessaging } from "../lib/firebase";
@@ -26,16 +26,13 @@ function playNotificationSound() {
 export function useFCMNotifications() {
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const pathname = usePathname();
-  const [hasToken, setHasToken] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setHasToken(!!getAccessToken());
-  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    if (!hasToken) {
+    // Re-check auth on every navigation (login/logout flows navigate), reading
+    // the cookie directly — no separate state/effect to keep in sync.
+    if (!getAccessToken()) {
       if (unsubscribeRef.current) {
         console.log("[FCM] User unauthenticated. Tearing down notifications...");
         unsubscribeRef.current();
@@ -50,10 +47,9 @@ export function useFCMNotifications() {
       try {
         console.log("[FCM] Initialising messaging service worker...");
         if (!("serviceWorker" in navigator)) return;
-        const registration = await navigator.serviceWorker.register(
-          "/firebase-messaging-sw.js",
-          { scope: "/" }
-        );
+        await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
+          scope: "/",
+        });
 
         if (cancelled) return;
         const token = await requestFCMToken();
@@ -64,6 +60,7 @@ export function useFCMNotifications() {
         const messaging = await getFirebaseMessaging();
         if (!messaging || cancelled) return;
 
+        const { onMessage } = await import("firebase/messaging");
         unsubscribeRef.current = onMessage(messaging, (payload: MessagePayload) => {
           const title = payload.notification?.title || payload.data?.title;
           const body = payload.notification?.body || payload.data?.body;
@@ -105,8 +102,12 @@ export function useFCMNotifications() {
           }
         });
 
-      } catch (error: any) {
-        if (error?.name === "AbortError" || error?.message?.includes("push service error")) {
+      } catch (error) {
+        const err = error as { name?: string; message?: string } | undefined;
+        if (
+          err?.name === "AbortError" ||
+          err?.message?.includes("push service error")
+        ) {
           console.warn(
             "[FCM] Service worker or push registration aborted. This usually happens when " +
             "Google push service is blocked by the browser (like Brave/Opera settings) or network."
@@ -122,5 +123,5 @@ export function useFCMNotifications() {
     return () => {
       cancelled = true;
     };
-  }, [hasToken]);
+  }, [pathname]);
 }

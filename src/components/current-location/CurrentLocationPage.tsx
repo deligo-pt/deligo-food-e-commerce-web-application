@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Search, X, Navigation, MapPin, Plus, Loader2 } from "lucide-react";
+import { Search, X, Navigation, MapPin, Plus, Loader2 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "@/components/address/AddressForm";
@@ -256,7 +256,7 @@ export default function CurrentLocationPage() {
   if (isLoggedIn) {
     return (
       <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
       </div>
     );
   }
@@ -266,14 +266,7 @@ export default function CurrentLocationPage() {
       <Toaster position="top-center" richColors />
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {/* Page Title */}
-        <div className="mb-8 flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm transition hover:bg-gray-100"
-          >
-            <ArrowLeft className="h-5 w-5 text-[#b0004a]" />
-          </button>
+        <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#191c1d]">
             {t("myCurrentLocation") || "My Current Location"}
           </h1>
@@ -294,7 +287,7 @@ export default function CurrentLocationPage() {
                 type="button"
                 onClick={handleUseCurrentLocation}
                 disabled={loadingCurrentLocation}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#b0004a] px-6 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-[#8c003b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#f9186b] px-6 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-[#d4145b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loadingCurrentLocation ? (
                   <>
@@ -333,7 +326,7 @@ export default function CurrentLocationPage() {
                   onChange={handleSearchChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder") || "Search area..."}
-                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-10 outline-none focus:border-[#b0004a]"
+                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-10 outline-none focus:border-[#f9186b]"
                   autoComplete="off"
                 />
                 {searchValue && (
@@ -359,7 +352,7 @@ export default function CurrentLocationPage() {
                             }`}
                         >
                           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5]">
-                            <Search size={13} className="text-[#b0004a]" />
+                            <Search size={13} className="text-[#f9186b]" />
                           </span>
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-semibold text-[#191c1d]">
@@ -408,7 +401,7 @@ export default function CurrentLocationPage() {
           <div className="mt-6 flex items-center justify-center">
             <Link
               href="/add-address"
-              className="inline-flex items-center gap-2 rounded-full bg-[#b0004a] px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[#8c003b] active:scale-95"
+              className="inline-flex items-center gap-2 rounded-full bg-[#f9186b] px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[#d4145b] active:scale-95"
             >
               <span className="text-xl font-bold leading-none">+</span>
               {t("addNewAddress")}

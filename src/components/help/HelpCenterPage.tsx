@@ -91,17 +91,17 @@ export default function HelpCenterPage() {
 
           {/* Search */}
           <div className="relative mx-auto mt-8 max-w-xl">
-            <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#d81b60] dark:text-pink-400" />
+            <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#f9186b] dark:text-pink-400" />
 
             <input
               type="text"
               placeholder={t("searchHelpPlaceholder")}
-              className="h-14 w-full rounded-2xl border border-[#e5e7eb] dark:border-neutral-800 bg-white dark:bg-neutral-900 pl-14 pr-4 text-sm shadow-sm outline-none transition-all focus:border-[#d81b60] dark:focus:border-pink-500 text-gray-900 dark:text-neutral-100"
+              className="h-14 w-full rounded-2xl border border-[#e5e7eb] dark:border-neutral-800 bg-white dark:bg-neutral-900 pl-14 pr-4 text-sm shadow-sm outline-none transition-all focus:border-[#f9186b] dark:focus:border-pink-500 text-gray-900 dark:text-neutral-100"
             />
           </div>
 
           {/* Banner */}
-          <div className="relative mt-10 overflow-hidden rounded-3xl bg-[#d81b60] dark:bg-pink-600 p-6 text-left text-white shadow-lg md:flex md:items-center md:justify-between md:p-10">
+          <div className="relative mt-10 overflow-hidden rounded-3xl bg-[#f9186b] dark:bg-pink-600 p-6 text-left text-white shadow-lg md:flex md:items-center md:justify-between md:p-10">
             <div className="relative z-10 max-w-2xl">
               <h2 className="text-xl font-bold md:text-2xl">
                 {t("needImmediateHelp")}
@@ -112,7 +112,7 @@ export default function HelpCenterPage() {
               </p>
             </div>
 
-            <button className="relative z-10 mt-5 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#d81b60] dark:text-pink-600 transition hover:scale-105 md:mt-0 active:scale-95">
+            <button className="relative z-10 mt-5 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#f9186b] dark:text-pink-600 transition hover:scale-105 md:mt-0 active:scale-95">
               {t("chatWithUsNow")}
             </button>
 
@@ -142,7 +142,7 @@ export default function HelpCenterPage() {
                   className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-8 text-center shadow-sm dark:shadow-none transition-all hover:shadow-md"
                 >
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-pink-50 dark:bg-pink-950/40">
-                    <Icon className="h-8 w-8 text-[#d81b60] dark:text-pink-400" />
+                    <Icon className="h-8 w-8 text-[#f9186b] dark:text-pink-400" />
                   </div>
 
                   <h3 className="mt-5 text-lg font-semibold text-[#191c1d] dark:text-neutral-50">
@@ -153,7 +153,7 @@ export default function HelpCenterPage() {
                     {item.description}
                   </p>
 
-                  <button className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-[#d81b60] dark:text-pink-400 hover:opacity-90 transition-opacity">
+                  <button className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-[#f9186b] dark:text-pink-400 hover:opacity-90 transition-opacity">
                     {item.action}
                     <ArrowRight className="h-4 w-4" />
                   </button>
@@ -176,10 +176,10 @@ export default function HelpCenterPage() {
               return (
                 <div
                   key={item.title}
-                  className="cursor-pointer rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm transition-all hover:border-[#d81b60]/30 dark:hover:border-pink-500/30 hover:shadow-md dark:hover:shadow-none"
+                  className="cursor-pointer rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm transition-all hover:border-[#f9186b]/30 dark:hover:border-pink-500/30 hover:shadow-md dark:hover:shadow-none"
                 >
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-50 dark:bg-pink-950/40">
-                    <Icon className="h-5 w-5 text-[#d81b60] dark:text-pink-400" />
+                    <Icon className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
                   </div>
 
                   <h3 className="mt-4 text-sm font-semibold text-[#191c1d] dark:text-neutral-50">
@@ -226,7 +226,7 @@ export default function HelpCenterPage() {
 
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800">
                       <ChevronDown
-                        className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180 text-[#d81b60] dark:text-pink-400" : ""
+                        className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180 text-[#f9186b] dark:text-pink-400" : ""
                           }`}
                       />
                     </div>
