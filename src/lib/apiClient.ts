@@ -68,13 +68,32 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+// Backend validation failures arrive wrapped in a generic top-level message
+// (e.g. "Validation Error" / "Zod Validation Error") while the actionable
+// detail lives in errorSources[]. Treat those wrappers as non-descriptive so
+// we surface the field-level reason instead of the opaque wrapper.
+const GENERIC_ERROR_MESSAGE = /validation error/i;
+
 export function getApiErrorMessage(error: unknown, fallbackMessage = "Request failed") {
   if (axios.isAxiosError(error)) {
     const payload = error.response?.data as ApiErrorResponse | undefined;
 
+    const source = payload?.errorSources?.[0];
+    const sourceMessage = source?.message
+      ? source.path
+        ? `${source.path}: ${source.message}`
+        : source.message
+      : undefined;
+
+    // Prefer the specific field-level reason when the top-level message is just
+    // a generic validation wrapper; otherwise keep the top-level message.
+    if (payload?.message && GENERIC_ERROR_MESSAGE.test(payload.message)) {
+      return sourceMessage || payload.message;
+    }
+
     return (
       payload?.message ||
-      payload?.errorSources?.[0]?.message ||
+      sourceMessage ||
       error.message ||
       fallbackMessage
     );

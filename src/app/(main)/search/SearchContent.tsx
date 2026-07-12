@@ -10,6 +10,7 @@ import { Star, Truck, Check, UtensilsCrossed, Store } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
 import type { Vendor } from "@/types/vendor";
 import { formatCuisine } from "@/lib/cuisine";
+import { currencySymbol } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { useActiveAddressCoords } from "@/hooks/queries/useProfile";
@@ -315,7 +316,7 @@ export default function SearchContent() {
                     <h3 className="font-semibold text-gray-800 line-clamp-1">{product.name}</h3>
                     <p className="text-xs text-gray-500">{product.vendorId?.businessDetails?.businessName || "Vendor"}</p>
                     <div className="mt-1 text-[#f9186b] font-bold text-sm">
-                      {product.pricing?.currency || "€"} {product.pricing?.finalPrice?.toFixed(2) || "0.00"}
+                      {currencySymbol(product.pricing?.currency)} {product.pricing?.finalPrice?.toFixed(2) || "0.00"}
                     </div>
                   </div>
                 </div>

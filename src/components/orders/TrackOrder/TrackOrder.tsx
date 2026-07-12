@@ -7,7 +7,9 @@ import {
   CheckCheck,
   CheckCircle,
   CheckSquare,
+  Download,
   Headphones,
+  Loader2,
   MapPin,
   Navigation,
   Receipt,
@@ -16,7 +18,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
+import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -467,7 +471,21 @@ export default function TrackOrder() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [maxStatusIndex, setMaxStatusIndex] = useState(0);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleDownloadInvoice = async () => {
+    if (downloadingInvoice || !order?.orderId) return;
+    setDownloadingInvoice(true);
+    try {
+      await downloadInvoice(order.orderId);
+      toast.success(t("invoiceDownloaded"));
+    } catch (error) {
+      toast.error(await extractBlobErrorMessage(error, t("invoiceDownloadFailed")));
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
 
   useEffect(() => {
     if (!orderId) return;
@@ -800,7 +818,7 @@ export default function TrackOrder() {
                     <span>€{deliveryFee.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
-                    <span>{t("tax")}</span>
+                    <span>{t("taxIncl")}</span>
                     <span>€{tax.toFixed(2)}</span>
                   </div>
                   <div className="pt-4 mt-2 border-t border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
@@ -825,6 +843,18 @@ export default function TrackOrder() {
                     {order.paymentStatus || t("paid")}
                   </span>
                 </div>
+                <button
+                  onClick={handleDownloadInvoice}
+                  disabled={downloadingInvoice}
+                  className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-3 font-bold text-[#191c1d] dark:text-neutral-100 transition-all hover:bg-neutral-50 dark:hover:bg-neutral-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {downloadingInvoice ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  <span>{t("downloadInvoice")}</span>
+                </button>
               </div>
             </div>
           </div>

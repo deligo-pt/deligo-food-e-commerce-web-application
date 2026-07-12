@@ -17,8 +17,9 @@ import SafeImage from "@/components/shared/SafeImage";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
-import { getCartVendorId } from "@/lib/cart";
+import { getCartVendorId, resolveAddonName } from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useStore } from "@/stores/translationStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useCart } from "@/hooks/queries/useCart";
 import { useVendorsCustomer } from "@/hooks/queries/useVendors";
@@ -29,11 +30,13 @@ interface CheckoutPageProps {
 
 export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const { t } = useTranslation();
+  const lang = useStore((s) => s.lang);
   const router = useRouter();
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [deletingItem, setDeletingItem] = useState<string | null>(null);
 
-  const pendingUpdatesRef = useRef<Record<string, number>>({});
+  // Absolute target quantity per cart line while a debounced sync is pending.
+  const pendingQtyRef = useRef<Record<string, number>>({});
   const syncTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
   const isSyncingRef = useRef<Record<string, boolean>>({});
   const [instructions, setInstructions] = useState("");
@@ -70,17 +73,20 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
     const updatedItems = cartData.items.map((cartItem) => {
       const key = cartItem.productId + "_" + (cartItem.variationSku || "default");
-      const pendingDelta = pendingUpdatesRef.current[key] || 0;
+      const pendingQty = pendingQtyRef.current[key];
 
-      if (pendingDelta === 0) return cartItem;
+      if (pendingQty === undefined) return cartItem;
 
       const pricing = cartItem.productPricing;
-      const newQty = Math.max(1, cartItem.itemSummary.quantity + pendingDelta);
+      const newQty = Math.max(1, pendingQty);
 
       const newTotalProductDiscount = pricing.productDiscountAmount * newQty;
-      const newTotalBeforeTax = pricing.priceAfterProductDiscount * newQty;
-      const newTotalTaxAmount = newTotalBeforeTax * (pricing.taxRate / 100);
-      const newGrandTotal = newTotalBeforeTax + newTotalTaxAmount;
+      // Prices are tax-inclusive: unitPrice is the gross per-unit price and the
+      // grandTotal already contains the VAT, so scale the gross line total and
+      // extract the embedded tax rather than adding it on top.
+      const newGrandTotal = pricing.unitPrice * newQty;
+      const newTotalTaxAmount =
+        newGrandTotal - newGrandTotal / (1 + pricing.taxRate / 100);
 
       return {
         ...cartItem,
@@ -88,7 +94,6 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
           ...cartItem.itemSummary,
           quantity: newQty,
           totalProductDiscount: newTotalProductDiscount,
-          totalBeforeTax: newTotalBeforeTax,
           totalTaxAmount: newTotalTaxAmount,
           grandTotal: newGrandTotal,
         },
@@ -144,30 +149,34 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   }, [vendorItems]);
 
   const executeSync = async (key: string, item: any) => {
-    const delta = pendingUpdatesRef.current[key];
-    if (!delta) return;
+    const targetQty = pendingQtyRef.current[key];
+    if (targetQty === undefined) return;
 
     delete syncTimeoutRef.current[key];
 
     isSyncingRef.current[key] = true;
-    
-    pendingUpdatesRef.current[key] = 0;
+
+    // Consume the pending target; a click during the in-flight request sets a
+    // fresh target and re-triggers the sync from the finally block below.
+    delete pendingQtyRef.current[key];
 
     try {
-      const syncAction = delta > 0 ? "increment" : "decrement";
-      const syncQty = Math.abs(delta);
-
+      // add-to-cart now SETs the line to the exact quantity, so we send the
+      // absolute target the user landed on after they stopped clicking.
       const payload: any = {
-        productId: item.productId,
-        quantity: syncQty,
-        action: syncAction,
+        items: [
+          {
+            productId: item.productId,
+            quantity: targetQty,
+          },
+        ],
       };
       if (item.variationSku && item.variationSku !== null) {
-        payload.variationSku = item.variationSku;
+        payload.items[0].variationSku = item.variationSku;
       }
 
-      await apiClient.patch("/carts/update-quantity", payload);
-      
+      await apiClient.post("/carts/add-to-cart", payload);
+
       await refetchCart();
       useCartStore.getState().fetchCart();
     } catch (error) {
@@ -175,7 +184,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       await refetchCart();
     } finally {
       isSyncingRef.current[key] = false;
-      if (pendingUpdatesRef.current[key] && pendingUpdatesRef.current[key] !== 0) {
+      if (pendingQtyRef.current[key] !== undefined) {
         triggerSync(key, item);
       }
     }
@@ -211,9 +220,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         if (itemKey === key) {
           const pricing = cartItem.productPricing;
           const newTotalProductDiscount = pricing.productDiscountAmount * newQty;
-          const newTotalBeforeTax = pricing.priceAfterProductDiscount * newQty;
-          const newTotalTaxAmount = newTotalBeforeTax * (pricing.taxRate / 100);
-          const newGrandTotal = newTotalBeforeTax + newTotalTaxAmount;
+          // Tax-inclusive: scale the gross line total and extract embedded VAT.
+          const newGrandTotal = pricing.unitPrice * newQty;
+          const newTotalTaxAmount =
+            newGrandTotal - newGrandTotal / (1 + pricing.taxRate / 100);
 
           return {
             ...cartItem,
@@ -221,7 +231,6 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               ...cartItem.itemSummary,
               quantity: newQty,
               totalProductDiscount: newTotalProductDiscount,
-              totalBeforeTax: newTotalBeforeTax,
               totalTaxAmount: newTotalTaxAmount,
               grandTotal: newGrandTotal,
             },
@@ -242,8 +251,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       };
     });
 
-    // 2. Accumulate delta and queue/trigger sync
-    pendingUpdatesRef.current[key] = (pendingUpdatesRef.current[key] || 0) + change;
+    // 2. Record the absolute target quantity and queue the debounced sync
+    pendingQtyRef.current[key] = newQty;
     triggerSync(key, item);
   };
 
@@ -386,6 +395,23 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                               {t("sku")}: {item.variationSku}
                             </p>
                           )}
+                          {item.addons && item.addons.length > 0 && (
+                            <ul className="mt-2 space-y-1">
+                              {item.addons.map((addon) => (
+                                <li
+                                  key={addon.sku}
+                                  className="flex items-center gap-2 text-sm text-gray-500 dark:text-neutral-400"
+                                >
+                                  <span className="text-[#f9186b] dark:text-pink-400">+</span>
+                                  <span>
+                                    {resolveAddonName(addon.name, lang)}
+                                    {addon.quantity > 1 ? ` ×${addon.quantity}` : ""}
+                                  </span>
+                                  <span className="ml-auto">€{addon.lineTotal.toFixed(2)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
                         <button
                           onClick={() => deleteItem(item)}
@@ -451,24 +477,30 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
             </div>
             <div className="space-y-4 p-6">
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-neutral-400">{t("originalPrice")}</span>
+                <span className="text-gray-600 dark:text-neutral-400">{t("totalPrice")}</span>
                 <span className="font-semibold text-gray-900 dark:text-neutral-50">
                   €{summary.originalPrice.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-neutral-400">{t("productDiscount")}</span>
+                <span className="text-gray-600 dark:text-neutral-400">{t("discount")}</span>
                 <span className="font-semibold text-green-600 dark:text-green-400">
                   -€{summary.discount.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-neutral-400">{t("tax")}</span>
+                <span className="text-gray-600 dark:text-neutral-400">{t("subtotal")}</span>
+                <span className="font-semibold text-gray-900 dark:text-neutral-50">
+                  €{(summary.originalPrice - summary.discount).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-neutral-400">{t("taxIncl")}</span>
                 <span className="font-semibold text-gray-900 dark:text-neutral-50">€{summary.tax.toFixed(2)}</span>
               </div>
               <div className="border-t border-dashed border-gray-200 dark:border-neutral-800 pt-4">
                 <div className="flex justify-between">
-                  <span className="text-xl font-bold text-gray-900 dark:text-neutral-50">{t("total")}</span>
+                  <span className="text-xl font-bold text-gray-900 dark:text-neutral-50">{t("totalToPay")}</span>
                   <span className="text-3xl font-extrabold text-[#f9186b] dark:text-pink-400">
                     €{summary.total.toFixed(2)}
                   </span>

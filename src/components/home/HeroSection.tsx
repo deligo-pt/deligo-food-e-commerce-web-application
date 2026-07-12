@@ -98,7 +98,7 @@ export default function HeroSection() {
   const hasSlides = slides.length > 0;
 
   return (
-    <section className="group relative mt-8">
+    <section className="group relative mt-5 sm:mt-8">
       {loading ? (
         <div>
           <div className="relative overflow-hidden rounded-4xl bg-gray-100 dark:bg-neutral-800">

@@ -29,6 +29,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useVendor, useVendorProducts } from "@/hooks/queries/useVendors";
 import { useLocationStore } from "@/stores/locationStore";
 import { formatCuisine } from "@/lib/cuisine";
+import { currencySymbol } from "@/lib/currency";
 import SafeImage from "@/components/shared/SafeImage";
 
 function getDistanceKm(
@@ -150,7 +151,7 @@ const MenuProductCard = memo(function MenuProductCard({
   const hasDiscount = product.pricing.discount > 0;
   const originalPrice = product.pricing.price;
   const finalPrice = product.pricing.finalPrice;
-  const currency = product.pricing.currency || "€";
+  const currency = currencySymbol(product.pricing.currency);
 
   return (
     <div className="group flex overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none transition hover:shadow-lg dark:hover:bg-neutral-800/30">

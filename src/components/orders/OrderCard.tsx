@@ -1,9 +1,12 @@
 "use client";
 
-import { CheckCircle, Clock3, UtensilsCrossed, Star } from "lucide-react";
+import { CheckCircle, Clock3, Download, Loader2, UtensilsCrossed, Star } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
 import SafeImage from "@/components/shared/SafeImage";
+import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 
 interface OrderCardProps {
   dbId: string;
@@ -35,6 +38,21 @@ export default function OrderCard({
   onRateOrder,
 }: OrderCardProps) {
   const { t } = useTranslation();
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadInvoice = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      await downloadInvoice(orderId);
+      toast.success(t("invoiceDownloaded"));
+    } catch (error) {
+      toast.error(await extractBlobErrorMessage(error, t("invoiceDownloadFailed")));
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="rounded-xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm transition-colors duration-200">
       {/* Header */}
@@ -143,6 +161,21 @@ export default function OrderCard({
           >
             {t("trackOrder")}
           </Link>
+        )}
+
+        {status !== "cancelled" && (
+          <button
+            onClick={handleDownloadInvoice}
+            disabled={downloading}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 dark:border-neutral-700 py-3 text-sm font-semibold text-[#191c1d] dark:text-neutral-100 transition hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {downloading ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Download size={16} />
+            )}
+            {t("downloadInvoice")}
+          </button>
         )}
       </div>
     </div>

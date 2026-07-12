@@ -59,13 +59,6 @@ export default function CartPage() {
           item.itemSummary.quantity,
       0,
     );
-    const taxableAmount = newItems.reduce(
-      (sum, item) =>
-        sum +
-        item.productPricing.priceAfterProductDiscount *
-          item.itemSummary.quantity,
-      0,
-    );
     const totalTaxAmount = newItems.reduce(
       (sum, item) => sum + (item.itemSummary.totalTaxAmount || 0),
       0,
@@ -74,6 +67,10 @@ export default function CartPage() {
       (sum, item) => sum + item.itemSummary.grandTotal,
       0,
     );
+    // Prices are tax-inclusive, so the taxable base is the gross grandTotal
+    // minus the embedded VAT (the removed priceAfterProductDiscount field is no
+    // longer returned by the cart endpoint).
+    const taxableAmount = grandTotal - totalTaxAmount;
 
     setCart({
       ...cart,

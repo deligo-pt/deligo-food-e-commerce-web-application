@@ -164,6 +164,8 @@ const pt = {
   originalPrice: "Preço Original",
   productDiscount: "Desconto do Produto",
   tax: "Imposto",
+  taxIncl: "Imposto (incl.)",
+  incl: "incl.",
   serviceCharge: "Taxa de Serviço",
   total: "Total",
 
@@ -196,10 +198,12 @@ const pt = {
   paymentSummary: "Resumo do Pagamento",
 
   itemsTotal: "Total dos Itens",
+  totalPrice: "Preço Total",
   subtotal: "Subtotal",
   discount: "Desconto",
 
   deliveryFee: "Taxa de Entrega",
+  totalToPay: "Total a Pagar",
 
   free: "GRÁTIS",
 
@@ -381,6 +385,9 @@ const pt = {
   deliveryAddress: "Endereço de Entrega",
 
   optional: "opcional",
+  required: "obrigatório",
+  chooseUpTo: "Escolha até",
+  selectRequiredAddons: "Selecione as opções obrigatórias",
 
   noAddressSaved: "Nenhum endereço guardado",
 
@@ -438,6 +445,10 @@ const pt = {
   billSummary: "Resumo da Fatura",
 
   totalAmount: "Valor Total",
+
+  downloadInvoice: "Descarregar Fatura",
+  invoiceDownloaded: "Fatura descarregada",
+  invoiceDownloadFailed: "Não foi possível descarregar a fatura",
 
   orderStatus: "Estado do Pedido",
 

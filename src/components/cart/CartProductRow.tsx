@@ -81,9 +81,13 @@ export default function CartProductRow({
     setIsToggling(true);
 
     try {
-      await apiClient.patch(`/carts/toggle-item-status/${item.productId}`, {
-        variationSku: item.variationSku ?? null,
-      });
+      // The endpoint takes no path param; it toggles via a `toggleMode` body.
+      // Variants must be targeted by their variationSku, plain products by
+      // productId (the ObjectId) — mixing them returns "not in your cart".
+      const body = item.variationSku
+        ? { toggleMode: "ITEM_LEVEL", variationSku: [item.variationSku] }
+        : { toggleMode: "ITEM_LEVEL", productIds: [item.productId] };
+      await apiClient.patch("/carts/toggle-item-status", body);
       const newState = item.isActive ? "deactivated" : "activated";
       toast.success(`"${item.name}" has been ${newState}`);
       await onUpdate();

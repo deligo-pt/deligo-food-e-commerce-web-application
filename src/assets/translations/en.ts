@@ -154,6 +154,8 @@ const en = {
   originalPrice: "Original Price",
   productDiscount: "Product Discount",
   tax: "Tax",
+  taxIncl: "Tax (incl.)",
+  incl: "incl.",
   serviceCharge: "Service Fee",
   total: "Total",
 
@@ -185,9 +187,11 @@ const en = {
   paymentSummary: "Payment Summary",
 
   itemsTotal: "Items Total",
+  totalPrice: "Total Price",
   subtotal: "Subtotal",
   discount: "Discount",
   deliveryFee: "Delivery Fee",
+  totalToPay: "Total to Pay",
 
   free: "FREE",
 
@@ -361,6 +365,9 @@ const en = {
   deliveryAddress: "Delivery Address",
 
   optional: "optional",
+  required: "required",
+  chooseUpTo: "Choose up to",
+  selectRequiredAddons: "Please select the required options",
   noAddressSaved: "No address saved",
 
   manageAccountInfo: "Manage your account information and preferences",
@@ -416,6 +423,10 @@ const en = {
   billSummary: "Bill Summary",
 
   totalAmount: "Total Amount",
+
+  downloadInvoice: "Download Invoice",
+  invoiceDownloaded: "Invoice downloaded",
+  invoiceDownloadFailed: "Could not download the invoice",
 
   orderStatus: "Order Status",
 

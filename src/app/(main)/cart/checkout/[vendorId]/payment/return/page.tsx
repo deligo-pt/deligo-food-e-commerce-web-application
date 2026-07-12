@@ -48,8 +48,12 @@ export default function PaymentReturnPage() {
           sessionStorage.removeItem("pendingOrder");
           sessionStorage.removeItem("deliveryNotes");
           setStatus("success");
-          // Redirect to order detail page (adjust route as needed)
-          router.replace(`/orders/${response.data.data.orderId}`);
+          // Redirect to the order detail / tracking page. The route is
+          // /orders/track-order/[orderId] — a bare /orders/[orderId] has no
+          // page and would 404.
+          router.replace(
+            `/orders/track-order/${response.data.data.orderId}`,
+          );
         } else {
           throw new Error(response.data.message || "Order creation failed");
         }

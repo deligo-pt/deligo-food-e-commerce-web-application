@@ -126,19 +126,19 @@ const RestaurantCard = memo(function RestaurantCard({
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-5 sm:p-8">
           <div className="mb-2 flex items-center gap-4">
-            <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d] dark:text-neutral-100">
+            <h3 className="line-clamp-1 text-lg font-bold text-[#191c1d] dark:text-neutral-100 sm:text-2xl">
               {vendor.businessDetails.businessName}
             </h3>
           </div>
 
-          <p className="mb-6 text-lg text-[#5a4044] dark:text-neutral-400">
+          <p className="mb-4 text-base text-[#5a4044] dark:text-neutral-400 sm:mb-6 sm:text-lg">
             {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
               vendor.businessDetails.businessType}
           </p>
 
-          <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-sm font-medium text-[#5a4044] dark:text-neutral-400">
+          <div className="flex items-center gap-4 border-t border-[#edeeef] dark:border-neutral-800 pt-4 text-sm font-medium text-[#5a4044] dark:text-neutral-400 sm:gap-6 sm:pt-6">
             <span className="flex items-center gap-2 text-[#f9186b] dark:text-pink-500">
               <Truck size={18} />
               {vendor.businessDetails.isStoreOpen ? t("openNow") : t("closed")}
@@ -341,24 +341,24 @@ export default function RestaurantsSection() {
   if (loading) {
     return (
       <section>
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between sm:mb-10">
           <div className="h-10 w-40 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
           <div className="hidden h-7 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800 sm:block" />
         </div>
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-10">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
               className="overflow-hidden rounded-4xl bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)]"
             >
               <div className="aspect-16/10 animate-pulse bg-gray-200 dark:bg-neutral-800" />
-              <div className="space-y-5 p-8">
+              <div className="space-y-4 p-5 sm:space-y-5 sm:p-8">
                 <div className="flex items-center justify-between gap-4">
                   <div className="h-7 w-2/3 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
                   <div className="h-6 w-6 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
                 </div>
                 <div className="h-5 w-1/2 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-                <div className="flex gap-4 border-t border-[#edeeef] dark:border-neutral-800 pt-6">
+                <div className="flex gap-4 border-t border-[#edeeef] dark:border-neutral-800 pt-4 sm:pt-6">
                   <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
                   <div className="h-5 w-32 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
                 </div>
@@ -383,13 +383,13 @@ export default function RestaurantsSection() {
   if (filteredVendors.length === 0) {
     return (
       <section>
-        <div className="mb-10 flex items-center justify-between">
-          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
+        <div className="mb-6 flex items-center justify-between sm:mb-10">
+          <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-[32px] sm:leading-10 dark:text-neutral-100">
             {t("nearYou")}
           </h2>
           <Link
             href="/vendors"
-            className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#f9186b] dark:text-pink-500 hover:underline"
+            className="flex items-center gap-2 text-sm font-bold text-[#f9186b] dark:text-pink-500 hover:underline sm:text-[20px] sm:leading-7"
           >
             {t("viewAll")} <ChevronRight size={20} />
           </Link>
@@ -445,7 +445,7 @@ export default function RestaurantsSection() {
         </h2>
         <Link
           href="/vendors"
-          className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#f9186b] dark:text-pink-500 hover:underline"
+          className="flex items-center gap-2 text-sm font-bold text-[#f9186b] dark:text-pink-500 hover:underline sm:text-[20px] sm:leading-7"
         >
           {t("viewAll")} <ChevronRight size={20} />
         </Link>

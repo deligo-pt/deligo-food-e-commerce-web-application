@@ -26,6 +26,9 @@ import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import SafeImage from "@/components/shared/SafeImage";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useStore } from "@/stores/translationStore";
+import { resolveAddonName } from "@/lib/cart";
+import type { CartAddon } from "@/types/cart";
 import Link from "next/link";
 
 interface CheckoutItem {
@@ -34,6 +37,7 @@ interface CheckoutItem {
   image: string;
   itemSummary: { quantity: number; grandTotal: number };
   productPricing: { priceAfterProductDiscount: number };
+  addons?: CartAddon[];
 }
 
 interface OrderCalculation {
@@ -126,6 +130,7 @@ interface AvailableOffer {
 
 export default function PaymentPage() {
   const { t } = useTranslation();
+  const lang = useStore((s) => s.lang);
   const searchParams = useSearchParams();
   const checkoutId = searchParams.get("checkoutId");
 
@@ -461,6 +466,23 @@ export default function PaymentPage() {
                           2,
                         )}
                       </p>
+                      {item.addons && item.addons.length > 0 && (
+                        <ul className="mt-1 space-y-0.5">
+                          {item.addons.map((addon) => (
+                            <li
+                              key={addon.sku}
+                              className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400"
+                            >
+                              <span className="text-[#f9186b] dark:text-pink-400">+</span>
+                              <span>
+                                {resolveAddonName(addon.name, lang)}
+                                {addon.quantity > 1 ? ` ×${addon.quantity}` : ""}
+                              </span>
+                              <span className="ml-auto">€{addon.lineTotal.toFixed(2)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                     <p className="font-bold text-gray-900 dark:text-neutral-50">
                       €{item.itemSummary.grandTotal.toFixed(2)}
@@ -477,7 +499,7 @@ export default function PaymentPage() {
               {/* Price breakdown */}
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-neutral-400">{t("itemsTotal")}</span>
+                  <span className="text-gray-500 dark:text-neutral-400">{t("totalPrice")}</span>
                   <span className="font-semibold text-gray-900 dark:text-neutral-50">
                     €{orderCalculation.totalOriginalPrice.toFixed(2)}
                   </span>
@@ -493,17 +515,17 @@ export default function PaymentPage() {
                   <span className="font-semibold text-gray-900 dark:text-neutral-50">€{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-neutral-400">{t("tax")}</span>
-                  <span className="font-semibold text-gray-900 dark:text-neutral-50">
-                    €{orderCalculation.totalTaxAmount.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-neutral-400">{t("deliveryFee")}</span>
                   <span className="font-semibold text-green-600 dark:text-green-400">
                     {delivery.totalDeliveryCharge > 0
                       ? `€${delivery.totalDeliveryCharge.toFixed(2)}`
                       : t("free")}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-neutral-400">{t("taxIncl")}</span>
+                  <span className="font-semibold text-gray-900 dark:text-neutral-50">
+                    €{orderCalculation.totalTaxAmount.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -568,7 +590,7 @@ export default function PaymentPage() {
 
                 {/* Order Total */}
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-gray-900 dark:text-neutral-50">{t("orderTotal")}</span>
+                  <span className="text-2xl font-bold text-gray-900 dark:text-neutral-50">{t("totalToPay")}</span>
                   <span className="text-3xl font-bold text-[#f9186b] dark:text-pink-400">
                     €{orderTotal.toFixed(2)}
                   </span>

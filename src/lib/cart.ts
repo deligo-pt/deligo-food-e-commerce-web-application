@@ -1,4 +1,16 @@
-import type { CartItem } from "@/types/cart";
+import type { CartItem, CartAddon } from "@/types/cart";
+
+// Addon names arrive localized to a string, but tolerate the bilingual object
+// shape so a checkout response that returns { en, pt } never renders as
+// "[object Object]".
+export function resolveAddonName(
+  name: CartAddon["name"],
+  lang: "en" | "pt",
+): string {
+  if (typeof name === "string") return name;
+  if (!name) return "";
+  return name[lang] ?? name.en ?? name.pt ?? "";
+}
 
 // /carts/view-cart doesn't reliably populate the vendor: `vendorId` comes back
 // sometimes as a full object ({ _id, name, ... }) and sometimes as a bare id
