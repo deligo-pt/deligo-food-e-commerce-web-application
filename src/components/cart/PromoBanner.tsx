@@ -1,14 +1,17 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function PromoBanner() {
+  const { t } = useTranslation();
   return (
     <div className="group relative h-56 overflow-hidden rounded-3xl">
       <Image
         fill
         src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c"
         alt="Promo"
+        sizes="(max-width: 768px) 100vw, 33vw"
         className="object-cover transition-transform duration-700 group-hover:scale-105"
       />
 
@@ -16,11 +19,11 @@ export default function PromoBanner() {
 
       <div className="absolute bottom-0 p-6">
         <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/80">
-          Weekend Special
+          {t("weekendSpecial")}
         </p>
 
         <h3 className="text-2xl font-bold text-white">
-          Get €10 off orders over €50
+          {t("weekendSpecialOffer")}
         </h3>
       </div>
     </div>

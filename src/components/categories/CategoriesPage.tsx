@@ -52,7 +52,7 @@ type OpenApiResponse = {
 };
 
 export default function CategoriesPage() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +106,7 @@ export default function CategoriesPage() {
         }
       } catch {
         if (alive) {
-          setError("Unable to load categories. Please try again.");
+          setError(t("unableToLoadCategories"));
         }
       } finally {
         if (alive) setLoading(false);
@@ -118,7 +118,7 @@ export default function CategoriesPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [t, langVersion]);
 
   const handleCategoryClick = (category: Category) => {
     setSelectedCategory({
@@ -139,7 +139,7 @@ export default function CategoriesPage() {
         <div>
           <Link
             href="/"
-            className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-[#b0004a] transition-colors hover:text-[#8d003d]"
+            className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-[#f9186b] transition-colors hover:text-[#8d003d]"
           >
             <ChevronLeft size={18} /> {t("backToHome")}
           </Link>
@@ -164,7 +164,7 @@ export default function CategoriesPage() {
               onClick={() => handleCategoryClick(category)}
               className="group flex cursor-pointer flex-col items-center gap-4 rounded-3xl bg-white p-5 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-transform duration-300 hover:-translate-y-1"
             >
-              <div className="h-28 w-28 rounded-full bg-[#e7e8e9] p-1 shadow-md transition-all group-hover:bg-[#b0004a]">
+              <div className="h-28 w-28 rounded-full bg-[#e7e8e9] p-1 shadow-md transition-all group-hover:bg-[#f9186b]">
                 <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#ffffff]">
                   {category.icon ? (
                     <Image
@@ -181,7 +181,7 @@ export default function CategoriesPage() {
               </div>
 
               <div>
-                <h2 className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#191c1d] transition-colors group-hover:text-[#b0004a]">
+                <h2 className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#191c1d] transition-colors group-hover:text-[#f9186b]">
                   {category.name}
                 </h2>
                 {category.description ? (

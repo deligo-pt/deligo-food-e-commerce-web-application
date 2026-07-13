@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import FCMProvider from "@/components/shared/FCMProvider";
+import QueryProvider from "@/providers/QueryProvider";
+import WebVitals from "@/components/shared/WebVitals";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -51,9 +53,12 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-[#f8f9fa] dark:bg-neutral-950 font-sans text-[#191c1d] dark:text-neutral-100 transition-colors duration-200">
-        {children}
-        <Toaster position="top-center" richColors />
-        <FCMProvider />
+        <QueryProvider>
+          {children}
+          <Toaster position="top-center" richColors />
+          <FCMProvider />
+          <WebVitals />
+        </QueryProvider>
       </body>
     </html>
   );

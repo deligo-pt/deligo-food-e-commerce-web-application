@@ -154,6 +154,10 @@ const en = {
   originalPrice: "Original Price",
   productDiscount: "Product Discount",
   tax: "Tax",
+  taxIncl: "Tax (incl.)",
+  incl: "incl.",
+  inclTax: "Incl. tax",
+  finalPrice: "Final Price",
   serviceCharge: "Service Fee",
   total: "Total",
 
@@ -185,9 +189,11 @@ const en = {
   paymentSummary: "Payment Summary",
 
   itemsTotal: "Items Total",
+  totalPrice: "Total Price",
   subtotal: "Subtotal",
   discount: "Discount",
   deliveryFee: "Delivery Fee",
+  totalToPay: "Total to Pay",
 
   free: "FREE",
 
@@ -361,6 +367,9 @@ const en = {
   deliveryAddress: "Delivery Address",
 
   optional: "optional",
+  required: "required",
+  chooseUpTo: "Choose up to",
+  selectRequiredAddons: "Please select the required options",
   noAddressSaved: "No address saved",
 
   manageAccountInfo: "Manage your account information and preferences",
@@ -417,6 +426,10 @@ const en = {
 
   totalAmount: "Total Amount",
 
+  downloadInvoice: "Download Invoice",
+  invoiceDownloaded: "Invoice downloaded",
+  invoiceDownloadFailed: "Could not download the invoice",
+
   orderStatus: "Order Status",
 
   support: "Support",
@@ -459,8 +472,8 @@ const en = {
   creditDebitCard: "Credit/Debit Card",
   visaMastercardMaestro: "Visa, Mastercard, Maestro",
 
-  mbway: "MB WAY",
-  fastMobilePayment: "Fast mobile payment",
+  googlePay: "Google Pay",
+  fastSecureCheckout: "Fast, secure checkout",
 
   applePay: "Apple Pay",
   oneTapCheckout: "One-tap checkout",
@@ -469,8 +482,6 @@ const en = {
   paypalGooglePayEtc: "PayPal, Google Pay, etc.",
 
   recommended: "Recommended",
-
-  confirmPaymentMethod: "Confirm Payment Method",
 
   paymentInfoSecure: "Your payment information is encrypted and secure",
   yourReferralCode: "Your Referral Code",
@@ -1167,20 +1178,6 @@ const en = {
   filter: "Filter",
   clearAll: "Clear all",
 
-  cuisinePortugueseFood: "Portuguese Food",
-  cuisineSushi: "Sushi",
-  cuisineKebab: "Kebab",
-  cuisineBarbecue: "Barbecue",
-  cuisineIndianFood: "Indian Food",
-  cuisineItalianFood: "Italian Food",
-  cuisineVegetarianFood: "Vegetarian Food",
-  cuisineThaiFood: "Thai Food",
-  cuisineJapaneseFood: "Japanese Food",
-  cuisineRamen: "Ramen",
-  cuisineSeafood: "Seafood",
-  cuisineBurger: "Burger",
-  cuisineHalal: "Halal",
-  cuisineOthers: "Others",
   // en.ts
   faqTitle: "Frequently Asked Questions",
   faqSubtitle: "Everything you need to know about DeliGo",
@@ -1403,6 +1400,102 @@ const en = {
     "Full preference settings for localized delivery areas and neighborhood corridors.",
   courierBullet3:
     "Flexible earning models aligned with independent lifestyle requirements.",
+
+  // --- Phase 1: static UI copy (Issue_solve_plan.md) ---
+  popular: "POPULAR",
+  continueButton: "Continue",
+  deleteLabel: "Delete",
+  deleteAddress: "Delete Address",
+  deleteAddressConfirm:
+    "Are you sure you want to delete this address? This action cannot be undone.",
+  paymentSuccessful: "Payment Successful",
+  orderCreationFailed: "Order Creation Failed",
+  creatingYourOrder: "Creating your order...",
+  finalizingYourOrder: "Finalizing your order...",
+  returnToCart: "Return to Cart",
+  orderConfirmedRedirecting: "Order confirmed! Redirecting...",
+  missingPaymentInfo:
+    "Missing payment information. Please contact support.",
+  missingPaymentSummary: "Missing payment summary.",
+  goBack: "Go Back",
+  loadingPaymentDetails: "Loading payment details...",
+  paymentFailedDesc:
+    "We could not process your payment. Please try again or use another payment method.",
+  referenceLabel: "Reference",
+  weekendSpecial: "Weekend Special",
+  weekendSpecialOffer: "Get €10 off orders over €50",
+  unlockExclusiveFeatures: "Unlock Exclusive Features",
+  unlockExclusiveFeaturesDesc:
+    "Use the app regularly and place more orders to unlock and enjoy these exclusive features.",
+  selectedLocation: "Selected Location",
+  places: "Places",
+  dishes: "Dishes",
+  onThisPage: "On this page",
+  priceDetailsOfCart: "Price details of your cart",
+  grandTotal: "Grand Total",
+  subtotalExclServiceFee: "Subtotal (excl. Service Fee)",
+  notSignedIn: "Not signed in.",
+  notSignedInExplore:
+    "You can explore the map and pick a location, but you need to",
+  notSignedInSaveSuffix: "to save your address.",
+  logInLink: "log in",
+  editModePrimaryNote:
+    "Note: Edit mode updates the PRIMARY address regardless of type selected.",
+
+  // --- Phase 3: toasts, errors, empty/loading & route messages ---
+  locationNotDetected: "Location not detected yet. Please wait or use GPS.",
+  streetRequired: "Street address is required.",
+  cityRequired: "City is required.",
+  regionRequired: "Region/State is required.",
+  countryRequired: "Country is required.",
+  locationSavedLocally: "Location saved locally!",
+  failedToSaveLocation: "Failed to save location.",
+  pleaseLogInToSaveAddress: "Please log in to save your address.",
+  userNotLoaded: "User not loaded. Please refresh.",
+  enterNewEmailToUpdate: "Please enter a new email address to update",
+  otpSentToNewEmail: "OTP sent to your new email address",
+  pleaseEnterOtp: "Please enter OTP",
+  emailUpdatedSuccessfully: "Email updated successfully",
+  enterNewMobileToUpdate: "Please enter a new mobile number to update",
+  otpSentToNewMobile: "OTP sent to your new mobile number",
+  mobileUpdatedSuccessfully: "Mobile number updated successfully",
+  userIdNotFound: "User ID not found",
+  profileUpdatedSuccessfully: "Profile updated successfully!",
+  referralCodeCopied: "Referral code copied to clipboard",
+  failedToCopyReferralCode: "Failed to copy referral code",
+  referralInfoCopied: "Referral information copied to clipboard",
+  failedToShareReferralCode: "Failed to share referral code",
+  pleaseLogInToAddToCart: "Please log in to add items to your cart.",
+  itemAddedToCart: "Item added to cart successfully!",
+  vendorInfoMissing: "Vendor information missing",
+  provideAtLeastOneRating: "Please provide at least one rating.",
+  currentLocationLoadedOnMap: "Current location loaded on map.",
+  addressNotFound: "Address not found",
+  pleaseLogInToSearch: "Please log in to search.",
+  failedToLoadSearchResults: "Failed to load search results.",
+  noCheckoutIdProvided: "No checkout ID provided",
+  failedToCreateOrder: "Failed to create order.",
+  failedToLoadProfile: "Failed to load profile",
+  profileNotFound: "Profile not found",
+  unnamedUser: "Unnamed User",
+  somethingWentWrong: "Something went wrong",
+  errorPageDesc:
+    "An unexpected error occurred while loading this page. You can try again or head back to the homepage.",
+  tryAgain: "Try again",
+  criticalError: "A critical error occurred. Please try again.",
+  pageNotFound: "Page Not Found",
+  notFoundDesc:
+    "Oops! It looks like you've stumbled upon a dead end. The page you're searching for seems to have been misplaced or moved to a different location.",
+  backToHomeCap: "Back to Home",
+  loading: "Loading...",
+  loadingSearch: "Loading search...",
+  markAllAsRead: "Mark all as read",
+  profileAddress: "Profile Address",
+  deliveryAddresses: "Delivery Addresses",
+  primaryAddressUpdated: "Primary address updated successfully",
+  failedToUpdatePrimaryAddress: "Failed to update primary address",
+  addressDeleted: "Address deleted successfully",
+  failedToDeleteAddress: "Failed to delete address",
 };
 
 export default en;

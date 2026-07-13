@@ -7,7 +7,9 @@ import {
   CheckCheck,
   CheckCircle,
   CheckSquare,
+  Download,
   Headphones,
+  Loader2,
   MapPin,
   Navigation,
   Receipt,
@@ -16,7 +18,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
+import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -145,8 +149,8 @@ function OrderMap({
             encodeURIComponent(`
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
                 <circle cx="20" cy="22" r="16" fill="rgba(0,0,0,0.15)" filter="blur(2px)" />
-                <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#b0004a" stroke-width="2" />
-                <circle cx="20" cy="20" r="12" fill="#b0004a" />
+                <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#f9186b" stroke-width="2" />
+                <circle cx="20" cy="20" r="12" fill="#f9186b" />
                 <path d="M14,14 L26,14 L26,18 L14,18 Z M13,11 L27,11 L27,14 L13,14 Z M15,18 L15,25 C15,25.6 15.4,26 16,26 L24,26 C24.6,26 25,25.6 25,25 L25,18 Z" fill="#ffffff" />
               </svg>
             `),
@@ -176,7 +180,7 @@ function OrderMap({
           map,
           suppressMarkers: true,
           polylineOptions: {
-            strokeColor: "#b70052",
+            strokeColor: "#f9186b",
             strokeOpacity: 0.8,
             strokeWeight: 5,
           },
@@ -203,14 +207,14 @@ function OrderMap({
                   path: [origin, destination],
                   map,
                   geodesic: true,
-                  strokeColor: "#b70052",
+                  strokeColor: "#f9186b",
                   strokeOpacity: 0,
                   icons: [
                     {
                       icon: {
                         path: "M 0,-1 0,1",
                         strokeOpacity: 0.8,
-                        strokeColor: "#b70052",
+                        strokeColor: "#f9186b",
                         scale: 3,
                       },
                       offset: "0",
@@ -243,7 +247,7 @@ function OrderMap({
                 <!-- Outer white circle -->
                 <circle cx="22" cy="22" r="17" fill="#ffffff" stroke="#ffd9de" stroke-width="1.5" />
                 <!-- Inner pink/crimson circle -->
-                <circle cx="22" cy="22" r="14" fill="#b0004a" />
+                <circle cx="22" cy="22" r="14" fill="#f9186b" />
                 
                 <!-- Stylized delivery motorcycle rider (side view) -->
                 <g transform="translate(10, 11) scale(0.9)" fill="#ffffff">
@@ -256,8 +260,8 @@ function OrderMap({
                   <path d="M6,13.5 L19,13.5 L20,16.5 L10,16.5 Z" />
                   <circle cx="7" cy="18" r="3" />
                   <circle cx="19" cy="18" r="3" />
-                  <circle cx="7" cy="18" r="1" fill="#b0004a" />
-                  <circle cx="19" cy="18" r="1" fill="#b0004a" />
+                  <circle cx="7" cy="18" r="1" fill="#f9186b" />
+                  <circle cx="19" cy="18" r="1" fill="#f9186b" />
                 </g>
               </svg>
             `),
@@ -461,13 +465,27 @@ function getOrderStep(orderStatus: string, t: (key: string) => string) {
 }
 
 export default function TrackOrder() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const { orderId } = useParams<{ orderId: string }>();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [maxStatusIndex, setMaxStatusIndex] = useState(0);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleDownloadInvoice = async () => {
+    if (downloadingInvoice || !order?.orderId) return;
+    setDownloadingInvoice(true);
+    try {
+      await downloadInvoice(order.orderId);
+      toast.success(t("invoiceDownloaded"));
+    } catch (error) {
+      toast.error(await extractBlobErrorMessage(error, t("invoiceDownloadFailed")));
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
 
   useEffect(() => {
     if (!orderId) return;
@@ -499,9 +517,8 @@ export default function TrackOrder() {
         // Stop polling once the order reaches a final state
         const finalStatuses = ["DELIVERED", "CANCELLED", "REJECTED"];
         if (orderData && finalStatuses.includes(orderData.orderStatus)) {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-          }
+          stopped = true;
+          stopPolling();
         }
       } catch (err: any) {
         if (isInitial) {
@@ -514,20 +531,42 @@ export default function TrackOrder() {
       }
     };
 
-    // Initial fetch to load page content immediately
-    fetchOrder(true);
+    // Phase 2: poll every 5s for live updates, but ONLY while the tab is
+    // visible (a backgrounded tracking tab makes zero requests), and stop
+    // entirely once the order reaches a terminal state.
+    let stopped = false;
 
-    // Dynamic real-time updates every 5 seconds
-    intervalRef.current = setInterval(() => {
-      fetchOrder(false);
-    }, 5000);
-
-    return () => {
+    const startPolling = () => {
+      if (stopped || intervalRef.current) return;
+      intervalRef.current = setInterval(() => fetchOrder(false), 5000);
+    };
+    const stopPolling = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [orderId]);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !stopped) {
+        fetchOrder(false);
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    // Initial fetch to load page content immediately
+    fetchOrder(true);
+    if (document.visibilityState === "visible") startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+    // langVersion: re-fetch the order in the new language (keeps the current
+    // order on screen since loading only toggles on the initial load).
+  }, [orderId, langVersion]);
 
   // Animation observer
   useEffect(() => {
@@ -696,7 +735,7 @@ export default function TrackOrder() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800">
                 <div className="h-12 w-12 rounded-full bg-[#ffd9de] dark:bg-pink-950/30 flex items-center justify-center shrink-0">
-                  <Utensils className="w-6 h-6 text-[#b0004a] dark:text-pink-400" />
+                  <Utensils className="w-6 h-6 text-[#f9186b] dark:text-pink-400" />
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400 tracking-wide">
@@ -710,9 +749,9 @@ export default function TrackOrder() {
                   </p>
                 </div>
               </div>
-              <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-l-[#b70052] dark:border-l-[#b70052]">
+              <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-l-[#f9186b] dark:border-l-[#f9186b]">
                 <div className="h-12 w-12 rounded-full bg-[#ffd9df] dark:bg-pink-950/30 flex items-center justify-center shrink-0">
-                  <MapPin className="w-6 h-6 text-[#b70052] dark:text-pink-400" />
+                  <MapPin className="w-6 h-6 text-[#f9186b] dark:text-pink-400" />
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400">
@@ -733,7 +772,7 @@ export default function TrackOrder() {
               <div className="md:col-span-5 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-[#ffd9de] dark:bg-pink-950/30 rounded-xl">
-                    <ShoppingBag className="w-5 h-5 text-[#b0004a] dark:text-pink-400" />
+                    <ShoppingBag className="w-5 h-5 text-[#f9186b] dark:text-pink-400" />
                   </div>
                   <h4 className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400">
                     {t("items")} ({totalItems})
@@ -746,7 +785,7 @@ export default function TrackOrder() {
                       className="flex items-center justify-between"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-[#b0004a] dark:text-pink-400 font-bold">
+                        <span className="text-[#f9186b] dark:text-pink-400 font-bold">
                           {item.itemSummary?.quantity}x
                         </span>
                         <span className="text-[#191c1d] dark:text-neutral-300 font-semibold">
@@ -763,7 +802,7 @@ export default function TrackOrder() {
               <div className="md:col-span-7 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-[#ffd9df] dark:bg-pink-950/30 rounded-xl">
-                    <Receipt className="w-5 h-5 text-[#b70052] dark:text-pink-400" />
+                    <Receipt className="w-5 h-5 text-[#f9186b] dark:text-pink-400" />
                   </div>
                   <h4 className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 uppercase tracking-wider">
                     {t("billSummary")}
@@ -779,14 +818,14 @@ export default function TrackOrder() {
                     <span>€{deliveryFee.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
-                    <span>{t("tax")}</span>
+                    <span>{t("taxIncl")}</span>
                     <span>€{tax.toFixed(2)}</span>
                   </div>
                   <div className="pt-4 mt-2 border-t border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
                     <span className="text-2xl font-extrabold text-[#191c1d] dark:text-neutral-50">
                       {t("totalAmount")}
                     </span>
-                    <span className="text-2xl font-extrabold text-[#b70052] dark:text-pink-400">
+                    <span className="text-2xl font-extrabold text-[#f9186b] dark:text-pink-400">
                       €{grandTotal.toFixed(2)}
                     </span>
                   </div>
@@ -804,6 +843,18 @@ export default function TrackOrder() {
                     {order.paymentStatus || t("paid")}
                   </span>
                 </div>
+                <button
+                  onClick={handleDownloadInvoice}
+                  disabled={downloadingInvoice}
+                  className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-3 font-bold text-[#191c1d] dark:text-neutral-100 transition-all hover:bg-neutral-50 dark:hover:bg-neutral-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {downloadingInvoice ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  <span>{t("downloadInvoice")}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -822,7 +873,7 @@ export default function TrackOrder() {
                 </div>
               </div>
               <Link href="/help-center">
-                <button className="bg-[#b0004a] dark:bg-pink-600 text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg hover:opacity-90 transition-all active:scale-95">
+                <button className="bg-[#f9186b] dark:bg-pink-600 text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg hover:opacity-90 transition-all active:scale-95">
                   <Headphones className="w-4 h-4" />
                   <span className="font-bold">{t("support")}</span>
                 </button>
@@ -841,13 +892,13 @@ export default function TrackOrder() {
                   >
                     {idx < steps.length - 1 && (
                       <div
-                        className={`absolute left-5 top-10 bottom-0 w-0.5 ${isCompleted ? "bg-[#b0004a] dark:bg-pink-600" : "bg-[#e3bdc3] dark:bg-neutral-800"
+                        className={`absolute left-5 top-10 bottom-0 w-0.5 ${isCompleted ? "bg-[#f9186b] dark:bg-pink-600" : "bg-[#e3bdc3] dark:bg-neutral-800"
                           } ${isCurrent && idx !== steps.length - 1 ? "border-l-2 border-dashed border-[#e3bdc3] dark:border-neutral-800" : ""}`}
                       />
                     )}
                     <div
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shadow-md ${isCompleted || isCurrent
-                        ? "bg-[#b0004a] dark:bg-pink-600 text-white"
+                        ? "bg-[#f9186b] dark:bg-pink-600 text-white"
                         : "bg-[#f3f4f5] dark:bg-neutral-950 text-[#8e6f74] dark:text-neutral-500 border border-[#e3bdc3] dark:border-neutral-800"
                         } ${isCurrent ? "border-4 border-[#ffd9de] dark:border-pink-950/40" : ""}`}
                     >
@@ -858,7 +909,7 @@ export default function TrackOrder() {
                         className={`text-xl font-bold ${isCompleted || isCurrent
                           ? "text-[#191c1d] dark:text-neutral-50"
                           : "text-[#8e6f74] dark:text-neutral-500"
-                          } ${isCurrent ? "text-[#b0004a] dark:text-pink-400" : ""}`}
+                          } ${isCurrent ? "text-[#f9186b] dark:text-pink-400" : ""}`}
                       >
                         {step.label}
                       </h4>
@@ -868,8 +919,8 @@ export default function TrackOrder() {
                         {step.description}
                       </p>
                       {isCurrent && step.key !== "DELIVERED" && step.key !== "CANCELLED" && step.key !== "REJECTED" && (
-                        <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] dark:bg-pink-950/40 text-[#b0004a] dark:text-pink-400 rounded-full text-xs font-bold">
-                          <span className="w-1.5 h-1.5 bg-[#b0004a] dark:bg-pink-500 rounded-full animate-pulse" />
+                        <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] dark:bg-pink-950/40 text-[#f9186b] dark:text-pink-400 rounded-full text-xs font-bold">
+                          <span className="w-1.5 h-1.5 bg-[#f9186b] dark:bg-pink-500 rounded-full animate-pulse" />
                           {t("inProgress")}
                         </span>
                       )}

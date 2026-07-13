@@ -2,23 +2,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import {
   X,
   Plus,
   Minus,
+  Trash2,
+  Tag,
   ShoppingCart,
   Sparkles,
   FileText,
   Circle,
   CheckCircle,
+  UtensilsCrossed,
 } from "lucide-react";
+import SafeImage from "@/components/shared/SafeImage";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useCartStore } from "@/stores/cartStore";
 import { useTranslation } from "@/hooks/useTranslation";
+import { currencySymbol } from "@/lib/currency";
 
 interface ProductDetailsModalProps {
   isOpen: boolean;
@@ -27,7 +31,8 @@ interface ProductDetailsModalProps {
 }
 
 interface Product {
-  id: string;
+  id?: string;
+  _id?: string;
   productId: string;
   name: string;
   description: string;
@@ -37,7 +42,6 @@ interface Product {
     discount: number;
     taxRate: number;
     currency: string;
-    discountedBasePrice: number;
     taxAmount: number;
     finalPrice: number;
   };
@@ -51,7 +55,9 @@ interface Product {
       isOutOfStock?: boolean;
     }[];
   }[];
-  addonGroups?: any[];
+  // The product references addon groups by their ObjectId; the full group
+  // (title/options/limits) is fetched separately from /add-ons/:id.
+  addonGroups?: string[];
 }
 
 interface VariantOption {
@@ -59,6 +65,23 @@ interface VariantOption {
   label: string;
   price: number;
   sku: string;
+}
+
+interface AddonOption {
+  name: string;
+  sku: string;
+  price: number;
+  tax?: { taxRate: number };
+  isActive?: boolean;
+}
+
+interface AddonGroup {
+  _id: string;
+  title: string;
+  minSelectable: number;
+  maxSelectable: number;
+  options: AddonOption[];
+  isActive?: boolean;
 }
 
 export default function ProductDetailsModal({
@@ -76,7 +99,61 @@ export default function ProductDetailsModal({
     null,
   );
   const [cartLoading, setCartLoading] = useState(false);
+  const [addonGroups, setAddonGroups] = useState<AddonGroup[]>([]);
+  // Selected quantity per addon option, keyed by the option sku.
+  const [addonQty, setAddonQty] = useState<Record<string, number>>({});
   const { fetchCart } = useCartStore();
+
+  // Addon groups are auth-only and referenced by id on the product, so fetch
+  // and populate them once the product loads (skipped for guests, who must log
+  // in before they can add anything to the cart anyway).
+  useEffect(() => {
+    const ids = Array.isArray(product?.addonGroups)
+      ? product.addonGroups.filter((g): g is string => typeof g === "string")
+      : [];
+    // Reset any prior selection whenever the product changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAddonQty({});
+    if (!ids.length || !getAccessToken()) {
+      setAddonGroups([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const results = await Promise.all(
+          ids.map((id) => apiClient.get(`/add-ons/${id}`)),
+        );
+        if (cancelled) return;
+        const groups = results
+          .map((r) => r.data?.data as AddonGroup)
+          .filter((g): g is AddonGroup => !!g && g.isActive !== false)
+          .map((g) => ({
+            ...g,
+            options: (g.options || []).filter((o) => o.isActive !== false),
+          }))
+          .filter((g) => g.options.length > 0);
+        setAddonGroups(groups);
+      } catch {
+        if (!cancelled) setAddonGroups([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [product]);
+
+  const groupSelectedCount = (group: AddonGroup) =>
+    group.options.reduce((sum, o) => sum + (addonQty[o.sku] || 0), 0);
+
+  const incAddon = (group: AddonGroup, sku: string) => {
+    if (groupSelectedCount(group) >= group.maxSelectable) return;
+    setAddonQty((prev) => ({ ...prev, [sku]: (prev[sku] || 0) + 1 }));
+  };
+
+  const decAddon = (sku: string) => {
+    setAddonQty((prev) => ({ ...prev, [sku]: Math.max(0, (prev[sku] || 0) - 1) }));
+  };
 
   useEffect(() => {
     if (!isOpen || !productId) return;
@@ -133,17 +210,42 @@ export default function ProductDetailsModal({
 
   const unitPrice = selectedOption
     ? selectedOption.price * (1 - discountPercentage / 100)
-    : (product?.pricing?.discountedBasePrice ?? 0);
+    // The API exposes the post-discount unit price as `finalPrice` (there is no
+    // `discountedBasePrice` field). Reading the missing field made this `0`,
+    // which zeroed out the subtotal/tax/total shown in the modal.
+    : (product?.pricing?.finalPrice ?? 0);
 
   const currentOriginalUnitPrice = selectedOption
     ? selectedOption.price
     : (product?.pricing?.price ?? 0);
 
-  const subtotal = unitPrice * quantity;
+  const productSubtotal = unitPrice * quantity;
   const taxRate = product?.pricing?.taxRate ?? 0;
-  const taxAmount = subtotal * (taxRate / 100);
-  const total = subtotal + taxAmount;
-  const currency = product?.pricing?.currency ?? "€";
+  // Addon prices are independent of the product quantity (they carry their own
+  // quantity) and, like products, are tax-inclusive with their own tax rate.
+  const addonsSubtotal = addonGroups.reduce(
+    (sum, g) =>
+      sum + g.options.reduce((s, o) => s + (addonQty[o.sku] || 0) * o.price, 0),
+    0,
+  );
+  const addonsTax = addonGroups.reduce(
+    (sum, g) =>
+      sum +
+      g.options.reduce((s, o) => {
+        const gross = (addonQty[o.sku] || 0) * o.price;
+        const r = o.tax?.taxRate ?? 0;
+        return s + (gross - gross / (1 + r / 100));
+      }, 0),
+    0,
+  );
+  const subtotal = productSubtotal + addonsSubtotal;
+  // Prices are tax-inclusive (the backend's grandTotal already contains the
+  // VAT), so the tax is embedded in the price and must be *extracted* for the
+  // breakdown line — not added on top. The total therefore equals the subtotal.
+  const taxAmount =
+    productSubtotal - productSubtotal / (1 + taxRate / 100) + addonsTax;
+  const total = subtotal;
+  const currency = currencySymbol(product?.pricing?.currency);
 
   const handleOptionClick = (opt: VariantOption) => {
     if (
@@ -162,39 +264,68 @@ export default function ProductDetailsModal({
     // Redirect guests to login
     const token = getAccessToken();
     if (!token) {
-      toast.error("Please log in to add items to your cart.");
+      toast.error(t("pleaseLogInToAddToCart"));
       onClose();
       router.push("/login");
+      return;
+    }
+
+    // Enforce each group's minimum selection before hitting the API.
+    const unmetGroup = addonGroups.find(
+      (g) => g.minSelectable > 0 && groupSelectedCount(g) < g.minSelectable,
+    );
+    if (unmetGroup) {
+      toast.error(t("selectRequiredAddons"));
       return;
     }
 
     setCartLoading(true);
 
     try {
-      const payload: any = {
-        items: [
-          {
-            productId: product.id,
-            quantity,
-          },
-        ],
-      };
+      // The API returns products with `_id` and a business `productId`
+      // (PROD-XXXX), never a bare `id`. The cart endpoint keys off the Mongo
+      // `_id` (the business `productId` is rejected as an "Invalid Id").
+      const productMongoId = product._id ?? product.productId;
+      const variationSku = selectedOption ? selectedOption.sku : null;
 
-      if (selectedOption) {
-        payload.items[0].variationSku = selectedOption.sku;
+      const payload: any = {
+        items: [{ productId: productMongoId, quantity }],
+      };
+      if (variationSku) {
+        payload.items[0].variationSku = variationSku;
       }
 
       const response = await apiClient.post("/carts/add-to-cart", payload);
 
-      if (response.data.success) {
-        await fetchCart();
-
-        toast.success("Item added to cart successfully!");
-
-        onClose();
-      } else {
+      if (!response.data.success) {
         throw new Error(response.data.message || "Failed to add to cart");
       }
+
+      // add-to-cart doesn't accept inline addons, so attach each selected
+      // addon to the just-added line via update-addon-quantity.
+      const selectedAddons = addonGroups.flatMap((g) =>
+        g.options
+          .filter((o) => (addonQty[o.sku] || 0) > 0)
+          .map((o) => ({ optionSku: o.sku, quantity: addonQty[o.sku] })),
+      );
+      for (const addon of selectedAddons) {
+        // Only include variationSku when a variant is selected. The backend's
+        // Zod schema expects a string (or the field omitted) and rejects null
+        // with "variationSku: Expected string, received null".
+        const addonPayload: any = {
+          productId: productMongoId,
+          optionSku: addon.optionSku,
+          quantity: addon.quantity,
+        };
+        if (variationSku) {
+          addonPayload.variationSku = variationSku;
+        }
+        await apiClient.patch("/carts/update-addon-quantity", addonPayload);
+      }
+
+      await fetchCart();
+      toast.success(t("itemAddedToCart"));
+      onClose();
     } catch (err: any) {
       toast.error(getApiErrorMessage(err, "Could not add item to cart"));
     } finally {
@@ -210,6 +341,9 @@ export default function ProductDetailsModal({
         onClick={(e) => e.stopPropagation()}
         className="relative flex w-full max-w-145 flex-col overflow-hidden rounded-4xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 shadow-2xl dark:shadow-none"
       >
+        {/* Drag handle */}
+        <div className="absolute left-1/2 top-3 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-gray-300 dark:bg-neutral-700" />
+
         {/* Close button */}
         <button
           onClick={onClose}
@@ -234,17 +368,18 @@ export default function ProductDetailsModal({
               <div className="relative mb-6 h-64 w-64">
                 <div className="absolute inset-0 rounded-full bg-pink-500/10 blur-3xl" />
                 <div className="relative h-full w-full overflow-hidden rounded-full border-4 border-white shadow-xl">
-                  <Image
-                    fill
-                    src={product.images?.[0] || "/placeholder-product.jpg"}
+                  <SafeImage
+                    src={product.images?.[0]}
                     alt={product.name}
-                    className="object-cover"
+                    sizes="256px"
+                    fallbackIcon={<UtensilsCrossed className="h-16 w-16" />}
                   />
                 </div>
               </div>
 
               {/* Category Badge */}
               <div className="mb-6 flex items-center gap-2 rounded-full bg-green-50 dark:bg-green-950/30 px-4 py-2 text-green-700 dark:text-green-400 border dark:border-green-900/30">
+                <UtensilsCrossed size={14} />
                 <span className="text-xs font-bold uppercase tracking-wider">
                   {product.category?.name || t("product")}
                 </span>
@@ -268,7 +403,8 @@ export default function ProductDetailsModal({
                   </div>
                 </div>
                 {hasDiscount && (
-                  <div className="mt-3 flex items-center gap-2 text-pink-600 dark:text-pink-400">
+                  <div className="mt-3 flex items-center justify-end gap-1.5 text-pink-600 dark:text-pink-400">
+                    <Tag size={14} className="fill-pink-600/15" />
                     <span className="text-sm font-semibold">
                       Save{" "}
                       {formatPrice(
@@ -336,9 +472,10 @@ export default function ProductDetailsModal({
               <div className="mb-8 flex w-full items-center justify-end gap-4">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 transition hover:bg-gray-50 dark:hover:bg-neutral-800"
+                  disabled={quantity <= 1}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 transition hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Minus size={16} />
+                  {quantity <= 1 ? <Trash2 size={16} /> : <Minus size={16} />}
                 </button>
                 <span className="w-8 text-center text-xl font-bold text-gray-950 dark:text-white">
                   {quantity}
@@ -353,40 +490,89 @@ export default function ProductDetailsModal({
 
               {/* Summary */}
               <div className="mb-6 w-full rounded-3xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-gray-600 dark:text-neutral-400">
-                    <span>{t("subtotal")}</span>
-                    <span>{formatPrice(subtotal, currency)}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-200 dark:border-neutral-800 pb-3 text-gray-600 dark:text-neutral-400">
-                    <span>
-                      {t("tax")} ({taxRate}%)
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-lg font-semibold text-gray-900 dark:text-white">
+                      {t("total")}
                     </span>
-                    <span>{formatPrice(taxAmount, currency)}</span>
-                  </div>
-                  <div className="flex justify-between pt-1">
-                    <span className="text-lg font-semibold text-gray-900 dark:text-white">{t("total")}</span>
-                    <span className="text-lg font-bold text-pink-600 dark:text-pink-400">
-                      {formatPrice(total, currency)}
+                    <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-neutral-400">
+                      ({t("inclTax")} -&nbsp;{formatPrice(taxAmount, currency)})
                     </span>
                   </div>
+                  <span className="shrink-0 whitespace-nowrap text-lg font-bold text-pink-600 dark:text-pink-400">
+                    {formatPrice(total, currency)}
+                  </span>
                 </div>
               </div>
 
-              {/* Customization (placeholder) */}
-              <div className="mb-8 flex w-full cursor-pointer items-center gap-4 rounded-3xl border border-pink-200 dark:border-pink-900/30 bg-pink-50 dark:bg-pink-950/20 p-5 transition hover:bg-pink-100 dark:hover:bg-pink-950/30">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white dark:bg-neutral-900 shadow-sm">
-                  <Sparkles size={20} className="text-pink-600 dark:text-pink-400" />
+              {/* Add-ons */}
+              {addonGroups.length > 0 && (
+                <div className="mb-8 w-full space-y-5">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={18} className="text-pink-600 dark:text-pink-400" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {t("customizeYourOrder")}
+                    </h3>
+                  </div>
+                  {addonGroups.map((group) => {
+                    const selectedCount = groupSelectedCount(group);
+                    const atMax = selectedCount >= group.maxSelectable;
+                    return (
+                      <div key={group._id}>
+                        <div className="mb-2 flex items-center justify-between">
+                          <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+                            {group.title}
+                          </h4>
+                          <span className="text-xs text-gray-500 dark:text-neutral-400">
+                            {group.minSelectable > 0 ? t("required") : t("optional")}
+                            {" · "}
+                            {t("chooseUpTo")} {group.maxSelectable}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {group.options.map((opt) => {
+                            const qty = addonQty[opt.sku] || 0;
+                            return (
+                              <div
+                                key={opt.sku}
+                                className="flex items-center justify-between rounded-lg border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-800 dark:text-neutral-200">
+                                    {opt.name}
+                                  </span>
+                                  <span className="text-sm font-medium text-pink-600 dark:text-pink-400">
+                                    +{formatPrice(opt.price, currency)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => decAddon(opt.sku)}
+                                    disabled={qty === 0}
+                                    className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 transition hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    <Minus size={14} />
+                                  </button>
+                                  <span className="w-5 text-center text-sm font-bold text-gray-900 dark:text-white">
+                                    {qty}
+                                  </span>
+                                  <button
+                                    onClick={() => incAddon(group, opt.sku)}
+                                    disabled={atMax}
+                                    className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-600 text-white transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    <Plus size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white">
-                    {t("customizeYourOrder")}
-                  </h4>
-                  <p className="text-sm text-gray-500 dark:text-neutral-400">
-                    {t("chooseToppingsAndExtras")}
-                  </p>
-                </div>
-              </div>
+              )}
 
               {/* Details */}
               <div className="w-full text-gray-900 dark:text-white">
@@ -409,15 +595,20 @@ export default function ProductDetailsModal({
             <button
               onClick={handleAddToCart}
               disabled={cartLoading}
-              className="flex w-full items-center justify-center gap-3 rounded-2xl bg-pink-600 py-5 text-lg font-semibold text-white shadow-lg transition hover:bg-pink-700 disabled:opacity-50"
+              className={`relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-linear-to-r from-[#f9186b] to-[#d4145b] py-5 text-lg font-semibold text-white shadow-lg transition hover:from-[#d4145b] hover:to-[#b01254] active:scale-[0.98] disabled:opacity-50 ${
+                cartLoading ? "" : "cart-cta"
+              }`}
             >
+              {!cartLoading && (
+                <span className="cart-cta-shine" aria-hidden="true" />
+              )}
               {cartLoading ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                <>
+                <span className="relative z-10 flex items-center gap-3">
                   <ShoppingCart size={22} />
                   {t("addToCart")} • {formatPrice(total, currency)}
-                </>
+                </span>
               )}
             </button>
           </div>

@@ -1,41 +1,34 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useMemo } from "react";
 import CartStoreCard from "./CartStoreCard";
-import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
+import { getCartVendorId, getCartVendorName } from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCartStore } from "@/stores/cartStore";
+import { useCart, useCartCache } from "@/hooks/queries/useCart";
+import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 
 export default function CartPage() {
   const { t } = useTranslation();
-  const [cart, setCart] = useState<CartResponse | null>(null);
-  const [vendors, setVendors] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // Cached + deduped, keyed on language. React Query keeps the current cart on
+  // screen during a language-switch refetch, so no manual silent-refetch.
+  const {
+    data: cart = null,
+    isLoading: loading,
+    error: cartError,
+  } = useCart<CartResponse | null>();
+  const { data: vendors = [] } = useVendorsCustomer<any>({
+    page: 1,
+    limit: 100,
+  });
+  const { setCart, invalidate: invalidateCart } = useCartCache();
 
-  const refreshCart = async (showLoading = true) => {
-    try {
-      if (showLoading) setLoading(true);
-      setError("");
-
-      const [cartRes, vendorsRes] = await Promise.all([
-        apiClient.get("/carts/view-cart"),
-        apiClient.get("/vendors/customer?page=1&limit=100"),
-      ]);
-
-      setCart(cartRes.data.data);
-      setVendors(vendorsRes.data.data || []);
-    } catch (error) {
-      const errMsg = getApiErrorMessage(error, "Failed to load cart");
-      setError(errMsg);
-      toast.error(errMsg);
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  };
+  const error = cartError
+    ? getApiErrorMessage(cartError, "Failed to load cart")
+    : "";
 
   // Optimistic removal of a single product (used by product row)
   const removeProductFromCart = (
@@ -66,13 +59,6 @@ export default function CartPage() {
           item.itemSummary.quantity,
       0,
     );
-    const taxableAmount = newItems.reduce(
-      (sum, item) =>
-        sum +
-        item.productPricing.priceAfterProductDiscount *
-          item.itemSummary.quantity,
-      0,
-    );
     const totalTaxAmount = newItems.reduce(
       (sum, item) => sum + (item.itemSummary.totalTaxAmount || 0),
       0,
@@ -81,6 +67,10 @@ export default function CartPage() {
       (sum, item) => sum + item.itemSummary.grandTotal,
       0,
     );
+    // Prices are tax-inclusive, so the taxable base is the gross grandTotal
+    // minus the embedded VAT (the removed priceAfterProductDiscount field is no
+    // longer returned by the cart endpoint).
+    const taxableAmount = grandTotal - totalTaxAmount;
 
     setCart({
       ...cart,
@@ -97,7 +87,7 @@ export default function CartPage() {
 
     // Sync Navbar badge instantly — recalculate unique vendors from the new items
     const newVendorCount = new Set(
-      newItems.map((item: any) => item.vendorId?._id)
+      newItems.map((item) => getCartVendorId(item.vendorId))
     ).size;
     useCartStore.setState({
       vendorCount: newVendorCount,
@@ -105,26 +95,27 @@ export default function CartPage() {
     });
   };
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    refreshCart(true);
-  }, []);
-
   const stores = useMemo(() => {
     if (!cart?.items) return [];
 
     const grouped = cart.items.reduce(
       (acc, item) => {
-        const vendorId = item.vendorId._id;
-        const vendorInfo = vendors.find((vendor) => vendor.id === vendorId);
+        const vendorId = getCartVendorId(item.vendorId);
+        // Vendors from /vendors/customer may key on either `id` or `_id`, so match on both.
+        const vendorInfo = vendors.find(
+          (vendor) => (vendor.id ?? vendor._id) === vendorId,
+        );
 
         if (!acc[vendorId]) {
+          // The cart endpoint doesn't always populate vendorId.name, so fall back
+          // to a placeholder rather than crashing on a missing name.
+          const fallbackName = getCartVendorName(item.vendorId) ?? t("store");
+
           acc[vendorId] = {
             vendorId,
             businessName:
-              vendorInfo?.businessDetails?.businessName ||
-              `${item.vendorId.name.firstName} ${item.vendorId.name.lastName}`,
-            image: vendorInfo?.storePhoto?.[0] || "/placeholder-store.jpg",
+              vendorInfo?.businessDetails?.businessName || fallbackName,
+            image: vendorInfo?.storePhoto?.[0] || "",
             rating: vendorInfo?.rating?.average || 0,
             items: [],
             total: 0,
@@ -140,7 +131,7 @@ export default function CartPage() {
     );
 
     return Object.values(grouped);
-  }, [cart, vendors]);
+  }, [cart, vendors, t]);
 
   if (loading) {
     return (
@@ -237,7 +228,7 @@ export default function CartPage() {
               rating={store.rating}
               items={store.items}
               total={store.total}
-              onProductUpdate={() => refreshCart(false)}
+              onProductUpdate={() => invalidateCart()}
               onProductRemove={removeProductFromCart}
             />
           ))

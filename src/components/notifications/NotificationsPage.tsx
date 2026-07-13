@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   CheckCheck,
   Bike,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useVisiblePolling } from "@/hooks/useVisiblePolling";
 import Link from "next/link";
 import NotificationsSkeleton from "./NotificationsSkeleton";
 
@@ -87,7 +88,8 @@ const getIconByType = (type: Notification["type"]) => {
 };
 
 export default function NotificationsPage() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
+  const prevLangVersionRef = useRef(langVersion);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [meta, setMeta] = useState<Meta>({
     page: 1,
@@ -139,6 +141,14 @@ export default function NotificationsPage() {
     fetchNotifications(1, "initial");
   }, [fetchNotifications]);
 
+  // On a language switch, re-fetch the current page silently so the list stays
+  // visible and just updates its localized notification text in place.
+  useEffect(() => {
+    if (prevLangVersionRef.current === langVersion) return;
+    prevLangVersionRef.current = langVersion;
+    fetchNotifications(currentPage, "none");
+  }, [langVersion, currentPage, fetchNotifications]);
+
   useEffect(() => {
     const handleNotificationsUpdate = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -146,16 +156,16 @@ export default function NotificationsPage() {
         fetchNotifications(currentPage, "none");
       }
     };
-    const intervalId = setInterval(() => {
-      fetchNotifications(currentPage, "none");
-    }, 5000);
-
     window.addEventListener("notificationsUpdated", handleNotificationsUpdate as EventListener);
     return () => {
-      clearInterval(intervalId);
       window.removeEventListener("notificationsUpdated", handleNotificationsUpdate as EventListener);
     };
   }, [fetchNotifications, currentPage]);
+
+  // Phase 2: background refresh at 60s (was 5s), and only while the tab is
+  // visible — a hidden notifications tab now makes zero requests, and it
+  // refreshes once immediately when you switch back to it.
+  useVisiblePolling(() => fetchNotifications(currentPage, "none"), 60_000);
 
   const goToPage = (page: number) => {
     if (page < 1 || page > meta.totalPage || pageLoading) return;
@@ -207,16 +217,29 @@ export default function NotificationsPage() {
     }
   }, [notifications, markingAll, fetchNotifications, currentPage]);
 
-  const filteredNotifications = notifications.filter((n) => {
-    if (filter === "unread") return !n.isRead;
-    if (filter === "orders") return n.type === "ORDER";
-    if (filter === "promos") return n.type === "PROMO";
-    return true;
-  });
+  // One pass over the list (recomputed only when it or the filter changes)
+  // instead of four `.filter()` scans on every render — this component
+  // re-renders on a 60s poll and on each mark-as-read.
+  const { unreadCount, ordersCount, promosCount } = useMemo(() => {
+    let unread = 0;
+    let orders = 0;
+    let promos = 0;
+    for (const n of notifications) {
+      if (!n.isRead) unread++;
+      if (n.type === "ORDER") orders++;
+      else if (n.type === "PROMO") promos++;
+    }
+    return { unreadCount: unread, ordersCount: orders, promosCount: promos };
+  }, [notifications]);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-  const ordersCount = notifications.filter((n) => n.type === "ORDER").length;
-  const promosCount = notifications.filter((n) => n.type === "PROMO").length;
+  const filteredNotifications = useMemo(() => {
+    if (filter === "unread") return notifications.filter((n) => !n.isRead);
+    if (filter === "orders")
+      return notifications.filter((n) => n.type === "ORDER");
+    if (filter === "promos")
+      return notifications.filter((n) => n.type === "PROMO");
+    return notifications;
+  }, [notifications, filter]);
 
   if (loading) return <NotificationsSkeleton />;
 
@@ -255,7 +278,7 @@ export default function NotificationsPage() {
           <button
             onClick={handleMarkAllAsRead}
             disabled={unreadCount === 0 || markingAll}
-            title="Mark all as read"
+            title={t("markAllAsRead")}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffe9ef] dark:bg-pink-950/40 text-[#c1005b] dark:text-pink-400 disabled:opacity-40 dark:disabled:opacity-20 transition cursor-pointer"
           >
             <CheckCheck size={18} />

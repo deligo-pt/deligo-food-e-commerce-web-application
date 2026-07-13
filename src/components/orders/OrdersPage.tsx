@@ -1,11 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import OrderCard from "./OrderCard";
 import OrdersPageSkeleton from "./OrdersPageSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
+import {
+  useOrders,
+  useRatings,
+  useInvalidateOrders,
+} from "@/hooks/queries/useOrders";
 import { Star, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -49,9 +54,11 @@ function StarRating({ value, onChange, size = 28 }: StarRatingProps) {
 export default function OrdersPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"ongoing" | "history">("ongoing");
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [ratings, setRatings] = useState<any[]>([]);
+  // Cached + deduped. Keyed on language, so a switch refetches while React
+  // Query keeps the current list on screen — no manual silent-refetch needed.
+  const { data: orders = [], isLoading: loading } = useOrders<any>();
+  const { data: ratings = [] } = useRatings<any>();
+  const invalidateOrders = useInvalidateOrders();
   const [activeRatingOrder, setActiveRatingOrder] = useState<any | null>(null);
 
   // Food Rating State
@@ -66,27 +73,6 @@ export default function OrdersPage() {
 
   const [submittingRating, setSubmittingRating] = useState<boolean>(false);
 
-  const fetchOrdersAndRatings = useCallback(async (showLoading = true) => {
-    try {
-      if (showLoading) setLoading(true);
-      const [ordersRes, ratingsRes] = await Promise.all([
-        apiClient.get("/orders", { params: { limit: 100 } }),
-        apiClient.get("/ratings/get-all-ratings"),
-      ]);
-
-      setOrders(ordersRes.data.data || []);
-      setRatings(ratingsRes.data.data || []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchOrdersAndRatings(true);
-  }, [fetchOrdersAndRatings]);
 
   const handleSubmitReview = async () => {
     if (!activeRatingOrder) return;
@@ -95,7 +81,7 @@ export default function OrdersPage() {
       foodRating === 0 &&
       (activeRatingOrder.deliveryPartnerId ? deliveryRating === 0 : true)
     ) {
-      toast.error("Please provide at least one rating.");
+      toast.error(t("provideAtLeastOneRating"));
       return;
     }
 
@@ -181,8 +167,8 @@ export default function OrdersPage() {
 
       setActiveRatingOrder(null);
 
-      // Re-fetch ratings and orders lists to update states
-      await fetchOrdersAndRatings(false);
+      // Refresh ratings + orders so the UI reflects the new rating.
+      await invalidateOrders();
     } catch (error) {
       console.error("Failed to submit rating", error);
       toast.error(
@@ -203,25 +189,29 @@ export default function OrdersPage() {
     );
   };
 
+  // Split once per orders change — not on every rating-modal keystroke (this
+  // page holds a lot of rating state that would otherwise re-filter each time).
+  const { ongoingOrders, historyOrders } = useMemo(() => {
+    const ongoing = orders.filter((order) =>
+      [
+        "PENDING",
+        "ACCEPTED",
+        "ASSIGNED",
+        "PREPARING",
+        "READY_FOR_PICKUP",
+        "PICKED_UP",
+        "ON_THE_WAY",
+      ].includes(order.orderStatus),
+    );
+    const history = orders.filter((order) =>
+      ["DELIVERED", "CANCELLED", "REJECTED"].includes(order.orderStatus),
+    );
+    return { ongoingOrders: ongoing, historyOrders: history };
+  }, [orders]);
+
   if (loading) {
     return <OrdersPageSkeleton />;
   }
-
-  const ongoingOrders = orders.filter((order) =>
-    [
-      "PENDING",
-      "ACCEPTED",
-      "ASSIGNED",
-      "PREPARING",
-      "READY_FOR_PICKUP",
-      "PICKED_UP",
-      "ON_THE_WAY",
-    ].includes(order.orderStatus),
-  );
-
-  const historyOrders = orders.filter((order) =>
-    ["DELIVERED", "CANCELLED", "REJECTED"].includes(order.orderStatus),
-  );
 
   const getOrderProgress = (status: string) => {
     switch (status) {
@@ -283,24 +273,24 @@ export default function OrdersPage() {
           <button
             onClick={() => setActiveTab("ongoing")}
             className={`relative flex-1 py-4 text-center font-medium transition-colors ${
-              activeTab === "ongoing" ? "text-[#b0004a] dark:text-pink-500" : "text-[#5a4044] dark:text-neutral-400"
+              activeTab === "ongoing" ? "text-[#f9186b] dark:text-pink-500" : "text-[#5a4044] dark:text-neutral-400"
             }`}
           >
             {t("ongoing")}
             {activeTab === "ongoing" && (
-              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#b0004a] dark:bg-pink-500" />
+              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#f9186b] dark:bg-pink-500" />
             )}
           </button>
 
           <button
             onClick={() => setActiveTab("history")}
             className={`relative flex-1 py-4 text-center font-medium transition-colors ${
-              activeTab === "history" ? "text-[#b0004a] dark:text-pink-500" : "text-[#5a4044] dark:text-neutral-400"
+              activeTab === "history" ? "text-[#f9186b] dark:text-pink-500" : "text-[#5a4044] dark:text-neutral-400"
             }`}
           >
             {t("history")}
             {activeTab === "history" && (
-              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#b0004a] dark:bg-pink-500" />
+              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#f9186b] dark:bg-pink-500" />
             )}
           </button>
         </div>
@@ -420,7 +410,7 @@ export default function OrdersPage() {
               {/* Product / Food Rating Section */}
               <div className="rounded-2xl border border-pink-100/55 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-5 space-y-4 shadow-xs">
                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-2">
-                  <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-[#b0004a] dark:text-pink-400 uppercase tracking-wider">
+                  <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-[#f9186b] dark:text-pink-400 uppercase tracking-wider">
                     {t("foodReview")}
                   </span>
                 </div>
@@ -466,7 +456,7 @@ export default function OrdersPage() {
               {activeRatingOrder.deliveryPartnerId && (
                 <div className="rounded-2xl border border-pink-100/55 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-5 space-y-4 shadow-xs">
                   <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-2">
-                    <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-[#b0004a] dark:text-pink-400 uppercase tracking-wider">
+                    <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-[#f9186b] dark:text-pink-400 uppercase tracking-wider">
                       {t("deliveryReview")}
                     </span>
                   </div>
@@ -531,7 +521,7 @@ export default function OrdersPage() {
                       ? deliveryRating === 0
                       : true))
                 }
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#b0004a] dark:bg-pink-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#90003c] transition disabled:opacity-50 disabled:cursor-not-allowed min-w-30"
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#f9186b] dark:bg-pink-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#90003c] transition disabled:opacity-50 disabled:cursor-not-allowed min-w-30"
               >
                 {submittingRating ? (
                   <>

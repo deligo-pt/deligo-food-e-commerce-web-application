@@ -7,6 +7,7 @@ import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
 import EditProfileFormSkeleton from "./EditProfileFormSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
 import { toast } from "sonner";
 
 interface ProfileData {
@@ -20,7 +21,10 @@ interface ProfileData {
 
 export default function EditProfileFormPage() {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(true);
+  // Shared, cached profile — populates instantly if loaded elsewhere (Navbar, etc.).
+  const { data: profile, isLoading: loading, error: profileError } =
+    useProfile<ProfileData>();
+  const invalidateProfile = useInvalidateProfile();
   const [submitting, setSubmitting] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -62,33 +66,28 @@ export default function EditProfileFormPage() {
     return response.data.data[0];
   };
 
+  // Populate the form whenever the profile arrives/refreshes from the cache.
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        const { data } = await apiClient.get("/profile");
-        if (data.success && data.data) {
-          const d = data.data;
-          setProfileData(d);
-          setFirstName(d.name?.firstName || "");
-          setLastName(d.name?.lastName || "");
-          setEmail(d.email || "");
-          setOriginalEmail(d.email || "");
-          setMobileNumber(d.contactNumber || "");
-          setOriginalMobile(d.contactNumber || "");
-          setNif(d.NIF || "");
-          if (d.profilePhoto) setImagePreview(d.profilePhoto);
-        } else {
-          throw new Error("Invalid response");
-        }
-      } catch (err) {
-        toast.error(getApiErrorMessage(err, "Failed to load profile"));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
-  }, []);
+    if (!profile) return;
+    const d = profile;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setProfileData(d);
+    setFirstName(d.name?.firstName || "");
+    setLastName(d.name?.lastName || "");
+    setEmail(d.email || "");
+    setOriginalEmail(d.email || "");
+    setMobileNumber(d.contactNumber || "");
+    setOriginalMobile(d.contactNumber || "");
+    setNif(d.NIF || "");
+    if (d.profilePhoto) setImagePreview(d.profilePhoto);
+  }, [profile]);
+
+  // Surface a load failure once (mirrors the old fetch's catch).
+  useEffect(() => {
+    if (profileError) {
+      toast.error(getApiErrorMessage(profileError, t("failedToLoadProfile")));
+    }
+  }, [profileError, t]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -107,14 +106,14 @@ export default function EditProfileFormPage() {
   // Send OTP for email
   const handleSendEmailOtp = async () => {
     if (!email || email === originalEmail) {
-      toast.error("Please enter a new email address to update");
+      toast.error(t("enterNewEmailToUpdate"));
       return;
     }
     setSendingEmailOtp(true);
     try {
       await apiClient.patch("/profile/send-otp", { email });
       setEmailOtpSent(true);
-      toast.success("OTP sent to your new email address");
+      toast.success(t("otpSentToNewEmail"));
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to send OTP"));
     } finally {
@@ -125,7 +124,7 @@ export default function EditProfileFormPage() {
   // Verify OTP and update email
   const handleVerifyEmailOtp = async () => {
     if (!emailOtp) {
-      toast.error("Please enter OTP");
+      toast.error(t("pleaseEnterOtp"));
       return;
     }
     setVerifyingEmail(true);
@@ -137,7 +136,7 @@ export default function EditProfileFormPage() {
       setOriginalEmail(email);
       setEmailOtpSent(false);
       setEmailOtp("");
-      toast.success("Email updated successfully");
+      toast.success(t("emailUpdatedSuccessfully"));
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to verify OTP"));
     } finally {
@@ -148,14 +147,14 @@ export default function EditProfileFormPage() {
   // Send OTP for mobile
   const handleSendMobileOtp = async () => {
     if (!mobileNumber || mobileNumber === originalMobile) {
-      toast.error("Please enter a new mobile number to update");
+      toast.error(t("enterNewMobileToUpdate"));
       return;
     }
     setSendingMobileOtp(true);
     try {
       await apiClient.patch("/profile/send-otp", { contactNumber: mobileNumber });
       setMobileOtpSent(true);
-      toast.success("OTP sent to your new mobile number");
+      toast.success(t("otpSentToNewMobile"));
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to send OTP"));
     } finally {
@@ -166,7 +165,7 @@ export default function EditProfileFormPage() {
   // Verify OTP and update mobile
   const handleVerifyMobileOtp = async () => {
     if (!mobileOtp) {
-      toast.error("Please enter OTP");
+      toast.error(t("pleaseEnterOtp"));
       return;
     }
     setVerifyingMobile(true);
@@ -178,7 +177,7 @@ export default function EditProfileFormPage() {
       setOriginalMobile(mobileNumber);
       setMobileOtpSent(false);
       setMobileOtp("");
-      toast.success("Mobile number updated successfully");
+      toast.success(t("mobileUpdatedSuccessfully"));
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to verify OTP"));
     } finally {
@@ -189,7 +188,7 @@ export default function EditProfileFormPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profileData?.userId) {
-      toast.error("User ID not found");
+      toast.error(t("userIdNotFound"));
       return;
     }
 
@@ -225,26 +224,22 @@ export default function EditProfileFormPage() {
 
       await apiClient.patch(`/customers/${profileData.userId}`, payload);
 
-      toast.success("Profile updated successfully!");
+      toast.success(t("profileUpdatedSuccessfully"));
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      const { data } = await apiClient.get("/profile");
-      if (data.success && data.data) {
-        const d = data.data;
-        setProfileData(d);
-        if (d.profilePhoto) setImagePreview(d.profilePhoto);
-        setOriginalEmail(d.email || "");
-        setOriginalMobile(d.contactNumber || "");
-        setEmail(d.email || "");
-        setMobileNumber(d.contactNumber || "");
-        // Notify Navbar to update profile photo instantly
-        window.dispatchEvent(
-          new CustomEvent("profilePhotoUpdated", {
-            detail: { profilePhoto: d.profilePhoto || null },
-          })
-        );
-      }
+      // Refresh the shared profile cache — the populate effect above then
+      // re-syncs this form, and every other consumer (Navbar, profile view)
+      // picks up the change automatically.
+      await invalidateProfile();
+
+      // Notify Navbar's photo state instantly (it keeps a local copy).
+      const newPhoto = uploadedPhotoUrl ?? profileData.profilePhoto ?? null;
+      window.dispatchEvent(
+        new CustomEvent("profilePhotoUpdated", {
+          detail: { profilePhoto: newPhoto },
+        })
+      );
     } catch (err) {
       console.error("Update error:", err);
       toast.error(getApiErrorMessage(err, "Failed to update profile"));
@@ -279,10 +274,10 @@ export default function EditProfileFormPage() {
                     height={128}
                   />
                 ) : (
-                  <User className="h-16 w-16 text-[#b0004a] dark:text-pink-400" />
+                  <User className="h-16 w-16 text-[#f9186b] dark:text-pink-400" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white dark:border-neutral-800 bg-[#b0004a] dark:bg-pink-600 p-2 text-white shadow-lg">
+              <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white dark:border-neutral-800 bg-[#f9186b] dark:bg-pink-600 p-2 text-white shadow-lg">
                 <Pencil size={18} />
                 <input
                   type="file"
@@ -321,7 +316,7 @@ export default function EditProfileFormPage() {
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
+                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
                   />
                 </div>
                 <div>
@@ -332,7 +327,7 @@ export default function EditProfileFormPage() {
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
+                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
                   />
                 </div>
               </div>
@@ -346,14 +341,14 @@ export default function EditProfileFormPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
+                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
                     />
                     {!emailOtpSent ? (
                       <button
                         type="button"
                         onClick={handleSendEmailOtp}
                         disabled={sendingEmailOtp || email === originalEmail}
-                        className="whitespace-nowrap rounded bg-[#b0004a] dark:bg-pink-600 hover:bg-[#90003b] dark:hover:bg-pink-700 px-4 py-2 text-white disabled:opacity-50 transition"
+                        className="whitespace-nowrap rounded bg-[#f9186b] dark:bg-pink-600 hover:bg-[#d4145b] dark:hover:bg-pink-700 px-4 py-2 text-white disabled:opacity-50 transition"
                       >
                         {sendingEmailOtp ? t("sending") : t("sendOtp")}
                       </button>
@@ -364,7 +359,7 @@ export default function EditProfileFormPage() {
                           placeholder={t("otp")}
                           value={emailOtp}
                           onChange={(e) => setEmailOtp(e.target.value)}
-                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
+                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
                         />
                         <button
                           type="button"
@@ -388,14 +383,14 @@ export default function EditProfileFormPage() {
                       placeholder={t("mobilePlaceholder")}
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}
-                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
+                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
                     />
                     {!mobileOtpSent ? (
                       <button
                         type="button"
                         onClick={handleSendMobileOtp}
                         disabled={sendingMobileOtp || mobileNumber === originalMobile}
-                        className="whitespace-nowrap rounded bg-[#b0004a] dark:bg-pink-600 hover:bg-[#90003b] dark:hover:bg-pink-700 px-4 py-2 text-white disabled:opacity-50 transition"
+                        className="whitespace-nowrap rounded bg-[#f9186b] dark:bg-pink-600 hover:bg-[#d4145b] dark:hover:bg-pink-700 px-4 py-2 text-white disabled:opacity-50 transition"
                       >
                         {sendingMobileOtp ? t("sending") : t("sendOtp")}
                       </button>
@@ -406,7 +401,7 @@ export default function EditProfileFormPage() {
                           placeholder={t("otp")}
                           value={mobileOtp}
                           onChange={(e) => setMobileOtp(e.target.value)}
-                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
+                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
                         />
                         <button
                           type="button"
@@ -429,7 +424,7 @@ export default function EditProfileFormPage() {
                   type="text"
                   value={nif}
                   onChange={(e) => setNif(e.target.value)}
-                  className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#b0004a] dark:focus:border-pink-500"
+                  className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
                 />
               </div>
             </section>
@@ -438,14 +433,14 @@ export default function EditProfileFormPage() {
               <button
                 type="button"
                 onClick={() => window.history.back()}
-                className="px-8 py-3 font-bold text-[#b0004a] dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 transition"
+                className="px-8 py-3 font-bold text-[#f9186b] dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 transition"
               >
                 {t("cancel")}
               </button>
               <button
                 type="submit"
                 disabled={submitting || imageUploading}
-                className="rounded bg-[#b0004a] dark:bg-pink-600 hover:bg-[#90003b] dark:hover:bg-pink-700 px-12 py-3 font-bold text-white shadow-lg disabled:opacity-50 transition"
+                className="rounded bg-[#f9186b] dark:bg-pink-600 hover:bg-[#d4145b] dark:hover:bg-pink-700 px-12 py-3 font-bold text-white shadow-lg disabled:opacity-50 transition"
               >
                 {imageUploading
                   ? t("uploadingImage")

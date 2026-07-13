@@ -1,8 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { useStore } from "@/stores/translationStore";
+
+// Hydration-safe "is the client mounted yet" flag. Returns false on the server
+// and during the first hydration render, then true — without a setState-in-effect
+// (which triggers cascading renders). Lets us defer to the persisted store value
+// only after hydration so the label matches the real saved language.
+const noopSubscribe = () => () => {};
+function useHydrated() {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+}
 
 export default function LanguageSwitcher() {
   const lang = useStore((state) => state.lang);
@@ -10,6 +29,24 @@ export default function LanguageSwitcher() {
 
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Mark the language change as a non-urgent transition so React keeps the
+  // current (old-language) UI painted and interactive while components re-fetch
+  // in the background, instead of dropping straight to loading states.
+  const [, startLangTransition] = useTransition();
+
+  const changeLanguage = (nextLang: "en" | "pt") => {
+    startLangTransition(() => {
+      setLang(nextLang);
+    });
+    setOpen(false);
+  };
+
+  // The language lives in a persisted (localStorage) store, so the server
+  // renders the default while the client rehydrates to the real saved value.
+  // Only show the store value after hydration so the label always matches the
+  // active language instead of getting stuck on the server-rendered default.
+  const mounted = useHydrated();
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -32,19 +69,18 @@ export default function LanguageSwitcher() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 rounded-xl border border-white/20 bg-white/10 px-2.5 py-2 text-sm font-medium text-white hover:bg-white/20 sm:gap-2 sm:px-3"
+        suppressHydrationWarning
+        aria-label="Change language"
+        className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/10 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
       >
-        {lang.toUpperCase()}
-        <ChevronDown size={16} />
+        {mounted ? lang.toUpperCase() : "PT"}
+        <ChevronDown size={16} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
       </button>
 
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-24 overflow-hidden rounded-xl bg-white shadow-lg">
           <button
-            onClick={() => {
-              setLang("en");
-              setOpen(false);
-            }}
+            onClick={() => changeLanguage("en")}
             className="flex w-full items-center justify-between px-4 py-3 text-sm text-black hover:bg-gray-100"
           >
             EN
@@ -52,10 +88,7 @@ export default function LanguageSwitcher() {
           </button>
 
           <button
-            onClick={() => {
-              setLang("pt");
-              setOpen(false);
-            }}
+            onClick={() => changeLanguage("pt")}
             className="flex w-full items-center justify-between px-4 py-3 text-sm text-black hover:bg-gray-100"
           >
             PT

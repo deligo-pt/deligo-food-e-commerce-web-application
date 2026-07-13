@@ -1,13 +1,13 @@
 // /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 import { Star, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import CartProductRow from "./CartProductRow";
 import { useTranslation } from "@/hooks/useTranslation";
+import SafeImage from "@/components/shared/SafeImage";
 
 interface CartItem {
   productId: string;
@@ -65,11 +65,11 @@ export default function CartStoreCard({
       <div className="mb-6 flex items-start justify-between">
         <div className="flex gap-4">
           <div className="relative h-20 w-20 overflow-hidden rounded-full border-4 border-pink-100 dark:border-pink-950">
-            <Image
+            <SafeImage
               src={image}
               alt={businessName}
-              fill
-              className="object-cover"
+              sizes="80px"
+              fallbackIcon={<UtensilsCrossed className="h-7 w-7" />}
             />
           </div>
           <div>
@@ -82,8 +82,8 @@ export default function CartStoreCard({
                 </span>
               </div>
               <div className="flex items-center gap-2 rounded-xl bg-pink-50 dark:bg-pink-950/20 px-3 py-2">
-                <UtensilsCrossed size={16} className="text-pink-600 dark:text-pink-400" />
-                <span className="font-semibold text-pink-600 dark:text-pink-400">
+                <UtensilsCrossed size={16} className="text-[#f9186b] dark:text-pink-400" />
+                <span className="font-semibold text-[#f9186b] dark:text-pink-400">
                   {activeItems.length} / {items.length} {t("active")}
                 </span>
               </div>
@@ -123,7 +123,7 @@ export default function CartStoreCard({
           }}
           className={`flex items-center justify-between rounded-3xl px-6 py-5 text-white transition cursor-pointer ${
             hasActive
-              ? "bg-linear-to-r from-pink-500 to-pink-700 hover:from-pink-600 hover:to-pink-800"
+              ? "bg-linear-to-r from-[#f9186b] to-[#d4145b] hover:from-[#d4145b] hover:to-[#b01254]"
               : "cursor-not-allowed bg-gray-400 dark:bg-neutral-750 text-neutral-200 dark:text-neutral-400"
           }`}
         >

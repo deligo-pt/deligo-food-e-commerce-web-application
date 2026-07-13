@@ -73,7 +73,7 @@ function ClearSessionModal({
               onRemove();
               onOpenChange(false);
             }}
-            className="rounded-full bg-[#b0004a] px-5 py-2 text-[15px] font-medium text-white shadow-sm hover:bg-[#8a0038]"
+            className="rounded-full bg-[#f9186b] px-5 py-2 text-[15px] font-medium text-white shadow-sm hover:bg-[#8a0038]"
           >
             {t("removeSession")}
           </button>

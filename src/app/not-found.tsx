@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Bike,
   Coffee,
@@ -8,8 +10,10 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function NotFound() {
+  const { t } = useTranslation();
   const floatingIcons = [
     {
       Icon: Pizza,
@@ -88,22 +92,20 @@ export default function NotFound() {
         {/* Text Content */}
         <div className="space-y-6">
           <h2 className="text-3xl md:text-5xl font-bold text-gray-900">
-            Page Not Found
+            {t("pageNotFound")}
           </h2>
           <p className="text-lg md:text-xl text-gray-600 max-w-lg mx-auto leading-relaxed">
-            Oops! It looks like you&apos;ve stumbled upon a dead end 🗺️. The
-            page you&apos;re searching for seems to have been misplaced or
-            moved to a different location.
+            {t("notFoundDesc")}
           </p>
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
             <Link
               href="/"
-              className="group relative px-8 py-4 bg-[#DC3173] text-white rounded-full font-bold text-lg shadow-lg shadow-[#DC317330] overflow-hidden flex items-center gap-2 hover:bg-[#b0004a] transition-all duration-300 transform hover:scale-105 active:scale-95"
+              className="group relative px-8 py-4 bg-[#DC3173] text-white rounded-full font-bold text-lg shadow-lg shadow-[#DC317330] overflow-hidden flex items-center gap-2 hover:bg-[#f9186b] transition-all duration-300 transform hover:scale-105 active:scale-95"
             >
               <Home size={20} />
-              Back to Home
+              {t("backToHomeCap")}
             </Link>
           </div>
         </div>

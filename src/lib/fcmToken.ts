@@ -1,4 +1,3 @@
-import { getToken } from "firebase/messaging";
 import { getFirebaseMessaging } from "./firebase";
 import { apiClient } from "./apiClient";
 
@@ -31,14 +30,16 @@ export async function requestFCMToken(): Promise<string | null> {
     );
     await navigator.serviceWorker.ready;
 
+    const { getToken } = await import("firebase/messaging");
     const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration,
     });
 
     return token || null;
-  } catch (error: any) {
-    if (error?.name === "AbortError" || error?.message?.includes("push service error")) {
+  } catch (error) {
+    const err = error as { name?: string; message?: string } | undefined;
+    if (err?.name === "AbortError" || err?.message?.includes("push service error")) {
       console.warn(
         "[FCM] Push service registration failed. This is a common browser/network constraint " +
         "(e.g., Brave browser blocking 'Google services for push messaging', VPN/firewall blocking " +

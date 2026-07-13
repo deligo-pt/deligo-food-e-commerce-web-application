@@ -164,6 +164,10 @@ const pt = {
   originalPrice: "Preço Original",
   productDiscount: "Desconto do Produto",
   tax: "Imposto",
+  taxIncl: "Imposto (incl.)",
+  incl: "incl.",
+  inclTax: "Incl. imposto",
+  finalPrice: "Preço Final",
   serviceCharge: "Taxa de Serviço",
   total: "Total",
 
@@ -196,10 +200,12 @@ const pt = {
   paymentSummary: "Resumo do Pagamento",
 
   itemsTotal: "Total dos Itens",
+  totalPrice: "Preço Total",
   subtotal: "Subtotal",
   discount: "Desconto",
 
   deliveryFee: "Taxa de Entrega",
+  totalToPay: "Total a Pagar",
 
   free: "GRÁTIS",
 
@@ -381,6 +387,9 @@ const pt = {
   deliveryAddress: "Endereço de Entrega",
 
   optional: "opcional",
+  required: "obrigatório",
+  chooseUpTo: "Escolha até",
+  selectRequiredAddons: "Selecione as opções obrigatórias",
 
   noAddressSaved: "Nenhum endereço guardado",
 
@@ -439,6 +448,10 @@ const pt = {
 
   totalAmount: "Valor Total",
 
+  downloadInvoice: "Descarregar Fatura",
+  invoiceDownloaded: "Fatura descarregada",
+  invoiceDownloadFailed: "Não foi possível descarregar a fatura",
+
   orderStatus: "Estado do Pedido",
 
   support: "Suporte",
@@ -478,8 +491,8 @@ const pt = {
   creditDebitCard: "Cartão de Crédito/Débito",
   visaMastercardMaestro: "Visa, Mastercard, Maestro",
 
-  mbway: "MB WAY",
-  fastMobilePayment: "Pagamento móvel rápido",
+  googlePay: "Google Pay",
+  fastSecureCheckout: "Pagamento rápido e seguro",
 
   applePay: "Apple Pay",
   oneTapCheckout: "Pagamento com um toque",
@@ -488,8 +501,6 @@ const pt = {
   paypalGooglePayEtc: "PayPal, Google Pay, etc.",
 
   recommended: "Recomendado",
-
-  confirmPaymentMethod: "Confirmar Método de Pagamento",
 
   paymentInfoSecure:
     "As suas informações de pagamento estão encriptadas e seguras",
@@ -1173,21 +1184,6 @@ const pt = {
   filter: "Filtro",
   clearAll: "Limpar tudo",
 
-  cuisinePortugueseFood: "Comida Portuguesa",
-  cuisineSushi: "Sushi",
-  cuisineKebab: "Kebab",
-  cuisineBarbecue: "Churrasco",
-  cuisineIndianFood: "Comida Indiana",
-  cuisineItalianFood: "Comida Italiana",
-  cuisineVegetarianFood: "Comida Vegetariana",
-  cuisineThaiFood: "Comida Tailandesa",
-  cuisineJapaneseFood: "Comida Japonesa",
-  cuisineRamen: "Ramen",
-  cuisineSeafood: "Marisco",
-  cuisineBurger: "Hambúrguer",
-  cuisineHalal: "Halal",
-  cuisineOthers: "Outros",
-
   faqTitle: "Perguntas Frequentes",
   faqSubtitle: "Tudo o que precisa de saber sobre a DeliGo",
   faqSearchPlaceholder: "Pesquisar perguntas...",
@@ -1407,6 +1403,111 @@ const pt = {
     "Definição personalizada de zonas de entrega e corredores geográficos preferenciais.",
   courierBullet3:
     "Modelos de ganhos flexíveis alinhados com as necessidades individuais.",
+
+  // --- Phase 1: static UI copy (Issue_solve_plan.md) ---
+  popular: "POPULAR",
+  continueButton: "Continuar",
+  deleteLabel: "Eliminar",
+  deleteAddress: "Eliminar Endereço",
+  deleteAddressConfirm:
+    "Tem a certeza de que pretende eliminar este endereço? Esta ação não pode ser anulada.",
+  paymentSuccessful: "Pagamento Bem-sucedido",
+  orderCreationFailed: "Falha na Criação do Pedido",
+  creatingYourOrder: "A criar o seu pedido...",
+  finalizingYourOrder: "A finalizar o seu pedido...",
+  returnToCart: "Voltar ao Carrinho",
+  orderConfirmedRedirecting: "Pedido confirmado! A redirecionar...",
+  missingPaymentInfo:
+    "Informação de pagamento em falta. Por favor, contacte o suporte.",
+  missingPaymentSummary: "Resumo de pagamento em falta.",
+  goBack: "Voltar",
+  loadingPaymentDetails: "A carregar detalhes do pagamento...",
+  paymentFailedDesc:
+    "Não foi possível processar o seu pagamento. Por favor, tente novamente ou utilize outro método de pagamento.",
+  referenceLabel: "Referência",
+  weekendSpecial: "Especial de Fim de Semana",
+  weekendSpecialOffer: "€10 de desconto em pedidos acima de €50",
+  unlockExclusiveFeatures: "Desbloqueie Funcionalidades Exclusivas",
+  unlockExclusiveFeaturesDesc:
+    "Utilize a aplicação regularmente e faça mais encomendas para desbloquear e aproveitar estas funcionalidades exclusivas.",
+  selectedLocation: "Localização Selecionada",
+  places: "Locais",
+  dishes: "Pratos",
+  onThisPage: "Nesta página",
+  priceDetailsOfCart: "Detalhes de preço do seu carrinho",
+  grandTotal: "Total Geral",
+  subtotalExclServiceFee: "Subtotal (excl. Taxa de Serviço)",
+  notSignedIn: "Sessão não iniciada.",
+  notSignedInExplore:
+    "Pode explorar o mapa e escolher uma localização, mas precisa de",
+  notSignedInSaveSuffix: "para guardar o seu endereço.",
+  logInLink: "iniciar sessão",
+  editModePrimaryNote:
+    "Nota: O modo de edição atualiza o endereço PRINCIPAL independentemente do tipo selecionado.",
+
+  // --- Phase 3: toasts, errors, empty/loading & route messages ---
+  locationNotDetected: "Localização ainda não detetada. Aguarde ou utilize o GPS.",
+  streetRequired: "A morada é obrigatória.",
+  cityRequired: "A cidade é obrigatória.",
+  regionRequired: "A região/distrito é obrigatória.",
+  countryRequired: "O país é obrigatório.",
+  locationSavedLocally: "Localização guardada localmente!",
+  failedToSaveLocation: "Falha ao guardar a localização.",
+  pleaseLogInToSaveAddress: "Inicie sessão para guardar o seu endereço.",
+  userNotLoaded: "Utilizador não carregado. Atualize a página.",
+  enterNewEmailToUpdate: "Introduza um novo endereço de email para atualizar",
+  otpSentToNewEmail: "Código OTP enviado para o seu novo email",
+  pleaseEnterOtp: "Introduza o código OTP",
+  emailUpdatedSuccessfully: "Email atualizado com sucesso",
+  enterNewMobileToUpdate: "Introduza um novo número de telemóvel para atualizar",
+  otpSentToNewMobile: "Código OTP enviado para o seu novo número de telemóvel",
+  mobileUpdatedSuccessfully: "Número de telemóvel atualizado com sucesso",
+  userIdNotFound: "ID de utilizador não encontrado",
+  profileUpdatedSuccessfully: "Perfil atualizado com sucesso!",
+  referralCodeCopied: "Código de referência copiado para a área de transferência",
+  failedToCopyReferralCode: "Falha ao copiar o código de referência",
+  referralInfoCopied:
+    "Informação de referência copiada para a área de transferência",
+  failedToShareReferralCode: "Falha ao partilhar o código de referência",
+  pleaseLogInToAddToCart: "Inicie sessão para adicionar itens ao seu carrinho.",
+  itemAddedToCart: "Item adicionado ao carrinho com sucesso!",
+  vendorInfoMissing: "Informação do vendedor em falta",
+  provideAtLeastOneRating: "Forneça pelo menos uma avaliação.",
+  currentLocationLoadedOnMap: "Localização atual carregada no mapa.",
+  addressNotFound: "Endereço não encontrado",
+  pleaseLogInToSearch: "Inicie sessão para pesquisar.",
+  failedToLoadSearchResults: "Falha ao carregar os resultados da pesquisa.",
+  noCheckoutIdProvided: "Nenhum ID de finalização fornecido",
+  failedToCreateOrder: "Falha ao criar a encomenda.",
+  failedToLoadProfile: "Falha ao carregar o perfil",
+  profileNotFound: "Perfil não encontrado",
+  unnamedUser: "Utilizador sem nome",
+  somethingWentWrong: "Algo correu mal",
+  errorPageDesc:
+    "Ocorreu um erro inesperado ao carregar esta página. Pode tentar novamente ou voltar à página inicial.",
+  tryAgain: "Tentar novamente",
+  criticalError: "Ocorreu um erro crítico. Tente novamente.",
+  pageNotFound: "Página Não Encontrada",
+  notFoundDesc:
+    "Oops! Parece que chegou a um beco sem saída. A página que procura parece ter sido movida ou já não existe.",
+  backToHomeCap: "Voltar ao Início",
+  loading: "A carregar...",
+  loadingSearch: "A carregar pesquisa...",
+  markAllAsRead: "Marcar tudo como lido",
+  profileAddress: "Endereço do Perfil",
+  deliveryAddresses: "Endereços de Entrega",
+  primaryAddressUpdated: "Endereço principal atualizado com sucesso",
+  failedToUpdatePrimaryAddress: "Falha ao atualizar o endereço principal",
+  addressDeleted: "Endereço eliminado com sucesso",
+  failedToDeleteAddress: "Falha ao eliminar o endereço",
+
+  // --- Parity fill: keys that previously existed only in en.ts ---
+  searchFaqs: "Pesquisar FAQs...",
+  driverPartnerFaqs: "FAQs de Motoristas e Parceiros de Entrega",
+  rideFleetManagement: "Gestão de Viagens e Frota",
+  securityPrivacyInnovation: "Segurança, Privacidade e Inovação",
+  questionsLabel: "Perguntas",
+  deligoTagline: "DeliGo – A Entregar Conveniência, a Capacitar Comunidades.",
 };
 
 export default pt;

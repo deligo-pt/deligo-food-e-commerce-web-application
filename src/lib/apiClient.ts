@@ -1,5 +1,6 @@
 import axios from "axios";
 import { clearAuthTokens } from "./authCookies";
+import { useStore } from "@/stores/translationStore";
 
 type ApiErrorResponse = {
   success?: boolean;
@@ -35,6 +36,12 @@ apiClient.interceptors.request.use((config) => {
     }
   }
 
+  // Tell the backend which language to resolve bilingual fields into. Read the
+  // current language per request so it always reflects the latest switch.
+  if (!headers.has("Accept-Language")) {
+    headers.set("Accept-Language", useStore.getState().lang ?? "pt");
+  }
+
   config.headers = headers;
 
   return config;
@@ -49,11 +56,14 @@ apiClient.interceptors.response.use(
       typeof window !== "undefined" &&
       !isRedirecting
     ) {
-      isRedirecting = true;
-
       clearAuthTokens();
 
       if (window.location.pathname !== "/login") {
+        // Latch only while a real navigation is in flight, so concurrent 401s
+        // don't each trigger a redirect. If we're already on /login there's no
+        // navigation, so leave the latch down — otherwise the flag would stay
+        // stuck true forever and swallow every future 401 in the session.
+        isRedirecting = true;
         window.location.href = "/login";
       }
     }
@@ -61,13 +71,32 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+// Backend validation failures arrive wrapped in a generic top-level message
+// (e.g. "Validation Error" / "Zod Validation Error") while the actionable
+// detail lives in errorSources[]. Treat those wrappers as non-descriptive so
+// we surface the field-level reason instead of the opaque wrapper.
+const GENERIC_ERROR_MESSAGE = /validation error/i;
+
 export function getApiErrorMessage(error: unknown, fallbackMessage = "Request failed") {
   if (axios.isAxiosError(error)) {
     const payload = error.response?.data as ApiErrorResponse | undefined;
 
+    const source = payload?.errorSources?.[0];
+    const sourceMessage = source?.message
+      ? source.path
+        ? `${source.path}: ${source.message}`
+        : source.message
+      : undefined;
+
+    // Prefer the specific field-level reason when the top-level message is just
+    // a generic validation wrapper; otherwise keep the top-level message.
+    if (payload?.message && GENERIC_ERROR_MESSAGE.test(payload.message)) {
+      return sourceMessage || payload.message;
+    }
+
     return (
       payload?.message ||
-      payload?.errorSources?.[0]?.message ||
+      sourceMessage ||
       error.message ||
       fallbackMessage
     );

@@ -15,8 +15,8 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
-import { getAccessToken } from "@/lib/authCookies";
+import { getApiErrorMessage } from "@/lib/apiClient";
+import { useVendor } from "@/hooks/queries/useVendors";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface VendorDetailsModalProps {
@@ -66,41 +66,20 @@ export default function VendorDetailsModal({
   vendorId,
 }: VendorDetailsModalProps) {
   const { t } = useTranslation();
-  const [vendorData, setVendorData] = useState<VendorData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!isOpen || !vendorId) return;
-
-    const fetchVendor = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const token = getAccessToken();
-        if (token) {
-          // Authenticated: use the direct customer endpoint
-          const response = await apiClient.get(`/vendors/customer/${vendorId}`);
-          setVendorData(response.data.data);
-        } else {
-          // Unauthenticated: use the dedicated open single-vendor endpoint
-          const response = await apiClient.get(
-            `/vendors/nearby/open/${vendorId}`,
-          );
-          setVendorData(response.data.data);
-        }
-      } catch (err) {
-        setError(getApiErrorMessage(err, "Failed to load vendor details"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchVendor();
-  }, [isOpen, vendorId]);
+  // Shared, cached vendor query (customer vs. open endpoint handled inside the
+  // hook). placeholderData keeps the open modal populated during a lang switch.
+  const {
+    data: vendorData = null,
+    isLoading: loading,
+    error: vendorErrorObj,
+  } = useVendor<VendorData>(vendorId ?? undefined, { enabled: isOpen });
+  const error = vendorErrorObj
+    ? getApiErrorMessage(vendorErrorObj, "Failed to load vendor details")
+    : null;
 
   // Close share dropdown when clicking outside
   useEffect(() => {

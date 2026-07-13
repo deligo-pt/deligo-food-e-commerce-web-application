@@ -4,7 +4,7 @@
 
 "use client";
 
-import { ArrowLeft, CheckCircle, Search, X } from "lucide-react";
+import { CheckCircle, Search, X } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Toaster } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
@@ -212,7 +212,7 @@ export default function AddAddressPage() {
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#b0004a] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
       </div>
     );
 
@@ -220,13 +220,7 @@ export default function AddAddressPage() {
     <section className="bg-[#f8f9fa] dark:bg-neutral-950 py-8 min-h-screen transition-colors duration-200">
       <Toaster position="top-center" richColors />
       <div className="mx-auto max-w-7xl px-4 md:px-8">
-        <div className="mb-8 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 shadow-sm hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors duration-200"
-          >
-            <ArrowLeft className="h-5 w-5 text-[#b0004a]" />
-          </button>
+        <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#191c1d] dark:text-neutral-50">
             {t("addNewAddress")}
           </h1>
@@ -257,7 +251,7 @@ export default function AddAddressPage() {
                   onChange={handleSearchChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder")}
-                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#b0004a] dark:focus:border-[#b0004a]"
+                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b] dark:focus:border-[#f9186b]"
                   autoComplete="off"
                 />
                 {searchValue && (
@@ -282,8 +276,8 @@ export default function AddAddressPage() {
                             : ""
                             }`}
                         >
-                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5] dark:bg-[#b0004a]/10">
-                            <Search size={13} className="text-[#b0004a]" />
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5] dark:bg-[#f9186b]/10">
+                            <Search size={13} className="text-[#f9186b]" />
                           </span>
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-semibold text-[#191c1d] dark:text-neutral-200">

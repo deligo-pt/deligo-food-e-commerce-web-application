@@ -1,17 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
-import { Star, Truck, Heart, Check } from "lucide-react";
+import { Star, Truck, Check, UtensilsCrossed, Store } from "lucide-react";
+import SafeImage from "@/components/shared/SafeImage";
 import type { Vendor } from "@/types/vendor";
 import { formatCuisine } from "@/lib/cuisine";
+import { currencySymbol } from "@/lib/currency";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useStore } from "@/stores/translationStore";
+import { useActiveAddressCoords } from "@/hooks/queries/useProfile";
+import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 
 interface Product {
   _id: string;
@@ -74,142 +77,96 @@ function getVendorCoords(vendor: Vendor): { lat: number; lng: number } | null {
   return latitude && longitude ? { lat: latitude, lng: longitude } : null;
 }
 
-let cachedUserCoords: { lat: number; lng: number } | null = null;
-let userPromise: Promise<{ lat: number; lng: number } | null> | null = null;
-
-async function fetchUserPrimaryAddress() {
-  if (cachedUserCoords) return cachedUserCoords;
-  try {
-    const token = getAccessToken();
-    if (!token) return null;
-    const { data } = await apiClient.get("/profile", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const primary = data?.data?.deliveryAddresses?.find((a: any) => a.isActive === true);
-    if (primary?.latitude && primary?.longitude) {
-      cachedUserCoords = { lat: primary.latitude, lng: primary.longitude };
-    }
-    return cachedUserCoords;
-  } catch (error) {
-    console.error("Failed to fetch user address", error);
-    return null;
-  }
-}
-
-function useUserAddress() {
-  const [coords, setCoords] = useState(cachedUserCoords);
-  const [loading, setLoading] = useState(!cachedUserCoords);
-  useEffect(() => {
-    if (cachedUserCoords) {
-      setCoords(cachedUserCoords);
-      setLoading(false);
-      return;
-    }
-    if (!userPromise) userPromise = fetchUserPrimaryAddress();
-    userPromise.then(setCoords).finally(() => setLoading(false));
-  }, []);
-  return { coords, loading };
-}
-
 export default function SearchContent() {
+  const { t } = useTranslation();
+  const lang = useStore((s) => s.lang);
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(!!query.trim());
-  const [error, setError] = useState("");
+  const term = query.toLowerCase().trim();
   const [deliveryTimes, setDeliveryTimes] = useState<Record<string, string>>({});
   const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
-  const { coords: userCoords, loading: userLoading } = useUserAddress();
 
-  useEffect(() => {
-    let isMounted = true;
+  const authed = typeof window !== "undefined" && !!getAccessToken();
+  const searchEnabled = authed && !!term;
 
-    if (!query.trim()) {
-      if (isMounted) {
-        setVendors([]);
-        setProducts([]);
-        setError("");
-        setLoading(false);
-      }
-      return;
-    }
+  // Shared, cached catalog — fetched once (deduped with the rest of the app)
+  // and filtered client-side by the search term. A language switch keeps the
+  // current results on screen (keepPreviousData) instead of flashing loading.
+  const {
+    data: allVendors = [],
+    isLoading: vendorsLoading,
+    error: vendorsError,
+  } = useVendorsCustomer<Vendor>({ enabled: searchEnabled });
 
-    const fetchResults = async () => {
-      if (!isMounted) return;
-      setLoading(true);
-      setError("");
-      try {
-        const token = getAccessToken();
-        if (!token) {
-          if (isMounted) setError("Please log in to search.");
-          if (isMounted) setLoading(false);
-          return;
-        }
+  const {
+    data: allProducts = [],
+    isLoading: productsLoading,
+    error: productsError,
+  } = useQuery({
+    queryKey: ["search", "products", lang],
+    queryFn: async ({ signal }) => {
+      const res = await apiClient.get("/products", {
+        params: { limit: 100 },
+        signal,
+      });
+      return (res.data?.data ?? []) as Product[];
+    },
+    enabled: searchEnabled,
+    placeholderData: keepPreviousData,
+  });
 
-        const term = query.toLowerCase().trim();
+  const userCoords = useActiveAddressCoords();
 
-        const vendorRes = await apiClient.get("/vendors/customer", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const allVendors: Vendor[] = vendorRes.data?.data || [];
+  const vendors = useMemo(() => {
+    if (!term) return [];
+    return allVendors.filter((v) => {
+      const name = v.businessDetails.businessName.toLowerCase();
+      // restaurantCuisineType is an array (sometimes a string / absent);
+      // formatCuisine flattens it safely so .toLowerCase() never throws.
+      const cuisine = formatCuisine(
+        v.businessDetails.restaurantCuisineType,
+      ).toLowerCase();
+      const type = v.businessDetails.businessType.toLowerCase();
+      const city = v.businessLocation.city.toLowerCase();
+      const country = v.businessLocation.country.toLowerCase();
+      return (
+        name.includes(term) ||
+        cuisine.includes(term) ||
+        type.includes(term) ||
+        city.includes(term) ||
+        country.includes(term)
+      );
+    });
+  }, [allVendors, term]);
 
-        const filteredVendors = allVendors.filter((v) => {
-          const name = v.businessDetails.businessName.toLowerCase();
-          // restaurantCuisineType is an array (sometimes a string / absent);
-          // formatCuisine flattens it safely so .toLowerCase() never throws.
-          const cuisine = formatCuisine(
-            v.businessDetails.restaurantCuisineType,
-          ).toLowerCase();
-          const type = v.businessDetails.businessType.toLowerCase();
-          const city = v.businessLocation.city.toLowerCase();
-          const country = v.businessLocation.country.toLowerCase();
-          return (
-            name.includes(term) ||
-            cuisine.includes(term) ||
-            type.includes(term) ||
-            city.includes(term) ||
-            country.includes(term)
-          );
-        });
-        if (isMounted) setVendors(filteredVendors);
+  const products = useMemo(() => {
+    if (!term) return [];
+    return allProducts.filter((p) => {
+      const productNameMatch = p.name.toLowerCase().includes(term);
+      const categoryMatch = (p.category?.name || "").toLowerCase().includes(term);
+      const vendorNameMatch = (p.vendorId?.businessDetails?.businessName || "")
+        .toLowerCase()
+        .includes(term);
+      return productNameMatch || categoryMatch || vendorNameMatch;
+    });
+  }, [allProducts, term]);
 
-        const productRes = await apiClient.get("/products", {
-          params: { limit: 100 },
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const allProducts: Product[] = productRes.data?.data || [];
-
-        const filteredProducts = allProducts.filter((p) => {
-          const productNameMatch = p.name.toLowerCase().includes(term);
-          const categoryMatch = (p.category?.name || "").toLowerCase().includes(term);
-          const vendorNameMatch = (p.vendorId?.businessDetails?.businessName || "").toLowerCase().includes(term);
-          return productNameMatch || categoryMatch || vendorNameMatch;
-        });
-        if (isMounted) setProducts(filteredProducts);
-      } catch (err) {
-        console.error(err);
-        if (isMounted) setError("Failed to load search results.");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchResults();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [query]);
+  const loading = searchEnabled && (vendorsLoading || productsLoading);
+  const error =
+    !authed && term
+      ? t("pleaseLogInToSearch")
+      : vendorsError || productsError
+        ? t("failedToLoadSearchResults")
+        : "";
 
   const estimateDeliveryTime = useCallback(async (vendor: Vendor) => {
     if (!userCoords) {
-      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: t("under10Min") }));
       return;
     }
     const vendorCoords = getVendorCoords(vendor);
     if (!vendorCoords) {
-      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: t("under10Min") }));
       return;
     }
 
@@ -226,25 +183,23 @@ export default function SearchContent() {
       }
       const distance = getDistanceKm(vendorCoords.lat, vendorCoords.lng, userCoords.lat, userCoords.lng);
       const estimatedMinutes = Math.round((distance / 30) * 60);
-      const timeStr = estimatedMinutes < 10 ? "Under 10 min" : formatTimeRange(estimatedMinutes);
+      const timeStr = estimatedMinutes < 10 ? t("under10Min") : formatTimeRange(estimatedMinutes);
       setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: timeStr }));
     } catch (err) {
       console.error("Time estimation error", err);
-      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: "Under 10 min" }));
+      setDeliveryTimes(prev => ({ ...prev, [vendor.userId]: t("under10Min") }));
     } finally {
       setLoadingTimes(prev => ({ ...prev, [vendor.userId]: false }));
     }
-  }, [userCoords]);
+  }, [userCoords, t]);
 
   useEffect(() => {
-    if (!userLoading && vendors.length > 0) {
-      vendors.forEach(vendor => estimateDeliveryTime(vendor));
+    if (vendors.length > 0) {
+      vendors.forEach((vendor) => estimateDeliveryTime(vendor));
     }
-  }, [userCoords, userLoading, vendors, estimateDeliveryTime]);
+  }, [vendors, estimateDeliveryTime]);
 
-  const isPageLoading = loading || userLoading;
-
-  if (isPageLoading) {
+  if (loading) {
     return (
       <main className="w-full px-4 py-8 lg:px-16">
         <div className="mb-6">
@@ -282,23 +237,23 @@ export default function SearchContent() {
 
       {totalVendors > 0 && (
         <section className="mb-12">
-          <h2 className="text-xl font-bold mb-4">Places</h2>
+          <h2 className="text-xl font-bold mb-4">{t("places")}</h2>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {vendors.map((vendor) => {
               const deliveryTime = deliveryTimes[vendor.userId];
               const isTimeLoading = loadingTimes[vendor.userId];
-              const displayTime = isTimeLoading ? "Calculating..." : (deliveryTime || "Under 10 min");
+              const displayTime = isTimeLoading ? "Calculating..." : (deliveryTime || t("under10Min"));
 
               return (
                 <Link key={vendor.userId} href={`/vendors/${vendor.userId}`} className="block">
                   <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] hover:shadow-2xl">
                     <div className="relative aspect-16/10 overflow-hidden">
-                      <Image
-                        fill
-                        sizes="(max-width:1024px) 100vw, 33vw"
+                      <SafeImage
+                        src={vendor.storePhoto?.[0]}
                         alt={vendor.businessDetails.businessName}
-                        src={vendor.storePhoto?.[0] || "https://placehold.co/600x400/png"}
+                        sizes="(max-width:1024px) 100vw, 33vw"
                         className="object-cover transition-transform duration-700 group-hover:scale-110"
+                        fallbackIcon={<Store className="h-12 w-12" />}
                       />
                       <div className="absolute left-5 top-5">
                         <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 px-4 py-2 text-sm font-bold text-[#191c1d] shadow-lg backdrop-blur-md">
@@ -314,22 +269,21 @@ export default function SearchContent() {
                       </div>
                     </div>
                     <div className="p-8">
-                      <div className="mb-2 flex items-center justify-between gap-4">
+                      <div className="mb-2 flex items-center gap-4">
                         <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d]">
                           {vendor.businessDetails.businessName}
                         </h3>
-                        <Heart size={22} className="text-[#d81b60] transition-transform group-hover:scale-110" />
                       </div>
                       <p className="mb-6 text-lg text-[#5a4044]">
                         {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
                           vendor.businessDetails.businessType}
                       </p>
                       <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-sm font-medium text-[#5a4044]">
-                        <span className="flex items-center gap-2 text-[#b0004a]">
+                        <span className="flex items-center gap-2 text-[#f9186b]">
                           <Truck size={18} />
                           {vendor.businessDetails.isStoreOpen ? "Open Now" : "Closed"}
                         </span>
-                        <span className="flex items-center gap-2 text-[#b70052]">
+                        <span className="flex items-center gap-2 text-[#f9186b]">
                           <Check size={18} />
                           {vendor.businessLocation.city}, {vendor.businessLocation.country}
                         </span>
@@ -345,24 +299,24 @@ export default function SearchContent() {
 
       {totalProducts > 0 && (
         <section>
-          <h2 className="text-xl font-bold mb-4">Dishes</h2>
+          <h2 className="text-xl font-bold mb-4">{t("dishes")}</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <Link key={product._id} href={`/vendors/${product.vendorId.userId}`}>
                 <div className="group flex items-center gap-4 rounded-2xl border bg-white p-3 shadow hover:shadow-md transition cursor-pointer">
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
-                    <Image
-                      src={product.images?.[0] || "/placeholder.jpg"}
+                    <SafeImage
+                      src={product.images?.[0]}
                       alt={product.name}
-                      fill
-                      className="object-cover"
+                      sizes="80px"
+                      fallbackIcon={<UtensilsCrossed className="h-7 w-7" />}
                     />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-800 line-clamp-1">{product.name}</h3>
                     <p className="text-xs text-gray-500">{product.vendorId?.businessDetails?.businessName || "Vendor"}</p>
-                    <div className="mt-1 text-[#b0004a] font-bold text-sm">
-                      {product.pricing?.currency || "€"} {product.pricing?.finalPrice?.toFixed(2) || "0.00"}
+                    <div className="mt-1 text-[#f9186b] font-bold text-sm">
+                      {currencySymbol(product.pricing?.currency)} {product.pricing?.finalPrice?.toFixed(2) || "0.00"}
                     </div>
                   </div>
                 </div>

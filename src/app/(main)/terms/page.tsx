@@ -76,7 +76,7 @@ export default function TermsPage() {
         <span className="text-2xl">{icon}</span>
         <span className="text-xl font-semibold text-gray-800 dark:text-neutral-200">{name}</span>
       </div>
-      <p className="text-sm text-gray-500 dark:text-neutral-450">Terms and Conditions</p>
+      <p className="text-sm text-gray-500 dark:text-neutral-450">{t("termsHeroTitle")}</p>
     </Link>
   );
 

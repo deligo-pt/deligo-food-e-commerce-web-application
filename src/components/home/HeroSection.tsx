@@ -21,7 +21,7 @@ type SponsorshipResponse = {
 };
 
 export default function HeroSection() {
-  const { t } = useTranslation();
+  const { t, langVersion } = useTranslation();
   const [slides, setSlides] = useState<Sponsorship[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -66,7 +66,7 @@ export default function HeroSection() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [langVersion]);
 
   useEffect(() => {
     if (!emblaApi) return;
@@ -98,7 +98,7 @@ export default function HeroSection() {
   const hasSlides = slides.length > 0;
 
   return (
-    <section className="group relative mt-8">
+    <section className="group relative mt-5 sm:mt-8">
       {loading ? (
         <div>
           <div className="relative overflow-hidden rounded-4xl bg-gray-100 dark:bg-neutral-800">
@@ -113,9 +113,9 @@ export default function HeroSection() {
             </div>
           </div>
           <div className="mt-5 flex justify-center gap-3 pb-1">
-            <span className="h-2.5 w-12 animate-pulse rounded-full bg-[#b70052]/20 dark:bg-pink-600/20" />
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20 dark:bg-pink-600/20" />
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#b70052]/20 dark:bg-pink-600/20" />
+            <span className="h-2.5 w-12 animate-pulse rounded-full bg-[#f9186b]/20 dark:bg-pink-600/20" />
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#f9186b]/20 dark:bg-pink-600/20" />
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#f9186b]/20 dark:bg-pink-600/20" />
           </div>
         </div>
       ) : hasSlides ? (
@@ -157,8 +157,8 @@ export default function HeroSection() {
                 className={[
                   "rounded-full transition-all",
                   index === selectedIndex
-                    ? "h-2.5 w-12 bg-[#b70052]"
-                    : "h-2.5 w-2.5 bg-[#b70052]/30 dark:bg-[#b70052]/50",
+                    ? "h-2.5 w-12 bg-[#f9186b]"
+                    : "h-2.5 w-2.5 bg-[#f9186b]/30 dark:bg-[#f9186b]/50",
                 ].join(" ")}
               />
             ))}

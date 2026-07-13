@@ -1,14 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useThemeStore } from "@/stores/themeStore";
+
+const emptySubscribe = () => () => {};
 
 export function useTheme() {
   const storeTheme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
-  const [mounted, setMounted] = useState(false);
+  // Hydration-safe mount flag (no setState-in-effect): the server snapshot is
+  // `false` and the client snapshot is `true`, so SSR and the first client
+  // render agree ("light") and only then switch to the stored theme.
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
-    setMounted(true);
-    // Initialize the root element class list based on stored preference on mount
+    // Initialize the root element class list based on stored preference on mount.
     const currentTheme = useThemeStore.getState().theme;
     const root = document.documentElement;
     if (currentTheme === "dark") {

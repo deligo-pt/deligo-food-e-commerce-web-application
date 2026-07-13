@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { CreditCard, Smartphone, Grid3X3, Wallet, Lock } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function PaymentMethodPage() {
   const { t } = useTranslation();
-  const [selectedMethod, setSelectedMethod] = useState("card");
+
   const paymentMethods = [
     {
       id: "card",
@@ -16,9 +15,9 @@ export default function PaymentMethodPage() {
       recommended: true,
     },
     {
-      id: "mbway",
-      title: t("mbway"),
-      subtitle: t("fastMobilePayment"),
+      id: "googlepay",
+      title: t("googlePay"),
+      subtitle: t("fastSecureCheckout"),
       icon: Smartphone,
     },
     {
@@ -36,82 +35,56 @@ export default function PaymentMethodPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f6f6f6] dark:bg-neutral-950 transition-colors duration-200">
-      {/* Content */}
-      <div className="mx-auto max-w-7xl">
-        <div className="bg-white dark:bg-neutral-900 border-x border-b border-gray-150 dark:border-neutral-800/80 shadow-sm">
+    <div className="bg-[#f6f6f6] dark:bg-neutral-950 px-4 py-8 sm:py-12 transition-colors duration-200">
+      <div className="mx-auto max-w-3xl">
+        <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
           {/* Header */}
-          <div className="border-b border-gray-200 dark:border-neutral-800 px-4 py-6">
-            <h1 className="text-[32px] font-bold text-[#222] dark:text-neutral-50">
+          <div className="border-b border-gray-200 dark:border-neutral-800 px-5 py-6 sm:px-8">
+            <h1 className="text-2xl font-bold text-[#222] dark:text-neutral-50 sm:text-3xl">
               {t("paymentMethods")}
             </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
+            <p className="mt-1.5 text-sm text-gray-500 dark:text-neutral-400">
               {t("paymentMethodsDescription")}
             </p>
           </div>
 
-          {/* Payment Methods */}
-          <div className="space-y-3 p-4">
+          {/* Accepted methods */}
+          <ul className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 sm:p-8">
             {paymentMethods.map((method) => {
               const Icon = method.icon;
-              const isSelected = selectedMethod === method.id;
-
               return (
-                <button
+                <li
                   key={method.id}
-                  onClick={() => setSelectedMethod(method.id)}
-                  className={`flex w-full items-center justify-between rounded-md border px-4 py-3 transition-all ${isSelected
-                      ? "border-[#c5005a] dark:border-pink-600 bg-[#fff9fb] dark:bg-pink-950/10"
-                      : "border-[#e6e6e6] dark:border-neutral-800 bg-white dark:bg-neutral-900/30 hover:bg-gray-50 dark:hover:bg-neutral-800/20"
-                    }`}
+                  className="flex items-center gap-4 rounded-xl border border-[#e6e6e6] dark:border-neutral-800 bg-white dark:bg-neutral-900/40 px-4 py-4 transition-colors hover:border-[#f9186b]/40 dark:hover:border-[#f9186b]/40"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#efefef] dark:bg-neutral-950">
-                      <Icon
-                        className={`h-5 w-5 ${isSelected ? "text-[#c5005a] dark:text-pink-400" : "text-gray-500 dark:text-neutral-400"
-                          }`}
-                      />
-                    </div>
-
-                    <div className="text-left">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-[#222] dark:text-neutral-50">
-                          {method.title}
-                        </h3>
-
-                        {method.recommended && (
-                          <span className="rounded-full bg-[#c5005a] dark:bg-pink-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                            {t("recommended")}
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="text-xs text-gray-500 dark:text-neutral-400">{method.subtitle}</p>
-                    </div>
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0f5] dark:bg-pink-950/20">
+                    <Icon className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
                   </div>
 
-                  {/* Radio */}
-                  <div
-                    className={`flex h-5 w-5 items-center justify-center rounded-full border ${isSelected ? "border-[#c5005a] dark:border-pink-500" : "border-gray-300 dark:border-neutral-700"
-                      }`}
-                  >
-                    {isSelected && (
-                      <div className="h-2.5 w-2.5 rounded-full bg-[#c5005a] dark:bg-pink-500" />
-                    )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base font-semibold text-[#222] dark:text-neutral-50">
+                        {method.title}
+                      </h3>
+                      {method.recommended && (
+                        <span className="rounded-full bg-[#f9186b] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                          {t("recommended")}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-neutral-400">
+                      {method.subtitle}
+                    </p>
                   </div>
-                </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
 
-          {/* Footer Action */}
-          <div className="border-t border-gray-200 dark:border-neutral-800 bg-[#fafafa] dark:bg-neutral-950 px-4 py-8">
-            <button className="w-full rounded-md bg-[#c5005a] dark:bg-pink-650 py-4 text-base font-semibold text-white shadow-md transition hover:opacity-95">
-              {t("confirmPaymentMethod")}
-            </button>
-
-            <div className="mt-4 flex items-center justify-center gap-1 text-[11px] text-gray-500 dark:text-neutral-450">
-              <Lock className="h-3 w-3" />
+          {/* Secure note */}
+          <div className="border-t border-gray-200 dark:border-neutral-800 bg-[#fafafa] dark:bg-neutral-950/50 px-5 py-5 sm:px-8">
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-500 dark:text-neutral-400">
+              <Lock className="h-3.5 w-3.5 shrink-0" />
               <span>{t("paymentInfoSecure")}</span>
             </div>
           </div>
