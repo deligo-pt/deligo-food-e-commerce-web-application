@@ -117,14 +117,16 @@ export default function CartProductRow({
 
     setIsDeleting(true);
     try {
-      await apiClient.delete("/carts/delete-item", {
-        data: [
-          {
-            productId: item.productId,
-            variationSku: item.variationSku ?? null,
-          },
-        ],
-      });
+      // Only send variationSku for variant lines. A plain product must omit it
+      // (not send null) — the backend's Zod schema rejects null with
+      // "variationSku: Expected string, received null".
+      const target: { productId: string; variationSku?: string } = {
+        productId: item.productId,
+      };
+      if (item.variationSku) {
+        target.variationSku = item.variationSku;
+      }
+      await apiClient.delete("/carts/delete-item", { data: [target] });
       onRemove(item.productId, item.variationSku);
       toast.success(`Removed "${item.name}" from cart`);
     } catch (error: any) {

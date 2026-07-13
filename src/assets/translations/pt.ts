@@ -166,6 +166,8 @@ const pt = {
   tax: "Imposto",
   taxIncl: "Imposto (incl.)",
   incl: "incl.",
+  inclTax: "Incl. imposto",
+  finalPrice: "Preço Final",
   serviceCharge: "Taxa de Serviço",
   total: "Total",
 

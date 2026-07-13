@@ -260,14 +260,16 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     try {
       setDeletingItem(item.productId);
 
-      await apiClient.delete("/carts/delete-item", {
-        data: [
-          {
-            productId: item.productId,
-            variationSku: item.variationSku ?? null,
-          },
-        ],
-      });
+      // Only send variationSku for variant lines. A plain product must omit it
+      // (not send null) — the backend's Zod schema rejects null with
+      // "variationSku: Expected string, received null".
+      const target: { productId: string; variationSku?: string } = {
+        productId: item.productId,
+      };
+      if (item.variationSku) {
+        target.variationSku = item.variationSku;
+      }
+      await apiClient.delete("/carts/delete-item", { data: [target] });
 
       await refetchCart();
     } catch (error) {
@@ -488,20 +490,17 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                   -€{summary.discount.toFixed(2)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-neutral-400">{t("subtotal")}</span>
-                <span className="font-semibold text-gray-900 dark:text-neutral-50">
-                  €{(summary.originalPrice - summary.discount).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-neutral-400">{t("taxIncl")}</span>
-                <span className="font-semibold text-gray-900 dark:text-neutral-50">€{summary.tax.toFixed(2)}</span>
-              </div>
               <div className="border-t border-dashed border-gray-200 dark:border-neutral-800 pt-4">
-                <div className="flex justify-between">
-                  <span className="text-xl font-bold text-gray-900 dark:text-neutral-50">{t("totalToPay")}</span>
-                  <span className="text-3xl font-extrabold text-[#f9186b] dark:text-pink-400">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-xl font-bold text-gray-900 dark:text-neutral-50">
+                      {t("finalPrice")}
+                    </span>
+                    <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-neutral-400">
+                      ({t("inclTax")} -&nbsp;€{summary.tax.toFixed(2)})
+                    </span>
+                  </div>
+                  <span className="shrink-0 whitespace-nowrap text-3xl font-extrabold text-[#f9186b] dark:text-pink-400">
                     €{summary.total.toFixed(2)}
                   </span>
                 </div>

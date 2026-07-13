@@ -56,11 +56,14 @@ apiClient.interceptors.response.use(
       typeof window !== "undefined" &&
       !isRedirecting
     ) {
-      isRedirecting = true;
-
       clearAuthTokens();
 
       if (window.location.pathname !== "/login") {
+        // Latch only while a real navigation is in flight, so concurrent 401s
+        // don't each trigger a redirect. If we're already on /login there's no
+        // navigation, so leave the latch down — otherwise the flag would stay
+        // stuck true forever and swallow every future 401 in the session.
+        isRedirecting = true;
         window.location.href = "/login";
       }
     }

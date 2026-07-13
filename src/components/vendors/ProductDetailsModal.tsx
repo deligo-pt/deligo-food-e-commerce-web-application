@@ -6,6 +6,8 @@ import {
   X,
   Plus,
   Minus,
+  Trash2,
+  Tag,
   ShoppingCart,
   Sparkles,
   FileText,
@@ -307,12 +309,18 @@ export default function ProductDetailsModal({
           .map((o) => ({ optionSku: o.sku, quantity: addonQty[o.sku] })),
       );
       for (const addon of selectedAddons) {
-        await apiClient.patch("/carts/update-addon-quantity", {
+        // Only include variationSku when a variant is selected. The backend's
+        // Zod schema expects a string (or the field omitted) and rejects null
+        // with "variationSku: Expected string, received null".
+        const addonPayload: any = {
           productId: productMongoId,
-          variationSku,
           optionSku: addon.optionSku,
           quantity: addon.quantity,
-        });
+        };
+        if (variationSku) {
+          addonPayload.variationSku = variationSku;
+        }
+        await apiClient.patch("/carts/update-addon-quantity", addonPayload);
       }
 
       await fetchCart();
@@ -333,6 +341,9 @@ export default function ProductDetailsModal({
         onClick={(e) => e.stopPropagation()}
         className="relative flex w-full max-w-145 flex-col overflow-hidden rounded-4xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 shadow-2xl dark:shadow-none"
       >
+        {/* Drag handle */}
+        <div className="absolute left-1/2 top-3 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-gray-300 dark:bg-neutral-700" />
+
         {/* Close button */}
         <button
           onClick={onClose}
@@ -368,6 +379,7 @@ export default function ProductDetailsModal({
 
               {/* Category Badge */}
               <div className="mb-6 flex items-center gap-2 rounded-full bg-green-50 dark:bg-green-950/30 px-4 py-2 text-green-700 dark:text-green-400 border dark:border-green-900/30">
+                <UtensilsCrossed size={14} />
                 <span className="text-xs font-bold uppercase tracking-wider">
                   {product.category?.name || t("product")}
                 </span>
@@ -391,7 +403,8 @@ export default function ProductDetailsModal({
                   </div>
                 </div>
                 {hasDiscount && (
-                  <div className="mt-3 flex items-center gap-2 text-pink-600 dark:text-pink-400">
+                  <div className="mt-3 flex items-center justify-end gap-1.5 text-pink-600 dark:text-pink-400">
+                    <Tag size={14} className="fill-pink-600/15" />
                     <span className="text-sm font-semibold">
                       Save{" "}
                       {formatPrice(
@@ -459,9 +472,10 @@ export default function ProductDetailsModal({
               <div className="mb-8 flex w-full items-center justify-end gap-4">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 transition hover:bg-gray-50 dark:hover:bg-neutral-800"
+                  disabled={quantity <= 1}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 transition hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Minus size={16} />
+                  {quantity <= 1 ? <Trash2 size={16} /> : <Minus size={16} />}
                 </button>
                 <span className="w-8 text-center text-xl font-bold text-gray-950 dark:text-white">
                   {quantity}
@@ -476,23 +490,18 @@ export default function ProductDetailsModal({
 
               {/* Summary */}
               <div className="mb-6 w-full rounded-3xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-gray-600 dark:text-neutral-400">
-                    <span>{t("subtotal")}</span>
-                    <span>{formatPrice(subtotal, currency)}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-200 dark:border-neutral-800 pb-3 text-gray-600 dark:text-neutral-400">
-                    <span>
-                      {t("tax")} ({taxRate}%, {t("incl")})
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-lg font-semibold text-gray-900 dark:text-white">
+                      {t("total")}
                     </span>
-                    <span>{formatPrice(taxAmount, currency)}</span>
-                  </div>
-                  <div className="flex justify-between pt-1">
-                    <span className="text-lg font-semibold text-gray-900 dark:text-white">{t("total")}</span>
-                    <span className="text-lg font-bold text-pink-600 dark:text-pink-400">
-                      {formatPrice(total, currency)}
+                    <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-neutral-400">
+                      ({t("inclTax")} -&nbsp;{formatPrice(taxAmount, currency)})
                     </span>
                   </div>
+                  <span className="shrink-0 whitespace-nowrap text-lg font-bold text-pink-600 dark:text-pink-400">
+                    {formatPrice(total, currency)}
+                  </span>
                 </div>
               </div>
 
@@ -586,15 +595,20 @@ export default function ProductDetailsModal({
             <button
               onClick={handleAddToCart}
               disabled={cartLoading}
-              className="flex w-full items-center justify-center gap-3 rounded-2xl bg-pink-600 py-5 text-lg font-semibold text-white shadow-lg transition hover:bg-pink-700 disabled:opacity-50"
+              className={`relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-linear-to-r from-[#f9186b] to-[#d4145b] py-5 text-lg font-semibold text-white shadow-lg transition hover:from-[#d4145b] hover:to-[#b01254] active:scale-[0.98] disabled:opacity-50 ${
+                cartLoading ? "" : "cart-cta"
+              }`}
             >
+              {!cartLoading && (
+                <span className="cart-cta-shine" aria-hidden="true" />
+              )}
               {cartLoading ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                <>
+                <span className="relative z-10 flex items-center gap-3">
                   <ShoppingCart size={22} />
                   {t("addToCart")} • {formatPrice(total, currency)}
-                </>
+                </span>
               )}
             </button>
           </div>

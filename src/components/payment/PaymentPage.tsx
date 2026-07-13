@@ -323,6 +323,18 @@ export default function PaymentPage() {
   const offerDiscount = orderCalculation.totalOfferDiscount ?? 0;
   const orderTotal = payoutSummary.grandTotal;
 
+  // Prices are tax-inclusive. The subtotal's embedded VAT comes straight from the
+  // backend (totalTaxAmount). The delivery charge is also gross; the backend
+  // doesn't break out its VAT separately, so extract it at Portugal's standard
+  // 23% rate (delivery is standard-rated) to show the "incl. tax" note.
+  const DELIVERY_TAX_RATE = 23;
+  const subtotalTax = orderCalculation.totalTaxAmount;
+  const deliveryTax =
+    delivery.totalDeliveryCharge > 0
+      ? delivery.totalDeliveryCharge -
+        delivery.totalDeliveryCharge / (1 + DELIVERY_TAX_RATE / 100)
+      : 0;
+
   const vendorRating = vendor?.rating.average ?? 0;
   const vendorReviewCount = vendor?.rating.totalReviews ?? 0;
 
@@ -510,28 +522,30 @@ export default function PaymentPage() {
                     -€{orderCalculation.totalProductDiscount.toFixed(2)}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-neutral-400">{t("subtotal")}</span>
-                  <span className="font-semibold text-gray-900 dark:text-neutral-50">€{subtotal.toFixed(2)}</span>
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 text-gray-500 dark:text-neutral-400">
+                    {t("subtotal")}
+                    <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
+                      ({t("inclTax")} -&nbsp;€{subtotalTax.toFixed(2)})
+                    </span>
+                  </span>
+                  <span className="shrink-0 whitespace-nowrap font-semibold text-gray-900 dark:text-neutral-50">
+                    €{subtotal.toFixed(2)}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-neutral-400">{t("deliveryFee")}</span>
-                  <span className="font-semibold text-green-600 dark:text-green-400">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 text-gray-500 dark:text-neutral-400">
+                    {t("deliveryFee")}
+                    {delivery.totalDeliveryCharge > 0 && (
+                      <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
+                        ({t("inclTax")} -&nbsp;€{deliveryTax.toFixed(2)})
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 whitespace-nowrap font-semibold text-green-600 dark:text-green-400">
                     {delivery.totalDeliveryCharge > 0
                       ? `€${delivery.totalDeliveryCharge.toFixed(2)}`
                       : t("free")}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-neutral-400">{t("taxIncl")}</span>
-                  <span className="font-semibold text-gray-900 dark:text-neutral-50">
-                    €{orderCalculation.totalTaxAmount.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-neutral-400">{t("serviceCharge")}</span>
-                  <span className="font-semibold text-gray-900 dark:text-neutral-50">
-                    €{(orderCalculation.serviceCharge ?? 0).toFixed(2)}
                   </span>
                 </div>
 

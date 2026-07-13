@@ -101,8 +101,8 @@ const RestaurantCard = memo(function RestaurantCard({
     : deliveryTime || t("under10Min");
 
   return (
-    <Link href={`/vendors/${vendor.userId}`} className="block">
-      <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl">
+    <Link href={`/vendors/${vendor.userId}`} className="block h-full">
+      <article className="group flex h-full flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl">
         <div className="relative aspect-16/10 overflow-hidden">
           <SafeImage
             src={vendor.storePhoto?.[0]}
@@ -126,26 +126,28 @@ const RestaurantCard = memo(function RestaurantCard({
           </div>
         </div>
 
-        <div className="p-5 sm:p-8">
+        <div className="flex flex-1 flex-col p-5 sm:p-8">
           <div className="mb-2 flex items-center gap-4">
             <h3 className="line-clamp-1 text-lg font-bold text-[#191c1d] dark:text-neutral-100 sm:text-2xl">
               {vendor.businessDetails.businessName}
             </h3>
           </div>
 
-          <p className="mb-4 text-base text-[#5a4044] dark:text-neutral-400 sm:mb-6 sm:text-lg">
+          <p className="mb-4 line-clamp-1 text-base text-[#5a4044] dark:text-neutral-400 sm:mb-6 sm:text-lg">
             {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
               vendor.businessDetails.businessType}
           </p>
 
-          <div className="flex items-center gap-4 border-t border-[#edeeef] dark:border-neutral-800 pt-4 text-sm font-medium text-[#5a4044] dark:text-neutral-400 sm:gap-6 sm:pt-6">
-            <span className="flex items-center gap-2 text-[#f9186b] dark:text-pink-500">
+          <div className="mt-auto flex items-center gap-4 border-t border-[#edeeef] dark:border-neutral-800 pt-4 text-sm font-medium text-[#5a4044] dark:text-neutral-400 sm:gap-6 sm:pt-6">
+            <span className="flex shrink-0 items-center gap-2 text-[#f9186b] dark:text-pink-500">
               <Truck size={18} />
               {vendor.businessDetails.isStoreOpen ? t("openNow") : t("closed")}
             </span>
-            <span className="flex items-center gap-2 text-[#f9186b] dark:text-pink-400">
-              <Check size={18} />
-              {vendor.businessLocation.city}, {vendor.businessLocation.country}
+            <span className="flex min-w-0 items-center gap-2 text-[#f9186b] dark:text-pink-400">
+              <Check size={18} className="shrink-0" />
+              <span className="truncate">
+                {vendor.businessLocation.city}, {vendor.businessLocation.country}
+              </span>
             </span>
           </div>
         </div>

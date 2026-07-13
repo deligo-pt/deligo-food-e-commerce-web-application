@@ -156,6 +156,8 @@ const en = {
   tax: "Tax",
   taxIncl: "Tax (incl.)",
   incl: "incl.",
+  inclTax: "Incl. tax",
+  finalPrice: "Final Price",
   serviceCharge: "Service Fee",
   total: "Total",
 

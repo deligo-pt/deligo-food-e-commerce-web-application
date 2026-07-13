@@ -148,10 +148,13 @@ const MenuProductCard = memo(function MenuProductCard({
   onSelect: (productId: string) => void;
 }) {
   const { t } = useTranslation();
-  const hasDiscount = product.pricing.discount > 0;
-  const originalPrice = product.pricing.price;
-  const finalPrice = product.pricing.finalPrice;
-  const currency = currencySymbol(product.pricing.currency);
+  // Guard against a product record with missing/partial pricing — an unguarded
+  // access here throws during render and trips the route error boundary.
+  const pricing = product.pricing;
+  const hasDiscount = (pricing?.discount ?? 0) > 0;
+  const originalPrice = pricing?.price ?? 0;
+  const finalPrice = pricing?.finalPrice ?? 0;
+  const currency = currencySymbol(pricing?.currency);
 
   return (
     <div className="group flex overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none transition hover:shadow-lg dark:hover:bg-neutral-800/30">
@@ -164,7 +167,7 @@ const MenuProductCard = memo(function MenuProductCard({
         />
         {hasDiscount && (
           <span className="absolute left-2 top-2 rounded-full bg-pink-600 px-2 py-1 text-[10px] font-bold text-white">
-            {Math.round(product.pricing.discount)}% {t("off")}
+            {Math.round(pricing?.discount ?? 0)}% {t("off")}
           </span>
         )}
       </div>
@@ -501,7 +504,7 @@ export default function VendorDetailsPage({
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {filteredProducts.map((product) => (
                   <MenuProductCard
-                    key={product.id}
+                    key={product.productId ?? product.id}
                     product={product}
                     onSelect={handleSelectProduct}
                   />

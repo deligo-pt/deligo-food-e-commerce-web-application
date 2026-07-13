@@ -514,12 +514,10 @@ export default function CategoriesSection() {
           <ChevronRight size={22} className="text-[#191c1d] dark:text-neutral-100" />
         </button>
 
-        {/* Edge fades — the "there's more, swipe me" cue on mobile. */}
+        {/* Right-only edge fade — the "there's more, swipe me" cue on mobile.
+            No left fade: it pooled over the leftmost card and obscured it. */}
         <div
-          className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-[#f8f9fa] to-transparent transition-opacity dark:from-neutral-950 sm:hidden ${canScrollLeft ? "opacity-100" : "opacity-0"}`}
-        />
-        <div
-          className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-[#f8f9fa] to-transparent transition-opacity dark:from-neutral-950 sm:hidden ${canScrollRight ? "opacity-100" : "opacity-0"}`}
+          className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-4 bg-gradient-to-l from-[#f8f9fa] to-transparent transition-opacity dark:from-neutral-950 sm:hidden ${canScrollRight ? "opacity-100" : "opacity-0"}`}
         />
 
         <div className="overflow-hidden pb-6">
@@ -530,7 +528,7 @@ export default function CategoriesSection() {
           onMouseLeave={handleMouseLeave}
           onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove}
-          className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:gap-8 lg:-mx-16 lg:px-16 select-none cursor-grab active:cursor-grabbing [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pb-4 sm:gap-8 lg:-mx-16 lg:scroll-px-16 lg:px-16 select-none cursor-grab active:cursor-grabbing [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           {cuisines.map((cuisine) => {
             const cuisineLabel = cuisine.name?.trim() || cuisine.slug;
