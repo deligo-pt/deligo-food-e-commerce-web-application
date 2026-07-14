@@ -70,7 +70,7 @@ export default function OrderCard({
           <div>
             <h3 className="font-semibold text-[#191c1d] dark:text-neutral-50">{restaurant}</h3>
 
-            <div className="mt-1 flex items-center gap-2 text-[11px] text-[#5a4044] dark:text-neutral-400">
+            <div className="mt-1 flex items-center gap-2 text-xs text-[#5a4044] dark:text-neutral-400">
               <span>
                 {t("order")} #{orderId}
               </span>

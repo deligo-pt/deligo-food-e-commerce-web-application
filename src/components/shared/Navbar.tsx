@@ -391,7 +391,7 @@ export default function Navbar() {
                 className="rounded-lg"
               />
             </span>
-            <span className="text-[20px] font-black tracking-tight md:text-[24px]">
+            <span className="text-xl font-black tracking-tight md:text-2xl">
               DeliGo
             </span>
           </Link>
@@ -444,13 +444,13 @@ export default function Navbar() {
               value={localSearchTerm}
               onChange={onSearchChange}
               onKeyDown={onKeyDown}
-              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
+              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-base text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
             />
           </div>
         </div>
 
         {/* Actions (Desktop and Mobile) */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-4 lg:gap-6">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-2 lg:gap-6">
           <div className="flex shrink-0 items-center gap-1 sm:gap-2 lg:gap-4">
             {/* Language toggle: styled to match the Bell/Cart icon buttons so it
                 sits inline with the other actions on every screen size. */}
@@ -483,7 +483,7 @@ export default function Navbar() {
               onClick={handleAccountClick}
               className="flex min-w-0 items-center gap-2 rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:gap-3"
             >
-              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-white/20 bg-[#edeeef] flex items-center justify-center">
+              <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-white/20 bg-[#edeeef] flex items-center justify-center sm:h-9 sm:w-9">
                 {!mounted ? (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -518,7 +518,7 @@ export default function Navbar() {
                   <User size={22} className="text-[#f9186b]" />
                 )}
               </div>
-              <span className="min-w-0 truncate text-[14px] font-semibold leading-5 sm:max-w-[140px]">
+              <span className="min-w-0 max-w-[84px] truncate text-sm font-semibold leading-5 sm:max-w-[140px]">
                 {mounted && isLoggedIn && firstName ? firstName : t("account")}
               </span>
             </button>
@@ -555,7 +555,7 @@ export default function Navbar() {
             value={localSearchTerm}
             onChange={onSearchChange}
             onKeyDown={onKeyDown}
-            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-[16px] text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
+            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-base text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
           />
         </div>
       </div>
@@ -569,7 +569,7 @@ export default function Navbar() {
           >
             <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
               <MapPin size={18} className="shrink-0" />
-              <span className="text-[14px] font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+              <span className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">
                 {!mounted ? (
                   "Add Address"
                 ) : isLoggedIn && (isAutoSavingAddress || isAddressRefetching) ? (

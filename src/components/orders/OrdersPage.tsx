@@ -260,7 +260,7 @@ export default function OrdersPage() {
     <section className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-8 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-5xl px-4 md:px-8">
         <div className="mb-8">
-          <h1 className="text-[32px] font-bold text-[#191c1d] dark:text-neutral-50">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
             {t("myOrders")}
           </h1>
 

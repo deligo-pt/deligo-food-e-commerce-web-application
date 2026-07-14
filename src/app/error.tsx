@@ -28,7 +28,7 @@ export default function Error({
       <h1 className="mt-6 text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
         {t("somethingWentWrong")}
       </h1>
-      <p className="mt-2 max-w-md text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400">
+      <p className="mt-2 max-w-md text-base leading-6 text-[#5a4044] dark:text-neutral-400">
         {t("errorPageDesc")}
       </p>
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">

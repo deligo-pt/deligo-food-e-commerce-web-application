@@ -326,7 +326,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-      <h1 className="text-4xl font-extrabold text-gray-900 dark:text-neutral-50">
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-neutral-50">
         {t("reviewYourCart")}
       </h1>
       <p className="mt-2 text-gray-500 dark:text-neutral-400">{t("completeOrderDetails")}</p>

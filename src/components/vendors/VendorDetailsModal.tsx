@@ -194,7 +194,7 @@ export default function VendorDetailsModal({
             </button>
 
             <div>
-              <h1 className="text-[18px] font-semibold text-gray-900 dark:text-white">
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {vendorData?.businessDetails?.businessName || t("vendor")}
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-neutral-400">
@@ -313,7 +313,7 @@ export default function VendorDetailsModal({
                       ? t("openNow")
                       : t("closedNow")}
                   </p>
-                  <p className="text-[11px] sm:text-xs text-gray-500 dark:text-neutral-400">
+                  <p className="text-xs text-gray-500 dark:text-neutral-400">
                     {vendorData?.businessDetails?.openingHours &&
                     vendorData?.businessDetails?.closingHours
                       ? `${vendorData.businessDetails.openingHours} – ${vendorData.businessDetails.closingHours}`
@@ -330,7 +330,7 @@ export default function VendorDetailsModal({
                   <p className="text-xs sm:text-sm font-bold text-pink-600 dark:text-pink-400">
                     {t("preparationTime")}
                   </p>
-                  <p className="text-[11px] sm:text-xs text-gray-500 dark:text-neutral-400">
+                  <p className="text-xs text-gray-500 dark:text-neutral-400">
                     {vendorData?.businessDetails?.preparationTimeMinutes ?? "—"}{" "}
                     {t("minutes")}
                   </p>
@@ -367,7 +367,7 @@ export default function VendorDetailsModal({
                     <Phone size={18} className="text-pink-600 dark:text-pink-400" />
                   </div>
                   <div>
-                    <p className="text-[11px] sm:text-xs text-gray-500 dark:text-neutral-400">
+                    <p className="text-xs text-gray-500 dark:text-neutral-400">
                       {t("phone")}
                     </p>
                     <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white break-all">
@@ -382,7 +382,7 @@ export default function VendorDetailsModal({
                     <Mail size={18} className="text-pink-600 dark:text-pink-400" />
                   </div>
                   <div>
-                    <p className="text-[11px] sm:text-xs text-gray-500 dark:text-neutral-400">
+                    <p className="text-xs text-gray-500 dark:text-neutral-400">
                       {t("email")}
                     </p>
                     <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white break-all">
@@ -397,7 +397,7 @@ export default function VendorDetailsModal({
                     <FileText size={18} className="text-pink-600 dark:text-pink-400" />
                   </div>
                   <div>
-                    <p className="text-[11px] sm:text-xs text-gray-500 dark:text-neutral-400">
+                    <p className="text-xs text-gray-500 dark:text-neutral-400">
                       {t("nifNumber")}
                     </p>
                     <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">

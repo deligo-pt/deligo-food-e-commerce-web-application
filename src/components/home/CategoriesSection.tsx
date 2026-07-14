@@ -153,7 +153,7 @@
 //     return (
 //       <section>
 //         <div className="mb-5 flex items-center justify-between sm:mb-10">
-//           <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+//           <h2 className="text-3xl font-bold text-[#191c1d]">
 //             {t("whatsOnYourMind")}
 //           </h2>
 //         </div>
@@ -167,12 +167,12 @@
 //   return (
 //     <section>
 //       <div className="mb-10 flex items-center justify-between">
-//         <h2 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+//         <h2 className="text-3xl font-bold text-[#191c1d]">
 //           {t("whatsOnYourMind")}
 //         </h2>
 //         <Link
 //           href="/categories"
-//           className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#f9186b] hover:underline"
+//           className="flex items-center gap-2 text-xl font-bold leading-7 text-[#f9186b] hover:underline"
 //         >
 //           {t("viewAll")} <ChevronRight size={20} />
 //         </Link>
@@ -209,7 +209,7 @@
 //                 </div>
 //               </div>
 //               <span
-//                 className={`text-center text-[12px] font-bold leading-4 tracking-[0.16em] uppercase transition-colors ${
+//                 className={`text-center text-xs font-bold leading-4 tracking-[0.16em] uppercase transition-colors ${
 //                   isActive
 //                     ? "text-[#f9186b]"
 //                     : "text-[#191c1d] group-hover:text-[#f9186b]"
@@ -444,7 +444,7 @@ export default function CategoriesSection() {
     return (
       <section>
         <div className="mb-5 flex items-center justify-between sm:mb-10">
-          <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-[32px] sm:leading-10 dark:text-neutral-100">
+          <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-3xl sm:leading-10 dark:text-neutral-100">
             {t("whatsOnYourMind")}
           </h2>
         </div>
@@ -469,7 +469,7 @@ export default function CategoriesSection() {
     return (
       <section>
         <div className="mb-5 flex items-center justify-between sm:mb-10">
-          <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-[32px] sm:leading-10 dark:text-neutral-100">
+          <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-3xl sm:leading-10 dark:text-neutral-100">
             {t("whatsOnYourMind")}
           </h2>
         </div>
@@ -483,13 +483,13 @@ export default function CategoriesSection() {
   return (
     <section>
       <div className="mb-10 flex items-center justify-between">
-        <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-[32px] sm:leading-10 dark:text-neutral-100">
+        <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-3xl sm:leading-10 dark:text-neutral-100">
           {t("whatsOnYourMind")}
         </h2>
         {/* <button
           onClick={() => setIsModalOpen(true)}
           onMouseEnter={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 text-[20px] font-bold leading-7 text-[#f9186b] hover:underline cursor-pointer"
+          className="flex items-center gap-2 text-xl font-bold leading-7 text-[#f9186b] hover:underline cursor-pointer"
         >
           {t("viewAll")} <ChevronRight size={20} />
         </button> */}
@@ -566,7 +566,7 @@ export default function CategoriesSection() {
                   </div>
                 </div>
                 <span
-                  className={`text-center text-[10px] font-bold leading-3 tracking-normal uppercase transition-colors sm:text-[12px] sm:leading-4 sm:tracking-[0.16em] ${isActive
+                  className={`text-center text-[10px] font-bold leading-3 tracking-normal uppercase transition-colors sm:text-xs sm:leading-4 sm:tracking-[0.16em] ${isActive
                       ? "text-[#f9186b] dark:text-pink-500"
                       : "text-[#191c1d] dark:text-neutral-100 group-hover:text-[#f9186b] dark:group-hover:text-pink-500"
                     }`}

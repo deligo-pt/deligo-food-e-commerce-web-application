@@ -90,7 +90,7 @@ export default function EditProfilePage() {
                   )}
                 </div>
               </div>
-              <h1 className="mt-5 text-3xl font-bold text-[#191c1d] dark:text-neutral-50">
+              <h1 className="mt-5 text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
                 {t("myProfile")}
               </h1>
 

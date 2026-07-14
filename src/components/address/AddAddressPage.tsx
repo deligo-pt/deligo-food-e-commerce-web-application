@@ -221,7 +221,7 @@ export default function AddAddressPage() {
       <Toaster position="top-center" richColors />
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#191c1d] dark:text-neutral-50">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
             {t("addNewAddress")}
           </h1>
         </div>

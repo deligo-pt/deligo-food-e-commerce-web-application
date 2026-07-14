@@ -404,7 +404,7 @@ export default function VendorDetailsPage({
               <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8">
                 <div className="rounded-2xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 p-5 shadow-xl dark:shadow-none">
                   <div className="mb-1 flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
                       {vendor.businessDetails.businessName}
                     </h1>
                     <span

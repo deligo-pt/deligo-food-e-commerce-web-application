@@ -138,7 +138,9 @@ export default function PaymentPage() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<string>("CARD");
+  // Default to Google Pay: CARD is currently rejected by the REDUNIQ sandbox
+  // (PAYMENT_INITIATION_FAILED_BY_GATEWAY), while the wallet methods work.
+  const [paymentMethod, setPaymentMethod] = useState<string>("GOOGLE_PAY");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentError, setPaymentError] = useState("");
 
@@ -278,7 +280,24 @@ export default function PaymentPage() {
         },
       );
 
-      const { redirectUrl } = response.data.data;
+      const { redirectUrl, paymentToken } = response.data.data;
+
+      // The post-payment return page finalizes the order via /orders/create-order,
+      // but REDUNIQ's return URL does NOT carry our internal checkoutSummaryId or
+      // paymentToken. Persist them here so the return page can read them back from
+      // sessionStorage — without this the order never completes after payment.
+      if (!redirectUrl) {
+        throw new Error("Payment could not be initiated. Please try again.");
+      }
+
+      sessionStorage.setItem(
+        "pendingOrder",
+        JSON.stringify({
+          checkoutSummaryId: summary._id,
+          paymentToken,
+          deliveryNotes: "",
+        }),
+      );
       window.location.href = redirectUrl;
     } catch (err) {
       const errorMsg = getApiErrorMessage(err, "Failed to process payment");

@@ -120,9 +120,9 @@ export default function Footer() {
   ];
 
   const linkClass =
-    "text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#f9186b] dark:hover:text-pink-500";
+    "text-base leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#f9186b] dark:hover:text-pink-500";
   const headingClass =
-    "mb-4 md:mb-6 text-[13px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white";
+    "mb-4 md:mb-6 text-xs font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white";
 
   return (
     <footer className="w-full border-t border-[#e3bdc3]/20 dark:border-neutral-800 bg-[#e1e3e4] dark:bg-neutral-900 px-6 py-12 sm:px-8 sm:py-14 md:py-16 lg:px-16 lg:py-20 transition-colors duration-200">
@@ -146,12 +146,12 @@ export default function Footer() {
               />
             </span>
 
-            <span className="block text-[32px] font-black tracking-tight text-[#f9186b] sm:text-[36px] lg:text-[40px]">
+            <span className="block text-3xl font-black tracking-tight text-[#f9186b] sm:text-4xl">
               DeliGo
             </span>
           </Link>
 
-          <p className="max-w-md text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-[16px]">
+          <p className="max-w-md text-base leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-base">
             {t("footerDescription")}
           </p>
 
@@ -211,7 +211,7 @@ export default function Footer() {
         {/* App Store Badges */}
         <div className="col-span-2 md:col-span-4">
           <h4 className={headingClass}>{t("getTheApp")}</h4>
-          <p className="mb-5 max-w-md text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-[16px]">
+          <p className="mb-5 max-w-md text-base leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-base">
             {t("mobileExperience")}
           </p>
           <div className="flex flex-row flex-wrap gap-3 sm:flex-col">
@@ -253,7 +253,7 @@ export default function Footer() {
       <div className="mb-6 h-px w-full bg-[#e3bdc3]/30 dark:bg-neutral-800 md:mb-8" />
 
       {/* Bottom */}
-      <div className="flex w-full flex-col items-center justify-between gap-4 text-center text-[13px] leading-5 text-[#5a4044] dark:text-neutral-400 sm:text-[14px] md:flex-row md:text-left">
+      <div className="flex w-full flex-col items-center justify-between gap-4 text-center text-xs leading-5 text-[#5a4044] dark:text-neutral-400 sm:text-sm md:flex-row md:text-left">
         <div>
           © {currentYear} DeliGo PIXELMIRACLE, LDA. {t("allRightsReserved")}
         </div>

@@ -193,7 +193,7 @@ export default function LocationPromptModal() {
             {t("locationPromptTitle")}
           </h2>
 
-          <p className="mb-8 text-[16px] leading-relaxed text-[#5a4044] font-medium px-2">
+          <p className="mb-8 text-base leading-relaxed text-[#5a4044] font-medium px-2">
             {t("locationPromptDescription")}
           </p>
 

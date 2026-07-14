@@ -196,7 +196,7 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
             fallbackIcon={<Store className="h-12 w-12" />}
           />
           <div className="absolute left-5 top-5">
-            <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 dark:bg-neutral-900/95 px-4 py-2 text-[14px] font-bold text-[#191c1d] dark:text-white shadow-lg backdrop-blur-md">
+            <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 dark:bg-neutral-900/95 px-4 py-2 text-sm font-bold text-[#191c1d] dark:text-white shadow-lg backdrop-blur-md">
               <Star size={18} className="text-[#f6c344]" />
               {vendor.rating?.average ?? 0}
             </span>
@@ -205,15 +205,15 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
 
         <div className="p-8">
           <div className="mb-2 flex items-center gap-4">
-            <h3 className="line-clamp-1 text-[24px] font-bold leading-8 text-[#191c1d] dark:text-neutral-100">
+            <h3 className="line-clamp-1 text-lg font-bold text-[#191c1d] dark:text-neutral-100 sm:text-xl">
               {vendor.businessDetails.businessName}
             </h3>
           </div>
-          <p className="mb-6 text-[18px] leading-7 text-[#5a4044] dark:text-neutral-400">
+          <p className="mb-6 text-lg leading-7 text-[#5a4044] dark:text-neutral-400">
             {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
               vendor.businessDetails.businessType}
           </p>
-          <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-[14px] font-medium">
+          <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-sm font-medium">
             <span className="flex items-center gap-2 text-[#f9186b] dark:text-pink-500">
               <Truck size={20} />
               {displayTime}

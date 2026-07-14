@@ -144,7 +144,7 @@ export default function ShopSection() {
     return (
       <section>
         <div className="mb-5 flex items-center justify-between sm:mb-8">
-          <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
+          <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-3xl sm:leading-10 dark:text-neutral-100">
             {t("shopOnDeligo")}
           </h2>
         </div>
@@ -160,7 +160,7 @@ export default function ShopSection() {
   return (
     <section>
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-[32px] sm:leading-10 dark:text-neutral-100">
+        <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-3xl sm:leading-10 dark:text-neutral-100">
           {t("shopOnDeligo")}
         </h2>
 
@@ -211,7 +211,7 @@ export default function ShopSection() {
               </div>
 
               <div className="flex-1">
-                <h3 className="text-lg font-black leading-tight text-[#191c1d] dark:text-neutral-100 sm:text-xl lg:text-[24px] lg:leading-8">
+                <h3 className="text-lg font-black leading-tight text-[#191c1d] dark:text-neutral-100 sm:text-xl">
                   {category.name}
                 </h3>
               </div>

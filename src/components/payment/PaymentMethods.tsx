@@ -40,7 +40,7 @@ export default function PaymentMethodPage() {
         <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
           {/* Header */}
           <div className="border-b border-gray-200 dark:border-neutral-800 px-5 py-6 sm:px-8">
-            <h1 className="text-2xl font-bold text-[#222] dark:text-neutral-50 sm:text-3xl">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#222] dark:text-neutral-50">
               {t("paymentMethods")}
             </h1>
             <p className="mt-1.5 text-sm text-gray-500 dark:text-neutral-400">
@@ -67,7 +67,7 @@ export default function PaymentMethodPage() {
                         {method.title}
                       </h3>
                       {method.recommended && (
-                        <span className="rounded-full bg-[#f9186b] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                        <span className="rounded-full bg-[#f9186b] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                           {t("recommended")}
                         </span>
                       )}
@@ -83,7 +83,7 @@ export default function PaymentMethodPage() {
 
           {/* Secure note */}
           <div className="border-t border-gray-200 dark:border-neutral-800 bg-[#fafafa] dark:bg-neutral-950/50 px-5 py-5 sm:px-8">
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-500 dark:text-neutral-400">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
               <Lock className="h-3.5 w-3.5 shrink-0" />
               <span>{t("paymentInfoSecure")}</span>
             </div>

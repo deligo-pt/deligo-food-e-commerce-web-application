@@ -135,7 +135,7 @@ export default function ReferEarnPage() {
                 <Gift className="h-8 w-8 text-pink-600 dark:text-pink-400" />
               </div>
 
-              <h1 className="mb-5 text-2xl font-bold text-[#191c1d] dark:text-neutral-50 md:text-3xl">
+              <h1 className="mb-5 text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
                 {t("yourReferralCode")}
               </h1>
 

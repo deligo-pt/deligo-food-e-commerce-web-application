@@ -270,7 +270,7 @@ export default function SearchContent() {
                     </div>
                     <div className="p-8">
                       <div className="mb-2 flex items-center gap-4">
-                        <h3 className="line-clamp-1 text-2xl font-bold text-[#191c1d]">
+                        <h3 className="line-clamp-1 text-lg font-bold text-[#191c1d] sm:text-xl">
                           {vendor.businessDetails.businessName}
                         </h3>
                       </div>

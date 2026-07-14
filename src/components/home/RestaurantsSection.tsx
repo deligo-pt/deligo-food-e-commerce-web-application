@@ -128,7 +128,7 @@ const RestaurantCard = memo(function RestaurantCard({
 
         <div className="flex flex-1 flex-col p-5 sm:p-8">
           <div className="mb-2 flex items-center gap-4">
-            <h3 className="line-clamp-1 text-lg font-bold text-[#191c1d] dark:text-neutral-100 sm:text-2xl">
+            <h3 className="line-clamp-1 text-lg font-bold text-[#191c1d] dark:text-neutral-100 sm:text-xl">
               {vendor.businessDetails.businessName}
             </h3>
           </div>
@@ -386,12 +386,12 @@ export default function RestaurantsSection() {
     return (
       <section>
         <div className="mb-6 flex items-center justify-between sm:mb-10">
-          <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-[32px] sm:leading-10 dark:text-neutral-100">
+          <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-3xl sm:leading-10 dark:text-neutral-100">
             {t("nearYou")}
           </h2>
           <Link
             href="/vendors"
-            className="flex items-center gap-2 text-sm font-bold text-[#f9186b] dark:text-pink-500 hover:underline sm:text-[20px] sm:leading-7"
+            className="flex items-center gap-2 text-sm font-bold text-[#f9186b] dark:text-pink-500 hover:underline sm:text-xl sm:leading-7"
           >
             {t("viewAll")} <ChevronRight size={20} />
           </Link>
@@ -442,12 +442,12 @@ export default function RestaurantsSection() {
   return (
     <section>
       <div className="mb-10 flex items-center justify-between">
-        <h2 className="text-[32px] font-bold leading-10 text-[#191c1d] dark:text-neutral-100">
+        <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-3xl sm:leading-10 dark:text-neutral-100">
           {t("nearYou")}
         </h2>
         <Link
           href="/vendors"
-          className="flex items-center gap-2 text-sm font-bold text-[#f9186b] dark:text-pink-500 hover:underline sm:text-[20px] sm:leading-7"
+          className="flex items-center gap-2 text-sm font-bold text-[#f9186b] dark:text-pink-500 hover:underline sm:text-xl sm:leading-7"
         >
           {t("viewAll")} <ChevronRight size={20} />
         </Link>

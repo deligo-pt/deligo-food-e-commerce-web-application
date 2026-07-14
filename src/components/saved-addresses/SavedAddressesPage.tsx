@@ -141,7 +141,7 @@ export default function SavedAddressesPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold text-black dark:text-neutral-50">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black dark:text-neutral-50">
             {t("savedAddresses")}
           </h1>
         </div>
@@ -231,7 +231,7 @@ export default function SavedAddressesPage() {
                   </span>
 
                   {isPrimary && (
-                    <span className="rounded bg-[#C2185B] dark:bg-pink-600 px-1.5 py-1px text-[9px] font-semibold text-white">
+                    <span className="rounded bg-[#C2185B] dark:bg-pink-600 px-1.5 py-1px text-[10px] font-semibold text-white">
                       {t("primary")}
                     </span>
                   )}

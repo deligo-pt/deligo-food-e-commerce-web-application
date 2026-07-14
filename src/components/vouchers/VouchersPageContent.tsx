@@ -117,7 +117,7 @@ export default function VouchersPageContent() {
     <section className="w-full bg-[#f8f9fa] dark:bg-neutral-950 px-8 py-12 min-h-screen transition-colors duration-200">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="mb-2 text-[32px] font-bold text-[#191c1d] dark:text-neutral-50">
+        <h1 className="mb-2 text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
           {t("vouchers")}
         </h1>
 

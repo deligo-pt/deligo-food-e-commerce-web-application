@@ -45,7 +45,7 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-5xl px-4 py-8 md:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900 dark:text-neutral-50">
             {t("settings")}
           </h1>
           <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
@@ -240,7 +240,7 @@ function LinkRow({
           </div>
         </div>
 
-        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">
           {t("comingSoon")}
         </span>
       </div>
