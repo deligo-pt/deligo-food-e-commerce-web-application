@@ -14,7 +14,7 @@ import AddressForm from "./AddressForm";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile } from "@/hooks/queries/useProfile";
 
-const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_LOCATION_API_KEY}&libraries=places`;
+const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
 
 interface Address {
   _id: string;
