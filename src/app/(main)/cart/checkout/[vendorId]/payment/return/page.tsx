@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import Loader from "@/components/shared/Loader";
 
 export default function PaymentReturnPage() {
   const { t } = useTranslation();
@@ -68,14 +69,7 @@ export default function PaymentReturnPage() {
   }, [router, searchParams, t]);
 
   if (status === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-pink-600 border-t-transparent mx-auto" />
-          <p className="mt-4 text-gray-600">{t("finalizingYourOrder")}</p>
-        </div>
-      </div>
-    );
+    return <Loader fullScreen label={t("finalizingYourOrder")} />;
   }
 
   if (status === "error") {
@@ -104,12 +98,5 @@ export default function PaymentReturnPage() {
   }
 
   // status === "success" – the redirect will happen, but show a loader briefly
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-pink-600 border-t-transparent mx-auto" />
-        <p className="mt-4 text-gray-600">{t("orderConfirmedRedirecting")}</p>
-      </div>
-    </div>
-  );
+  return <Loader fullScreen label={t("orderConfirmedRedirecting")} />;
 }

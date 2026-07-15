@@ -2,6 +2,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   Minus,
@@ -14,6 +15,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
+import Loader from "@/components/shared/Loader";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
@@ -302,11 +304,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8f9fa] dark:bg-neutral-950">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
-      </div>
-    );
+    return <Loader fullScreen />;
   }
 
   if (error) {
@@ -359,6 +357,16 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 </div>
               </div>
             </div>
+
+            {vendor?.userId && (
+              <Link
+                href={`/vendors/${vendor.userId}`}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-[#f9186b] px-5 py-2.5 text-sm font-semibold text-[#f9186b] transition-colors hover:bg-[#f9186b] hover:text-white dark:border-pink-500 dark:text-pink-400 dark:hover:bg-pink-600 dark:hover:text-white"
+              >
+                <Plus size={16} />
+                {t("addMoreItems")}
+              </Link>
+            )}
           </div>
         </div>
       </div>

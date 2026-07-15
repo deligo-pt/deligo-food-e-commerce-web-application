@@ -25,6 +25,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import SafeImage from "@/components/shared/SafeImage";
+import Loader from "@/components/shared/Loader";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { resolveAddonName } from "@/lib/cart";
@@ -316,11 +317,7 @@ export default function PaymentPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 flex items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
-      </div>
-    );
+    return <Loader fullScreen />;
   }
 
   if (error || !summary) {
@@ -465,7 +462,7 @@ export default function PaymentPage() {
             <div className="rounded-lg border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-neutral-50">{t("yourOrder")}</h2>
-                <Link href={`/vendors`}>
+                <Link href={vendor?.userId ? `/vendors/${vendor.userId}` : "/vendors"}>
                   <button className="text-sm font-semibold text-[#f9186b] dark:text-pink-400 hover:text-[#d4145b] dark:hover:text-pink-300">
                     {t("addMoreItems")}
                   </button>

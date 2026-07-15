@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import Loader from "@/components/shared/Loader";
 
 export default function SuccessContent() {
   const { t } = useTranslation();
@@ -67,7 +68,7 @@ export default function SuccessContent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-neutral-950 transition-colors duration-200">
       <div className="text-center">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-pink-600 border-t-transparent" />
+        <Loader label={null} className="mx-auto" />
 
         <h2 className="mt-4 text-lg font-semibold text-gray-800 dark:text-neutral-200">
           {t("paymentSuccessful")}
