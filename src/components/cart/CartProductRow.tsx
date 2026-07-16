@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
 import SafeImage from "@/components/shared/SafeImage";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getAddonsTotal } from "@/lib/cart";
+import type { CartAddon } from "@/types/cart";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +33,7 @@ interface CartItem {
   name: string;
   image: string;
   isActive: boolean;
+  addons?: CartAddon[];
   itemSummary: {
     quantity: number;
     grandTotal: number;
@@ -234,7 +237,9 @@ export default function CartProductRow({
               <p className="text-xs text-gray-400 dark:text-neutral-500 line-through">
                 €
                 {(
-                  item.productPricing.originalPrice * item.itemSummary.quantity
+                  item.productPricing.originalPrice *
+                    item.itemSummary.quantity +
+                  getAddonsTotal(item)
                 ).toFixed(2)}
               </p>
             )}

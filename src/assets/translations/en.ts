@@ -201,6 +201,8 @@ const en = {
   enterVoucherCode: "Enter voucher code",
   apply: "Apply",
   applying: "Applying...",
+  removingVoucher: "Removing...",
+  failedToRemoveVoucher: "Could not remove the voucher. Please try again.",
   availableOffers: "Available Offers",
   noOffersAvailable: "No offers available for this order",
   offerDiscount: "Offer Discount",
@@ -294,6 +296,7 @@ const en = {
   locationNotAvailable: "Location not available",
 
   closedNow: "Closed now",
+  currentlyClosed: "Currently Closed",
   hoursNotSet: "Hours not set",
 
   preparationTime: "Preparation Time",

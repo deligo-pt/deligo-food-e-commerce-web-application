@@ -4,13 +4,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, Ticket } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
+import { useStore } from "@/stores/translationStore";
 import VouchersSkeleton from "./VouchersSkeleton";
 import { toast } from "sonner";
 
 type Offer = {
   _id: string;
-  title: string;
-  description: string;
+  // This endpoint ignores the Accept-Language header and returns the raw
+  // bilingual document, so these must go through `resolveLocalized` before
+  // they reach JSX.
+  title: LocalizedField;
+  description: LocalizedField;
   code: string;
   expiresAt: string;
   offerType: string;
@@ -27,6 +32,7 @@ type OffersResponse = {
 
 export default function VouchersPageContent() {
   const { t, langVersion } = useTranslation();
+  const lang = useStore((s) => s.lang);
   const prevLangVersionRef = useRef(langVersion);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +54,10 @@ export default function VouchersPageContent() {
 
         const response = await apiClient.get<OffersResponse>("/offers");
 
-        setOffers(response.data?.data ?? []);
+        // The list is filtered during render, where a try/catch can't reach —
+        // so a non-array payload has to be rejected here, not there.
+        const payload = response.data?.data;
+        setOffers(Array.isArray(payload) ? payload : []);
       } catch (err) {
         setError(getApiErrorMessage(err, "Failed to load offers"));
       } finally {
@@ -158,7 +167,7 @@ export default function VouchersPageContent() {
       {/* Error */}
       {!loading && error && (
         <div className="rounded-xl border border-red-200 dark:border-red-950/30 bg-red-50 dark:bg-red-950/15 p-4 text-red-600 dark:text-red-400">
-          {t("voucherError")}
+          {t("failedToLoadOffers")}
         </div>
       )}
 
@@ -177,7 +186,7 @@ export default function VouchersPageContent() {
             </h2>
 
             <p className="max-w-sm text-[#5a4044] dark:text-neutral-400">
-              {t("expiredVouchersDescription")}
+              {t("noExpiredVouchersDescription")}
             </p>
           </div>
         )}
@@ -207,10 +216,12 @@ export default function VouchersPageContent() {
 
                 <div>
                   <h3 className="mb-1 text-lg font-semibold text-[#191c1d] dark:text-neutral-50">
-                    {offer.title}
+                    {resolveLocalized(offer.title, lang)}
                   </h3>
 
-                  <p className="text-sm text-[#5a4044] dark:text-neutral-400">{offer.description}</p>
+                  <p className="text-sm text-[#5a4044] dark:text-neutral-400">
+                    {resolveLocalized(offer.description, lang)}
+                  </p>
                 </div>
               </div>
 

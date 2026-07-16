@@ -21,7 +21,7 @@ import {
   Percent,
   UtensilsCrossed,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import SafeImage from "@/components/shared/SafeImage";
@@ -29,12 +29,17 @@ import Loader from "@/components/shared/Loader";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { resolveAddonName } from "@/lib/cart";
+import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
+import { addTax, extractTax } from "@/lib/tax";
 import type { CartAddon } from "@/types/cart";
 import Link from "next/link";
 
 interface CheckoutItem {
   productId: string;
-  name: string;
+  // `GET /checkout/summary` resolves this via Accept-Language, but the summary
+  // returned by `POST /offers/validate-apply-offer` carries the raw bilingual
+  // document — so this field's shape depends on which call produced the summary.
+  name: LocalizedField;
   image: string;
   itemSummary: { quantity: number; grandTotal: number };
   productPricing: { priceAfterProductDiscount: number };
@@ -69,7 +74,7 @@ interface DeliveryAddress {
 
 interface OfferApplied {
   promoId: string;
-  title: string;
+  title: LocalizedField;
   discountValue: number;
   code: string;
 }
@@ -116,8 +121,10 @@ interface Vendor {
 
 interface AvailableOffer {
   _id: string;
-  title: string;
-  description: string;
+  // The offers endpoints ignore the Accept-Language header and return the raw
+  // bilingual document — resolve before rendering.
+  title: LocalizedField;
+  description: LocalizedField;
   offerType: "PERCENT" | "FLAT";
   isAutoApply: boolean;
   code: string;
@@ -126,13 +133,15 @@ interface AvailableOffer {
   minOrderAmount: number;
   expiresAt: string;
   isEligible: boolean;
-  message: string;
+  message: LocalizedField;
 }
 
 export default function PaymentPage() {
   const { t } = useTranslation();
   const lang = useStore((s) => s.lang);
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const checkoutId = searchParams.get("checkoutId");
 
   const [summary, setSummary] = useState<CheckoutSummary | null>(null);
@@ -152,6 +161,10 @@ export default function PaymentPage() {
   const [manualCode, setManualCode] = useState("");
   const [applyingOfferId, setApplyingOfferId] = useState<string | null>(null);
   const [offerApplyError, setOfferApplyError] = useState("");
+  const [isRemovingOffer, setIsRemovingOffer] = useState(false);
+  // Separate from `offerApplyError`, which only renders inside the offer modal —
+  // removal happens with that modal closed, so its error needs its own slot.
+  const [removeOfferError, setRemoveOfferError] = useState("");
   const [showSupportModal, setShowSupportModal] = useState(false);
 
   useEffect(() => {
@@ -160,6 +173,12 @@ export default function PaymentPage() {
       setLoading(false);
       return;
     }
+
+    // A new checkoutId means any voucher removal that navigated here is done.
+    // Swapping the query string re-runs this effect without remounting, so
+    // these don't reset themselves.
+    setIsRemovingOffer(false);
+    setRemoveOfferError("");
 
     const fetchData = async () => {
       try {
@@ -227,7 +246,10 @@ export default function PaymentPage() {
       const res = await apiClient.get(
         `/offers/available-offers/${summary._id}`,
       );
-      setAvailableOffers(res.data.data ?? []);
+      // The list is mapped during render, where a try/catch can't reach — so a
+      // non-array payload has to be rejected here, not there.
+      const payload = res.data?.data;
+      setAvailableOffers(Array.isArray(payload) ? payload : []);
     } catch (err) {
       setOffersError(getApiErrorMessage(err, "Failed to load offers"));
     } finally {
@@ -265,6 +287,43 @@ export default function PaymentPage() {
     } finally {
       setApplyingOfferId(null);
     }
+  };
+
+  /**
+   * Removes the applied voucher.
+   *
+   * WORKAROUND: the API has no way to un-apply an offer — `validate-apply-offer`
+   * only ever sets one, and the delete/toggle-status routes act on the offer
+   * itself in admin scope (they'd disable the voucher for every customer, not
+   * just this checkout). So the only lever is rebuilding the checkout from the
+   * cart, which yields a fresh, offer-free checkout.
+   *
+   * The cost is a new checkoutId and an abandoned old checkout. Replace this
+   * with a single call once the backend exposes a proper remove endpoint.
+   */
+  const removeOffer = async () => {
+    if (!summary || isRemovingOffer) return;
+
+    setIsRemovingOffer(true);
+    setRemoveOfferError("");
+
+    try {
+      const res = await apiClient.post("/checkout", { useCart: true });
+      const newCheckoutId = res.data?.data?._id;
+      if (!newCheckoutId) {
+        throw new Error("Checkout response did not include an id");
+      }
+
+      // `replace`, not `push`: the old checkoutId still carries the offer, so
+      // leaving it in history would let Back silently restore the discount.
+      router.replace(`${pathname}?checkoutId=${newCheckoutId}`);
+    } catch (err) {
+      setRemoveOfferError(getApiErrorMessage(err, t("failedToRemoveVoucher")));
+      setIsRemovingOffer(false);
+    }
+    // On success the flag stays set through the navigation and is cleared by the
+    // fetch effect when the new checkoutId lands — otherwise the button would
+    // flicker back to enabled while the old summary is still on screen.
   };
 
   const handlePlaceOrder = async () => {
@@ -337,19 +396,17 @@ export default function PaymentPage() {
     orderCalculation.totalOriginalPrice - orderCalculation.totalProductDiscount;
 
   const offerDiscount = orderCalculation.totalOfferDiscount ?? 0;
+  // `serviceCharge` arrives NET, unlike every other figure in the summary. The
+  // grand total charges it with VAT, so show the gross fee — otherwise the rows
+  // fall short of the amount due by exactly the fee's tax.
+  const serviceCharge = addTax(orderCalculation.serviceCharge ?? 0);
   const orderTotal = payoutSummary.grandTotal;
 
-  // Prices are tax-inclusive. The subtotal's embedded VAT comes straight from the
-  // backend (totalTaxAmount). The delivery charge is also gross; the backend
-  // doesn't break out its VAT separately, so extract it at Portugal's standard
-  // 23% rate (delivery is standard-rated) to show the "incl. tax" note.
-  const DELIVERY_TAX_RATE = 23;
+  // The subtotal's embedded VAT comes straight from the backend
+  // (totalTaxAmount). The delivery charge is gross but ships no VAT breakdown,
+  // so extract it at the standard rate to show the "incl. tax" note.
   const subtotalTax = orderCalculation.totalTaxAmount;
-  const deliveryTax =
-    delivery.totalDeliveryCharge > 0
-      ? delivery.totalDeliveryCharge -
-        delivery.totalDeliveryCharge / (1 + DELIVERY_TAX_RATE / 100)
-      : 0;
+  const deliveryTax = extractTax(delivery.totalDeliveryCharge);
 
   const vendorRating = vendor?.rating.average ?? 0;
   const vendorReviewCount = vendor?.rating.totalReviews ?? 0;
@@ -478,7 +535,7 @@ export default function PaymentPage() {
                     <div className="relative h-20 w-20 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
                       <SafeImage
                         src={item.image}
-                        alt={item.name}
+                        alt={resolveLocalized(item.name, lang)}
                         sizes="80px"
                         fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
                       />
@@ -487,7 +544,9 @@ export default function PaymentPage() {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-neutral-50">{item.name}</p>
+                      <p className="font-medium text-gray-900 dark:text-neutral-50">
+                        {resolveLocalized(item.name, lang)}
+                      </p>
                       <p className="text-sm text-gray-500 dark:text-neutral-400">
                         {t("basePrice")} €
                         {item.productPricing.priceAfterProductDiscount.toFixed(
@@ -549,6 +608,19 @@ export default function PaymentPage() {
                     €{subtotal.toFixed(2)}
                   </span>
                 </div>
+                {/* The service fee is part of `payoutSummary.grandTotal`, so it
+                    must be shown or the breakdown won't reconcile with the
+                    amount charged. */}
+                {serviceCharge > 0 && (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 text-gray-500 dark:text-neutral-400">
+                      {t("serviceCharge")}
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap font-semibold text-gray-900 dark:text-neutral-50">
+                      €{serviceCharge.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="min-w-0 text-gray-500 dark:text-neutral-400">
                     {t("deliveryFee")}
@@ -571,7 +643,7 @@ export default function PaymentPage() {
                     <span className="flex items-center gap-1.5 text-green-700 dark:text-green-400 font-medium">
                       <Tag className="h-3.5 w-3.5" />
                       {appliedOffer
-                        ? `${appliedOffer.title} (${appliedOffer.code})`
+                        ? `${resolveLocalized(appliedOffer.title, lang)} (${appliedOffer.code})`
                         : t("offerDiscount")}
                     </span>
                     <span className="font-semibold text-green-700 dark:text-green-400">
@@ -585,22 +657,50 @@ export default function PaymentPage() {
               <div className="my-6 border-t border-dashed border-gray-200 dark:border-neutral-800 pt-6">
                 {appliedOffer ? (
                   /* Applied offer pill */
-                  <div className="mb-6 flex items-center justify-between rounded-lg border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                      <span className="text-sm font-semibold text-green-700 dark:text-green-400">
-                        {appliedOffer.title}
-                      </span>
-                      <span className="rounded bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 text-xs font-bold text-green-700 dark:text-green-300">
-                        {appliedOffer.code}
-                      </span>
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 px-4 py-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <CheckCircle className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
+                        <span className="truncate text-sm font-semibold text-green-700 dark:text-green-400">
+                          {resolveLocalized(appliedOffer.title, lang)}
+                        </span>
+                        <span className="shrink-0 rounded bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 text-xs font-bold text-green-700 dark:text-green-300">
+                          {appliedOffer.code}
+                        </span>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <button
+                          onClick={handleOpenOfferModal}
+                          disabled={isRemovingOffer}
+                          className="text-xs font-semibold text-[#f9186b] dark:text-pink-400 underline hover:text-[#d4145b] dark:hover:text-pink-300 disabled:opacity-50"
+                        >
+                          {t("change")}
+                        </button>
+                        <button
+                          onClick={removeOffer}
+                          disabled={isRemovingOffer}
+                          aria-label={t("remove")}
+                          title={t("remove")}
+                          className="flex h-6 w-6 items-center justify-center rounded-full text-green-700 dark:text-green-400 transition hover:bg-green-100 dark:hover:bg-green-900/40 disabled:opacity-50"
+                        >
+                          {isRemovingOffer ? (
+                            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
+                          ) : (
+                            <X className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={handleOpenOfferModal}
-                      className="text-xs font-semibold text-[#f9186b] dark:text-pink-400 underline hover:text-[#d4145b] dark:hover:text-pink-300"
-                    >
-                      {t("change")}
-                    </button>
+                    {isRemovingOffer && (
+                      <p className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
+                        {t("removingVoucher")}
+                      </p>
+                    )}
+                    {removeOfferError && (
+                      <p className="mt-2 text-xs text-red-500 dark:text-red-400">
+                        {removeOfferError}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   /* Apply voucher button */
@@ -811,14 +911,14 @@ export default function PaymentPage() {
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold text-gray-900 dark:text-neutral-100">
-                                {offer.title}
+                                {resolveLocalized(offer.title, lang)}
                               </p>
                               <span className="rounded-md bg-pink-100 dark:bg-pink-900/30 px-2 py-0.5 text-xs font-bold tracking-wide text-pink-700 dark:text-pink-300">
                                 {offer.code}
                               </span>
                             </div>
                             <p className="mt-0.5 text-sm text-gray-500 dark:text-neutral-400 line-clamp-2">
-                              {offer.description}
+                              {resolveLocalized(offer.description, lang)}
                             </p>
                             <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-neutral-500">
                               <span className="font-medium text-[#f9186b] dark:text-pink-400">
@@ -836,7 +936,7 @@ export default function PaymentPage() {
                             </div>
                             {!offer.isEligible && (
                               <p className="mt-1 text-xs text-red-400">
-                                {offer.message}
+                                {resolveLocalized(offer.message, lang)}
                               </p>
                             )}
                           </div>

@@ -23,6 +23,7 @@ import { apiClient } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
+import { addTax } from "@/lib/tax";
 import OrderMap from "./OrderMap/OrderMap";
 
 
@@ -283,10 +284,17 @@ export default function TrackOrder() {
     0,
   );
   const payout = order.payoutSummary || {};
+  const calc = order.orderCalculation || {};
   const grandTotal = payout.grandTotal || 0;
-  const subtotal = payout.vendor?.earningsWithoutTax || 0;
+  // What the customer paid for the items — NOT payoutSummary.vendor.earnings*,
+  // which is the restaurant's net take after commission and would neither
+  // reconcile with the total nor be any of the customer's business.
+  const subtotal = (calc.totalOriginalPrice || 0) - (calc.totalProductDiscount || 0);
+  // `serviceCharge` arrives net; the total charges it with VAT.
+  const serviceCharge = addTax(calc.serviceCharge || 0);
+  const offerDiscount = calc.totalOfferDiscount || 0;
   const deliveryFee = order.delivery?.totalDeliveryCharge || 0;
-  const tax = order.orderCalculation?.totalTaxAmount || 0;
+  const tax = calc.totalTaxAmount || 0;
 
   const steps = getOrderStep(order.orderStatus, t);
 
@@ -439,10 +447,22 @@ export default function TrackOrder() {
                     <span>{t("subtotal")}</span>
                     <span>€{subtotal.toFixed(2)}</span>
                   </div>
+                  {serviceCharge > 0 && (
+                    <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
+                      <span>{t("serviceCharge")}</span>
+                      <span>€{serviceCharge.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
                     <span>{t("deliveryFee")}</span>
                     <span>€{deliveryFee.toFixed(2)}</span>
                   </div>
+                  {offerDiscount > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span>{t("offerDiscount")}</span>
+                      <span>-€{offerDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
                     <span>{t("taxIncl")}</span>
                     <span>€{tax.toFixed(2)}</span>

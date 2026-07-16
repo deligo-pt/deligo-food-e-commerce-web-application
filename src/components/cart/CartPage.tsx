@@ -5,7 +5,11 @@ import { useMemo } from "react";
 import CartStoreCard from "./CartStoreCard";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
-import { getCartVendorId, getCartVendorName } from "@/lib/cart";
+import {
+  getCartVendorId,
+  getCartVendorName,
+  getLineOriginalPrice,
+} from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCartStore } from "@/stores/cartStore";
 import { useCart, useCartCache } from "@/hooks/queries/useCart";
@@ -47,9 +51,11 @@ export default function CartPage() {
       (sum, item) => sum + item.itemSummary.quantity,
       0,
     );
+    // Add-ons are part of a line's list price, matching the basis the backend
+    // uses for totalOriginalPrice. Summing `originalPrice * quantity` alone
+    // would leave this short of the amount actually due.
     const totalOriginalPrice = newItems.reduce(
-      (sum, item) =>
-        sum + item.productPricing.originalPrice * item.itemSummary.quantity,
+      (sum, item) => sum + getLineOriginalPrice(item),
       0,
     );
     const totalProductDiscount = newItems.reduce(

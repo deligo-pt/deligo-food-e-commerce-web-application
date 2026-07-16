@@ -133,8 +133,9 @@ interface Product {
 }
 
 // Pure + module-scoped so it has a stable identity (safe as a memo dep).
+// Decimal point, matching the cart, checkout, payment and invoice surfaces.
 function formatPrice(price: number, currency: string) {
-  return `${currency}${price.toFixed(2)}`.replace(".", ",");
+  return `${currency}${price.toFixed(2)}`;
 }
 
 // Memoized menu row — only re-renders when its product or the select handler

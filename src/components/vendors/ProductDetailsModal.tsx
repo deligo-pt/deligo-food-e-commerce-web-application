@@ -192,8 +192,10 @@ export default function ProductDetailsModal({
 
   if (!isOpen) return null;
 
+  // Decimal point, matching the cart, checkout, payment and invoice surfaces —
+  // this modal was the only place rendering the same product as "€5,42".
   const formatPrice = (price: number, currency = "€") => {
-    return `${currency}${price.toFixed(2)}`.replace(".", ",");
+    return `${currency}${price.toFixed(2)}`;
   };
 
   const groupedOptions: { groupName: string; options: VariantOption[] }[] = [];

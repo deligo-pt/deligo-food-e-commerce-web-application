@@ -351,13 +351,15 @@ body {
   height: 40px;
 }
 
-/* Customer arrival scene (Phase 4): teal halo + drop-in check badge. */
-.deligo-ring-teal {
-  background: rgba(0, 128, 128, 0.18);
-  box-shadow: 0 0 0 2px rgba(0, 128, 128, 0.35);
+/* Customer arrival scene (Phase 4): berry halo + drop-in check badge. Uses the
+   DeliGo brand's deep shade (#9d174d) so the customer accent stays on-theme yet
+   distinct from the vivid pink rider/restaurant markers. */
+.deligo-ring-customer {
+  background: rgba(157, 23, 77, 0.18);
+  box-shadow: 0 0 0 2px rgba(157, 23, 77, 0.35);
 }
 .deligo-badge-delivered {
-  color: #008080;
+  color: #9d174d;
 }
 
 /* Terminal states (Phase 4): CANCELLED / REJECTED mute the whole map so the

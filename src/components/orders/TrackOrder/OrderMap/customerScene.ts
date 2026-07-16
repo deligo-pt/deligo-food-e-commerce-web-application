@@ -2,7 +2,7 @@ import type { SceneAnimation } from "./types";
 
 /**
  * Builds the animated DOM for the customer-anchored arrival scene (DELIVERED):
- * a teal celebratory halo behind the customer pin and a check badge that drops
+ * a berry celebratory halo behind the customer pin and a check badge that drops
  * in and settles above it. Positioned by `HtmlOverlay` at the delivery point;
  * children place themselves via their own transforms so animation transforms
  * never fight positioning transforms.
@@ -29,9 +29,9 @@ export function buildCustomerScene(animation: SceneAnimation): HTMLElement {
   root.setAttribute("data-scene", animation);
   root.setAttribute("aria-hidden", "true"); // decorative; status is in the timeline
 
-  // Teal celebratory halo behind the customer pin.
+  // Berry celebratory halo behind the customer pin (on-theme customer accent).
   const ring = document.createElement("div");
-  ring.className = "deligo-pulse-ring deligo-ring-teal";
+  ring.className = "deligo-pulse-ring deligo-ring-customer";
   root.appendChild(posWrap("translate(-50%, -50%)", ring));
 
   // Check badge that drops in and settles above the pin.

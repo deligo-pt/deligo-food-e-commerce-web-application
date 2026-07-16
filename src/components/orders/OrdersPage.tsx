@@ -14,6 +14,11 @@ import {
 import { Star, X } from "lucide-react";
 import { toast } from "sonner";
 
+// An order with no total is a data problem, not something to render as
+// "€undefined" — fall back to a dash.
+const formatOrderPrice = (amount?: number) =>
+  typeof amount === "number" ? `€${amount.toFixed(2)}` : "—";
+
 interface StarRatingProps {
   value: number;
   onChange: (val: number) => void;
@@ -316,7 +321,7 @@ export default function OrdersPage() {
                     }`}
                     orderId={order.orderId}
                     date={new Date(order.createdAt).toLocaleString()}
-                    price={`€${order.payoutSummary?.grandTotal?.toFixed(2)}`}
+                    price={formatOrderPrice(order.payoutSummary?.grandTotal)}
                     status={status}
                     items={order.items
                       ?.map(
@@ -348,7 +353,7 @@ export default function OrdersPage() {
                   }`}
                   orderId={order.orderId}
                   date={new Date(order.createdAt).toLocaleString()}
-                  price={`€${order.payoutSummary?.grandTotal?.toFixed(2)}`}
+                  price={formatOrderPrice(order.payoutSummary?.grandTotal)}
                   status={
                     order.orderStatus === "DELIVERED"
                       ? "delivered"

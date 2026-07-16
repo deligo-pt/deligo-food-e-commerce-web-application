@@ -213,6 +213,8 @@ const pt = {
   enterVoucherCode: "Digite o código promocional",
   apply: "Aplicar",
   applying: "A aplicar...",
+  removingVoucher: "A remover...",
+  failedToRemoveVoucher: "Não foi possível remover o voucher. Tente novamente.",
   availableOffers: "Ofertas Disponíveis",
   noOffersAvailable: "Não há ofertas disponíveis para este pedido",
   offerDiscount: "Desconto de Oferta",
@@ -311,6 +313,7 @@ const pt = {
   locationNotAvailable: "Localização indisponível",
 
   closedNow: "Fechado agora",
+  currentlyClosed: "Fechado de Momento",
   hoursNotSet: "Horário não definido",
 
   preparationTime: "Tempo de Preparação",

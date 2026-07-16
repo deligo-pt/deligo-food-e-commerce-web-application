@@ -142,8 +142,8 @@ export default function OrderMap({
             encodeURIComponent(`
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
                 <circle cx="20" cy="22" r="16" fill="rgba(0,0,0,0.15)" filter="blur(2px)" />
-                <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#008080" stroke-width="2" />
-                <circle cx="20" cy="20" r="12" fill="#008080" />
+                <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#9d174d" stroke-width="2" />
+                <circle cx="20" cy="20" r="12" fill="#9d174d" />
                 <path d="M20,11 C17.8,11 16,12.8 16,15 C16,18.2 20,23 20,23 C20,23 24,18.2 24,15 C24,12.8 22.2,11 20,11 Z M20,16.5 C19.2,16.5 18.5,15.8 18.5,15 C18.5,14.2 19.2,13.5 20,13.5 C20.8,13.5 21.5,14.2 21.5,15 C21.5,15.8 20.8,16.5 20,16.5 Z" fill="#ffffff" />
               </svg>
             `),

@@ -19,7 +19,13 @@ import Loader from "@/components/shared/Loader";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
-import { getCartVendorId, resolveAddonName } from "@/lib/cart";
+import {
+  getCartVendorId,
+  getLineOriginalPrice,
+  getLineTaxForQuantity,
+  getLineTotalForQuantity,
+  resolveAddonName,
+} from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { useCartStore } from "@/stores/cartStore";
@@ -83,12 +89,12 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       const newQty = Math.max(1, pendingQty);
 
       const newTotalProductDiscount = pricing.productDiscountAmount * newQty;
-      // Prices are tax-inclusive: unitPrice is the gross per-unit price and the
-      // grandTotal already contains the VAT, so scale the gross line total and
-      // extract the embedded tax rather than adding it on top.
-      const newGrandTotal = pricing.unitPrice * newQty;
-      const newTotalTaxAmount =
-        newGrandTotal - newGrandTotal / (1 + pricing.taxRate / 100);
+      // Prices are tax-inclusive: the gross line total already contains the VAT,
+      // so scale the line and extract the embedded tax rather than adding it on
+      // top. Only the product's share scales with quantity — add-ons carry their
+      // own — so the line is rebuilt from `grandTotal`, not `unitPrice * qty`.
+      const newGrandTotal = getLineTotalForQuantity(cartItem, newQty);
+      const newTotalTaxAmount = getLineTaxForQuantity(cartItem, newQty);
 
       return {
         ...cartItem,
@@ -139,8 +145,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const summary = useMemo(() => {
     return vendorItems.reduce(
       (acc, item) => {
-        acc.originalPrice +=
-          item.productPricing.originalPrice * item.itemSummary.quantity;
+        // Includes the line's add-ons, matching the basis `grandTotal` (and the
+        // backend's totalOriginalPrice) uses. Without them "Total Price -
+        // Discount" comes out short of the amount actually due.
+        acc.originalPrice += getLineOriginalPrice(item);
         acc.discount += item.itemSummary.totalProductDiscount;
         acc.tax += item.itemSummary.totalTaxAmount;
         acc.total += item.itemSummary.grandTotal;
@@ -222,10 +230,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         if (itemKey === key) {
           const pricing = cartItem.productPricing;
           const newTotalProductDiscount = pricing.productDiscountAmount * newQty;
-          // Tax-inclusive: scale the gross line total and extract embedded VAT.
-          const newGrandTotal = pricing.unitPrice * newQty;
-          const newTotalTaxAmount =
-            newGrandTotal - newGrandTotal / (1 + pricing.taxRate / 100);
+          // Tax-inclusive. Only the product's share scales with quantity —
+          // add-ons carry their own — so rebuild the line from `grandTotal`
+          // rather than `unitPrice * qty`, and keep each add-on's own VAT rate.
+          const newGrandTotal = getLineTotalForQuantity(cartItem, newQty);
+          const newTotalTaxAmount = getLineTaxForQuantity(cartItem, newQty);
 
           return {
             ...cartItem,
@@ -455,13 +464,15 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                           </button>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-400 dark:text-neutral-500 line-through">
-                            €
-                            {(
-                              item.productPricing.originalPrice *
-                              item.itemSummary.quantity
-                            ).toFixed(2)}
-                          </p>
+                          {/* Only a genuine saving gets a strikethrough, and it
+                              compares like with like — both sides include the
+                              line's add-ons. */}
+                          {getLineOriginalPrice(item) >
+                            item.itemSummary.grandTotal + 0.005 && (
+                            <p className="text-sm text-gray-400 dark:text-neutral-500 line-through">
+                              €{getLineOriginalPrice(item).toFixed(2)}
+                            </p>
+                          )}
                           <p className="text-2xl font-bold text-[#f9186b] dark:text-pink-400">
                             €{item.itemSummary.grandTotal.toFixed(2)}
                           </p>

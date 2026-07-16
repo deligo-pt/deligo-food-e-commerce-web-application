@@ -3,7 +3,7 @@
 import { memo, useEffect, useState, useCallback, useMemo, useRef } from "react";
 import SafeImage from "@/components/shared/SafeImage";
 import Link from "next/link";
-import { ChevronRight, Star, Truck, Check, Store } from "lucide-react";
+import { ChevronRight, Star, Truck, Check, Store, Moon } from "lucide-react";
 
 import { getApiErrorMessage } from "../../lib/apiClient";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
@@ -100,58 +100,117 @@ const RestaurantCard = memo(function RestaurantCard({
     ? t("calculating")
     : deliveryTime || t("under10Min");
 
-  return (
-    <Link href={`/vendors/${vendor.userId}`} className="block h-full">
-      <article className="group flex h-full flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl">
-        <div className="relative aspect-16/10 overflow-hidden">
-          <SafeImage
-            src={vendor.storePhoto?.[0]}
-            alt={vendor.businessDetails.businessName}
-            sizes="(max-width:1024px) 100vw, 33vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-110"
-            fallbackIcon={<Store className="h-12 w-12" />}
-          />
+  // Closed stores are shown dimmed with a "Currently Closed" badge and cannot
+  // be opened. Only an explicit `false` counts as closed.
+  const isClosed = vendor.businessDetails?.isStoreOpen === false;
 
-          <div className="absolute left-5 top-5">
-            <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 dark:bg-neutral-900/95 px-4 py-2 text-sm font-bold text-[#191c1d] dark:text-white shadow-lg backdrop-blur-md">
-              <Star size={18} className="text-[#f6c344]" />
-              {vendor.rating?.average ?? 0}
-            </span>
-          </div>
+  const cardBody = (
+    <article
+      className={`group flex h-full flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 ${
+        isClosed
+          ? "cursor-not-allowed"
+          : "hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl"
+      }`}
+    >
+      <div className="relative aspect-16/10 overflow-hidden">
+        <SafeImage
+          src={vendor.storePhoto?.[0]}
+          alt={vendor.businessDetails.businessName}
+          sizes="(max-width:1024px) 100vw, 33vw"
+          className={`object-cover transition-transform duration-700 ${
+            isClosed ? "grayscale" : "group-hover:scale-110"
+          }`}
+          fallbackIcon={<Store className="h-12 w-12" />}
+        />
+
+        <div className="absolute left-5 top-5">
+          <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 dark:bg-neutral-900/95 px-4 py-2 text-sm font-bold text-[#191c1d] dark:text-white shadow-lg backdrop-blur-md">
+            <Star size={18} className="text-[#f6c344]" />
+            {vendor.rating?.average ?? 0}
+          </span>
+        </div>
+        {!isClosed && (
           <div className="absolute bottom-5 right-5">
             <span className="flex items-center gap-2 rounded-2xl bg-black/70 px-4 py-2 text-sm text-white backdrop-blur-md">
               <Truck size={18} />
               {displayTime}
             </span>
           </div>
-        </div>
-
-        <div className="flex flex-1 flex-col p-5 sm:p-8">
-          <div className="mb-2 flex items-center gap-4">
-            <h3 className="line-clamp-1 text-lg font-bold text-[#191c1d] dark:text-neutral-100 sm:text-xl">
-              {vendor.businessDetails.businessName}
-            </h3>
-          </div>
-
-          <p className="mb-4 line-clamp-1 text-base text-[#5a4044] dark:text-neutral-400 sm:mb-6 sm:text-lg">
-            {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
-              vendor.businessDetails.businessType}
-          </p>
-
-          <div className="mt-auto flex items-center gap-4 border-t border-[#edeeef] dark:border-neutral-800 pt-4 text-sm font-medium text-[#5a4044] dark:text-neutral-400 sm:gap-6 sm:pt-6">
-            <span className="flex shrink-0 items-center gap-2 text-[#f9186b] dark:text-pink-500">
-              <Truck size={18} />
-              {vendor.businessDetails.isStoreOpen ? t("openNow") : t("closed")}
-            </span>
-            <span className="flex min-w-0 items-center gap-2 text-[#f9186b] dark:text-pink-400">
-              <Check size={18} className="shrink-0" />
-              <span className="truncate">
-                {vendor.businessLocation.city}, {vendor.businessLocation.country}
-              </span>
+        )}
+        {isClosed && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+            <span className="flex items-center gap-2 rounded-full bg-black/70 px-5 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
+              <Moon size={18} />
+              {t("currentlyClosed")}
             </span>
           </div>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col p-5 sm:p-8">
+        <div className="mb-2 flex items-center gap-4">
+          <h3
+            className={`line-clamp-1 text-lg font-bold sm:text-xl ${
+              isClosed
+                ? "text-[#9aa0a6] dark:text-neutral-500"
+                : "text-[#191c1d] dark:text-neutral-100"
+            }`}
+          >
+            {vendor.businessDetails.businessName}
+          </h3>
         </div>
-      </article>
+
+        <p
+          className={`mb-4 line-clamp-1 text-base sm:mb-6 sm:text-lg ${
+            isClosed
+              ? "text-[#9aa0a6] dark:text-neutral-600"
+              : "text-[#5a4044] dark:text-neutral-400"
+          }`}
+        >
+          {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
+            vendor.businessDetails.businessType}
+        </p>
+
+        <div className="mt-auto flex items-center gap-4 border-t border-[#edeeef] dark:border-neutral-800 pt-4 text-sm font-medium text-[#5a4044] dark:text-neutral-400 sm:gap-6 sm:pt-6">
+          <span
+            className={`flex shrink-0 items-center gap-2 ${
+              isClosed
+                ? "text-[#9aa0a6] dark:text-neutral-500"
+                : "text-[#f9186b] dark:text-pink-500"
+            }`}
+          >
+            <Truck size={18} />
+            {vendor.businessDetails.isStoreOpen ? t("openNow") : t("closed")}
+          </span>
+          <span
+            className={`flex min-w-0 items-center gap-2 ${
+              isClosed
+                ? "text-[#9aa0a6] dark:text-neutral-500"
+                : "text-[#f9186b] dark:text-pink-400"
+            }`}
+          >
+            <Check size={18} className="shrink-0" />
+            <span className="truncate">
+              {vendor.businessLocation.city}, {vendor.businessLocation.country}
+            </span>
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+
+  // Closed stores are not navigable — render a non-interactive wrapper.
+  if (isClosed) {
+    return (
+      <div className="block h-full" aria-disabled="true">
+        {cardBody}
+      </div>
+    );
+  }
+
+  return (
+    <Link href={`/vendors/${vendor.userId}`} className="block h-full">
+      {cardBody}
     </Link>
   );
 });

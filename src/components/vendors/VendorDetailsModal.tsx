@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   ArrowLeft,
   Share2,
@@ -18,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { useVendor } from "@/hooks/queries/useVendors";
 import { useTranslation } from "@/hooks/useTranslation";
+import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 
 interface VendorDetailsModalProps {
   isOpen: boolean;
@@ -69,6 +69,8 @@ export default function VendorDetailsModal({
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const [mapLoadFailed, setMapLoadFailed] = useState(false);
 
   // Shared, cached vendor query (customer vs. open endpoint handled inside the
   // hook). placeholderData keeps the open modal populated during a lang switch.
@@ -107,14 +109,53 @@ export default function VendorDetailsModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  const lat = vendorData?.businessLocation?.latitude;
+  const lng = vendorData?.businessLocation?.longitude;
+  const hasCoords = typeof lat === "number" && typeof lng === "number";
 
-  // Build static map URL using vendor coordinates
-  const mapStaticUrl =
-    vendorData?.businessLocation?.latitude &&
-    vendorData?.businessLocation?.longitude
-      ? `https://maps.googleapis.com/maps/api/staticmap?center=${vendorData.businessLocation.latitude},${vendorData.businessLocation.longitude}&zoom=15&size=600x240&markers=color:red%7C${vendorData.businessLocation.latitude},${vendorData.businessLocation.longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-      : null;
+  // Render the vendor location with the Maps JavaScript API (the same API the
+  // order-tracking map uses) rather than a Static Maps image, which needs a
+  // separately-authorized API. The map is (re)built each time the modal opens
+  // with valid coordinates.
+  useEffect(() => {
+    if (!isOpen || !hasCoords) return;
+    let cancelled = false;
+
+    loadGoogleMapsScript()
+      .then(() => {
+        if (cancelled) return;
+        const container = mapContainerRef.current;
+        if (
+          !container ||
+          !window.google?.maps ||
+          typeof lat !== "number" ||
+          typeof lng !== "number"
+        ) {
+          return;
+        }
+
+        const position = { lat, lng };
+        const map = new window.google.maps.Map(container, {
+          center: position,
+          zoom: 15,
+          disableDefaultUI: true,
+          zoomControl: true,
+          clickableIcons: false,
+          gestureHandling: "cooperative",
+        });
+        new window.google.maps.Marker({ position, map });
+        setMapLoadFailed(false);
+      })
+      .catch(() => {
+        if (!cancelled) setMapLoadFailed(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, hasCoords, lat, lng]);
+
+  if (!isOpen) return null;
 
   const fullAddress = vendorData?.businessLocation
     ? `${vendorData.businessLocation.street}, ${vendorData.businessLocation.city} ${vendorData.businessLocation.postalCode}, ${vendorData.businessLocation.country}`
@@ -274,19 +315,12 @@ export default function VendorDetailsModal({
             <div className="relative overflow-hidden rounded-xl shadow-md">
               {loading ? (
                 <div className="h-48 sm:h-60 w-full animate-pulse bg-gray-200 dark:bg-neutral-800" />
-              ) : error ? (
+              ) : error || mapLoadFailed ? (
                 <div className="flex h-48 sm:h-60 w-full items-center justify-center bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400">
                   <p>{t("mapUnavailable")}</p>
                 </div>
-              ) : mapStaticUrl ? (
-                <Image
-                  src={mapStaticUrl}
-                  alt="Vendor Location"
-                  width={600}
-                  height={350}
-                  className="h-48 sm:h-60 w-full object-cover"
-                  unoptimized
-                />
+              ) : hasCoords ? (
+                <div ref={mapContainerRef} className="h-48 sm:h-60 w-full" />
               ) : (
                 <div className="flex h-48 sm:h-60 w-full items-center justify-center bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400">
                   <p>{t("locationNotAvailable")}</p>

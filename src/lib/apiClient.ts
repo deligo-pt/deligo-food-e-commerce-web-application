@@ -1,11 +1,14 @@
 import axios from "axios";
 import { clearAuthTokens } from "./authCookies";
+import { resolveLocalized, type LocalizedField } from "./localizedField";
 import { useStore } from "@/stores/translationStore";
 
 type ApiErrorResponse = {
   success?: boolean;
-  message?: string;
-  errorSources?: Array<{ path?: string; message?: string }>;
+  // Error messages can come back bilingual, like any other API text field.
+  // Callers render this straight into JSX, so it must be narrowed to a string.
+  message?: LocalizedField;
+  errorSources?: Array<{ path?: string; message?: LocalizedField }>;
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api/v1";
@@ -81,21 +84,27 @@ export function getApiErrorMessage(error: unknown, fallbackMessage = "Request fa
   if (axios.isAxiosError(error)) {
     const payload = error.response?.data as ApiErrorResponse | undefined;
 
+    // Narrow every bilingual field to a string up front: this function's return
+    // value gets rendered directly, and an { en, pt } object reaching JSX throws.
+    const lang = useStore.getState().lang ?? "pt";
+    const topMessage = resolveLocalized(payload?.message, lang);
+
     const source = payload?.errorSources?.[0];
-    const sourceMessage = source?.message
-      ? source.path
-        ? `${source.path}: ${source.message}`
-        : source.message
+    const rawSourceMessage = resolveLocalized(source?.message, lang);
+    const sourceMessage = rawSourceMessage
+      ? source?.path
+        ? `${source.path}: ${rawSourceMessage}`
+        : rawSourceMessage
       : undefined;
 
     // Prefer the specific field-level reason when the top-level message is just
     // a generic validation wrapper; otherwise keep the top-level message.
-    if (payload?.message && GENERIC_ERROR_MESSAGE.test(payload.message)) {
-      return sourceMessage || payload.message;
+    if (topMessage && GENERIC_ERROR_MESSAGE.test(topMessage)) {
+      return sourceMessage || topMessage;
     }
 
     return (
-      payload?.message ||
+      topMessage ||
       sourceMessage ||
       error.message ||
       fallbackMessage

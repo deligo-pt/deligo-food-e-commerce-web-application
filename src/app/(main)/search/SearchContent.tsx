@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
-import { Star, Truck, Check, UtensilsCrossed, Store } from "lucide-react";
+import { Star, Truck, Check, UtensilsCrossed, Store, Moon } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
 import type { Vendor } from "@/types/vendor";
 import { formatCuisine } from "@/lib/cuisine";
@@ -243,53 +243,102 @@ export default function SearchContent() {
               const deliveryTime = deliveryTimes[vendor.userId];
               const isTimeLoading = loadingTimes[vendor.userId];
               const displayTime = isTimeLoading ? "Calculating..." : (deliveryTime || t("under10Min"));
+              // Closed stores are dimmed with a "Currently Closed" badge and
+              // cannot be opened. Only an explicit `false` counts as closed.
+              const isClosed = vendor.businessDetails?.isStoreOpen === false;
 
-              return (
-                <Link key={vendor.userId} href={`/vendors/${vendor.userId}`} className="block">
-                  <article className="group overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] hover:shadow-2xl">
-                    <div className="relative aspect-16/10 overflow-hidden">
-                      <SafeImage
-                        src={vendor.storePhoto?.[0]}
-                        alt={vendor.businessDetails.businessName}
-                        sizes="(max-width:1024px) 100vw, 33vw"
-                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                        fallbackIcon={<Store className="h-12 w-12" />}
-                      />
-                      <div className="absolute left-5 top-5">
-                        <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 px-4 py-2 text-sm font-bold text-[#191c1d] shadow-lg backdrop-blur-md">
-                          <Star size={18} className="text-[#f6c344]" />
-                          {vendor.rating?.average ?? 0}
-                        </span>
-                      </div>
+              const cardBody = (
+                <article
+                  className={`group overflow-hidden rounded-4xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 ${
+                    isClosed
+                      ? "cursor-not-allowed"
+                      : "hover:border-[#ffd9de] hover:shadow-2xl"
+                  }`}
+                >
+                  <div className="relative aspect-16/10 overflow-hidden">
+                    <SafeImage
+                      src={vendor.storePhoto?.[0]}
+                      alt={vendor.businessDetails.businessName}
+                      sizes="(max-width:1024px) 100vw, 33vw"
+                      className={`object-cover transition-transform duration-700 ${
+                        isClosed ? "grayscale" : "group-hover:scale-110"
+                      }`}
+                      fallbackIcon={<Store className="h-12 w-12" />}
+                    />
+                    <div className="absolute left-5 top-5">
+                      <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 px-4 py-2 text-sm font-bold text-[#191c1d] shadow-lg backdrop-blur-md">
+                        <Star size={18} className="text-[#f6c344]" />
+                        {vendor.rating?.average ?? 0}
+                      </span>
+                    </div>
+                    {!isClosed && (
                       <div className="absolute bottom-5 right-5">
                         <span className="flex items-center gap-2 rounded-2xl bg-black/70 px-4 py-2 text-sm text-white backdrop-blur-md">
                           <Truck size={18} />
                           {displayTime}
                         </span>
                       </div>
-                    </div>
-                    <div className="p-8">
-                      <div className="mb-2 flex items-center gap-4">
-                        <h3 className="line-clamp-1 text-lg font-bold text-[#191c1d] sm:text-xl">
-                          {vendor.businessDetails.businessName}
-                        </h3>
-                      </div>
-                      <p className="mb-6 text-lg text-[#5a4044]">
-                        {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
-                          vendor.businessDetails.businessType}
-                      </p>
-                      <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-sm font-medium text-[#5a4044]">
-                        <span className="flex items-center gap-2 text-[#f9186b]">
-                          <Truck size={18} />
-                          {vendor.businessDetails.isStoreOpen ? "Open Now" : "Closed"}
-                        </span>
-                        <span className="flex items-center gap-2 text-[#f9186b]">
-                          <Check size={18} />
-                          {vendor.businessLocation.city}, {vendor.businessLocation.country}
+                    )}
+                    {isClosed && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+                        <span className="flex items-center gap-2 rounded-full bg-black/70 px-5 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
+                          <Moon size={18} />
+                          {t("currentlyClosed")}
                         </span>
                       </div>
+                    )}
+                  </div>
+                  <div className="p-8">
+                    <div className="mb-2 flex items-center gap-4">
+                      <h3
+                        className={`line-clamp-1 text-lg font-bold sm:text-xl ${
+                          isClosed ? "text-[#9aa0a6]" : "text-[#191c1d]"
+                        }`}
+                      >
+                        {vendor.businessDetails.businessName}
+                      </h3>
                     </div>
-                  </article>
+                    <p
+                      className={`mb-6 text-lg ${
+                        isClosed ? "text-[#9aa0a6]" : "text-[#5a4044]"
+                      }`}
+                    >
+                      {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
+                        vendor.businessDetails.businessType}
+                    </p>
+                    <div className="flex items-center gap-6 border-t border-[#edeeef] pt-6 text-sm font-medium text-[#5a4044]">
+                      <span
+                        className={`flex items-center gap-2 ${
+                          isClosed ? "text-[#9aa0a6]" : "text-[#f9186b]"
+                        }`}
+                      >
+                        <Truck size={18} />
+                        {vendor.businessDetails.isStoreOpen ? "Open Now" : "Closed"}
+                      </span>
+                      <span
+                        className={`flex items-center gap-2 ${
+                          isClosed ? "text-[#9aa0a6]" : "text-[#f9186b]"
+                        }`}
+                      >
+                        <Check size={18} />
+                        {vendor.businessLocation.city}, {vendor.businessLocation.country}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              );
+
+              if (isClosed) {
+                return (
+                  <div key={vendor.userId} className="block" aria-disabled="true">
+                    {cardBody}
+                  </div>
+                );
+              }
+
+              return (
+                <Link key={vendor.userId} href={`/vendors/${vendor.userId}`} className="block">
+                  {cardBody}
                 </Link>
               );
             })}
