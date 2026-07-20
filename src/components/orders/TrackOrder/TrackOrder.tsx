@@ -23,7 +23,7 @@ import { apiClient } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
-import { addTax } from "@/lib/tax";
+import { getServiceChargeGross } from "@/lib/tax";
 import OrderMap from "./OrderMap/OrderMap";
 
 
@@ -290,8 +290,9 @@ export default function TrackOrder() {
   // which is the restaurant's net take after commission and would neither
   // reconcile with the total nor be any of the customer's business.
   const subtotal = (calc.totalOriginalPrice || 0) - (calc.totalProductDiscount || 0);
-  // `serviceCharge` arrives net; the total charges it with VAT.
-  const serviceCharge = addTax(calc.serviceCharge || 0);
+  // `serviceCharge` arrives net; the total charges it with VAT, which the
+  // backend reports as `serviceChargeVatAmount`.
+  const serviceCharge = getServiceChargeGross(calc);
   const offerDiscount = calc.totalOfferDiscount || 0;
   const deliveryFee = order.delivery?.totalDeliveryCharge || 0;
   const tax = calc.totalTaxAmount || 0;

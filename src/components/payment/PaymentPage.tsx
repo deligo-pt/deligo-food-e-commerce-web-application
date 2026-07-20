@@ -30,7 +30,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { resolveAddonName } from "@/lib/cart";
 import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
-import { addTax, extractTax } from "@/lib/tax";
+import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
 import type { CartAddon } from "@/types/cart";
 import Link from "next/link";
 
@@ -51,10 +51,17 @@ interface OrderCalculation {
   totalProductDiscount: number;
   totalOfferDiscount: number;
   totalTaxAmount: number;
+  // Net, with its VAT reported alongside.
   serviceCharge?: number;
+  serviceChargeVatRate?: number;
+  serviceChargeVatAmount?: number;
 }
 
 interface Delivery {
+  // `totalDeliveryCharge` is gross (charge + vatAmount).
+  charge?: number;
+  vatRate?: number;
+  vatAmount?: number;
   totalDeliveryCharge: number;
   distance: number;
   estimatedTime: number;
@@ -396,17 +403,15 @@ export default function PaymentPage() {
     orderCalculation.totalOriginalPrice - orderCalculation.totalProductDiscount;
 
   const offerDiscount = orderCalculation.totalOfferDiscount ?? 0;
-  // `serviceCharge` arrives NET, unlike every other figure in the summary. The
-  // grand total charges it with VAT, so show the gross fee — otherwise the rows
-  // fall short of the amount due by exactly the fee's tax.
-  const serviceCharge = addTax(orderCalculation.serviceCharge ?? 0);
+  // `serviceCharge` arrives NET while the grand total charges it with VAT, so
+  // the row has to show net + the reported VAT or it falls short by the tax.
+  const serviceCharge = getServiceChargeGross(orderCalculation);
   const orderTotal = payoutSummary.grandTotal;
 
-  // The subtotal's embedded VAT comes straight from the backend
-  // (totalTaxAmount). The delivery charge is gross but ships no VAT breakdown,
-  // so extract it at the standard rate to show the "incl. tax" note.
+  // Both taxes are the backend's own figures: `totalTaxAmount` for the items,
+  // `delivery.vatAmount` for the (gross) delivery charge.
   const subtotalTax = orderCalculation.totalTaxAmount;
-  const deliveryTax = extractTax(delivery.totalDeliveryCharge);
+  const deliveryTax = getDeliveryTax(delivery);
 
   const vendorRating = vendor?.rating.average ?? 0;
   const vendorReviewCount = vendor?.rating.totalReviews ?? 0;

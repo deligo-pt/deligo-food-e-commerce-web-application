@@ -433,6 +433,10 @@ const en = {
   invoiceDownloaded: "Invoice downloaded",
   invoiceDownloadFailed: "Could not download the invoice",
 
+  reorder: "Re-order",
+  reorderAddedToCart: "Items added to your cart",
+  reorderFailed: "Could not re-order these items",
+
   orderStatus: "Order Status",
 
   support: "Support",

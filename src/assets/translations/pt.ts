@@ -455,6 +455,10 @@ const pt = {
   invoiceDownloaded: "Fatura descarregada",
   invoiceDownloadFailed: "Não foi possível descarregar a fatura",
 
+  reorder: "Encomendar Novamente",
+  reorderAddedToCart: "Artigos adicionados ao seu carrinho",
+  reorderFailed: "Não foi possível encomendar estes artigos novamente",
+
   orderStatus: "Estado do Pedido",
 
   support: "Suporte",

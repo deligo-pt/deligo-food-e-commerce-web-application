@@ -1,12 +1,15 @@
 "use client";
 
-import { CheckCircle, Clock3, Download, Loader2, UtensilsCrossed, Star } from "lucide-react";
+import { CheckCircle, Clock3, Download, Loader2, RotateCcw, UtensilsCrossed, Star } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
 import SafeImage from "@/components/shared/SafeImage";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
+import { useReorder } from "@/hooks/queries/useOrders";
 
 interface OrderCardProps {
   dbId: string;
@@ -38,7 +41,24 @@ export default function OrderCard({
   onRateOrder,
 }: OrderCardProps) {
   const { t } = useTranslation();
+  const router = useRouter();
+  const reorder = useReorder();
   const [downloading, setDownloading] = useState(false);
+  const [reordering, setReordering] = useState(false);
+
+  const handleReorder = async () => {
+    if (reordering) return;
+    setReordering(true);
+    try {
+      await reorder(orderId);
+      toast.success(t("reorderAddedToCart"));
+      router.push("/cart");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t("reorderFailed")));
+    } finally {
+      setReordering(false);
+    }
+  };
 
   const handleDownloadInvoice = async () => {
     if (downloading) return;
@@ -161,6 +181,23 @@ export default function OrderCard({
           >
             {t("trackOrder")}
           </Link>
+        )}
+
+        {/* Re-order only makes sense once an order is finished — an in-flight
+            one is already on its way. */}
+        {(status === "delivered" || status === "cancelled") && (
+          <button
+            onClick={handleReorder}
+            disabled={reordering}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 dark:border-neutral-700 py-3 text-sm font-semibold text-[#191c1d] dark:text-neutral-100 transition hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {reordering ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <RotateCcw size={16} />
+            )}
+            {t("reorder")}
+          </button>
         )}
 
         {status !== "cancelled" && (

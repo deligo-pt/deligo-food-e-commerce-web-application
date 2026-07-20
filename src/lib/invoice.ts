@@ -1,7 +1,7 @@
 import axios from "axios";
 import { apiClient, getApiErrorMessage } from "./apiClient";
 import { resolveLocalized, type LocalizedField } from "./localizedField";
-import { addTax } from "./tax";
+import { getServiceChargeGross } from "./tax";
 
 /* ------------------------------------------------------------------ *
  * Order shape (only the fields the invoice needs). The backend's own
@@ -43,9 +43,11 @@ interface InvoiceOrder {
     totalOriginalPrice?: number;
     totalProductDiscount?: number;
     totalOfferDiscount?: number;
+    // Net, with its VAT reported alongside.
     serviceCharge?: number;
+    serviceChargeVatAmount?: number;
   };
-  delivery?: { totalDeliveryCharge?: number };
+  delivery?: { totalDeliveryCharge?: number; vatAmount?: number };
   payoutSummary?: { grandTotal?: number };
 }
 
@@ -289,8 +291,9 @@ export async function downloadInvoice(orderId: string): Promise<void> {
   const offerDiscount = calc.totalOfferDiscount ?? 0;
   const subtotal = totalPrice - productDiscount;
   // `serviceCharge` arrives net while every other figure here is gross, so it
-  // has to carry its VAT before the totals will add up to what was charged.
-  const serviceCharge = addTax(calc.serviceCharge ?? 0);
+  // has to carry the VAT the backend reports before the totals add up to what
+  // was charged.
+  const serviceCharge = getServiceChargeGross(calc);
   const deliveryFee = order.delivery?.totalDeliveryCharge ?? 0;
   const grandTotal = order.payoutSummary?.grandTotal ?? 0;
 
