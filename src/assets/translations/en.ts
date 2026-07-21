@@ -155,10 +155,11 @@ const en = {
   productDiscount: "Product Discount",
   tax: "Tax",
   taxIncl: "Tax (incl.)",
+  withoutDiscount: "without discount",
   incl: "incl.",
   inclTax: "Incl. tax",
   finalPrice: "Final Price",
-  serviceCharge: "Service Fee",
+  serviceCharge: "Service Charge",
   total: "Total",
 
   deliveryInstructions: "Delivery Instructions",
@@ -436,6 +437,10 @@ const en = {
   reorder: "Re-order",
   reorderAddedToCart: "Items added to your cart",
   reorderFailed: "Could not re-order these items",
+
+  storeClosedTitle: "This restaurant is closed",
+  storeClosedNotice: "You can browse the menu, but ordering is unavailable until it reopens.",
+  storeClosedCannotOrder: "This restaurant is closed right now — you can't order from it yet.",
 
   orderStatus: "Order Status",
 

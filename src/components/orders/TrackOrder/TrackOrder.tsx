@@ -19,11 +19,11 @@ import {
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getServiceChargeGross } from "@/lib/tax";
+import { getServiceChargeGross, getDeliveryTax } from "@/lib/tax";
 import OrderMap from "./OrderMap/OrderMap";
 
 
@@ -147,7 +147,7 @@ export default function TrackOrder() {
         }
       } catch (err: any) {
         if (isInitial) {
-          setError(err.response?.data?.message || "Failed to load order");
+          setError(getApiErrorMessage(err, "Failed to load order"));
         }
       } finally {
         if (isInitial) {
@@ -289,13 +289,19 @@ export default function TrackOrder() {
   // What the customer paid for the items — NOT payoutSummary.vendor.earnings*,
   // which is the restaurant's net take after commission and would neither
   // reconcile with the total nor be any of the customer's business.
-  const subtotal = (calc.totalOriginalPrice || 0) - (calc.totalProductDiscount || 0);
+  const totalOriginalPrice = calc.totalOriginalPrice || 0;
+  const productDiscount = calc.totalProductDiscount || 0;
+  const subtotal = totalOriginalPrice - productDiscount;
   // `serviceCharge` arrives net; the total charges it with VAT, which the
   // backend reports as `serviceChargeVatAmount`.
   const serviceCharge = getServiceChargeGross(calc);
+  const serviceChargeTax = calc.serviceChargeVatAmount || 0;
   const offerDiscount = calc.totalOfferDiscount || 0;
   const deliveryFee = order.delivery?.totalDeliveryCharge || 0;
-  const tax = calc.totalTaxAmount || 0;
+  const deliveryTax = getDeliveryTax(order.delivery || {});
+  // Tax embedded in the items subtotal — shown inline on the subtotal row,
+  // matching the app, rather than as a standalone line.
+  const subtotalTax = calc.totalTaxAmount || 0;
 
   const steps = getOrderStep(order.orderStatus, t);
 
@@ -444,30 +450,60 @@ export default function TrackOrder() {
                   </h4>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
-                    <span>{t("subtotal")}</span>
-                    <span>€{subtotal.toFixed(2)}</span>
+                  <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                    <span className="min-w-0">
+                      {t("totalPrice")}
+                      <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
+                        ({t("withoutDiscount")})
+                      </span>
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap">€{totalOriginalPrice.toFixed(2)}</span>
                   </div>
-                  {serviceCharge > 0 && (
-                    <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
-                      <span>{t("serviceCharge")}</span>
-                      <span>€{serviceCharge.toFixed(2)}</span>
+                  {productDiscount > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span>{t("discount")}</span>
+                      <span>-€{productDiscount.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
-                    <span>{t("deliveryFee")}</span>
-                    <span>€{deliveryFee.toFixed(2)}</span>
+                  <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                    <span className="min-w-0">
+                      {t("subtotal")}
+                      <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
+                        ({t("inclTax")}&nbsp;€{subtotalTax.toFixed(2)})
+                      </span>
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap">€{subtotal.toFixed(2)}</span>
                   </div>
+                  <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                    <span className="min-w-0">
+                      {t("deliveryFee")}
+                      {deliveryFee > 0 && (
+                        <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
+                          ({t("inclTax")}&nbsp;€{deliveryTax.toFixed(2)})
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap">€{deliveryFee.toFixed(2)}</span>
+                  </div>
+                  {serviceCharge > 0 && (
+                    <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                      <span className="min-w-0">
+                        {t("serviceCharge")}
+                        {serviceChargeTax > 0 && (
+                          <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
+                            ({t("inclTax")}&nbsp;€{serviceChargeTax.toFixed(2)})
+                          </span>
+                        )}
+                      </span>
+                      <span className="shrink-0 whitespace-nowrap">€{serviceCharge.toFixed(2)}</span>
+                    </div>
+                  )}
                   {offerDiscount > 0 && (
                     <div className="flex justify-between text-green-600 dark:text-green-400">
                       <span>{t("offerDiscount")}</span>
                       <span>-€{offerDiscount.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
-                    <span>{t("taxIncl")}</span>
-                    <span>€{tax.toFixed(2)}</span>
-                  </div>
                   <div className="pt-4 mt-2 border-t border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
                     <span className="text-2xl font-extrabold text-[#191c1d] dark:text-neutral-50">
                       {t("totalAmount")}

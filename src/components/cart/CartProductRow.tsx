@@ -11,7 +11,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import SafeImage from "@/components/shared/SafeImage";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getAddonsTotal } from "@/lib/cart";
@@ -96,9 +96,7 @@ export default function CartProductRow({
       await onUpdate();
     } catch (error: any) {
       console.error("Toggle error:", error);
-      toast.error(
-        error?.response?.data?.message || "Could not change product status",
-      );
+      toast.error(getApiErrorMessage(error, "Could not change product status"));
     } finally {
       setIsToggling(false);
       setIsDropdownOpen(false);
@@ -134,7 +132,7 @@ export default function CartProductRow({
       toast.success(`Removed "${item.name}" from cart`);
     } catch (error: any) {
       console.error("Deletion error:", error);
-      toast.error(error?.response?.data?.message || "Could not remove product");
+      toast.error(getApiErrorMessage(error, "Could not remove product"));
     } finally {
       setIsDeleting(false);
       setIsDropdownOpen(false);

@@ -54,6 +54,8 @@ export default function OrderCard({
       toast.success(t("reorderAddedToCart"));
       router.push("/cart");
     } catch (error) {
+      // A restaurant closing between the original order and this click is the
+      // likeliest failure; that message is translated centrally by errorKey.
       toast.error(getApiErrorMessage(error, t("reorderFailed")));
     } finally {
       setReordering(false);

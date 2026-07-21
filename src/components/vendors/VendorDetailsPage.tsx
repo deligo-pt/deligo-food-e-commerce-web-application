@@ -11,7 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Bike, Plus, Star, Store, UtensilsCrossed } from "lucide-react";
+import { Bike, Moon, Plus, Star, Store, UtensilsCrossed } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useProfile, useActiveAddressCoords } from "@/hooks/queries/useProfile";
@@ -144,9 +144,13 @@ function formatPrice(price: number, currency: string) {
 const MenuProductCard = memo(function MenuProductCard({
   product,
   onSelect,
+  storeClosed = false,
 }: {
   product: Product;
   onSelect: (productId: string) => void;
+  // When the store is closed the menu stays browsable — only the add action is
+  // withdrawn, so customers can still see what's on offer.
+  storeClosed?: boolean;
 }) {
   const { t } = useTranslation();
   // Guard against a product record with missing/partial pricing — an unguarded
@@ -194,7 +198,9 @@ const MenuProductCard = memo(function MenuProductCard({
           </div>
           <button
             onClick={() => onSelect(product.productId)}
-            className="rounded-xl bg-pink-600 p-2 text-white transition hover:scale-105"
+            disabled={storeClosed}
+            aria-label={storeClosed ? t("storeClosedTitle") : t("addToCart")}
+            className="rounded-xl bg-pink-600 p-2 text-white transition hover:scale-105 disabled:cursor-not-allowed disabled:bg-gray-300 dark:disabled:bg-neutral-700 disabled:hover:scale-100"
           >
             <Plus size={18} />
           </button>
@@ -240,6 +246,11 @@ export default function VendorDetailsPage({
     null,
   );
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+
+  // Reachable by direct URL even though closed vendors aren't linked from the
+  // listings, and a store can close while this page is open. Only an explicit
+  // `false` counts as closed.
+  const isStoreClosed = vendor?.businessDetails?.isStoreOpen === false;
 
   // Defer the category filter so a tab click highlights instantly while the grid
   // re-filters in the background — keeps the tab bar responsive on large menus.
@@ -471,6 +482,23 @@ export default function VendorDetailsPage({
           />
         )}
 
+        {isStoreClosed && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-5">
+            <Moon
+              size={22}
+              className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500"
+            />
+            <div>
+              <p className="font-semibold text-amber-900 dark:text-amber-300">
+                {t("storeClosedTitle")}
+              </p>
+              <p className="mt-1 text-sm text-amber-800 dark:text-amber-400/80">
+                {t("storeClosedNotice")}
+              </p>
+            </div>
+          </div>
+        )}
+
         <section>
           <h2 className="mb-6 text-xl font-bold text-gray-900 dark:text-white">{t("menu")}</h2>
 
@@ -508,6 +536,7 @@ export default function VendorDetailsPage({
                     key={product.productId ?? product.id}
                     product={product}
                     onSelect={handleSelectProduct}
+                    storeClosed={isStoreClosed}
                   />
                 ))}
               </div>

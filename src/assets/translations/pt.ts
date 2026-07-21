@@ -165,6 +165,7 @@ const pt = {
   productDiscount: "Desconto do Produto",
   tax: "Imposto",
   taxIncl: "Imposto (incl.)",
+  withoutDiscount: "sem desconto",
   incl: "incl.",
   inclTax: "Incl. imposto",
   finalPrice: "Preço Final",
@@ -458,6 +459,10 @@ const pt = {
   reorder: "Encomendar Novamente",
   reorderAddedToCart: "Artigos adicionados ao seu carrinho",
   reorderFailed: "Não foi possível encomendar estes artigos novamente",
+
+  storeClosedTitle: "Este restaurante está fechado",
+  storeClosedNotice: "Pode consultar o menu, mas não é possível encomendar até reabrir.",
+  storeClosedCannotOrder: "Este restaurante está fechado neste momento — ainda não pode encomendar.",
 
   orderStatus: "Estado do Pedido",
 

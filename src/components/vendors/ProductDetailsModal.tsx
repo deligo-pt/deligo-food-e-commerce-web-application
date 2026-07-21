@@ -14,6 +14,7 @@ import {
   Circle,
   CheckCircle,
   UtensilsCrossed,
+  Moon,
 } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
 import { useRouter } from "next/navigation";
@@ -59,6 +60,13 @@ interface Product {
   // The product references addon groups by their ObjectId; the full group
   // (title/options/limits) is fetched separately from /add-ons/:id.
   addonGroups?: string[];
+  // `/products/:id` populates the owning vendor, so the modal reads store
+  // status straight off the product response rather than taking it as a prop —
+  // one source of truth, and it stays correct however the modal was opened.
+  vendorId?: {
+    userId?: string;
+    businessDetails?: { isStoreOpen?: boolean };
+  };
 }
 
 interface VariantOption {
@@ -266,8 +274,20 @@ export default function ProductDetailsModal({
     }
   };
 
+  // Only an explicit `false` means closed — if the backend omits the flag,
+  // stay out of the way and let the API be the judge.
+  const isStoreClosed =
+    product?.vendorId?.businessDetails?.isStoreOpen === false;
+
   const handleAddToCart = async () => {
     if (!product) return;
+
+    // The store can close between page load and this click (the backend flips
+    // this on a schedule), so re-check rather than trusting the disabled state.
+    if (isStoreClosed) {
+      toast.error(t("storeClosedCannotOrder"));
+      return;
+    }
 
     // Redirect guests to login
     const token = getAccessToken();
@@ -336,6 +356,7 @@ export default function ProductDetailsModal({
       toast.success(t("itemAddedToCart"));
       onClose();
     } catch (err: any) {
+      // Store-closed and friends are translated centrally by errorKey.
       toast.error(getApiErrorMessage(err, "Could not add item to cart"));
     } finally {
       setCartLoading(false);
@@ -601,9 +622,25 @@ export default function ProductDetailsModal({
         {/* Sticky Footer */}
         {!loading && !error && product && (
           <div className="border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-8">
+            {isStoreClosed && (
+              <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4">
+                <Moon
+                  size={20}
+                  className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">
+                    {t("storeClosedTitle")}
+                  </p>
+                  <p className="mt-0.5 text-sm text-amber-800 dark:text-amber-400/80">
+                    {t("storeClosedNotice")}
+                  </p>
+                </div>
+              </div>
+            )}
             <button
               onClick={handleAddToCart}
-              disabled={cartLoading}
+              disabled={cartLoading || isStoreClosed}
               className={`relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-linear-to-r from-[#f9186b] to-[#d4145b] py-5 text-lg font-semibold text-white shadow-lg transition hover:from-[#d4145b] hover:to-[#b01254] active:scale-[0.98] disabled:opacity-50 ${
                 cartLoading ? "" : "cart-cta"
               }`}

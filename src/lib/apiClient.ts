@@ -9,7 +9,23 @@ type ApiErrorResponse = {
   // Callers render this straight into JSX, so it must be narrowed to a string.
   message?: LocalizedField;
   errorSources?: Array<{ path?: string; message?: LocalizedField }>;
+  // Stable machine-readable code (e.g. "STORE_CLOSED_OR_UNAPPROVED"). Unlike
+  // `message`, which the backend sends in English only, this is safe to branch
+  // on — see `getApiErrorKey`.
+  err?: { statusCode?: number; errorKey?: string };
 };
+
+/**
+ * The backend's stable error code for a request, or `null`.
+ *
+ * Prefer this over matching `message` text: error copy is English-only and can
+ * be reworded server-side, whereas `errorKey` is part of the API contract.
+ */
+export function getApiErrorKey(error: unknown): string | null {
+  if (!axios.isAxiosError(error)) return null;
+  const payload = error.response?.data as ApiErrorResponse | undefined;
+  return payload?.err?.errorKey ?? null;
+}
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api/v1";
 const ACCESS_TOKEN_COOKIE = "deligo-access-token";
@@ -80,6 +96,21 @@ apiClient.interceptors.response.use(
 // we surface the field-level reason instead of the opaque wrapper.
 const GENERIC_ERROR_MESSAGE = /validation error/i;
 
+/**
+ * Translations for backend error codes.
+ *
+ * The API sends `message` in English only, so any error a customer is likely to
+ * hit gets its copy owned here and keyed on the stable `errorKey`. Anything not
+ * listed falls through to the server's own wording — this is a translation
+ * layer, not a place to reinterpret what the backend said.
+ */
+const ERROR_KEY_MESSAGES: Record<string, LocalizedField> = {
+  STORE_CLOSED_OR_UNAPPROVED: {
+    en: "This restaurant is closed right now — you can't order from it yet.",
+    pt: "Este restaurante está fechado neste momento — ainda não pode encomendar.",
+  },
+};
+
 export function getApiErrorMessage(error: unknown, fallbackMessage = "Request failed") {
   if (axios.isAxiosError(error)) {
     const payload = error.response?.data as ApiErrorResponse | undefined;
@@ -87,6 +118,13 @@ export function getApiErrorMessage(error: unknown, fallbackMessage = "Request fa
     // Narrow every bilingual field to a string up front: this function's return
     // value gets rendered directly, and an { en, pt } object reaching JSX throws.
     const lang = useStore.getState().lang ?? "pt";
+
+    // A known error code wins over the server's English prose.
+    const keyed = payload?.err?.errorKey
+      ? ERROR_KEY_MESSAGES[payload.err.errorKey]
+      : undefined;
+    if (keyed) return resolveLocalized(keyed, lang);
+
     const topMessage = resolveLocalized(payload?.message, lang);
 
     const source = payload?.errorSources?.[0];
