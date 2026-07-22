@@ -65,6 +65,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const lang = useStore((s) => s.lang);
   const router = useRouter();
   const [cart, setCart] = useState<CartResponse | null>(null);
+  // Mirrors the latest optimistic cart so a debounced add-on sync can read the
+  // current product-line quantity (add-to-cart SETs it) without capturing a
+  // stale render's closure.
+  const cartRef = useRef<CartResponse | null>(null);
   const [deletingItem, setDeletingItem] = useState<string | null>(null);
 
   // Absolute target quantity per cart line while a debounced sync is pending.
@@ -182,6 +186,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCart(applyPendingUpdates(cartData ?? null));
   }, [cartData, applyPendingUpdates]);
+
+  useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
 
   useEffect(() => {
     const timeouts = syncTimeoutRef.current;
@@ -333,23 +341,45 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     delete pendingAddonQtyRef.current[aKey];
 
     try {
-      // update-addon-quantity SETs the absolute quantity (0 removes the add-on)
-      // and returns the fully recalculated cart, so we send the target the user
-      // landed on after they stopped clicking.
+      // add-to-cart is the add-on write path now (update-addon-quantity is
+      // retired). It SETs each add-on's absolute quantity (0 removes it), MERGES
+      // by optionSku so untouched add-ons on the line survive, and SETs the
+      // product-line quantity — which is [Required] — so we must resend the
+      // line's current quantity (a pending qty edit, else the live cart value)
+      // to avoid resetting it.
+      const key = item.productId + "_" + (item.variationSku || "default");
+      const liveItem = cartRef.current?.items.find(
+        (ci) => ci.productId + "_" + (ci.variationSku || "default") === key,
+      );
+      const productQty = Math.max(
+        1,
+        pendingQtyRef.current[key] ??
+          liveItem?.itemSummary?.quantity ??
+          item.itemSummary?.quantity ??
+          1,
+      );
+
       const payload: any = {
-        productId: item.productId,
-        optionSku: addon.sku,
-        quantity: targetQty,
+        items: [
+          {
+            productId: item.productId,
+            quantity: productQty,
+            addons: [{ optionSku: addon.sku, quantity: targetQty }],
+          },
+        ],
       };
       if (item.variationSku) {
-        payload.variationSku = item.variationSku;
+        payload.items[0].variationSku = item.variationSku;
       }
 
-      await apiClient.patch("/carts/update-addon-quantity", payload);
+      await apiClient.post("/carts/add-to-cart", payload);
 
       await refetchCart();
       useCartStore.getState().fetchCart();
     } catch (error) {
+      // The backend enforces each add-on group's max (e.g. "You can select a
+      // maximum of 2 items for Cheese"); surface its message and revert the
+      // optimistic bump via the refetch below.
       toast.error(getApiErrorMessage(error, t("failedToUpdateAddon")));
       await refetchCart();
     } finally {

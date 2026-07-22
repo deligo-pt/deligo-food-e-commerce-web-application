@@ -25,6 +25,7 @@ const VendorDetailsModal = dynamic(() => import("./VendorDetailsModal"), {
   ssr: false,
 });
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
+import ClosingCountdown from "./ClosingCountdown";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useVendor, useVendorProducts } from "@/hooks/queries/useVendors";
 import { useLocationStore } from "@/stores/locationStore";
@@ -102,6 +103,7 @@ interface Vendor {
     businessType: string;
     openingHours: string;
     closingHours: string;
+    closingDays?: string[];
     preparationTimeMinutes: number;
     restaurantCuisineType?: string[] | string;
     isStoreOpen: boolean;
@@ -401,6 +403,13 @@ export default function VendorDetailsPage({
   return (
     <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-full px-4 py-6 lg:px-8">
+        <ClosingCountdown
+          closingHours={vendor.businessDetails.closingHours}
+          openingHours={vendor.businessDetails.openingHours}
+          closingDays={vendor.businessDetails.closingDays}
+          isStoreOpen={vendor.businessDetails.isStoreOpen}
+        />
+
         {/* Hero Section */}
         <section className="mb-6">
           <div className="relative overflow-hidden rounded-3xl shadow-lg">

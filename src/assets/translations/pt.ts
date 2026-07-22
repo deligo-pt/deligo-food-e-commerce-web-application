@@ -471,6 +471,11 @@ const pt = {
   storeClosedNotice: "Pode consultar o menu, mas não é possível encomendar até reabrir.",
   storeClosedCannotOrder: "Este restaurante está fechado neste momento — ainda não pode encomendar.",
 
+  closingSoon: "Estamos a Fechar em Breve",
+  orderWithin: "Peça em",
+  minShort: "min",
+  secShort: "seg",
+
   orderStatus: "Estado do Pedido",
 
   support: "Suporte",

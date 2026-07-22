@@ -449,6 +449,11 @@ const en = {
   storeClosedNotice: "You can browse the menu, but ordering is unavailable until it reopens.",
   storeClosedCannotOrder: "This restaurant is closed right now — you can't order from it yet.",
 
+  closingSoon: "We're Closing Soon",
+  orderWithin: "Order within",
+  minShort: "min",
+  secShort: "sec",
+
   orderStatus: "Order Status",
 
   support: "Support",

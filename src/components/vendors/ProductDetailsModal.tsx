@@ -316,39 +316,29 @@ export default function ProductDetailsModal({
       const productMongoId = product._id ?? product.productId;
       const variationSku = selectedOption ? selectedOption.sku : null;
 
+      // add-to-cart accepts inline add-ons: each { optionSku, quantity } SETs
+      // that add-on on the line (0 removes it) and the backend enforces every
+      // group's min/max — so the whole selection goes in one request.
+      const selectedAddons = addonGroups.flatMap((g) =>
+        g.options
+          .filter((o) => (addonQty[o.sku] || 0) > 0)
+          .map((o) => ({ optionSku: o.sku, quantity: addonQty[o.sku] })),
+      );
+
       const payload: any = {
         items: [{ productId: productMongoId, quantity }],
       };
       if (variationSku) {
         payload.items[0].variationSku = variationSku;
       }
+      if (selectedAddons.length > 0) {
+        payload.items[0].addons = selectedAddons;
+      }
 
       const response = await apiClient.post("/carts/add-to-cart", payload);
 
       if (!response.data.success) {
         throw new Error(response.data.message || "Failed to add to cart");
-      }
-
-      // add-to-cart doesn't accept inline addons, so attach each selected
-      // addon to the just-added line via update-addon-quantity.
-      const selectedAddons = addonGroups.flatMap((g) =>
-        g.options
-          .filter((o) => (addonQty[o.sku] || 0) > 0)
-          .map((o) => ({ optionSku: o.sku, quantity: addonQty[o.sku] })),
-      );
-      for (const addon of selectedAddons) {
-        // Only include variationSku when a variant is selected. The backend's
-        // Zod schema expects a string (or the field omitted) and rejects null
-        // with "variationSku: Expected string, received null".
-        const addonPayload: any = {
-          productId: productMongoId,
-          optionSku: addon.optionSku,
-          quantity: addon.quantity,
-        };
-        if (variationSku) {
-          addonPayload.variationSku = variationSku;
-        }
-        await apiClient.patch("/carts/update-addon-quantity", addonPayload);
       }
 
       await fetchCart();
