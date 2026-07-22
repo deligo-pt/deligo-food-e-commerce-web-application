@@ -181,6 +181,10 @@ const en = {
   distanceAndTime: "Distance & Time",
   deliveryDistance: "Delivery distance",
   estimatedTime: "Est. time",
+  selectDeliveryAddress: "Select delivery address",
+  failedToChangeAddress: "Failed to change delivery address",
+  calculatingDeliveryTime: "Calculating delivery time…",
+  selectAddressToSeeTime: "Select an address to see delivery time",
 
   yourOrder: "Your Order",
   addMoreItems: "Add more items",
@@ -374,6 +378,9 @@ const en = {
   required: "required",
   chooseUpTo: "Choose up to",
   selectRequiredAddons: "Please select the required options",
+  increaseQuantity: "Increase quantity",
+  decreaseQuantity: "Decrease quantity",
+  failedToUpdateAddon: "Failed to update add-on",
   noAddressSaved: "No address saved",
 
   manageAccountInfo: "Manage your account information and preferences",

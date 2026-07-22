@@ -192,6 +192,10 @@ const pt = {
   distanceAndTime: "Distância e Tempo",
   deliveryDistance: "Distância de entrega",
   estimatedTime: "Tempo estimado",
+  selectDeliveryAddress: "Selecionar endereço de entrega",
+  failedToChangeAddress: "Falha ao alterar o endereço de entrega",
+  calculatingDeliveryTime: "A calcular o tempo de entrega…",
+  selectAddressToSeeTime: "Selecione um endereço para ver o tempo de entrega",
 
   yourOrder: "Seu Pedido",
   addMoreItems: "Adicionar mais itens",
@@ -394,6 +398,9 @@ const pt = {
   required: "obrigatório",
   chooseUpTo: "Escolha até",
   selectRequiredAddons: "Selecione as opções obrigatórias",
+  increaseQuantity: "Aumentar quantidade",
+  decreaseQuantity: "Diminuir quantidade",
+  failedToUpdateAddon: "Falha ao atualizar o complemento",
 
   noAddressSaved: "Nenhum endereço guardado",
 

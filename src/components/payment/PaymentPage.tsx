@@ -20,6 +20,10 @@ import {
   ChevronRight,
   Percent,
   UtensilsCrossed,
+  Briefcase,
+  MapPin,
+  Loader2,
+  Plus,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -31,6 +35,7 @@ import { useStore } from "@/stores/translationStore";
 import { resolveAddonName } from "@/lib/cart";
 import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
 import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
+import { getDeliveryEstimate, type DeliveryEstimate } from "@/lib/distance";
 import type { CartAddon } from "@/types/cart";
 import Link from "next/link";
 
@@ -77,6 +82,27 @@ interface DeliveryAddress {
   state: string;
   country: string;
   postalCode: string;
+  // The checkout summary echoes the selected address's coordinates, used to
+  // compute the delivery distance/ETA on the client.
+  latitude?: number;
+  longitude?: number;
+}
+
+// A saved address from the customer profile (GET /profile → deliveryAddresses).
+// `isActive` marks the one checkout binds to; `_id` is what
+// toggle-delivery-address-status keys on.
+interface SavedAddress {
+  _id: string;
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  latitude: number;
+  longitude: number;
+  addressType: string;
+  isActive: boolean;
+  detailedAddress?: string;
 }
 
 interface OfferApplied {
@@ -174,6 +200,15 @@ export default function PaymentPage() {
   const [removeOfferError, setRemoveOfferError] = useState("");
   const [showSupportModal, setShowSupportModal] = useState(false);
 
+  // Saved-address picker + the client-computed delivery distance/ETA (the
+  // backend returns 0 for both).
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [switchingAddressId, setSwitchingAddressId] = useState<string | null>(null);
+  const [addressError, setAddressError] = useState("");
+  const [estimate, setEstimate] = useState<DeliveryEstimate | null>(null);
+  const [estimating, setEstimating] = useState(false);
+
   useEffect(() => {
     if (!checkoutId) {
       setError(t("noCheckoutIdProvided"));
@@ -240,6 +275,59 @@ export default function PaymentPage() {
 
     fetchData();
   }, [checkoutId, t]);
+
+  // Saved addresses for the "Change" picker — independent of the checkoutId, so
+  // fetched once on mount and refreshed after a switch.
+  const loadAddresses = async () => {
+    try {
+      const res = await apiClient.get("/profile");
+      const list = res.data?.data?.deliveryAddresses;
+      setAddresses(Array.isArray(list) ? list : []);
+    } catch {
+      // Non-fatal: the page still works without the picker.
+      setAddresses([]);
+    }
+  };
+
+  useEffect(() => {
+    loadAddresses();
+  }, []);
+
+  // The backend reports delivery.distance/estimatedTime as 0, so derive them on
+  // the client from the vendor's and the delivery address's coordinates.
+  useEffect(() => {
+    const origin = vendor?.businessLocation;
+    const dest = summary?.deliveryAddress;
+    if (
+      !origin?.latitude ||
+      !origin?.longitude ||
+      !dest?.latitude ||
+      !dest?.longitude
+    ) {
+      setEstimate(null);
+      return;
+    }
+
+    let cancelled = false;
+    setEstimating(true);
+    getDeliveryEstimate(
+      { lat: origin.latitude, lng: origin.longitude },
+      { lat: dest.latitude, lng: dest.longitude },
+    )
+      .then((result) => {
+        if (!cancelled) setEstimate(result);
+      })
+      .finally(() => {
+        if (!cancelled) setEstimating(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    vendor?.businessLocation,
+    summary?.deliveryAddress,
+  ]);
 
   const handleOpenOfferModal = async () => {
     if (!summary) return;
@@ -331,6 +419,48 @@ export default function PaymentPage() {
     // On success the flag stays set through the navigation and is cleared by the
     // fetch effect when the new checkoutId lands — otherwise the button would
     // flicker back to enabled while the old summary is still on screen.
+  };
+
+  /**
+   * Switches the delivery address. The checkout has no per-order address param
+   * and always binds to the customer's ACTIVE address, so we make the chosen
+   * address active, then rebuild the checkout from the cart (same pattern as
+   * removeOffer) and navigate to the fresh checkoutId — which reloads the
+   * summary with the new address and delivery fee.
+   *
+   * NOTE: toggling the active address changes the customer's primary address
+   * account-wide, not just for this order.
+   */
+  const selectAddress = async (addr: SavedAddress) => {
+    if (switchingAddressId) return;
+    if (addr.isActive) {
+      setShowAddressModal(false);
+      return;
+    }
+
+    setSwitchingAddressId(addr._id);
+    setAddressError("");
+
+    try {
+      await apiClient.patch(
+        `/customers/toggle-delivery-address-status/${addr._id}`,
+      );
+      const res = await apiClient.post("/checkout", { useCart: true });
+      const newCheckoutId = res.data?.data?._id;
+      if (!newCheckoutId) {
+        throw new Error("Checkout response did not include an id");
+      }
+
+      await loadAddresses();
+      setShowAddressModal(false);
+      // `replace`, not `push`: the old checkoutId is bound to the old address —
+      // leaving it in history would let Back silently restore it.
+      router.replace(`${pathname}?checkoutId=${newCheckoutId}`);
+    } catch (err) {
+      setAddressError(getApiErrorMessage(err, t("failedToChangeAddress")));
+    } finally {
+      setSwitchingAddressId(null);
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -490,9 +620,22 @@ export default function PaymentPage() {
 
                 {/* Delivery To */}
                 <div>
-                  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-455">
-                    {t("deliveryTo")}
-                  </p>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-455">
+                      {t("deliveryTo")}
+                    </p>
+                    {addresses.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setAddressError("");
+                          setShowAddressModal(true);
+                        }}
+                        className="text-xs font-semibold text-[#f9186b] dark:text-pink-400 underline transition hover:text-[#d4145b] dark:hover:text-pink-300"
+                      >
+                        {t("change")}
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
                       <Home className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
@@ -508,13 +651,24 @@ export default function PaymentPage() {
               </div>
 
               <div className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-pink-200 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
-                <MapPinned className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                <MapPinned className="h-5 w-5 shrink-0 text-[#f9186b] dark:text-pink-400" />
                 <div>
                   <p className="font-medium text-gray-900 dark:text-neutral-100">{t("distanceAndTime")}</p>
                   <p className="text-sm text-gray-500 dark:text-neutral-400">
-                    {t("deliveryDistance")}:{" "}
-                    {(delivery.distance || 2.5).toFixed(1)} km •{" "}
-                    {t("estimatedTime")}: {delivery.estimatedTime || 25} min
+                    {estimate ? (
+                      <>
+                        {t("deliveryDistance")}: {estimate.distanceKm.toFixed(1)} km
+                        {" • "}
+                        {t("estimatedTime")}: {estimate.minutes} min
+                      </>
+                    ) : estimating ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        {t("calculatingDeliveryTime")}
+                      </span>
+                    ) : (
+                      t("selectAddressToSeeTime")
+                    )}
                   </p>
                 </div>
               </div>
@@ -964,6 +1118,112 @@ export default function PaymentPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {showAddressModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => !switchingAddressId && setShowAddressModal(false)}
+          />
+
+          {/* Panel */}
+          <div className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-2xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl sm:rounded-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                <h3 className="text-lg font-bold text-gray-900 dark:text-neutral-50">
+                  {t("selectDeliveryAddress")}
+                </h3>
+              </div>
+              <button
+                onClick={() => !switchingAddressId && setShowAddressModal(false)}
+                disabled={!!switchingAddressId}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400 transition hover:bg-gray-200 dark:hover:bg-neutral-700 disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Scrollable body */}
+            <div className="flex-1 space-y-3 overflow-y-auto px-6 py-4">
+              {addressError && (
+                <div className="flex items-start gap-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 p-3">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />
+                  <p className="text-sm text-red-650 dark:text-red-400">{addressError}</p>
+                </div>
+              )}
+
+              {addresses.map((addr) => {
+                const isSwitching = switchingAddressId === addr._id;
+                const type = (addr.addressType || "").toUpperCase();
+                const TypeIcon =
+                  type === "OFFICE"
+                    ? Briefcase
+                    : type === "HOME" || type === "PRIMARY"
+                      ? Home
+                      : MapPin;
+                return (
+                  <button
+                    key={addr._id}
+                    onClick={() => selectAddress(addr)}
+                    disabled={!!switchingAddressId}
+                    className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition disabled:cursor-not-allowed ${
+                      addr.isActive
+                        ? "border-[#f9186b] dark:border-pink-500 bg-pink-50/60 dark:bg-pink-950/20"
+                        : "border-gray-200 dark:border-neutral-800 hover:border-pink-300 dark:hover:border-pink-700 hover:bg-gray-50 dark:hover:bg-neutral-800/50"
+                    } ${switchingAddressId && !isSwitching ? "opacity-50" : ""}`}
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
+                      <TypeIcon className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-400">
+                          {addr.addressType || t("home")}
+                        </span>
+                        {addr.isActive && (
+                          <span className="rounded bg-[#f9186b] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                            {t("primary")}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 truncate font-semibold text-gray-900 dark:text-neutral-50">
+                        {addr.street}
+                      </p>
+                      <p className="truncate text-sm text-gray-500 dark:text-neutral-400">
+                        {addr.city}
+                        {addr.postalCode ? `, ${addr.postalCode}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center self-center">
+                      {isSwitching ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-[#f9186b] dark:text-pink-400" />
+                      ) : (
+                        addr.isActive && (
+                          <CheckCircle className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                        )
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Footer — add new address */}
+            <div className="border-t border-gray-100 dark:border-neutral-800 px-6 py-4">
+              <button
+                onClick={() => router.push("/add-address")}
+                disabled={!!switchingAddressId}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-pink-300 dark:border-pink-850/40 bg-pink-50 dark:bg-pink-950/10 px-4 py-3 text-sm font-semibold text-[#f9186b] dark:text-pink-400 transition hover:bg-pink-100 dark:hover:bg-pink-950/25 disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+                {t("addNewAddress")}
+              </button>
             </div>
           </div>
         </div>
