@@ -174,7 +174,7 @@ const MenuProductCard = memo(function MenuProductCard({
         />
         {hasDiscount && (
           <span className="absolute left-2 top-2 rounded-full bg-pink-600 px-2 py-1 text-[10px] font-bold text-white">
-            {Math.round(pricing?.discount ?? 0)}% {t("off")}
+            {pricing?.discount ?? 0}% {t("off")}
           </span>
         )}
       </div>

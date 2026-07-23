@@ -431,7 +431,7 @@ export default function ProductDetailsModal({
                         currentOriginalUnitPrice - unitPrice,
                         currency,
                       )}{" "}
-                      ({Math.round(discountPercentage)}% Off)
+                      ({discountPercentage}% Off)
                     </span>
                   </div>
                 )}
