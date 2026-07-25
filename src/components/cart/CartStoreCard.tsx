@@ -121,14 +121,15 @@ export default function CartStoreCard({
               toast.error(t("cannotCheckoutNoActiveItems"));
             }
           }}
-          className={`flex items-center justify-between rounded-3xl px-6 py-5 text-white transition cursor-pointer ${
+          className={`relative flex items-center justify-between overflow-hidden rounded-3xl px-6 py-5 text-white transition cursor-pointer ${
             hasActive
-              ? "bg-linear-to-r from-[#f9186b] to-[#d4145b] hover:from-[#d4145b] hover:to-[#b01254]"
+              ? "cart-cta bg-linear-to-r from-[#f9186b] to-[#d4145b] hover:from-[#d4145b] hover:to-[#b01254]"
               : "cursor-not-allowed bg-gray-400 dark:bg-neutral-750 text-neutral-200 dark:text-neutral-400"
           }`}
         >
-          <span className="text-xl font-bold">{t("goToCheckout")}</span>
-          <div className="rounded-xl bg-white/20 px-4 py-2 font-bold">
+          {hasActive && <span className="cart-cta-shine" aria-hidden="true" />}
+          <span className="relative z-10 text-xl font-bold">{t("goToCheckout")}</span>
+          <div className="relative z-10 rounded-xl bg-white/20 px-4 py-2 font-bold">
             €{activeTotal.toFixed(2)}
           </div>
         </Link>

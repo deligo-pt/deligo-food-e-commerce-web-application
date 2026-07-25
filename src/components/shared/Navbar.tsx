@@ -14,8 +14,12 @@ import {
   Bell,
   User,
   LogOut,
+  Plus,
+  Check,
 } from "lucide-react";
 import Cookies from "js-cookie";
+import { toast } from "sonner";
+import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 
 import {
   getAccessToken,
@@ -54,11 +58,15 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [updatingAddressId, setUpdatingAddressId] = useState<string | null>(null);
   const [addressText, setAddressText] = useState("Add Address");
   const [primaryAddressId, setPrimaryAddressId] = useState<string | null>(null);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
+  const locationDropdownRefMobile = useRef<HTMLDivElement>(null);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -92,6 +100,48 @@ export default function Navbar() {
   // Shared, cached profile query — no longer re-fetched on every navigation.
   const { data: profile } = useProfile<NavProfile>({ enabled: isLoggedIn });
   const invalidateProfile = useInvalidateProfile();
+
+  const deliveryAddresses = profile?.deliveryAddresses ?? [];
+
+  // Build a one-line label for a saved address row.
+  const formatAddressLabel = (addr: NavAddress) => {
+    const street = addr.street || addr.detailedAddress || "";
+    const city = addr.city || "";
+    return street && city ? `${street}, ${city}` : street || city || addr.detailedAddress || "";
+  };
+
+  // The location button opens the saved-address dropdown for logged-in users;
+  // guests have nothing saved, so it takes them straight to add a location.
+  const handleLocationButtonClick = () => {
+    if (!isLoggedIn) {
+      router.push(addressHref);
+      return;
+    }
+    setShowLocationDropdown((v) => !v);
+  };
+
+  // Picking an address makes it the active/primary one (same endpoint the
+  // Saved Addresses page uses), then refreshes the shared profile everywhere.
+  const handleSelectAddress = async (addressId?: string) => {
+    if (!addressId) return;
+    const target = deliveryAddresses.find((a) => a._id === addressId);
+    if (target?.isActive) {
+      setShowLocationDropdown(false);
+      return;
+    }
+    try {
+      setUpdatingAddressId(addressId);
+      await apiClient.patch(`/customers/toggle-delivery-address-status/${addressId}`);
+      await invalidateProfile();
+      window.dispatchEvent(new Event("addressUpdated"));
+      toast.success(t("primaryAddressUpdated"));
+      setShowLocationDropdown(false);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t("failedToUpdatePrimaryAddress")));
+    } finally {
+      setUpdatingAddressId(null);
+    }
+  };
 
   // Derive the navbar's logged-in display state from the shared profile data.
   useEffect(() => {
@@ -334,6 +384,26 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        locationDropdownRef.current?.contains(target) ||
+        locationDropdownRefMobile.current?.contains(target)
+      ) {
+        return;
+      }
+      setShowLocationDropdown(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Close the location dropdown whenever the route changes.
+  useEffect(() => {
+    setShowLocationDropdown(false);
+  }, [pathname]);
+
   // Refresh the badge instantly when a notification is read/received elsewhere
   // (FCM push or the notifications page) instead of polling aggressively.
   useEffect(() => {
@@ -372,6 +442,76 @@ export default function Navbar() {
     }
   };
 
+  // Shared dropdown body: the saved-address list + "Add New Address" and a
+  // link to manage them. Used by both the desktop and mobile location buttons.
+  const locationPanel = (
+    <>
+      <p className="px-4 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-neutral-500">
+        {t("savedAddresses")}
+      </p>
+      <div className="max-h-64 overflow-y-auto">
+        {deliveryAddresses.length === 0 ? (
+          <p className="px-4 py-3 text-sm text-gray-500 dark:text-neutral-400">
+            {t("noSavedAddressesFound")}
+          </p>
+        ) : (
+          deliveryAddresses.map((addr) => {
+            const active = addr.isActive;
+            return (
+              <button
+                key={addr._id}
+                type="button"
+                onClick={() => handleSelectAddress(addr._id)}
+                disabled={updatingAddressId === addr._id}
+                className={`flex w-full items-start gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-neutral-700/50 disabled:opacity-60 ${
+                  active ? "bg-pink-50 dark:bg-pink-950/20" : ""
+                }`}
+              >
+                <MapPin
+                  size={18}
+                  className={`mt-0.5 shrink-0 ${
+                    active
+                      ? "text-[#f9186b] dark:text-pink-400"
+                      : "text-gray-400 dark:text-neutral-500"
+                  }`}
+                />
+                <span className="min-w-0 flex-1 truncate">
+                  {formatAddressLabel(addr)}
+                </span>
+                {updatingAddressId === addr._id ? (
+                  <span className="mt-0.5 h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#f9186b]/40 border-t-[#f9186b]" />
+                ) : active ? (
+                  <Check
+                    size={16}
+                    className="mt-0.5 shrink-0 text-[#f9186b] dark:text-pink-400"
+                  />
+                ) : null}
+              </button>
+            );
+          })
+        )}
+      </div>
+      <div className="mt-1 border-t border-gray-100 dark:border-neutral-700 pt-1">
+        <Link
+          href="/add-address"
+          onClick={() => setShowLocationDropdown(false)}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-[#f9186b] dark:text-pink-400 hover:bg-gray-100 dark:hover:bg-neutral-700/50"
+        >
+          <Plus size={18} className="shrink-0" />
+          {t("addNewAddress")}
+        </Link>
+        <Link
+          href="/saved-addresses"
+          onClick={() => setShowLocationDropdown(false)}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-700/50"
+        >
+          <MapPin size={18} className="shrink-0" />
+          {t("manageAddresses")}
+        </Link>
+      </div>
+    </>
+  );
+
   return (
     <header className="sticky top-0 z-50 bg-[#f9186b] text-white transition-all duration-300 dark:bg-[#f9186b] px-4 py-3 lg:px-16 lg:py-4">
       {/* Desktop Layout & Mobile Row 1 */}
@@ -397,13 +537,17 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop-only location button. Capped width + truncation so a long
-              address ellipsizes instead of squeezing the search bar. */}
-          <Link
-            href={addressHref}
-            className="hidden min-w-0 lg:flex lg:max-w-[220px] xl:max-w-[280px]"
+              address ellipsizes instead of squeezing the search bar. Opens a
+              dropdown of saved addresses instead of navigating to an edit page. */}
+          <div
+            ref={locationDropdownRef}
+            className="relative hidden min-w-0 lg:block lg:max-w-[220px] xl:max-w-[280px]"
           >
             <button
               suppressHydrationWarning
+              onClick={handleLocationButtonClick}
+              aria-haspopup="menu"
+              aria-expanded={showLocationDropdown}
               className="cursor-pointer flex w-full min-w-0 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20"
             >
               <MapPin size={20} className="shrink-0" />
@@ -428,9 +572,19 @@ export default function Navbar() {
                   addressText
                 )}
               </span>
-              <ChevronDown size={16} className="shrink-0" />
+              <ChevronDown
+                size={16}
+                className={`shrink-0 transition-transform ${
+                  showLocationDropdown ? "rotate-180" : ""
+                }`}
+              />
             </button>
-          </Link>
+            {isLoggedIn && showLocationDropdown && (
+              <div className="absolute left-0 z-50 mt-2 w-80 rounded-xl bg-white dark:bg-neutral-800 py-2 text-[#191c1d] dark:text-neutral-100 shadow-lg ring-1 ring-black/5 dark:ring-white/10">
+                {locationPanel}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Desktop-only Search Bar. min-w floor guarantees a usable input width
@@ -562,9 +716,12 @@ export default function Navbar() {
 
       {/* Mobile-only Row 3: Location (goes after second row) */}
       <div className="mt-2.5 w-full lg:hidden">
-        <Link href={addressHref} className="block w-full">
+        <div ref={locationDropdownRefMobile} className="relative w-full">
           <button
             suppressHydrationWarning
+            onClick={handleLocationButtonClick}
+            aria-haspopup="menu"
+            aria-expanded={showLocationDropdown}
             className="cursor-pointer flex w-full items-center justify-between rounded-xl bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20"
           >
             <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
@@ -591,9 +748,19 @@ export default function Navbar() {
                 )}
               </span>
             </div>
-            <ChevronDown size={16} className="shrink-0" />
+            <ChevronDown
+              size={16}
+              className={`shrink-0 transition-transform ${
+                showLocationDropdown ? "rotate-180" : ""
+              }`}
+            />
           </button>
-        </Link>
+          {isLoggedIn && showLocationDropdown && (
+            <div className="absolute left-0 right-0 z-50 mt-2 rounded-xl bg-white dark:bg-neutral-800 py-2 text-[#191c1d] dark:text-neutral-100 shadow-lg ring-1 ring-black/5 dark:ring-white/10">
+              {locationPanel}
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

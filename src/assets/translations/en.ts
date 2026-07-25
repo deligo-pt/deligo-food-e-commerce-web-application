@@ -83,6 +83,18 @@ const en = {
   work: "Work",
   other: "Other",
 
+  // Address-type labels. Kept separate from the generic `home`/`work`/`other`
+  // keys because `home` means "homepage" elsewhere (pt: "Início"), which is the
+  // wrong word for a place you live.
+  addressTypeHome: "Home",
+  addressTypeWork: "Work",
+  addressTypeOther: "Other",
+  addressTypeCurrentLocation: "Current Location",
+
+  addressAddedSuccess: "Address added successfully!",
+  addressUpdatedSuccess: "Address updated successfully!",
+  addressNotLoaded: "Address not loaded yet. Please try again.",
+
   streetAddress: "Street Address *",
   enterStreetAddress: "Enter street address",
 
@@ -359,6 +371,7 @@ const en = {
   referralsDescription: "Earn rewards by inviting your friends to DeliGo",
 
   savedAddresses: "Saved Addresses",
+  manageAddresses: "Manage addresses",
   favoriteOrders: "Favorite Orders",
   accountSettings: "Account Settings",
   helpCenter: "Help Center",
@@ -1463,8 +1476,6 @@ const en = {
     "You can explore the map and pick a location, but you need to",
   notSignedInSaveSuffix: "to save your address.",
   logInLink: "log in",
-  editModePrimaryNote:
-    "Note: Edit mode updates the PRIMARY address regardless of type selected.",
 
   // --- Phase 3: toasts, errors, empty/loading & route messages ---
   locationNotDetected: "Location not detected yet. Please wait or use GPS.",

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Pencil, User, X } from "lucide-react";
+import { ChevronRight, Pencil, User, X } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
 import EditProfileFormSkeleton from "./EditProfileFormSkeleton";
@@ -257,8 +257,12 @@ export default function EditProfileFormPage() {
       <div className="mx-auto max-w-250 px-4">
         <div className="mb-6 flex items-center gap-2 text-sm text-[#5a4044] dark:text-neutral-400">
           <span>{t("home")}</span>
-          <span>{t("account")}</span>
-          <span>{t("editProfile")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-[#5a4044]/60 dark:text-neutral-500" />
+          <span>{t("settings")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-[#5a4044]/60 dark:text-neutral-500" />
+          <span className="font-semibold text-[#191c1d] dark:text-neutral-200">
+            {t("editProfile")}
+          </span>
         </div>
 
         <div className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">

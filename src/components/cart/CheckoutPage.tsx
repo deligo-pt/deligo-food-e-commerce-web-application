@@ -760,9 +760,16 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               <button
                 onClick={handleProceedToCheckout}
                 disabled={isProceeding || vendorItems.length === 0}
-                className="w-full rounded-2xl bg-[#f9186b] py-4 text-lg font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
+                className={`relative w-full overflow-hidden rounded-2xl bg-[#f9186b] py-4 text-lg font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500 ${
+                  !isProceeding && vendorItems.length > 0 ? "cart-cta" : ""
+                }`}
               >
-                {isProceeding ? t("processing") : t("proceedToCheckout")}
+                {!isProceeding && vendorItems.length > 0 && (
+                  <span className="cart-cta-shine" aria-hidden="true" />
+                )}
+                <span className="relative z-10">
+                  {isProceeding ? t("processing") : t("proceedToCheckout")}
+                </span>
               </button>
               <p className="mt-3 text-center text-xs text-gray-400 dark:text-neutral-500">
                 {t("termsAndConditions")}

@@ -6,7 +6,14 @@
 import { Building2, Globe, Home, MapPin, Navigation, Save } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Toaster, toast } from "sonner";
-import { addDeliveryAddress, updateLiveLocation } from "@/services/addressApi";
+import { addDeliveryAddress, updateDeliveryAddress } from "@/services/addressApi";
+import { getApiErrorMessage } from "@/lib/apiClient";
+import {
+  addressTypeLabelKey,
+  toBackendAddressType,
+  toSelectableAddressType,
+  type SelectableAddressType,
+} from "@/lib/addressType";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/authCookies";
@@ -16,7 +23,7 @@ interface AddressFormProps {
   coordinates: { lat: number; lng: number } | null;
   initialAddress?: any;
   isEditMode?: boolean;
-  userId?: string;
+  /** Required in edit mode — identifies which saved address to update. */
   addressId?: string;
   onSuccess?: () => void;
   isGuestMode?: boolean;
@@ -26,7 +33,7 @@ export default function AddressForm({
   coordinates,
   initialAddress,
   isEditMode = false,
-  userId,
+  addressId,
   onSuccess,
   isGuestMode = false,
 }: AddressFormProps) {
@@ -42,9 +49,7 @@ export default function AddressForm({
     }
     return isEditMode ? value.replace(/\s*\*$/, "") : value;
   };
-  const [addressType, setAddressType] = useState<"home" | "work" | "other">(
-    "home"
-  );
+  const [addressType, setAddressType] = useState<SelectableAddressType>("home");
   const [formData, setFormData] = useState({
     street: "",
     detailedAddress: "",
@@ -68,13 +73,7 @@ export default function AddressForm({
       postalCode: initialAddress.postalCode || "",
     });
     if (initialAddress.addressType) {
-      setAddressType(
-        initialAddress.addressType === "OFFICE"
-          ? "work"
-          : initialAddress.addressType === "OTHER"
-            ? "other"
-            : "home"
-      );
+      setAddressType(toSelectableAddressType(initialAddress.addressType));
     }
     // Mark that the form is populated — geocode effect can now safely replace fields
     hasInitializedRef.current = true;
@@ -136,14 +135,6 @@ export default function AddressForm({
     );
   }, [coordinates, initialAddress]);
 
-  const mapAddressTypeToBackend = (
-    type: string
-  ): "HOME" | "OFFICE" | "OTHER" => {
-    if (type === "home") return "HOME";
-    if (type === "work") return "OFFICE";
-    return "OTHER";
-  };
-
   const handleSave = async () => {
     if (isGuestMode) {
       if (!coordinates) {
@@ -178,7 +169,7 @@ export default function AddressForm({
           latitude: coordinates.lat,
           longitude: coordinates.lng,
           detailedAddress: formData.detailedAddress.trim(),
-          addressType: mapAddressTypeToBackend(addressType),
+          addressType: toBackendAddressType(addressType),
         };
         useLocationStore.getState().setGuestAddress(guestAddress);
         window.dispatchEvent(new Event("addressUpdated"));
@@ -220,53 +211,43 @@ export default function AddressForm({
 
     setIsSaving(true);
     try {
+      const payload = {
+        street: formData.street.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim(),
+        country: formData.country.trim(),
+        postalCode: formData.postalCode.trim(),
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
+        geoAccuracy: 10,
+        detailedAddress: formData.detailedAddress.trim(),
+        addressType: toBackendAddressType(addressType),
+      };
+
       if (isEditMode) {
-        // PATCH — update live location + primary address
-        if (!userId) {
-          toast.error(t("userNotLoaded"));
+        // PATCH the address being edited. Note this is NOT
+        // `update-live-location` — that endpoint is the GPS "where am I now"
+        // flow, which carries no addressType and makes the server append a
+        // fresh CURRENT_LOCATION record instead of updating this one.
+        if (!addressId) {
+          toast.error(t("addressNotLoaded"));
           setIsSaving(false);
           return;
         }
-        await updateLiveLocation(userId, {
-          latitude: coordinates.lat,
-          longitude: coordinates.lng,
-          geoAccuracy: 10,
-          isMocked: false,
-          street: formData.street.trim(),
-          city: formData.city.trim(),
-          state: formData.state.trim(),
-          country: formData.country.trim(),
-          postalCode: formData.postalCode.trim(),
-          detailedAddress: formData.detailedAddress.trim(),
-        });
+        await updateDeliveryAddress(addressId, payload);
       } else {
-        // POST — add new delivery address
-        await addDeliveryAddress({
-          street: formData.street.trim(),
-          city: formData.city.trim(),
-          state: formData.state.trim(),
-          country: formData.country.trim(),
-          postalCode: formData.postalCode.trim(),
-          latitude: coordinates.lat,
-          longitude: coordinates.lng,
-          geoAccuracy: 10,
-          detailedAddress: formData.detailedAddress.trim(),
-          addressType: mapAddressTypeToBackend(addressType),
-        });
+        await addDeliveryAddress(payload);
       }
 
       // Notify navbar to refresh address text
       window.dispatchEvent(new Event("addressUpdated"));
 
       toast.success(
-        isEditMode
-          ? "Primary address updated successfully!"
-          : "Address added successfully!"
+        isEditMode ? t("addressUpdatedSuccess") : t("addressAddedSuccess")
       );
       onSuccess?.();
     } catch (error: any) {
-      const serverMessage = error.response?.data?.message || error.message;
-      toast.error(serverMessage || "Failed to save address. Please try again.");
+      toast.error(getApiErrorMessage(error, t("failedToSaveLocation")));
     } finally {
       setIsSaving(false);
     }
@@ -303,15 +284,10 @@ export default function AddressForm({
               {type === "home" && <Home size={18} />}
               {type === "work" && <Building2 size={18} />}
               {type === "other" && <Globe size={18} />}
-              {t(type)}
+              {t(addressTypeLabelKey(toBackendAddressType(type)))}
             </button>
           ))}
         </div>
-        {isEditMode && (
-          <p className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
-            {t("editModePrimaryNote")}
-          </p>
-        )}
       </div>
 
       {/* Street + Detailed */}

@@ -1,5 +1,5 @@
-import EditProfilePage from "@/components/profile/editProfilePage";
+import EditProfileFormPage from "@/components/profile/editProfileFormPage";
 
 export default function ProfileEditRoute() {
-  return <EditProfilePage />;
+  return <EditProfileFormPage />;
 }

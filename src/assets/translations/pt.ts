@@ -91,6 +91,18 @@ const pt = {
   work: "Trabalho",
   other: "Outro",
 
+  // Rótulos de tipo de endereço. Separados das chaves genéricas
+  // `home`/`work`/`other` porque `home` significa "página inicial" noutros
+  // sítios ("Início"), o que não serve para o sítio onde se vive.
+  addressTypeHome: "Casa",
+  addressTypeWork: "Trabalho",
+  addressTypeOther: "Outro",
+  addressTypeCurrentLocation: "Localização Atual",
+
+  addressAddedSuccess: "Endereço adicionado com sucesso!",
+  addressUpdatedSuccess: "Endereço atualizado com sucesso!",
+  addressNotLoaded: "Endereço ainda não carregado. Tente novamente.",
+
   streetAddress: "Endereço *",
   enterStreetAddress: "Digite o endereço",
 
@@ -376,6 +388,7 @@ const pt = {
   referralsDescription: "Ganhe recompensas ao convidar amigos para o DeliGo",
 
   savedAddresses: "Endereços Guardados",
+  manageAddresses: "Gerir endereços",
   favoriteOrders: "Pedidos Favoritos",
 
   accountSettings: "Definições da Conta",
@@ -1466,8 +1479,6 @@ const pt = {
     "Pode explorar o mapa e escolher uma localização, mas precisa de",
   notSignedInSaveSuffix: "para guardar o seu endereço.",
   logInLink: "iniciar sessão",
-  editModePrimaryNote:
-    "Nota: O modo de edição atualiza o endereço PRINCIPAL independentemente do tipo selecionado.",
 
   // --- Phase 3: toasts, errors, empty/loading & route messages ---
   locationNotDetected: "Localização ainda não detetada. Aguarde ou utilize o GPS.",

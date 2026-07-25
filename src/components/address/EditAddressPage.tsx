@@ -63,7 +63,6 @@ export default function EditAddressPage({ addressId }: Props) {
     lat: number;
     lng: number;
   } | null>(null);
-  const [userId, setUserId] = useState<string>("");
   const error = profileErr
     ? getApiErrorMessage(profileErr, "Failed to load address")
     : "";
@@ -87,9 +86,8 @@ export default function EditAddressPage({ addressId }: Props) {
     const found = (profile.deliveryAddresses || []).find(
       (item) => item._id === addressId,
     );
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUserId(profile.userId || "");
     if (!found) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAddress(found);
     setCoordinates({
       lat: found.latitude ?? 23.8103,
@@ -429,7 +427,6 @@ export default function EditAddressPage({ addressId }: Props) {
               coordinates={coordinates}
               initialAddress={address}
               isEditMode={true}
-              userId={userId}
               addressId={addressId}
               onSuccess={() => router.push("/saved-addresses")}
             />

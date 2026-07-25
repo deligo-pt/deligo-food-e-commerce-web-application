@@ -24,6 +24,7 @@ import {
   MapPin,
   Loader2,
   Plus,
+  Navigation,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -36,6 +37,7 @@ import { resolveAddonName } from "@/lib/cart";
 import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
 import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
 import { getDeliveryEstimate, type DeliveryEstimate } from "@/lib/distance";
+import { addressTypeLabelKey, normalizeAddressType } from "@/lib/addressType";
 import type { CartAddon } from "@/types/cart";
 import Link from "next/link";
 
@@ -943,10 +945,17 @@ export default function PaymentPage() {
               <button
                 onClick={handlePlaceOrder}
                 disabled={isPlacingOrder}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#f9186b] py-4 font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
+                className={`relative mt-6 flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-[#f9186b] py-4 font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500 ${
+                  isPlacingOrder ? "" : "cart-cta"
+                }`}
               >
-                {isPlacingOrder ? t("processing") : t("placeOrder")}
-                <ArrowRight className="h-5 w-5" />
+                {!isPlacingOrder && (
+                  <span className="cart-cta-shine" aria-hidden="true" />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  {isPlacingOrder ? t("processing") : t("placeOrder")}
+                  <ArrowRight className="h-5 w-5" />
+                </span>
               </button>
 
               <div className="mt-6 text-center">
@@ -1160,13 +1169,15 @@ export default function PaymentPage() {
 
               {addresses.map((addr) => {
                 const isSwitching = switchingAddressId === addr._id;
-                const type = (addr.addressType || "").toUpperCase();
+                const type = normalizeAddressType(addr.addressType);
                 const TypeIcon =
                   type === "OFFICE"
                     ? Briefcase
-                    : type === "HOME" || type === "PRIMARY"
+                    : type === "HOME"
                       ? Home
-                      : MapPin;
+                      : type === "CURRENT_LOCATION"
+                        ? Navigation
+                        : MapPin;
                 return (
                   <button
                     key={addr._id}
@@ -1184,7 +1195,7 @@ export default function PaymentPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-400">
-                          {addr.addressType || t("home")}
+                          {t(addressTypeLabelKey(addr.addressType))}
                         </span>
                         {addr.isActive && (
                           <span className="rounded bg-[#f9186b] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">

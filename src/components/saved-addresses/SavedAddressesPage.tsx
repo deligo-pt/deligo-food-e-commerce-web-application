@@ -2,8 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw, Home, Pencil, Trash2 } from "lucide-react";
+import {
+  RefreshCw,
+  Home,
+  Pencil,
+  Trash2,
+  Plus,
+  Briefcase,
+  MapPin,
+  Navigation,
+} from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { addressTypeLabelKey, normalizeAddressType } from "@/lib/addressType";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
@@ -31,6 +41,13 @@ interface DeliveryAddress {
   addressType: string;
   isActive: boolean;
 }
+
+const ADDRESS_TYPE_ICONS = {
+  HOME: Home,
+  OFFICE: Briefcase,
+  OTHER: MapPin,
+  CURRENT_LOCATION: Navigation,
+} as const;
 
 interface ProfileAddress {
   street: string;
@@ -194,6 +211,9 @@ export default function SavedAddressesPage() {
 
         {addresses.map((address) => {
           const isPrimary = address.isActive;
+          // Never render `addressType` raw — it would leak internal enum values
+          // (CURRENT_LOCATION) and legacy ones (PRIMARY) straight to the user.
+          const TypeIcon = ADDRESS_TYPE_ICONS[normalizeAddressType(address.addressType)];
 
           return (
             <div
@@ -215,7 +235,7 @@ export default function SavedAddressesPage() {
                 className={`flex h-10 w-10 items-center justify-center rounded-full ${isPrimary ? "bg-white dark:bg-neutral-800" : "bg-gray-100 dark:bg-neutral-800"
                   }`}
               >
-                <Home
+                <TypeIcon
                   className={`h-4 w-4 ${isPrimary ? "text-[#C2185B] dark:text-pink-400" : "text-gray-600 dark:text-neutral-400"
                     }`}
                 />
@@ -227,7 +247,7 @@ export default function SavedAddressesPage() {
                     className={`text-sm font-semibold uppercase ${isPrimary ? "text-[#C2185B] dark:text-pink-400" : "text-black dark:text-neutral-200"
                       }`}
                   >
-                    {address.addressType}
+                    {t(addressTypeLabelKey(address.addressType))}
                   </span>
 
                   {isPrimary && (
@@ -274,6 +294,14 @@ export default function SavedAddressesPage() {
             {t("noSavedAddressesFound")}
           </div>
         )}
+
+        <Link
+          href="/add-address"
+          className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-pink-300 dark:border-pink-500/40 bg-white dark:bg-neutral-900/30 px-4 py-4 text-sm font-semibold text-[#C2185B] dark:text-pink-400 transition-all hover:border-[#C2185B] dark:hover:border-pink-400 hover:bg-pink-50/60 dark:hover:bg-pink-950/10"
+        >
+          <Plus className="h-4 w-4" />
+          {t("addNewAddress")}
+        </Link>
 
       </div>
 

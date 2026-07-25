@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
+import type { AddressType } from "@/lib/addressType";
 
 export interface DeliveryAddressPayload {
   street: string;
@@ -9,7 +10,7 @@ export interface DeliveryAddressPayload {
   longitude: number;
   latitude: number;
   geoAccuracy?: number;
-  addressType: "HOME" | "OFFICE" | "OTHER";
+  addressType: AddressType;
   detailedAddress?: string;
   notes?: string;
 }

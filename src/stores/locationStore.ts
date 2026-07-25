@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { AddressType } from "@/lib/addressType";
 
 export interface Coords {
   latitude: number;
@@ -14,7 +15,7 @@ export interface GuestAddress {
   latitude: number;
   longitude: number;
   detailedAddress?: string;
-  addressType: "HOME" | "OFFICE" | "OTHER";
+  addressType: AddressType;
 }
 
 interface LocationState {
