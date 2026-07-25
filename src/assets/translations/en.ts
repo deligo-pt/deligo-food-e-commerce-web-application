@@ -127,13 +127,21 @@ const en = {
   yourCartIsEmpty: "Your cart is empty",
 
   addProductsToContinue: "Add some products to continue.",
-  active: "Active",
-  inactive: "Inactive",
-
   sku: "SKU",
 
-  setAsActive: "Set as Active",
-  setAsInactive: "Set as Inactive",
+  // Vendor-level cart selection. Only one store's items can be checked out at a
+  // time, so selection is a store-level action — individual products cannot be
+  // activated or deactivated, only removed.
+  selectStoreForCheckout: "Select for Checkout",
+  storeSelectedForCheckout: "Selected for Checkout",
+  storeSelected: "Selected",
+  storeNotSelected: "Not selected",
+  showProducts: "Show products",
+  hideProducts: "Hide products",
+  selectStoreToCheckout: "Select this store to checkout",
+  storeSelectedToast: "\"{store}\" selected for checkout",
+  storeDeselectedToast: "\"{store}\" deselected",
+  couldNotChangeStoreSelection: "Could not change store selection",
 
   remove: "Remove",
 
@@ -144,10 +152,6 @@ const en = {
 
   goToCheckout: "Go to Checkout",
 
-  activateAtLeastOneProduct: "Activate at least one product to checkout",
-
-  cannotCheckoutNoActiveItems:
-    "Cannot checkout: no active items in this store. Please activate at least one product.",
   back: "Back",
 
   reviewYourCart: "Review Your Cart",
@@ -1502,6 +1506,7 @@ const en = {
   failedToShareReferralCode: "Failed to share referral code",
   pleaseLogInToAddToCart: "Please log in to add items to your cart.",
   itemAddedToCart: "Item added to cart successfully!",
+  failedToAddToCart: "Could not read your cart. Please try again.",
   vendorInfoMissing: "Vendor information missing",
   provideAtLeastOneRating: "Please provide at least one rating.",
   currentLocationLoadedOnMap: "Current location loaded on map.",
@@ -1529,7 +1534,6 @@ const en = {
   loading: "Loading...",
   loadingSearch: "Loading search...",
   markAllAsRead: "Mark all as read",
-  profileAddress: "Profile Address",
   deliveryAddresses: "Delivery Addresses",
   primaryAddressUpdated: "Primary address updated successfully",
   failedToUpdatePrimaryAddress: "Failed to update primary address",

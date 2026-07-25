@@ -49,20 +49,14 @@ const ADDRESS_TYPE_ICONS = {
   CURRENT_LOCATION: Navigation,
 } as const;
 
-interface ProfileAddress {
-  street: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
-  detailedAddress?: string;
-}
-
+// NOTE: the profile also carries an `address` object, but it is only a mirror of
+// whichever delivery address is currently active — verified against the API by
+// toggling the active address and watching `profile.address` follow it. It is
+// deliberately not read here; the active card below is the same record.
 interface ProfileResponse {
   success: boolean;
   message: string;
   data: {
-    address: ProfileAddress;
     deliveryAddresses: DeliveryAddress[];
   };
 }
@@ -84,7 +78,6 @@ export default function SavedAddressesPage() {
   const invalidateProfile = useInvalidateProfile();
 
   const addresses = profile?.deliveryAddresses ?? [];
-  const profileAddress = profile?.address ?? null;
   const error = profileError
     ? getApiErrorMessage(profileError, "Failed to load addresses")
     : "";
@@ -167,39 +160,6 @@ export default function SavedAddressesPage() {
           <RefreshCw className="h-4 w-4 text-black dark:text-neutral-200" />
         </button>
       </div>
-
-      {/* Profile Address */}
-      {profileAddress && (
-        <div className="mb-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-neutral-400">
-            {t("profileAddress") || "Profile Address"}
-          </h2>
-          <div className="flex items-start gap-4 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-950/20 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-neutral-800">
-              <Home className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-            </div>
-            <div className="flex-1">
-              <div className="mb-1 flex items-center gap-2">
-                <span className="text-sm font-semibold uppercase text-blue-600 dark:text-blue-400">
-                  {t("profileAddress") || "Profile Address"}
-                </span>
-              </div>
-              <p className="truncate text-sm font-semibold text-black dark:text-neutral-100">
-                {profileAddress.detailedAddress || profileAddress.street}
-              </p>
-              <p className="truncate text-xs text-gray-600 dark:text-neutral-400">
-                {profileAddress.city}, {profileAddress.state}, {profileAddress.country}{" "}
-                {profileAddress.postalCode}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link href="/edit-profile">
-                <Pencil className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delivery Addresses */}
       <div className="space-y-4">

@@ -193,13 +193,13 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
 
   const cardBody = (
     <article
-      className={`group overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all ${
+      className={`group flex h-full flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all ${
         isClosed
           ? "cursor-not-allowed"
           : "cursor-pointer hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl"
       }`}
     >
-      <div className="relative aspect-16/10 overflow-hidden">
+      <div className="relative aspect-16/10 shrink-0 overflow-hidden">
         <SafeImage
           src={vendor.storePhoto?.[0]}
           alt={vendor.businessDetails.businessName}
@@ -225,7 +225,9 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
         )}
       </div>
 
-      <div className="p-8">
+      {/* flex-1 + mt-auto on the footer keeps every card's divider and meta row
+          aligned regardless of how long the cuisine list is. */}
+      <div className="flex flex-1 flex-col p-6 sm:p-8">
         <div className="mb-2 flex items-center gap-4">
           <h3
             className={`line-clamp-1 text-lg font-bold sm:text-xl ${
@@ -238,7 +240,7 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
           </h3>
         </div>
         <p
-          className={`mb-6 text-lg leading-7 ${
+          className={`mb-6 line-clamp-2 text-base leading-7 ${
             isClosed
               ? "text-[#9aa0a6] dark:text-neutral-600"
               : "text-[#5a4044] dark:text-neutral-400"
@@ -247,7 +249,7 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
           {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
             vendor.businessDetails.businessType}
         </p>
-        <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-sm font-medium">
+        <div className="mt-auto flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-sm font-medium">
           <span
             className={`flex items-center gap-2 ${
               isClosed
@@ -277,14 +279,14 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
   // of a Link so the card cannot be opened.
   if (isClosed) {
     return (
-      <div className="block" aria-disabled="true">
+      <div className="block h-full" aria-disabled="true">
         {cardBody}
       </div>
     );
   }
 
   return (
-    <Link href={`/vendors/${vendor.userId}`} className="block">
+    <Link href={`/vendors/${vendor.userId}`} className="block h-full">
       {cardBody}
     </Link>
   );

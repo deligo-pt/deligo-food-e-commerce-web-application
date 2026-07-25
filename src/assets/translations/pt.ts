@@ -135,13 +135,21 @@ const pt = {
   yourCartIsEmpty: "Seu carrinho está vazio",
 
   addProductsToContinue: "Adicione alguns produtos para continuar.",
-  active: "Ativo",
-  inactive: "Inativo",
-
   sku: "SKU",
 
-  setAsActive: "Definir como Ativo",
-  setAsInactive: "Definir como Inativo",
+  // Seleção de loja no carrinho. Só é possível finalizar a compra de uma loja de
+  // cada vez, por isso a seleção é ao nível da loja — os produtos individuais não
+  // podem ser ativados nem desativados, apenas removidos.
+  selectStoreForCheckout: "Selecionar para Finalizar",
+  storeSelectedForCheckout: "Selecionado para Finalizar",
+  storeSelected: "Selecionado",
+  storeNotSelected: "Não selecionado",
+  showProducts: "Mostrar produtos",
+  hideProducts: "Ocultar produtos",
+  selectStoreToCheckout: "Selecione esta loja para finalizar a compra",
+  storeSelectedToast: "\"{store}\" selecionado para finalizar a compra",
+  storeDeselectedToast: "\"{store}\" desselecionado",
+  couldNotChangeStoreSelection: "Não foi possível alterar a seleção da loja",
 
   remove: "Remover",
 
@@ -152,11 +160,6 @@ const pt = {
 
   goToCheckout: "Ir para Checkout",
 
-  activateAtLeastOneProduct:
-    "Ative pelo menos um produto para finalizar a compra",
-
-  cannotCheckoutNoActiveItems:
-    "Não é possível finalizar a compra: não há produtos ativos nesta loja. Ative pelo menos um produto.",
   back: "Voltar",
 
   reviewYourCart: "Revise Seu Carrinho",
@@ -1506,6 +1509,7 @@ const pt = {
   failedToShareReferralCode: "Falha ao partilhar o código de referência",
   pleaseLogInToAddToCart: "Inicie sessão para adicionar itens ao seu carrinho.",
   itemAddedToCart: "Item adicionado ao carrinho com sucesso!",
+  failedToAddToCart: "Não foi possível ler o seu carrinho. Tente novamente.",
   vendorInfoMissing: "Informação do vendedor em falta",
   provideAtLeastOneRating: "Forneça pelo menos uma avaliação.",
   currentLocationLoadedOnMap: "Localização atual carregada no mapa.",
@@ -1533,7 +1537,6 @@ const pt = {
   loading: "A carregar...",
   loadingSearch: "A carregar pesquisa...",
   markAllAsRead: "Marcar tudo como lido",
-  profileAddress: "Endereço do Perfil",
   deliveryAddresses: "Endereços de Entrega",
   primaryAddressUpdated: "Endereço principal atualizado com sucesso",
   failedToUpdatePrimaryAddress: "Falha ao atualizar o endereço principal",

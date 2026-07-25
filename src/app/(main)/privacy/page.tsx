@@ -75,7 +75,7 @@ export default function PrivacyPolicyPage() {
                 <NavLink href="#deletion">{t("privacyNavDeletion")}</NavLink>
                 <a
                   href="mailto:info@deligoeu.com"
-                  className="block w-full bg-blue-600 text-white rounded-md py-2.5 px-4 text-sm text-center font-bold hover:bg-blue-700 transition-colors mt-4"
+                  className="block w-full bg-[#f9186b] text-white rounded-md py-2.5 px-4 text-sm text-center font-bold hover:bg-[#d4145b] transition-colors mt-4"
                 >
                   {t("privacyNavContact")}
                 </a>
@@ -107,7 +107,7 @@ export default function PrivacyPolicyPage() {
                   <NavLink href="#deletion">{t("privacyNavDeletion")}</NavLink>
                   <a
                     href="mailto:info@deligoeu.com"
-                    className="bg-blue-600 text-white rounded-md py-2 px-3 text-sm text-center font-bold hover:bg-blue-700 transition-colors col-span-2 sm:col-span-1 flex items-center justify-center"
+                    className="bg-[#f9186b] text-white rounded-md py-2 px-3 text-sm text-center font-bold hover:bg-[#d4145b] transition-colors col-span-2 sm:col-span-1 flex items-center justify-center"
                   >
                     {t("privacyNavContact")}
                   </a>

@@ -234,6 +234,7 @@ export default function CartPage() {
               rating={store.rating}
               items={store.items}
               total={store.total}
+              collapsible={stores.length > 1}
               onProductUpdate={() => invalidateCart()}
               onProductRemove={removeProductFromCart}
             />

@@ -91,7 +91,7 @@ export default function TermsPage() {
   }) => (
     <div className="bg-gray-50 dark:bg-neutral-950 p-6 rounded-xl border border-gray-100 dark:border-neutral-800/80 hover:shadow-md dark:hover:shadow-none transition">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-[#E91E7F]/10 flex items-center justify-center text-pink-600 dark:text-pink-400 text-xl">
+        <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-[#f9186b]/10 flex items-center justify-center text-pink-600 dark:text-pink-400 text-xl">
           {icon}
         </div>
         <h4 className="text-xl font-semibold text-gray-800 dark:text-neutral-200">{title}</h4>
@@ -151,9 +151,12 @@ export default function TermsPage() {
           {/* CTA Button */}
           <div className="text-center mt-12">
             <p className="text-gray-600 dark:text-neutral-400 mb-6">{t("termsContactSupportHelper")}</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition transform active:scale-95 shadow-md">
+            <Link
+              href="/contact-us"
+              className="inline-block rounded-full bg-linear-to-r from-[#f9186b] to-[#d4145b] px-8 py-3 font-bold text-white shadow-md transition hover:from-[#d4145b] hover:to-[#b01254] active:scale-95"
+            >
               {t("termsContactSupportButton")}
-            </button>
+            </Link>
           </div>
         </section>
       </div>

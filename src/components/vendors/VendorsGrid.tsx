@@ -13,21 +13,21 @@ const ITEMS_PER_PAGE = 10;
 
 function VendorCardSkeleton() {
   return (
-    <article className="group cursor-pointer overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all">
-      <div className="relative aspect-16/10 overflow-hidden">
+    <article className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all">
+      <div className="relative aspect-16/10 shrink-0 overflow-hidden">
         <div className="h-full w-full animate-pulse bg-gray-200 dark:bg-neutral-800" />
         <div className="absolute left-5 top-5">
           <div className="h-9 w-16 animate-pulse rounded-2xl bg-white/95 dark:bg-neutral-900/95 shadow-lg backdrop-blur-md" />
         </div>
       </div>
 
-      <div className="p-8">
+      <div className="flex flex-1 flex-col p-6 sm:p-8">
         <div className="mb-2 flex items-center justify-between gap-4">
           <div className="h-7 w-48 animate-pulse rounded-lg bg-gray-200 dark:bg-neutral-800" />
           <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
         </div>
         <div className="mb-6 h-6 w-32 animate-pulse rounded-lg bg-gray-200 dark:bg-neutral-800" />
-        <div className="flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6">
+        <div className="mt-auto flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6">
           <div className="flex items-center gap-2">
             <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
             <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />

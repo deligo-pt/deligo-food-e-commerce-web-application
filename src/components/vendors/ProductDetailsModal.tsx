@@ -157,6 +157,62 @@ export default function ProductDetailsModal({
     };
   }, [product]);
 
+  // Preload the add-ons already saved on this cart line.
+  //
+  // `add-to-cart` MERGES add-ons into whatever the line already has (it only
+  // replaces the skus you name). So without preloading, the user sees an empty
+  // selection while the backend still counts the hidden ones: picking a single
+  // topping on a line already at its group maximum fails with "You can select a
+  // maximum of N" — an error they can't understand or fix from this screen.
+  // Showing the real state makes the group limits enforceable client-side.
+  useEffect(() => {
+    const productMongoId = product?._id ?? product?.productId;
+    if (!isOpen || !productMongoId || !addonGroups.length || !getAccessToken()) {
+      return;
+    }
+
+    const variationSku = selectedOption ? selectedOption.sku : null;
+    const knownSkus = new Set(
+      addonGroups.flatMap((g) => g.options.map((o) => o.sku)),
+    );
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.get("/carts/view-cart");
+        if (cancelled) return;
+        const items = (res.data?.data?.items ?? []) as Array<{
+          productId?: string;
+          variationSku?: string | null;
+          addons?: { sku?: string; quantity?: number }[];
+        }>;
+        const line = items.find(
+          (l) =>
+            l.productId === productMongoId &&
+            (l.variationSku ?? null) === variationSku,
+        );
+
+        const preloaded: Record<string, number> = {};
+        for (const addon of line?.addons ?? []) {
+          // Skip anything the current groups no longer offer, so a stale sku
+          // can't be echoed back and rejected on save.
+          if (addon.sku && addon.quantity && knownSkus.has(addon.sku)) {
+            preloaded[addon.sku] = addon.quantity;
+          }
+        }
+        setAddonQty(preloaded);
+      } catch {
+        // An unreadable cart just means no preload; the save path re-reads
+        // authoritatively before writing anything.
+        if (!cancelled) setAddonQty({});
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, product, selectedOption, addonGroups]);
+
   const groupSelectedCount = (group: AddonGroup) =>
     group.options.reduce((sum, o) => sum + (addonQty[o.sku] || 0), 0);
 
@@ -316,23 +372,63 @@ export default function ProductDetailsModal({
       const productMongoId = product._id ?? product.productId;
       const variationSku = selectedOption ? selectedOption.sku : null;
 
-      // add-to-cart accepts inline add-ons: each { optionSku, quantity } SETs
-      // that add-on on the line (0 removes it) and the backend enforces every
-      // group's min/max — so the whole selection goes in one request.
+      // Read the line fresh rather than trusting the preload or the React Query
+      // cache: `add-to-cart` SETs the quantity it receives, so a stale base here
+      // doesn't just render wrong — it destroys real quantity.
+      let existingQuantity = 0;
+      let existingAddonSkus: string[] = [];
+      try {
+        const cartRes = await apiClient.get("/carts/view-cart");
+        const cartItems = (cartRes.data?.data?.items ?? []) as Array<{
+          productId?: string;
+          variationSku?: string | null;
+          itemSummary?: { quantity?: number };
+          addons?: { sku?: string; quantity?: number }[];
+        }>;
+        const existingLine = cartItems.find(
+          (line) =>
+            line.productId === productMongoId &&
+            (line.variationSku ?? null) === variationSku,
+        );
+        existingQuantity = existingLine?.itemSummary?.quantity ?? 0;
+        existingAddonSkus = (existingLine?.addons ?? [])
+          .map((a) => a.sku)
+          .filter((sku): sku is string => !!sku);
+      } catch {
+        // An unreadable cart must not silently reset the line to the picker
+        // value — bail out instead of sending a quantity we can't trust.
+        toast.error(t("failedToAddToCart"));
+        return;
+      }
+
+      // Each { optionSku, quantity } SETs that add-on on the line and 0 removes
+      // it, but add-ons the payload omits are left untouched. So deselecting one
+      // in the modal has to be sent as an explicit 0 — otherwise it silently
+      // survives on the line and the user cannot remove it from here.
       const selectedAddons = addonGroups.flatMap((g) =>
         g.options
           .filter((o) => (addonQty[o.sku] || 0) > 0)
           .map((o) => ({ optionSku: o.sku, quantity: addonQty[o.sku] })),
       );
+      const selectedSkus = new Set(selectedAddons.map((a) => a.optionSku));
+      const removedAddons = existingAddonSkus
+        .filter((sku) => !selectedSkus.has(sku))
+        .map((sku) => ({ optionSku: sku, quantity: 0 }));
+      const addonsPayload = [...selectedAddons, ...removedAddons];
 
+      // `add-to-cart` SETs the line quantity — it does not add to it (the
+      // Postman docs still describe the old additive behaviour). This modal
+      // means "add N more", so send existing + selected.
       const payload: any = {
-        items: [{ productId: productMongoId, quantity }],
+        items: [
+          { productId: productMongoId, quantity: existingQuantity + quantity },
+        ],
       };
       if (variationSku) {
         payload.items[0].variationSku = variationSku;
       }
-      if (selectedAddons.length > 0) {
-        payload.items[0].addons = selectedAddons;
+      if (addonsPayload.length > 0) {
+        payload.items[0].addons = addonsPayload;
       }
 
       const response = await apiClient.post("/carts/add-to-cart", payload);

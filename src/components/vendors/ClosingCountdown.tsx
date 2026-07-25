@@ -58,37 +58,24 @@ export default function ClosingCountdown({
 
   return (
     <div
-      className="closing-banner relative mb-6 flex items-center gap-3 overflow-hidden rounded-2xl bg-[#f9186b] px-4 py-3 text-white shadow-lg sm:px-5 sm:py-3.5"
+      className="closing-banner mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-pink-200 bg-pink-50 px-4 py-3 dark:border-pink-900/40 dark:bg-pink-950/20"
       role="status"
       aria-live="polite"
     >
-      {/* Sweeping light column */}
-      <span className="closing-shimmer" aria-hidden="true" />
-
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30 backdrop-blur-sm">
-        <Clock size={18} className="closing-clock" />
+      <span className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-[#f9186b] dark:text-pink-400">
+        <Clock size={16} className="closing-clock shrink-0" />
+        {t("closingSoon")}
       </span>
 
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
-        <span className="text-sm font-bold uppercase tracking-wide sm:text-base">
-          {t("closingSoon")}
+      <span
+        suppressHydrationWarning
+        className="text-sm text-gray-600 dark:text-neutral-400"
+      >
+        {t("orderWithin")}{" "}
+        <span className="font-semibold tabular-nums text-gray-900 dark:text-neutral-100">
+          {pad(minutes)} {t("minShort")} {pad(seconds)} {t("secShort")}
         </span>
-        <span
-          suppressHydrationWarning
-          className="flex items-center gap-1 text-sm font-medium text-white/90 sm:text-[15px]"
-        >
-          <span className="text-white/80">{t("orderWithin")}</span>
-          <span className="tabular-nums">
-            <span className="font-bold text-white">{pad(minutes)}</span>{" "}
-            {t("minShort")}{" "}
-            {/* `key` re-triggers the pop animation on every new second */}
-            <span key={seconds} className="closing-sec-pop font-bold text-white">
-              {pad(seconds)}
-            </span>{" "}
-            {t("secShort")}
-          </span>
-        </span>
-      </div>
+      </span>
     </div>
   );
 }
