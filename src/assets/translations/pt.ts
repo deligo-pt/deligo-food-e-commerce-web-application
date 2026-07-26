@@ -156,6 +156,8 @@ const pt = {
   qty: "Qtd",
 
   removeFromCart: "Remover",
+  removeFromCartConfirm:
+    "Tem a certeza de que pretende remover \u201c{product}\u201d do seu carrinho?",
   new: "Novo",
 
   goToCheckout: "Ir para Checkout",
@@ -391,7 +393,7 @@ const pt = {
   referralsDescription: "Ganhe recompensas ao convidar amigos para o DeliGo",
 
   savedAddresses: "Endereços Guardados",
-  manageAddresses: "Gerir endereços",
+  manageAddresses: "Gerir Moradas",
   favoriteOrders: "Pedidos Favoritos",
 
   accountSettings: "Definições da Conta",
@@ -538,7 +540,7 @@ const pt = {
   oneTapCheckout: "Pagamento com um toque",
 
   otherMethods: "Outros Métodos",
-  paypalGooglePayEtc: "PayPal, Google Pay, etc.",
+  otherMethodsSubtitle: "MB WAY, PayPal, etc.",
 
   recommended: "Recomendado",
 
@@ -1445,7 +1447,7 @@ const pt = {
     "Modelos de ganhos flexíveis alinhados com as necessidades individuais.",
 
   // --- Phase 1: static UI copy (Issue_solve_plan.md) ---
-  popular: "POPULAR",
+  featured: "EM DESTAQUE",
   continueButton: "Continuar",
   deleteLabel: "Eliminar",
   deleteAddress: "Eliminar Endereço",

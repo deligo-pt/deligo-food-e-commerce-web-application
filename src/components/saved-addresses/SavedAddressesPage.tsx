@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  RefreshCw,
   Home,
   Pencil,
   Trash2,
@@ -41,6 +40,58 @@ interface DeliveryAddress {
   addressType: string;
   isActive: boolean;
 }
+
+/*
+ * Postal format, two lines:
+ *
+ *   [Street Address], [House / Apartment / Floor]
+ *   [Postal Code] [City], [Country]
+ *
+ * The field names map to the add/edit form's own labels — `street` is "Street
+ * Address" and `detailedAddress` is "House / Apartment / Floor". They belong on
+ * the same line: the previous `detailedAddress || street` showed the apartment
+ * *instead of* the street whenever both were filled in, which is the half of an
+ * address a courier can least afford to lose.
+ *
+ * Separators matter for reading: distinct components are comma-separated, while
+ * postal code and city are one unit and stay space-joined ("1229 Dhaka").
+ *
+ * Parts are filtered rather than joined blindly — `postalCode` is not enforced
+ * by the form, so it can legitimately be missing, and a blank one must not
+ * leave a dangling comma or a leading space.
+ */
+const joinParts = (separator: string, ...parts: (string | undefined)[]) =>
+  parts
+    .map((p) => p?.trim())
+    .filter((p): p is string => !!p)
+    .join(separator);
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/*
+ * Addresses captured from the device's location store Google's *whole*
+ * formatted address in `street` ("Ka-74/5 Progati Sarani Rd, Dhaka 1229,
+ * Bangladesh"), while ones typed into the form store only the route. The
+ * formatted ones carry the locality in Google's order — city before postal
+ * code — so the same rule as line 2 is applied to them: postal code first.
+ *
+ * The swap is anchored on this address's own `city` value rather than a loose
+ * pattern, so it can only fire where the city genuinely precedes a postal code
+ * and can never reorder part of a street name.
+ */
+const postalBeforeCity = (line: string, city?: string) => {
+  const c = city?.trim();
+  if (!c) return line;
+  // Portuguese (1750-126) and 4-digit formats such as Bangladesh's (1229).
+  const re = new RegExp(`\\b${escapeRegExp(c)}\\s+(\\d{3,5}(?:-\\d{3,4})?)\\b`, "gi");
+  return line.replace(re, (_match, code: string) => `${code} ${c}`);
+};
+
+const formatAddressLine1 = (a: DeliveryAddress) =>
+  postalBeforeCity(joinParts(", ", a.street, a.detailedAddress), a.city);
+
+const formatAddressLine2 = (a: DeliveryAddress) =>
+  joinParts(", ", joinParts(" ", a.postalCode, a.city), a.country);
 
 const ADDRESS_TYPE_ICONS = {
   HOME: Home,
@@ -148,17 +199,13 @@ export default function SavedAddressesPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black dark:text-neutral-50">
-            {t("savedAddresses")}
-          </h1>
-        </div>
-
-        <button onClick={() => invalidateProfile()}>
-          <RefreshCw className="h-4 w-4 text-black dark:text-neutral-200" />
-        </button>
+      {/* Header. No manual refresh control: the list already re-fetches on
+          window focus and after every mutation, so the button gave the user
+          nothing to observe. */}
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black dark:text-neutral-50">
+          {t("manageAddresses")}
+        </h1>
       </div>
 
       {/* Delivery Addresses */}
@@ -218,11 +265,11 @@ export default function SavedAddressesPage() {
                 </div>
 
                 <p className="truncate text-sm font-semibold text-black dark:text-neutral-100">
-                  {address.detailedAddress || address.street}
+                  {formatAddressLine1(address)}
                 </p>
 
                 <p className="truncate text-xs text-gray-600 dark:text-neutral-400">
-                  {address.city}, {address.state}, {address.country}
+                  {formatAddressLine2(address)}
                 </p>
               </div>
 
@@ -275,7 +322,7 @@ export default function SavedAddressesPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteAddress} className="bg-[#C2185B] hover:bg-[#A01248] dark:bg-pink-600 dark:hover:bg-pink-700 text-white">
+            <AlertDialogAction onClick={confirmDeleteAddress}>
               {t("deleteLabel")}
             </AlertDialogAction>
           </AlertDialogFooter>

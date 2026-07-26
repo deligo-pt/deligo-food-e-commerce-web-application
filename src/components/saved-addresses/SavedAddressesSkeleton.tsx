@@ -1,14 +1,9 @@
 export default function SavedAddressesSkeleton() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 animate-pulse">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="h-5 w-5 rounded bg-gray-200 dark:bg-neutral-800" />
-          <div className="h-8 w-48 rounded bg-gray-200 dark:bg-neutral-800" />
-        </div>
-
-        <div className="h-4 w-4 rounded bg-gray-200 dark:bg-neutral-800" />
+      {/* Header — just the title, mirroring the page (no refresh control). */}
+      <div className="mb-6">
+        <div className="h-8 w-48 rounded bg-gray-200 dark:bg-neutral-800" />
       </div>
 
       {/* Address List */}

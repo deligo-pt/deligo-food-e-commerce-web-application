@@ -29,7 +29,7 @@ export default function PaymentMethodPage() {
     {
       id: "other",
       title: t("otherMethods"),
-      subtitle: t("paypalGooglePayEtc"),
+      subtitle: t("otherMethodsSubtitle"),
       icon: Wallet,
     },
   ];

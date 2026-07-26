@@ -159,7 +159,7 @@ export default function CartProductRow({
           <AlertDialogHeader>
             <AlertDialogTitle>{t("removeFromCart") || "Remove from cart?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove &ldquo;{item.name}&rdquo; from your cart?
+              {t("removeFromCartConfirm").replace("{product}", item.name)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -170,7 +170,7 @@ export default function CartProductRow({
             <AlertDialogAction onClick={(e) => {
               e?.stopPropagation();
               handleConfirmDelete();
-            }} className="bg-[#f9186b] hover:bg-[#d4145b] text-white cursor-pointer">
+            }}>
               {t("remove") || "Remove"}
             </AlertDialogAction>
           </AlertDialogFooter>

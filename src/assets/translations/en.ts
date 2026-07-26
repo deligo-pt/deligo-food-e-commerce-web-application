@@ -148,6 +148,8 @@ const en = {
   qty: "Qty",
 
   removeFromCart: "Remove",
+  removeFromCartConfirm:
+    "Are you sure you want to remove \u201c{product}\u201d from your cart?",
   new: "New",
 
   goToCheckout: "Go to Checkout",
@@ -375,7 +377,7 @@ const en = {
   referralsDescription: "Earn rewards by inviting your friends to DeliGo",
 
   savedAddresses: "Saved Addresses",
-  manageAddresses: "Manage addresses",
+  manageAddresses: "Manage Addresses",
   favoriteOrders: "Favorite Orders",
   accountSettings: "Account Settings",
   helpCenter: "Help Center",
@@ -520,7 +522,7 @@ const en = {
   oneTapCheckout: "One-tap checkout",
 
   otherMethods: "Other Methods",
-  paypalGooglePayEtc: "PayPal, Google Pay, etc.",
+  otherMethodsSubtitle: "MB WAY, PayPal, etc.",
 
   recommended: "Recommended",
 
@@ -1443,7 +1445,7 @@ const en = {
     "Flexible earning models aligned with independent lifestyle requirements.",
 
   // --- Phase 1: static UI copy (Issue_solve_plan.md) ---
-  popular: "POPULAR",
+  featured: "FEATURED",
   continueButton: "Continue",
   deleteLabel: "Delete",
   deleteAddress: "Delete Address",

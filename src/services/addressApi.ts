@@ -55,9 +55,20 @@ export async function updateLiveLocation(
   return response.data;
 }
 
+/**
+ * `addressType` is optional on update. Older records are stored with the
+ * retired type `PRIMARY`, and the API rejects any attempt to move one off it
+ * ("The primary address type cannot be modified."). Omitting the field leaves
+ * the stored type untouched, so the rest of the address stays editable.
+ */
+export type UpdateDeliveryAddressPayload = Omit<
+  DeliveryAddressPayload,
+  "addressType"
+> & { addressType?: AddressType };
+
 export async function updateDeliveryAddress(
   addressId: string,
-  data: DeliveryAddressPayload
+  data: UpdateDeliveryAddressPayload
 ) {
   const response = await apiClient.patch(
     `/customers/update-delivery-address/${addressId}`,

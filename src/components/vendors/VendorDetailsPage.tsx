@@ -132,7 +132,16 @@ interface Product {
     currency: string;
   };
   category?: { name: string };
+  // `isFeatured` is the vendor's own curation flag from GET /products. It is
+  // the only merchandising signal the API exposes — there is no order-count or
+  // popularity metric — so the tab is labelled "Featured" for what it is.
+  meta?: { isFeatured?: boolean };
 }
+
+// Sentinel for the Featured tab. Namespaced so it cannot be mistaken for a real
+// category — the other tabs are keyed by the category's own (localized) name,
+// and a vendor is perfectly entitled to call a category "Featured".
+const FEATURED_KEY = "__featured__";
 
 // Pure + module-scoped so it has a stable identity (safe as a memo dep).
 // Decimal point, matching the cart, checkout, payment and invoice surfaces.
@@ -239,7 +248,7 @@ export default function VendorDetailsPage({
     ? getApiErrorMessage(productsErrorObj, "Unable to load menu")
     : "";
   // Category filter selection. Keyed by a stable value — the sentinels "all" /
-  // "popular", or a category's (localized) name for real categories — decoupled
+  // FEATURED_KEY, or a category's (localized) name for real categories — decoupled
   // from the translated display label. A language switch remounts this page via
   // LanguageBoundary, which re-inits this back to "all", so no stale (old
   // language) selection can survive and match nothing.
@@ -277,9 +286,13 @@ export default function VendorDetailsPage({
             ),
           ]
         : [];
+    // Only offer the Featured tab when this vendor has actually flagged
+    // something. Rendering it unconditionally is what made the old "Popular"
+    // tab a dead control: always present, never filtering.
+    const hasFeatured = products.some((p) => p.meta?.isFeatured);
     return [
       { key: "all", label: t("all") },
-      { key: "popular", label: t("popular") },
+      ...(hasFeatured ? [{ key: FEATURED_KEY, label: t("featured") }] : []),
       ...(vendorCategoryNames.length > 0
         ? vendorCategoryNames
         : productCategoryNames
@@ -288,8 +301,9 @@ export default function VendorDetailsPage({
   }, [vendor, products, t]);
 
   const filteredProducts = useMemo(() => {
-    if (deferredCategory === "all" || deferredCategory === "popular")
-      return products;
+    if (deferredCategory === "all") return products;
+    if (deferredCategory === FEATURED_KEY)
+      return products.filter((product) => product.meta?.isFeatured);
     return products.filter((product) => {
       const productCategory = product.category?.name;
       if (!productCategory) return false;

@@ -10,6 +10,7 @@ import { addDeliveryAddress, updateDeliveryAddress } from "@/services/addressApi
 import { getApiErrorMessage } from "@/lib/apiClient";
 import {
   addressTypeLabelKey,
+  normalizeAddressType,
   toBackendAddressType,
   toSelectableAddressType,
   type SelectableAddressType,
@@ -234,7 +235,29 @@ export default function AddressForm({
           setIsSaving(false);
           return;
         }
-        await updateDeliveryAddress(addressId, payload);
+
+        // Older records are stored with the retired type `PRIMARY`. The form
+        // has no PRIMARY button, so `toSelectableAddressType` shows them as
+        // Home — and saving an unrelated change (street, postal code) would
+        // then submit HOME and be rejected with "The primary address type
+        // cannot be modified.", even though the customer never touched the
+        // type. Send `addressType` only when the selection actually changed.
+        const { addressType: selectedType, ...addressFields } = payload;
+        const storedType = initialAddress?.addressType;
+        const seeded = storedType ? toSelectableAddressType(storedType) : null;
+        const untouched = seeded !== null && seeded === addressType;
+        // `CURRENT_LOCATION` has no button of its own either, but there the
+        // whole point of editing is to give the row a real type — so it is
+        // always sent, untouched or not.
+        const isCurrentLocation =
+          normalizeAddressType(storedType) === "CURRENT_LOCATION";
+
+        await updateDeliveryAddress(
+          addressId,
+          untouched && !isCurrentLocation
+            ? addressFields
+            : { ...addressFields, addressType: selectedType },
+        );
       } else {
         await addDeliveryAddress(payload);
       }

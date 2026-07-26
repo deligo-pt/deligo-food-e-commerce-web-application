@@ -116,88 +116,87 @@ export default function CartStoreCard({
 
   return (
     <div className="rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm transition-colors duration-200 sm:p-6">
-      {/* Store header. The avatar shrinks and the meta chips wrap so the row
-          survives a 320px viewport without the toggle overflowing. */}
-      <div className="mb-5 flex items-start gap-3 sm:gap-4">
-        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-4 border-pink-100 dark:border-pink-950 sm:h-20 sm:w-20">
+      {/* Store header — the vendor's identity (avatar, name, meta) is centred as
+          a column. The toggle is an action rather than part of that identity, so
+          it is pinned out of flow: left in the row it would consume width on one
+          side only and push the "centred" content visibly off-axis. */}
+      <div className="relative mb-5 flex flex-col items-center text-center">
+        {/* Store selection — only one store can be checked out at a time */}
+        <button
+          type="button"
+          role="switch"
+          onClick={handleToggleStore}
+          disabled={isToggling}
+          aria-checked={hasActive}
+          aria-label={
+            hasActive ? t("storeSelected") : t("selectStoreForCheckout")
+          }
+          title={hasActive ? t("storeSelected") : t("selectStoreForCheckout")}
+          className={`absolute right-0 top-0 inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-60 cursor-pointer ${
+            hasActive
+              ? "bg-green-500 dark:bg-green-600"
+              : "bg-gray-300 dark:bg-neutral-700"
+          }`}
+        >
+          {/* Icon sits on the side opposite the knob */}
+          <span
+            className={`absolute flex items-center text-white transition-all duration-200 ${
+              hasActive ? "left-2" : "right-2"
+            }`}
+          >
+            {isToggling ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : hasActive ? (
+              <Check className="h-4 w-4" strokeWidth={3} />
+            ) : (
+              <X className="h-4 w-4" strokeWidth={3} />
+            )}
+          </span>
+          <span
+            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200 ${
+              hasActive ? "translate-x-7" : "translate-x-1"
+            }`}
+          />
+        </button>
+
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-4 border-pink-100 dark:border-pink-950 sm:h-20 sm:w-20">
           <SafeImage
             src={image}
             alt={businessName}
-            sizes="(min-width: 640px) 80px, 56px"
+            sizes="(min-width: 640px) 80px, 64px"
             fallbackIcon={<UtensilsCrossed className="h-6 w-6" />}
           />
         </div>
 
-        <div className="min-w-0 flex-1">
-          {/* Name and toggle share a row; the name truncates rather than
-              pushing the toggle off-screen. */}
-          <div className="flex items-start justify-between gap-3">
-            <h3 className="min-w-0 flex-1 truncate text-lg font-bold text-gray-900 dark:text-neutral-100 sm:text-2xl">
-              {businessName}
-            </h3>
+        {/* Wraps rather than truncating — centred text has the full card width
+            to work with, and the name clears the pinned toggle vertically (the
+            toggle is 32px tall at the top; this sits below a 64px avatar). */}
+        <h3 className="mt-3 max-w-full break-words text-lg font-bold text-gray-900 dark:text-neutral-100 sm:text-2xl">
+          {businessName}
+        </h3>
 
-            {/* Store selection — only one store can be checked out at a time */}
-            <button
-              type="button"
-              role="switch"
-              onClick={handleToggleStore}
-              disabled={isToggling}
-              aria-checked={hasActive}
-              aria-label={
-                hasActive ? t("storeSelected") : t("selectStoreForCheckout")
-              }
-              title={hasActive ? t("storeSelected") : t("selectStoreForCheckout")}
-              className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-60 cursor-pointer ${
-                hasActive
-                  ? "bg-green-500 dark:bg-green-600"
-                  : "bg-gray-300 dark:bg-neutral-700"
-              }`}
-            >
-              {/* Icon sits on the side opposite the knob */}
-              <span
-                className={`absolute flex items-center text-white transition-all duration-200 ${
-                  hasActive ? "left-2" : "right-2"
-                }`}
-              >
-                {isToggling ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : hasActive ? (
-                  <Check className="h-4 w-4" strokeWidth={3} />
-                ) : (
-                  <X className="h-4 w-4" strokeWidth={3} />
-                )}
-              </span>
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                  hasActive ? "translate-x-7" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded-xl bg-yellow-50 dark:bg-yellow-950/20 px-2.5 py-1.5">
-              <Star size={14} className="fill-yellow-500 text-yellow-500" />
-              <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">
-                {rating > 0 ? rating.toFixed(1) : t("new")}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/20 px-2.5 py-1.5">
-              <UtensilsCrossed size={14} className="text-[#f9186b] dark:text-pink-400" />
-              <span className="text-sm font-semibold text-[#f9186b] dark:text-pink-400">
-                {items.length} {t("items")} · €{storeTotal.toFixed(2)}
-              </span>
-            </div>
-            <span
-              className={`rounded-xl px-2.5 py-1.5 text-sm font-semibold ${
-                hasActive
-                  ? "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400"
-                  : "bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-400"
-              }`}
-            >
-              {hasActive ? t("storeSelected") : t("storeNotSelected")}
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-xl bg-yellow-50 dark:bg-yellow-950/20 px-2.5 py-1.5">
+            <Star size={14} className="fill-yellow-500 text-yellow-500" />
+            <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">
+              {rating > 0 ? rating.toFixed(1) : t("new")}
             </span>
           </div>
+          <div className="flex items-center gap-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/20 px-2.5 py-1.5">
+            <UtensilsCrossed size={14} className="text-[#f9186b] dark:text-pink-400" />
+            <span className="text-sm font-semibold text-[#f9186b] dark:text-pink-400">
+              {items.length} {t("items")} · €{storeTotal.toFixed(2)}
+            </span>
+          </div>
+          <span
+            className={`rounded-xl px-2.5 py-1.5 text-sm font-semibold ${
+              hasActive
+                ? "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400"
+                : "bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-400"
+            }`}
+          >
+            {hasActive ? t("storeSelected") : t("storeNotSelected")}
+          </span>
         </div>
       </div>
 

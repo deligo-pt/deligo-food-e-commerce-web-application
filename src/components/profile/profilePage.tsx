@@ -123,7 +123,7 @@ export default function AccountPage() {
   ];
   const settingItems = [
     {
-      title: t("savedAddresses"),
+      title: t("manageAddresses"),
       icon: MapPin,
       path: "/saved-addresses",
     },
