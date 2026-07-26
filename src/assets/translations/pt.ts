@@ -1550,6 +1550,32 @@ const pt = {
   securityPrivacyInnovation: "Segurança, Privacidade e Inovação",
   questionsLabel: "Perguntas",
   deligoTagline: "DeliGo – A Entregar Conveniência, a Capacitar Comunidades.",
+
+  // --- Fatura PDF (src/lib/invoice.ts) ---
+  invoiceTitle: "Fatura",
+  invoiceTagline: "Entrega de comida rápida e fiável",
+  invoiceOrderId: "N.º da Encomenda",
+  invoiceDate: "Data",
+  invoiceShippedTo: "Morada de entrega",
+  invoicePayment: "Pagamento",
+  invoiceNo: "N.º",
+  invoiceItem: "Artigo",
+  invoiceQty: "Qtd.",
+  invoicePrice: "Preço",
+  invoiceTotal: "Total",
+  invoiceTotalPrice: "Preço Total",
+  invoiceDiscount: "Desconto",
+  invoiceSubtotal: "Subtotal (IVA incl.)",
+  invoiceOfferDiscount: "Desconto promocional",
+  invoiceServiceFee: "Taxa de Serviço",
+  invoiceDeliveryFee: "Taxa de entrega (IVA incl.)",
+  invoicePay: "A Pagar",
+  invoiceAddress: "Morada",
+  invoicePhone: "Telefone",
+  invoiceEmail: "Email",
+  invoiceWebsite: "Website",
+  invoicePageOf: "Página {page} de {total}",
+  invoiceFilePrefix: "fatura",
 };
 
 export default pt;

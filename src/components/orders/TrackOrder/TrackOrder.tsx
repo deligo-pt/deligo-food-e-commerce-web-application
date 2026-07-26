@@ -103,7 +103,7 @@ export default function TrackOrder() {
     if (downloadingInvoice || !order?.orderId) return;
     setDownloadingInvoice(true);
     try {
-      await downloadInvoice(order.orderId);
+      await downloadInvoice(order.orderId, t);
       toast.success(t("invoiceDownloaded"));
     } catch (error) {
       toast.error(await extractBlobErrorMessage(error, t("invoiceDownloadFailed")));

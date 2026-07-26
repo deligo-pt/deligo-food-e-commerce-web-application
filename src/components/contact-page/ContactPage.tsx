@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Logo from "@/components/shared/Logo";
 import Link from "next/link";
 import { Mail, Phone, MapPin, Globe } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -39,15 +39,8 @@ export default function ContactPage() {
       <section className="mx-auto max-w-7xl px-4 pt-2 md:px-8">
         <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-[#f9186b] via-[#d4145b] to-[#f9186b] px-6 py-16 text-center md:py-20">
           <div className="mb-8 flex justify-center">
-            <div className="rounded-3xl bg-white p-4 shadow-xl">
-              <Image
-                src="/deligo-logo.png"
-                alt="DeliGo"
-                width={100}
-                height={100}
-                className="object-contain"
-              />
-            </div>
+            {/* Hero is the pink gradient — knockout, no white plate. */}
+            <Logo size={96} variant="mark" />
           </div>
 
           <h1 className="text-3xl font-bold text-white sm:text-4xl md:text-6xl">

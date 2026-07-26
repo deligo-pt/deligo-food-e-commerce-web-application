@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Logo from "./Logo";
 import { useTranslation } from "@/hooks/useTranslation";
 
 /**
@@ -52,18 +52,10 @@ export default function Loader({
         <span
           className={`absolute inset-0 animate-spin rounded-full ${border} border-transparent border-t-[#f9186b] border-r-[#f9186b] dark:border-t-pink-500 dark:border-r-pink-500`}
         />
-        {/* logo chip in the centre (echoes the navbar mark) */}
-        <span
-          className={`flex ${chip} items-center justify-center rounded-xl bg-white shadow-[0_2px_10px_rgba(249,24,107,0.25)] ring-1 ring-black/5`}
-        >
-          <Image
-            src="/deligoLogo.png"
-            alt=""
-            width={logo}
-            height={logo}
-            className="rounded-md"
-            priority
-          />
+        {/* logo tile in the centre — the loader sits on a neutral background,
+            so the tile stands on its own without a plate behind it */}
+        <span className={`flex ${chip} items-center justify-center`}>
+          <Logo size={logo} priority alt="" />
         </span>
       </span>
 

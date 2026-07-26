@@ -1539,6 +1539,35 @@ const en = {
   failedToUpdatePrimaryAddress: "Failed to update primary address",
   addressDeleted: "Address deleted successfully",
   failedToDeleteAddress: "Failed to delete address",
+
+  // --- Invoice PDF (src/lib/invoice.ts) ---
+  // Kept as a separate `invoice*` set rather than reusing the cart/checkout
+  // labels: the PDF has fixed column widths, so a wording change made for a
+  // screen must not silently reflow the printed table.
+  invoiceTitle: "Invoice",
+  invoiceTagline: "Fast and reliable food delivery",
+  invoiceOrderId: "Order ID",
+  invoiceDate: "Date",
+  invoiceShippedTo: "Shipped to",
+  invoicePayment: "Payment",
+  invoiceNo: "No.",
+  invoiceItem: "Item",
+  invoiceQty: "Qty",
+  invoicePrice: "Price",
+  invoiceTotal: "Total",
+  invoiceTotalPrice: "Total Price",
+  invoiceDiscount: "Discount",
+  invoiceSubtotal: "Subtotal (incl. tax)",
+  invoiceOfferDiscount: "Offer discount",
+  invoiceServiceFee: "Service Fee",
+  invoiceDeliveryFee: "Delivery fee (incl. tax)",
+  invoicePay: "Pay",
+  invoiceAddress: "Address",
+  invoicePhone: "Phone",
+  invoiceEmail: "Email",
+  invoiceWebsite: "Website",
+  invoicePageOf: "Page {page} of {total}",
+  invoiceFilePrefix: "invoice",
 };
 
 export default en;

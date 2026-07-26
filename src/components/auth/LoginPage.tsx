@@ -15,6 +15,7 @@ import {
   Phone,
 } from "lucide-react";
 import Image from "next/image";
+import Logo from "@/components/shared/Logo";
 import { COUNTRY_OPTIONS, type CountryOption } from "../../data/countryCodes";
 import { useLoginFlow } from "../../hooks/useLoginFlow";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -149,15 +150,18 @@ export default function LoginPage() {
             <Link
               href="/"
               aria-label={t("returnToHome")}
-              className="overflow-hidden rounded-[28px] shadow-[0_18px_40px_rgba(0,0,0,0.18)] transition-transform hover:scale-105"
+              className="rounded-xl outline-none transition-transform duration-200 ease-out hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#ef2f7a] motion-reduce:transform-none motion-reduce:transition-none"
             >
-              <Image
-                src="/deligoLogo.png"
-                alt="DeliGo logo"
-                width={112}
-                height={112}
-                className="h-20 w-20 object-cover sm:h-24 sm:w-24 lg:h-28 lg:w-28"
+              {/* Panel is #ef2f7a, so the tile would be pink on pink; the
+                  knockout puts the mark straight on the panel. The rounding
+                  and drop shadow went with the tile and have nothing to sit
+                  on now. */}
+              <Logo
+                size={112}
+                variant="mark"
+                className="h-auto w-20 sm:w-24 lg:w-28"
                 priority
+                alt="DeliGo logo"
               />
             </Link>
             <h1 className="mt-6 text-4xl font-extrabold tracking-[-0.03em] text-white sm:text-5xl">

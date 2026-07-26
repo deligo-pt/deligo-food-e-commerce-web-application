@@ -14,7 +14,7 @@ import {
   Store,
   Zap,
 } from "lucide-react";
-import Image from "next/image";
+import Logo from "@/components/shared/Logo";
 
 export default function AboutDeliGo() {
   const { t } = useTranslation();
@@ -47,12 +47,12 @@ export default function AboutDeliGo() {
       {/* Hero Section */}
       <section className="bg-[#e91e7f] text-white">
         <div className="mx-auto max-w-7xl px-6 py-20 text-center">
-          <Image
-            src="/deligo-logo.png"
-            alt="DeliGo"
-            className="mx-auto mb-8 h-32 w-32 rounded-lg bg-white object-contain p-2 shadow-xl"
-            width={128}
-            height={128}
+          {/* Hero is #e91e7f — the knockout puts the mark on the brand
+              colour instead of boxing the tile in white. */}
+          <Logo
+            size={112}
+            variant="mark"
+            className="mx-auto mb-8 h-auto w-28"
           />
           <h1 className="text-4xl font-bold md:text-6xl">{t("aboutTitle")}</h1>
           <p className="mt-5 text-lg italic text-pink-100 md:text-2xl">

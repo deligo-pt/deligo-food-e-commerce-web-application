@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import Logo from "@/components/shared/Logo";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -518,19 +519,23 @@ export default function Navbar() {
       <div className="flex w-full items-center justify-between gap-2">
         {/* Brand / Logo */}
         <div className="flex min-w-0 items-center gap-4 xl:gap-8">
-          <Link href="/" className="flex shrink-0 items-center gap-2.5">
-            {/* Logo sits in a white "chip" so the pink mark stays crisp on the
-                #f9186b header instead of blending pink-on-pink. */}
-            <span className="flex items-center justify-center rounded-xl bg-white p-1 shadow-[0_2px_8px_rgba(0,0,0,0.18)] ring-1 ring-black/5">
-              <Image
-                src="/deligoLogo.png"
-                alt="DeliGo Logo"
-                width={34}
-                height={34}
-                priority
-                className="rounded-lg"
-              />
-            </span>
+          {/* This is the home link, so it gets real affordances: the mark lifts
+              on hover, settles on press, and shows a focus ring for keyboard
+              users. `group` drives both children from the one hover. */}
+          <Link
+            href="/"
+            className="group flex shrink-0 items-center gap-2 rounded-xl outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f9186b]"
+          >
+            {/* The header is #f9186b, so the pink tile would vanish into it.
+                The knockout is the mark itself in white — no plate needed, and
+                white on #f9186b is 3.9:1. */}
+            <Logo
+              size={38}
+              variant="mark"
+              priority
+              alt="DeliGo Logo"
+              className="transition-transform duration-200 ease-out group-hover:scale-110 group-active:scale-95 motion-reduce:transform-none motion-reduce:transition-none"
+            />
             <span className="text-xl font-black tracking-tight md:text-2xl">
               DeliGo
             </span>

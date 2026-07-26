@@ -66,7 +66,7 @@ export default function OrderCard({
     if (downloading) return;
     setDownloading(true);
     try {
-      await downloadInvoice(orderId);
+      await downloadInvoice(orderId, t);
       toast.success(t("invoiceDownloaded"));
     } catch (error) {
       toast.error(await extractBlobErrorMessage(error, t("invoiceDownloadFailed")));
