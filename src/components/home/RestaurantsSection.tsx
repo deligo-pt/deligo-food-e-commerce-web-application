@@ -100,17 +100,14 @@ const RestaurantCard = memo(function RestaurantCard({
     ? t("calculating")
     : deliveryTime || t("under10Min");
 
-  // Closed stores are shown dimmed with a "Currently Closed" badge and cannot
-  // be opened. Only an explicit `false` counts as closed.
+  // Closed stores are shown dimmed with a "Currently Closed" badge but stay
+  // openable — the menu is browsable, only ordering is withdrawn. Only an
+  // explicit `false` counts as closed.
   const isClosed = vendor.businessDetails?.isStoreOpen === false;
 
   const cardBody = (
     <article
-      className={`group flex h-full flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 ${
-        isClosed
-          ? "cursor-not-allowed"
-          : "hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl"
-      }`}
+      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl"
     >
       <div className="relative aspect-16/10 overflow-hidden">
         <SafeImage
@@ -198,15 +195,6 @@ const RestaurantCard = memo(function RestaurantCard({
       </div>
     </article>
   );
-
-  // Closed stores are not navigable — render a non-interactive wrapper.
-  if (isClosed) {
-    return (
-      <div className="block h-full" aria-disabled="true">
-        {cardBody}
-      </div>
-    );
-  }
 
   return (
     <Link href={`/vendors/${vendor.userId}`} className="block h-full">

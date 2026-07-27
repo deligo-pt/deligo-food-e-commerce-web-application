@@ -28,6 +28,24 @@ interface AddressFormProps {
   addressId?: string;
   onSuccess?: () => void;
   isGuestMode?: boolean;
+  /**
+   * Whether the position the page opens with should be reverse-geocoded into
+   * the fields. True suits "set my current location", where filling in the
+   * detected place is the point. False suits "add a new address", where that
+   * position is only a guess and presenting it as filled-in data misrepresents
+   * it as something the customer entered. Either way, a location they go on to
+   * choose — search result or dragged pin — always autofills.
+   */
+  prefillFromOpeningLocation?: boolean;
+  /**
+   * Bump this to request a one-off prefill from the current `coordinates`, even
+   * when they are the ones the page opened with. "Use Current Location" needs
+   * it: a desktop browser geolocating by Wi-Fi/IP routinely returns the exact
+   * same coordinates already on screen, and without an explicit signal that
+   * fill is indistinguishable from the opening position — so the button would
+   * silently do nothing.
+   */
+  prefillRequestId?: number;
 }
 
 export default function AddressForm({
@@ -37,6 +55,8 @@ export default function AddressForm({
   addressId,
   onSuccess,
   isGuestMode = false,
+  prefillFromOpeningLocation = true,
+  prefillRequestId = 0,
 }: AddressFormProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -61,6 +81,10 @@ export default function AddressForm({
   });
   const [isSaving, setIsSaving] = useState(false);
   const hasInitializedRef = useRef(false);
+  // The position the page opened with, latched once. Used to tell it apart from
+  // a location the customer actively picked afterwards.
+  const openedWithCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastPrefillRequestRef = useRef(prefillRequestId);
 
   // Initialize from initialAddress (edit mode)
   useEffect(() => {
@@ -82,6 +106,22 @@ export default function AddressForm({
 
   useEffect(() => {
     if (!coordinates) return;
+
+    // Latch the opening position before any other guard, so a slow Maps script
+    // or a still-loading saved address can't let a later, user-chosen pin be
+    // mistaken for the one we opened with.
+    if (!openedWithCoordsRef.current) openedWithCoordsRef.current = coordinates;
+    const openedWith = openedWithCoordsRef.current;
+    const isOpeningLocation =
+      openedWith.lat === coordinates.lat && openedWith.lng === coordinates.lng;
+
+    // An explicit "fill from this position" request outranks the opening-
+    // location rule. Consumed once, so a later unrelated re-run doesn't replay.
+    const wasRequested = prefillRequestId !== lastPrefillRequestRef.current;
+    if (wasRequested) lastPrefillRequestRef.current = prefillRequestId;
+
+    if (isOpeningLocation && !prefillFromOpeningLocation && !wasRequested) return;
+
     if (!window.google?.maps) return;
 
     // In edit mode, skip until initialAddress has been loaded into the form
@@ -134,7 +174,7 @@ export default function AddressForm({
         }));
       }
     );
-  }, [coordinates, initialAddress]);
+  }, [coordinates, initialAddress, prefillFromOpeningLocation, prefillRequestId]);
 
   const handleSave = async () => {
     if (isGuestMode) {
@@ -375,7 +415,7 @@ export default function AddressForm({
             onChange={(e) =>
               setFormData({ ...formData, postalCode: e.target.value })
             }
-            placeholder="1000-001"
+            placeholder={t("enterPostalCode")}
             className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
           />
         </div>
@@ -393,7 +433,7 @@ export default function AddressForm({
             onChange={(e) =>
               setFormData({ ...formData, state: e.target.value })
             }
-            placeholder="Lisbon"
+            placeholder={t("enterStateRegion")}
             className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
           />
         </div>
@@ -409,6 +449,7 @@ export default function AddressForm({
               onChange={(e) =>
                 setFormData({ ...formData, country: e.target.value })
               }
+              placeholder={t("enterCountry")}
               className="h-14 w-full bg-transparent outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
             />
           </div>

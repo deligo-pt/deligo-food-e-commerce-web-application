@@ -25,7 +25,6 @@ export function useLoginFlow() {
 
   const [mode, setMode] = useState<LoginMode>("mobile");
   const [step, setStep] = useState<LoginStep>("credentials");
-  const [showReferral, setShowReferral] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showCountryMenu, setShowCountryMenu] = useState(false);
   const [language, setLanguage] = useState<"english" | "portugues">("english");
@@ -226,7 +225,6 @@ export function useLoginFlow() {
   return {
     mode,
     step,
-    showReferral,
     showLanguageModal,
     showCountryMenu,
     language,
@@ -244,7 +242,6 @@ export function useLoginFlow() {
     loginHint,
     loginIdentifier,
     showDeviceLimitModal,
-    setShowReferral,
     setShowLanguageModal,
     setShowCountryMenu,
     setLanguage,

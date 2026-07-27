@@ -159,8 +159,10 @@ const MenuProductCard = memo(function MenuProductCard({
 }: {
   product: Product;
   onSelect: (productId: string) => void;
-  // When the store is closed the menu stays browsable — only the add action is
-  // withdrawn, so customers can still see what's on offer.
+  // When the store is closed the menu stays browsable but nothing in the row is
+  // actionable: the add button is disabled and the hover affordance is dropped,
+  // so the card never invites a click it won't honour. Customers can still see
+  // what's on offer, which is the point of letting them in here at all.
   storeClosed?: boolean;
 }) {
   const { t } = useTranslation();
@@ -173,7 +175,11 @@ const MenuProductCard = memo(function MenuProductCard({
   const currency = currencySymbol(pricing?.currency);
 
   return (
-    <div className="group flex overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none transition hover:shadow-lg dark:hover:bg-neutral-800/30">
+    <div
+      className={`group flex overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none transition ${
+        storeClosed ? "" : "hover:shadow-lg dark:hover:bg-neutral-800/30"
+      }`}
+    >
       <div className="relative h-36 w-32 shrink-0">
         <SafeImage
           src={product.images?.[0]}
@@ -258,9 +264,9 @@ export default function VendorDetailsPage({
   );
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
-  // Reachable by direct URL even though closed vendors aren't linked from the
-  // listings, and a store can close while this page is open. Only an explicit
-  // `false` counts as closed.
+  // Closed vendors are openable from the listings on purpose — the menu stays
+  // browsable and only ordering is withdrawn — and a store can also close while
+  // this page is open. Only an explicit `false` counts as closed.
   const isStoreClosed = vendor?.businessDetails?.isStoreOpen === false;
 
   // Defer the category filter so a tab click highlights instantly while the grid
@@ -433,9 +439,22 @@ export default function VendorDetailsPage({
                 alt={vendor.businessDetails.businessName}
                 priority
                 sizes="100vw"
+                className={`object-cover ${isStoreClosed ? "grayscale" : ""}`}
                 fallbackIcon={<Store className="h-14 w-14" />}
               />
               <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+              {/* Same treatment the listing card carries, so arriving here from
+                  a dimmed card reads as continuity rather than a state change.
+                  Sits above the gradient but clear of the info panel, which is
+                  anchored to the bottom-left. */}
+              {isStoreClosed && (
+                <div className="pointer-events-none absolute inset-0 flex items-start justify-center bg-black/40 pt-10 md:pt-16">
+                  <span className="flex items-center gap-2 rounded-full bg-black/70 px-5 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
+                    <Moon size={18} />
+                    {t("currentlyClosed")}
+                  </span>
+                </div>
+              )}
               <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8">
                 <div className="rounded-2xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 p-5 shadow-xl dark:shadow-none">
                   <div className="mb-1 flex items-center gap-2">

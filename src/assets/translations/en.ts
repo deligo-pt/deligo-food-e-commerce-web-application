@@ -61,6 +61,7 @@ const en = {
   locationAccessDenied:
     "Location access denied. Please enable it in your browser settings.",
   couldNotDetectLocation: "Could not detect your location. Please try again.",
+  geolocationNotSupported: "Geolocation is not supported by your browser.",
 
   confirmLocation: "Confirm Location",
   confirmLocationDescription:
@@ -105,10 +106,13 @@ const en = {
   enterCity: "Enter city",
 
   postalCode: "Postal Code *",
+  enterPostalCode: "Enter postal code",
 
   stateRegion: "State / Region",
+  enterStateRegion: "Enter state / region",
 
   country: "Country",
+  enterCountry: "Enter country",
 
   gpsCoordinates: "GPS Coordinates",
 
@@ -666,7 +670,10 @@ const en = {
 
   loadingAddresses: "Loading addresses...",
 
-  primary: "PRIMARY",
+  // Badge on the address the customer has selected. Named for the field it
+  // reflects (`isActive`), not the retired `PRIMARY` address *type* — the two
+  // are unrelated and sharing the word conflated them.
+  active: "ACTIVE",
 
   noSavedAddressesFound: "No saved addresses found.",
 
@@ -698,9 +705,7 @@ const en = {
   selectCountryCode: "Select country code",
   chooseCountryAndDialCode: "Choose your country and dial code",
 
-  enterReferralCode: "Enter referral code",
-
-  haveReferralCode: "Have a referral code?",
+  referralCodeOptional: "Referral code (optional)",
 
   sendingOtp: "Sending OTP...",
 
@@ -726,7 +731,6 @@ const en = {
     "You have reached your maximum device limit. Do you want to remove an existing session and log in here?",
 
   removeSession: "Remove",
-  removeReferralCode: "Remove",
   portugues: "Português",
   footerDescription:
     "𝗗𝗲𝗹𝗶𝗚𝗼 𝗶𝘀 𝗮 𝘁𝗲𝗰𝗵𝗻𝗼𝗹𝗼𝗴𝘆 𝗺𝗮𝗿𝗸𝗲𝘁𝗽𝗹𝗮𝗰𝗲 𝗽𝗹𝗮𝘁𝗳𝗼𝗿𝗺 𝘁𝗵𝗮𝘁 𝗰𝗼𝗻𝗻𝗲𝗰𝘁𝘀 𝗰𝘂𝘀𝘁𝗼𝗺𝗲𝗿𝘀, 𝗺𝗲𝗿𝗰𝗵𝗮𝗻𝘁𝘀, 𝗮𝗻𝗱 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁 𝗰𝗼𝘂𝗿𝗶𝗲𝗿𝘀.",
@@ -1537,8 +1541,8 @@ const en = {
   loadingSearch: "Loading search...",
   markAllAsRead: "Mark all as read",
   deliveryAddresses: "Delivery Addresses",
-  primaryAddressUpdated: "Primary address updated successfully",
-  failedToUpdatePrimaryAddress: "Failed to update primary address",
+  activeAddressUpdated: "Active address updated successfully",
+  failedToUpdateActiveAddress: "Failed to update active address",
   addressDeleted: "Address deleted successfully",
   failedToDeleteAddress: "Failed to delete address",
 

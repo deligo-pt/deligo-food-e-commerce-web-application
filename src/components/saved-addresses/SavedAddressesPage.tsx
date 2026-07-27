@@ -13,6 +13,10 @@ import {
 } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { addressTypeLabelKey, normalizeAddressType } from "@/lib/addressType";
+import {
+  formatAddressLine1,
+  formatAddressLine2,
+} from "@/lib/addressFormat";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
@@ -40,58 +44,6 @@ interface DeliveryAddress {
   addressType: string;
   isActive: boolean;
 }
-
-/*
- * Postal format, two lines:
- *
- *   [Street Address], [House / Apartment / Floor]
- *   [Postal Code] [City], [Country]
- *
- * The field names map to the add/edit form's own labels — `street` is "Street
- * Address" and `detailedAddress` is "House / Apartment / Floor". They belong on
- * the same line: the previous `detailedAddress || street` showed the apartment
- * *instead of* the street whenever both were filled in, which is the half of an
- * address a courier can least afford to lose.
- *
- * Separators matter for reading: distinct components are comma-separated, while
- * postal code and city are one unit and stay space-joined ("1229 Dhaka").
- *
- * Parts are filtered rather than joined blindly — `postalCode` is not enforced
- * by the form, so it can legitimately be missing, and a blank one must not
- * leave a dangling comma or a leading space.
- */
-const joinParts = (separator: string, ...parts: (string | undefined)[]) =>
-  parts
-    .map((p) => p?.trim())
-    .filter((p): p is string => !!p)
-    .join(separator);
-
-const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-/*
- * Addresses captured from the device's location store Google's *whole*
- * formatted address in `street` ("Ka-74/5 Progati Sarani Rd, Dhaka 1229,
- * Bangladesh"), while ones typed into the form store only the route. The
- * formatted ones carry the locality in Google's order — city before postal
- * code — so the same rule as line 2 is applied to them: postal code first.
- *
- * The swap is anchored on this address's own `city` value rather than a loose
- * pattern, so it can only fire where the city genuinely precedes a postal code
- * and can never reorder part of a street name.
- */
-const postalBeforeCity = (line: string, city?: string) => {
-  const c = city?.trim();
-  if (!c) return line;
-  // Portuguese (1750-126) and 4-digit formats such as Bangladesh's (1229).
-  const re = new RegExp(`\\b${escapeRegExp(c)}\\s+(\\d{3,5}(?:-\\d{3,4})?)\\b`, "gi");
-  return line.replace(re, (_match, code: string) => `${code} ${c}`);
-};
-
-const formatAddressLine1 = (a: DeliveryAddress) =>
-  postalBeforeCity(joinParts(", ", a.street, a.detailedAddress), a.city);
-
-const formatAddressLine2 = (a: DeliveryAddress) =>
-  joinParts(", ", joinParts(" ", a.postalCode, a.city), a.country);
 
 const ADDRESS_TYPE_ICONS = {
   HOME: Home,
@@ -133,7 +85,7 @@ export default function SavedAddressesPage() {
     ? getApiErrorMessage(profileError, "Failed to load addresses")
     : "";
 
-  const handleSetPrimaryAddress = async (addressId: string) => {
+  const handleSetActiveAddress = async (addressId: string) => {
     try {
       setUpdatingId(addressId);
 
@@ -143,9 +95,9 @@ export default function SavedAddressesPage() {
 
       await invalidateProfile();
       window.dispatchEvent(new Event("addressUpdated"));
-      toast.success(t("primaryAddressUpdated"));
+      toast.success(t("activeAddressUpdated"));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, t("failedToUpdatePrimaryAddress")));
+      toast.error(getApiErrorMessage(error, t("failedToUpdateActiveAddress")));
     } finally {
       setUpdatingId(null);
     }
@@ -217,7 +169,10 @@ export default function SavedAddressesPage() {
         )}
 
         {addresses.map((address) => {
-          const isPrimary = address.isActive;
+          // The selected address, badged ACTIVE / ATIVO. Distinct from the
+          // retired `addressType: "PRIMARY"` some stored records still carry —
+          // the old badge wording made those two look like the same thing.
+          const isActiveAddress = address.isActive;
           // Never render `addressType` raw — it would leak internal enum values
           // (CURRENT_LOCATION) and legacy ones (PRIMARY) straight to the user.
           const TypeIcon = ADDRESS_TYPE_ICONS[normalizeAddressType(address.addressType)];
@@ -227,10 +182,10 @@ export default function SavedAddressesPage() {
               key={address._id}
               onClick={() => {
                 if (!address.isActive) {
-                  handleSetPrimaryAddress(address._id);
+                  handleSetActiveAddress(address._id);
                 }
               }}
-              className={`flex cursor-pointer items-start gap-4 rounded-xl p-4 transition-all ${isPrimary
+              className={`flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all sm:gap-4 sm:p-5 ${isActiveAddress
                 ? "border border-pink-200 dark:border-pink-900/50 bg-pink-50 dark:bg-pink-950/20"
                 : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/30 hover:border-pink-300 dark:hover:border-pink-500/30 hover:bg-pink-50/40 dark:hover:bg-pink-950/5"
                 } ${updatingId === address._id || deletingId === address._id
@@ -238,56 +193,75 @@ export default function SavedAddressesPage() {
                   : ""
                 }`}
             >
+              {/* shrink-0: without it the icon is squeezed into an oval as soon
+                  as the address text is long enough to compete for width. */}
               <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full ${isPrimary ? "bg-white dark:bg-neutral-800" : "bg-gray-100 dark:bg-neutral-800"
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isActiveAddress ? "bg-white dark:bg-neutral-800" : "bg-gray-100 dark:bg-neutral-800"
                   }`}
               >
                 <TypeIcon
-                  className={`h-4 w-4 ${isPrimary ? "text-[#C2185B] dark:text-pink-400" : "text-gray-600 dark:text-neutral-400"
+                  className={`h-4 w-4 ${isActiveAddress ? "text-[#C2185B] dark:text-pink-400" : "text-gray-600 dark:text-neutral-400"
                     }`}
                 />
               </div>
 
-              <div className="flex-1">
-                <div className="mb-1 flex items-center gap-2">
+              {/* min-w-0 is what keeps a long address inside the card: a flex
+                  item defaults to min-width:auto, i.e. its content width, so
+                  without this the row grows past the card and pushes the action
+                  buttons out of the background entirely. */}
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
                   <span
-                    className={`text-sm font-semibold uppercase ${isPrimary ? "text-[#C2185B] dark:text-pink-400" : "text-black dark:text-neutral-200"
+                    className={`text-sm font-semibold uppercase ${isActiveAddress ? "text-[#C2185B] dark:text-pink-400" : "text-black dark:text-neutral-200"
                       }`}
                   >
                     {t(addressTypeLabelKey(address.addressType))}
                   </span>
 
-                  {isPrimary && (
-                    <span className="rounded bg-[#C2185B] dark:bg-pink-600 px-1.5 py-1px text-[10px] font-semibold text-white">
-                      {t("primary")}
+                  {isActiveAddress && (
+                    <span className="rounded bg-[#C2185B] dark:bg-pink-600 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-white">
+                      {t("active")}
                     </span>
                   )}
                 </div>
 
-                <p className="truncate text-sm font-semibold text-black dark:text-neutral-100">
+                {/* Addresses wrap rather than truncate — a clipped street line
+                    is the half a courier can least afford to lose, and these
+                    cards have no other place to show it. */}
+                <p className="text-sm leading-snug font-semibold break-words text-black dark:text-neutral-100">
                   {formatAddressLine1(address)}
                 </p>
 
-                <p className="truncate text-xs text-gray-600 dark:text-neutral-400">
+                <p className="mt-0.5 text-xs leading-snug break-words text-gray-600 dark:text-neutral-400">
                   {formatAddressLine2(address)}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              {/* Icon-only, so they carry their own labels. Sized to a real
+                  36px tap target instead of the bare 16px glyph. */}
+              <div className="flex shrink-0 items-center gap-1">
                 <button
+                  type="button"
+                  aria-label={t("editAddress")}
+                  title={t("editAddress")}
                   onClick={(e) => {
                     e.stopPropagation();
                     router.push(`/edit-address/${address._id}`);
                   }}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-[#C2185B] focus-visible:outline-none dark:hover:bg-white/10"
                 >
                   <Pencil className="h-4 w-4 text-[#C2185B] dark:text-pink-400" />
                 </button>
 
                 <button
+                  type="button"
+                  aria-label={t("deleteAddress")}
+                  title={t("deleteAddress")}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteAddress(address._id);
                   }}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-[#C2185B] focus-visible:outline-none dark:hover:bg-white/10"
                 >
                   <Trash2 className="h-4 w-4 text-[#C2185B] dark:text-pink-400" />
                 </button>
@@ -297,14 +271,14 @@ export default function SavedAddressesPage() {
         })}
 
         {addresses.length === 0 && (
-          <div className="rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 text-center text-sm text-gray-500 dark:text-neutral-450">
+          <div className="rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 text-center text-sm text-gray-500 dark:text-neutral-400">
             {t("noSavedAddressesFound")}
           </div>
         )}
 
         <Link
           href="/add-address"
-          className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-pink-300 dark:border-pink-500/40 bg-white dark:bg-neutral-900/30 px-4 py-4 text-sm font-semibold text-[#C2185B] dark:text-pink-400 transition-all hover:border-[#C2185B] dark:hover:border-pink-400 hover:bg-pink-50/60 dark:hover:bg-pink-950/10"
+          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-pink-300 dark:border-pink-500/40 bg-white dark:bg-neutral-900/30 px-4 py-4 text-sm font-semibold text-[#C2185B] dark:text-pink-400 transition-all hover:border-[#C2185B] dark:hover:border-pink-400 hover:bg-pink-50/60 dark:hover:bg-pink-950/10"
         >
           <Plus className="h-4 w-4" />
           {t("addNewAddress")}

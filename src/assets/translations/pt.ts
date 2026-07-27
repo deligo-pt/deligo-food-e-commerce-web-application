@@ -68,6 +68,7 @@ const pt = {
     "Acesso à localização negado. Ative-o nas definições do seu browser.",
   couldNotDetectLocation:
     "Não foi possível detetar a sua localização. Tente novamente.",
+  geolocationNotSupported: "A geolocalização não é suportada pelo seu browser.",
 
   confirmLocation: "Confirmar Localização",
   confirmLocationDescription:
@@ -113,10 +114,13 @@ const pt = {
   enterCity: "Digite a cidade",
 
   postalCode: "Código Postal *",
+  enterPostalCode: "Introduza o código postal",
 
   stateRegion: "Estado / Região",
+  enterStateRegion: "Introduza o estado / região",
 
   country: "País",
+  enterCountry: "Introduza o país",
 
   gpsCoordinates: "Coordenadas GPS",
 
@@ -691,7 +695,7 @@ const pt = {
 
   loadingAddresses: "A carregar moradas...",
 
-  primary: "PRINCIPAL",
+  active: "ATIVO",
 
   noSavedAddressesFound: "Nenhuma morada guardada encontrada.",
   vouchersDescription:
@@ -723,9 +727,7 @@ const pt = {
   selectCountryCode: "Selecionar código do país",
   chooseCountryAndDialCode: "Escolha o seu país e código de marcação",
 
-  enterReferralCode: "Introduza o código de referência",
-
-  haveReferralCode: "Tem um código de referência?",
+  referralCodeOptional: "Código de referência (opcional)",
 
   sendingOtp: "A enviar OTP...",
 
@@ -751,7 +753,6 @@ const pt = {
     "Atingiu o número máximo de dispositivos permitidos. Pretende remover uma sessão existente e iniciar sessão neste dispositivo?",
 
   removeSession: "Remover",
-  removeReferralCode: "Remove",
   portugues: "Português",
   footerDescription:
     "𝗗𝗲𝗹𝗶𝗚𝗼 é 𝘂𝗺𝗮 𝗽𝗹𝗮𝘁𝗮𝗳𝗼𝗿𝗺𝗮 𝘁𝗲𝗰𝗻𝗼𝗹ó𝗴𝗶𝗰𝗮 𝗱𝗲 𝗺𝗲𝗿𝗰𝗮𝗱𝗼 𝗾𝘂𝗲 𝗹𝗶𝗴𝗮 𝗰𝗹𝗶𝗲𝗻𝘁𝗲𝘀, 𝗲𝘀𝘁𝗮𝗯𝗲𝗹𝗲𝗰𝗶𝗺𝗲𝗻𝘁𝗼𝘀 𝗰𝗼𝗺𝗲𝗿𝗰𝗶𝗮𝗶𝘀 𝗲 𝗲𝘀𝘁𝗮𝗳𝗲𝘁𝗮𝘀 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁𝗲𝘀.",
@@ -1540,8 +1541,8 @@ const pt = {
   loadingSearch: "A carregar pesquisa...",
   markAllAsRead: "Marcar tudo como lido",
   deliveryAddresses: "Endereços de Entrega",
-  primaryAddressUpdated: "Endereço principal atualizado com sucesso",
-  failedToUpdatePrimaryAddress: "Falha ao atualizar o endereço principal",
+  activeAddressUpdated: "Endereço ativo atualizado com sucesso",
+  failedToUpdateActiveAddress: "Falha ao atualizar o endereço ativo",
   addressDeleted: "Endereço eliminado com sucesso",
   failedToDeleteAddress: "Falha ao eliminar o endereço",
 

@@ -201,7 +201,7 @@ export default function PrivacyPolicyPage() {
             <Section id="deletion" title={t("privacyDeletionTitle")}>
               <div className="bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 rounded-xl p-6 my-4">
                 <p className="mb-4">{t("privacyDeletionText")}</p>
-                <p className="mb-4 italic text-gray-600 dark:text-neutral-450">{t("privacyDeletionRequestText")}</p>
+                <p className="mb-4 italic text-gray-600 dark:text-neutral-400">{t("privacyDeletionRequestText")}</p>
                 <button className="bg-red-500 text-white px-6 py-2.5 rounded-md font-bold hover:bg-red-700 transition-colors shadow-md">
                   {t("privacyDeletionButton")}
                 </button>

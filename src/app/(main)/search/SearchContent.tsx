@@ -472,17 +472,14 @@ export default function SearchContent() {
               const deliveryTime = deliveryTimes[vendor.userId];
               const isTimeLoading = loadingTimes[vendor.userId];
               const displayTime = isTimeLoading ? "Calculating..." : (deliveryTime || t("under10Min"));
-              // Closed stores are dimmed with a "Currently Closed" badge and
-              // cannot be opened. Only an explicit `false` counts as closed.
+              // Closed stores are dimmed with a "Currently Closed" badge but
+              // stay openable — the menu is browsable, only ordering is
+              // withdrawn. Only an explicit `false` counts as closed.
               const isClosed = vendor.businessDetails?.isStoreOpen === false;
 
               const cardBody = (
                 <article
-                  className={`group flex h-full flex-col overflow-hidden rounded-3xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 ${
-                    isClosed
-                      ? "cursor-not-allowed"
-                      : "hover:border-[#ffd9de] hover:shadow-2xl"
-                  }`}
+                  className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-3xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] hover:shadow-2xl"
                 >
                   <div className="relative aspect-16/10 shrink-0 overflow-hidden">
                     <SafeImage
@@ -558,14 +555,6 @@ export default function SearchContent() {
                   </div>
                 </article>
               );
-
-              if (isClosed) {
-                return (
-                  <div key={vendor.userId} className="block h-full" aria-disabled="true">
-                    {cardBody}
-                  </div>
-                );
-              }
 
               return (
                 <Link key={vendor.userId} href={`/vendors/${vendor.userId}`} className="block h-full">

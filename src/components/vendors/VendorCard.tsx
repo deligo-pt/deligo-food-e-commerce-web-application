@@ -113,9 +113,11 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
   const [estimatedTime, setEstimatedTime] = useState<string | null>(null);
   const [loadingTime, setLoadingTime] = useState(false);
 
-  // Closed stores are shown dimmed with a "Currently Closed" badge and cannot
-  // be opened. `isStoreOpen` is authoritative; treat only an explicit `false`
-  // as closed so cards with the flag absent still behave as open.
+  // Closed stores are shown dimmed with a "Currently Closed" badge but stay
+  // openable — matching the app, where a closed store's menu is browsable and
+  // only the add-to-cart action is withdrawn. `isStoreOpen` is authoritative;
+  // treat only an explicit `false` as closed so cards with the flag absent
+  // still behave as open.
   const isClosed = vendor.businessDetails?.isStoreOpen === false;
 
   // Coords are always resolved by the parent (VendorsGrid) from the shared,
@@ -193,11 +195,7 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
 
   const cardBody = (
     <article
-      className={`group flex h-full flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all ${
-        isClosed
-          ? "cursor-not-allowed"
-          : "cursor-pointer hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl"
-      }`}
+      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl"
     >
       <div className="relative aspect-16/10 shrink-0 overflow-hidden">
         <SafeImage
@@ -274,16 +272,6 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
       </div>
     </article>
   );
-
-  // Closed stores are not navigable — render a non-interactive wrapper instead
-  // of a Link so the card cannot be opened.
-  if (isClosed) {
-    return (
-      <div className="block h-full" aria-disabled="true">
-        {cardBody}
-      </div>
-    );
-  }
 
   return (
     <Link href={`/vendors/${vendor.userId}`} className="block h-full">

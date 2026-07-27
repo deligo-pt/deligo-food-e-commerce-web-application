@@ -99,7 +99,6 @@ export default function LoginPage() {
   const {
     mode,
     step,
-    showReferral,
     showLanguageModal,
     showCountryMenu,
     selectedCountry,
@@ -116,7 +115,6 @@ export default function LoginPage() {
     loginIdentifier,
     showDeviceLimitModal,
     setShowDeviceLimitModal,
-    setShowReferral,
     setShowLanguageModal,
     setShowCountryMenu,
     setSelectedCountry,
@@ -367,7 +365,13 @@ export default function LoginPage() {
                 ) : null}
               </div>
 
-              {showReferral ? (
+              {/* Always visible rather than hidden behind a "Have a referral
+                  code?" toggle: the placeholder already says it is optional, so
+                  the toggle only cost a click for the people who did have a
+                  code and hid the feature from everyone else. Credentials step
+                  only — the code is read when the OTP is requested, so an input
+                  on the OTP step would silently do nothing. */}
+              {step === "credentials" ? (
                 <div className="rounded-2xl border border-[#dcdcdc] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-4 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none sm:px-5">
                   <div className="flex items-center gap-3 px-1">
                     <Gift size={18} className="text-[#7d7d7d] dark:text-neutral-500" />
@@ -375,33 +379,12 @@ export default function LoginPage() {
                       type="text"
                       value={referralCode}
                       onChange={(event) => setReferralCode(event.target.value)}
-                      placeholder={t("enterReferralCode")}
+                      placeholder={t("referralCodeOptional")}
                       className="w-full border-0 bg-transparent text-base text-[#5f5f5f] dark:text-neutral-200 outline-none placeholder:text-[#8c8c8c] dark:placeholder:text-neutral-500 sm:text-base"
                     />
                   </div>
                 </div>
               ) : null}
-
-              <div className="flex justify-end">
-                {showReferral ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowReferral(false)}
-                    className="inline-flex items-center gap-2 text-base font-medium text-[#6f6f6f] dark:text-neutral-400 transition-colors hover:text-[#d7357c] dark:hover:text-pink-400"
-                  >
-                    <CircleX size={18} />
-                    {t("removeReferralCode")}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowReferral(true)}
-                    className="text-base font-medium text-[#d7357c] dark:text-pink-400 transition-colors hover:opacity-80"
-                  >
-                    {t("haveReferralCode")}
-                  </button>
-                )}
-              </div>
 
               {step === "credentials" ? (
                 <button

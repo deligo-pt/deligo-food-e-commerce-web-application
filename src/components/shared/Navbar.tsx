@@ -34,6 +34,12 @@ import { clearCachedFCMToken } from "@/lib/fcmToken";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useTranslation } from "@/hooks/useTranslation";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
+import {
+  formatAddressFull,
+  formatAddressLine1,
+  formatAddressLine2,
+  formatAddressSummary,
+} from "@/lib/addressFormat";
 import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
 import {
   useUnreadNotificationCount,
@@ -46,6 +52,9 @@ type NavAddress = {
   street?: string;
   detailedAddress?: string;
   city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
 };
 type NavProfile = {
   userId?: string;
@@ -104,13 +113,6 @@ export default function Navbar() {
 
   const deliveryAddresses = profile?.deliveryAddresses ?? [];
 
-  // Build a one-line label for a saved address row.
-  const formatAddressLabel = (addr: NavAddress) => {
-    const street = addr.street || addr.detailedAddress || "";
-    const city = addr.city || "";
-    return street && city ? `${street}, ${city}` : street || city || addr.detailedAddress || "";
-  };
-
   // The location button opens the saved-address dropdown for logged-in users;
   // guests have nothing saved, so it takes them straight to add a location.
   const handleLocationButtonClick = () => {
@@ -135,10 +137,10 @@ export default function Navbar() {
       await apiClient.patch(`/customers/toggle-delivery-address-status/${addressId}`);
       await invalidateProfile();
       window.dispatchEvent(new Event("addressUpdated"));
-      toast.success(t("primaryAddressUpdated"));
+      toast.success(t("activeAddressUpdated"));
       setShowLocationDropdown(false);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, t("failedToUpdatePrimaryAddress")));
+      toast.error(getApiErrorMessage(error, t("failedToUpdateActiveAddress")));
     } finally {
       setUpdatingAddressId(null);
     }
@@ -155,9 +157,9 @@ export default function Navbar() {
     const resolved = activeAddress || firstAddress;
 
     if (resolved) {
-      const street = resolved.street || resolved.detailedAddress || "";
-      const city = resolved.city || "";
-      const label = street && city ? `${street}, ${city}` : street || city;
+      // Summary, not the full address: this is the collapsed trigger button and
+      // it is width-capped. The whole address lives in the dropdown below it.
+      const label = formatAddressSummary(resolved);
       if (label) setAddressText(label);
       setPrimaryAddressId(resolved._id || null);
     } else {
@@ -206,9 +208,7 @@ export default function Navbar() {
     if (isLoggedIn) return;
 
     if (guestAddress) {
-      const street = guestAddress.street || guestAddress.detailedAddress || "";
-      const city = guestAddress.city || "";
-      const label = street && city ? `${street}, ${city}` : street || city;
+      const label = formatAddressSummary(guestAddress);
       if (label) {
         setAddressText(label);
         return;
@@ -458,12 +458,14 @@ export default function Navbar() {
         ) : (
           deliveryAddresses.map((addr) => {
             const active = addr.isActive;
+            const line2 = formatAddressLine2(addr);
             return (
               <button
                 key={addr._id}
                 type="button"
                 onClick={() => handleSelectAddress(addr._id)}
                 disabled={updatingAddressId === addr._id}
+                title={formatAddressFull(addr)}
                 className={`flex w-full items-start gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-neutral-700/50 disabled:opacity-60 ${
                   active ? "bg-pink-50 dark:bg-pink-950/20" : ""
                 }`}
@@ -476,8 +478,19 @@ export default function Navbar() {
                       : "text-gray-400 dark:text-neutral-500"
                   }`}
                 />
-                <span className="min-w-0 flex-1 truncate">
-                  {formatAddressLabel(addr)}
+                {/* Both lines, wrapped rather than truncated: this list is how
+                    the customer tells two saved addresses apart, and the parts
+                    that distinguish them (apartment, postal code) are exactly
+                    what a one-line ellipsis used to cut off. */}
+                <span className="min-w-0 flex-1">
+                  <span className="block break-words">
+                    {formatAddressLine1(addr)}
+                  </span>
+                  {line2 && (
+                    <span className="mt-0.5 block break-words text-xs text-gray-500 dark:text-neutral-400">
+                      {line2}
+                    </span>
+                  )}
                 </span>
                 {updatingAddressId === addr._id ? (
                   <span className="mt-0.5 h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#f9186b]/40 border-t-[#f9186b]" />

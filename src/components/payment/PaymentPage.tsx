@@ -38,6 +38,7 @@ import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
 import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
 import { getDeliveryEstimate, type DeliveryEstimate } from "@/lib/distance";
 import { addressTypeLabelKey, normalizeAddressType } from "@/lib/addressType";
+import { formatAddressLine1, formatAddressLine2 } from "@/lib/addressFormat";
 import type { CartAddon } from "@/types/cart";
 import Link from "next/link";
 
@@ -642,10 +643,15 @@ export default function PaymentPage() {
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
                       <Home className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-neutral-50">{deliveryAddress.city}</p>
-                      <p className="text-sm text-gray-500 dark:text-neutral-400">
-                        {deliveryAddress.street}, {deliveryAddress.postalCode}
+                    {/* The address the order is actually going to, so it shows
+                        in full. It used to headline the city and drop the
+                        apartment and country entirely. */}
+                    <div className="min-w-0">
+                      <p className="font-semibold break-words text-gray-900 dark:text-neutral-50">
+                        {formatAddressLine1(deliveryAddress)}
+                      </p>
+                      <p className="text-sm break-words text-gray-500 dark:text-neutral-400">
+                        {formatAddressLine2(deliveryAddress)}
                       </p>
                     </div>
                   </div>
@@ -1199,16 +1205,20 @@ export default function PaymentPage() {
                         </span>
                         {addr.isActive && (
                           <span className="rounded bg-[#f9186b] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                            {t("primary")}
+                            {t("active")}
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 truncate font-semibold text-gray-900 dark:text-neutral-50">
-                        {addr.street}
+                      {/* Same two-line format as the navbar dropdown and the
+                          manage-addresses list. This is the last screen before
+                          payment, so it is the worst place to show a partial
+                          address — the apartment and country used to be
+                          dropped here and the postal code came after the city. */}
+                      <p className="mt-0.5 font-semibold break-words text-gray-900 dark:text-neutral-50">
+                        {formatAddressLine1(addr)}
                       </p>
-                      <p className="truncate text-sm text-gray-500 dark:text-neutral-400">
-                        {addr.city}
-                        {addr.postalCode ? `, ${addr.postalCode}` : ""}
+                      <p className="text-sm break-words text-gray-500 dark:text-neutral-400">
+                        {formatAddressLine2(addr)}
                       </p>
                     </div>
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center self-center">

@@ -4,9 +4,9 @@
 
 "use client";
 
-import { CheckCircle, Search, X } from "lucide-react";
+import { CheckCircle, Loader2, Navigation, Search, X } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "./AddressForm";
 import { fetchUserProfile } from "@/services/addressApi";
@@ -38,6 +38,12 @@ export default function AddAddressPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingMaps, setIsLoadingMaps] = useState(false);
+  const [loadingCurrentLocation, setLoadingCurrentLocation] = useState(false);
+  // Bumped by "Use Current Location" to ask the form to fill from the pin. The
+  // page already opens on the device's position, and a desktop browser often
+  // re-reads the identical coordinates — so a coordinate change alone is not a
+  // reliable signal that the customer asked for this.
+  const [prefillRequestId, setPrefillRequestId] = useState(0);
 
   const autocompleteServiceRef = useRef<any>(null);
   const sessionTokenRef = useRef<any>(null);
@@ -209,6 +215,35 @@ export default function AddAddressPage() {
     setShowSuggestions(false);
   };
 
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error(t("geolocationNotSupported"));
+      return;
+    }
+
+    setLoadingCurrentLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setCoordinates({ lat: latitude, lng: longitude });
+        setPrefillRequestId((id) => id + 1);
+        toast.success(t("currentLocationLoadedOnMap"));
+        setLoadingCurrentLocation(false);
+      },
+      (err) => {
+        setLoadingCurrentLocation(false);
+        toast.error(
+          err.code === err.PERMISSION_DENIED
+            ? t("locationAccessDenied")
+            : t("couldNotDetectLocation"),
+        );
+      },
+      // maximumAge: 0 — a cached fix would defeat the point of pressing this.
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  };
+
   if (loading)
     return (
       <div className="flex justify-center py-12">
@@ -228,7 +263,39 @@ export default function AddAddressPage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left Panel – Map */}
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            {/* The one-tap way to fill the form from where the customer is
+                standing. The page opens on the device's position but no longer
+                writes it into the fields unasked, so this is what turns that
+                position into an answer — matched to the same card on the edit
+                and current-location pages. */}
+            <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
+              <h2 className="mb-2 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
+                {t("myCurrentLocation")}
+              </h2>
+              <p className="mb-4 text-sm text-[#5a4044] dark:text-neutral-400">
+                {t("currentLocationDescription")}
+              </p>
+              <button
+                type="button"
+                onClick={handleUseCurrentLocation}
+                disabled={loadingCurrentLocation}
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#f9186b] px-6 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-[#d4145b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loadingCurrentLocation ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    {t("detecting")}
+                  </>
+                ) : (
+                  <>
+                    <Navigation size={20} />
+                    {t("useCurrentLocation")}
+                  </>
+                )}
+              </button>
+            </div>
+
             <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
               <div className="mb-6">
                 <h2 className="mb-2 text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
@@ -327,9 +394,17 @@ export default function AddAddressPage() {
 
           {/* Right Panel – Form */}
           <div className="lg:col-span-7">
+            {/* Blank form on open: the pin is seeded from the device's current
+                position, which is a guess about where the new address is, not
+                the address itself. Filling six fields from it hands the customer
+                someone else's answer to check rather than their own to write —
+                and a wrong prefill is easy to save without noticing. Choosing a
+                place in the search box or dragging the pin still autofills. */}
             <AddressForm
               coordinates={coordinates}
               isEditMode={false}
+              prefillFromOpeningLocation={false}
+              prefillRequestId={prefillRequestId}
               onSuccess={() => router.push("/saved-addresses")}
             />
           </div>
