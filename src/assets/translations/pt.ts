@@ -219,8 +219,6 @@ const pt = {
   estimatedTime: "Tempo estimado",
   selectDeliveryAddress: "Selecionar endereço de entrega",
   failedToChangeAddress: "Falha ao alterar o endereço de entrega",
-  calculatingDeliveryTime: "A calcular o tempo de entrega…",
-  selectAddressToSeeTime: "Selecione um endereço para ver o tempo de entrega",
 
   yourOrder: "Seu Pedido",
   addMoreItems: "Adicionar mais itens",
@@ -514,6 +512,9 @@ const pt = {
   recenterMap: "Centrar Mapa",
   cancelled: "Cancelado",
   rejected: "Rejeitado",
+  location: "Localização",
+  orderWasCancelled: "O pedido foi cancelado",
+  orderWasRejected: "O pedido foi rejeitado pelo restaurante",
   orderHasBeenDelivered: "O pedido foi entregue",
   riderIsHeadingToYourLocation: "O estafeta está a caminho da sua localização",
 
@@ -536,7 +537,18 @@ const pt = {
   riderHeadingLocation: "O estafeta está a caminho da sua localização",
 
   orderDelivered: "O pedido foi entregue",
+
+  refundInProgress: "Reembolso Em Progresso",
+  refundInProgressDescription:
+    "O seu pagamento está a ser reembolsado. Pode demorar 3 a 5 dias úteis.",
+  refundCompleted: "Reembolso Concluído",
+  refundCompletedDescription:
+    "O seu pagamento foi reembolsado com sucesso para a sua conta.",
+
   paid: "PAGO",
+  refunded: "REEMBOLSADO",
+  paymentPending: "PENDENTE",
+  failed: "FALHOU",
 
   creditDebitCard: "Cartão de Crédito/Débito",
   visaMastercardMaestro: "Visa, Mastercard, Maestro",

@@ -13,6 +13,8 @@ import {
 } from "@/hooks/queries/useOrders";
 import { Star, X } from "lucide-react";
 import { toast } from "sonner";
+import { getRefundState, isTerminatedStatus } from "@/lib/refund";
+import { normalizeOrderStatus } from "@/lib/orderStatus";
 
 // An order with no total is a data problem, not something to render as
 // "€undefined" — fall back to a dash.
@@ -208,8 +210,13 @@ export default function OrdersPage() {
         "ON_THE_WAY",
       ].includes(order.orderStatus),
     );
-    const history = orders.filter((order) =>
-      ["DELIVERED", "CANCELLED", "REJECTED"].includes(order.orderStatus),
+    // `isTerminatedStatus` rather than a literal list: the API's enum is
+    // `CANCELED` with one L, so the old comparison matched neither bucket and a
+    // cancelled order disappeared from this page entirely.
+    const history = orders.filter(
+      (order) =>
+        normalizeOrderStatus(order.orderStatus) === "DELIVERED" ||
+        isTerminatedStatus(order.orderStatus),
     );
     return { ongoingOrders: ongoing, historyOrders: history };
   }, [orders]);
@@ -355,10 +362,11 @@ export default function OrdersPage() {
                   date={new Date(order.createdAt).toLocaleString()}
                   price={formatOrderPrice(order.payoutSummary?.grandTotal)}
                   status={
-                    order.orderStatus === "DELIVERED"
+                    normalizeOrderStatus(order.orderStatus) === "DELIVERED"
                       ? "delivered"
                       : "cancelled"
                   }
+                  refundState={getRefundState(order)}
                   items={order.items
                     ?.map(
                       (item: any) =>
@@ -367,11 +375,11 @@ export default function OrdersPage() {
                     .join(", ")}
                   progress={100}
                   progressText={
-                    order.orderStatus === "DELIVERED"
+                    normalizeOrderStatus(order.orderStatus) === "DELIVERED"
                       ? t("delivered")
-                      : order.orderStatus === "CANCELLED"
-                        ? t("cancelled") || "Cancelled"
-                        : t("rejected") || "Rejected"
+                      : normalizeOrderStatus(order.orderStatus) === "CANCELLED"
+                        ? t("cancelled")
+                        : t("rejected")
                   }
                   isRated={isOrderRated(order._id)}
                   onRateOrder={() => {

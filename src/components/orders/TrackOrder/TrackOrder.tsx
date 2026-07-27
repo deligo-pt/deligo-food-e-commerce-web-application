@@ -24,12 +24,27 @@ import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getServiceChargeGross, getDeliveryTax } from "@/lib/tax";
+import { getRefundState, isOrderFinished, isTerminatedStatus } from "@/lib/refund";
+import { getStatusNote, normalizeOrderStatus } from "@/lib/orderStatus";
+import { getPaymentStatusDisplay } from "@/lib/paymentStatus";
 import OrderMap from "./OrderMap/OrderMap";
+import RefundBanner from "./RefundBanner";
 
 
-// Timeline steps based on orderStatus
-function getOrderStep(orderStatus: string, t: (key: string) => string) {
-  const isCancelled = orderStatus === "CANCELLED" || orderStatus === "REJECTED";
+// A live order changes minute to minute, so it is worth watching closely. A
+// pending refund settles over days — polling that at 5s would be thousands of
+// requests to catch one field flip, so it drops to a background cadence.
+const LIVE_POLL_MS = 5000;
+const REFUND_POLL_MS = 30000;
+
+// Timeline steps based on orderStatus. `terminalNote` is the vendor's own
+// reason for a rejection/cancellation, which the API requires them to give.
+function getOrderStep(
+  orderStatus: string,
+  t: (key: string) => string,
+  terminalNote: string | null,
+) {
+  const isTerminated = isTerminatedStatus(orderStatus);
 
   const steps = [
     {
@@ -70,11 +85,16 @@ function getOrderStep(orderStatus: string, t: (key: string) => string) {
     },
   ];
 
-  if (isCancelled) {
+  if (isTerminated) {
+    const isRejected = normalizeOrderStatus(orderStatus) === "REJECTED";
     steps.push({
       key: orderStatus,
-      label: orderStatus === "CANCELLED" ? (t("cancelled") || "Cancelled") : (t("rejected") || "Rejected"),
-      description: orderStatus === "CANCELLED" ? "Order was cancelled" : "Order was rejected by restaurant",
+      label: isRejected ? t("rejected") : t("cancelled"),
+      // The vendor's own words, the way the app shows them. The API makes a
+      // reason mandatory on both of these transitions, so the generic below is
+      // a safety net rather than the expected case.
+      description:
+        terminalNote ?? t(isRejected ? "orderWasRejected" : "orderWasCancelled"),
       icon: CheckCircle,
     });
   } else {
@@ -126,7 +146,7 @@ export default function TrackOrder() {
           const STEP_KEYS = ["PENDING", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "ON_THE_WAY"];
           let idx = STEP_KEYS.indexOf(activeStatus);
           if (idx === -1) {
-            if (activeStatus === "DELIVERED" || activeStatus === "CANCELLED" || activeStatus === "REJECTED") {
+            if (activeStatus === "DELIVERED" || isTerminatedStatus(activeStatus)) {
               idx = 6;
             } else {
               idx = 0;
@@ -139,11 +159,18 @@ export default function TrackOrder() {
           }
         }
 
-        // Stop polling once the order reaches a final state
-        const finalStatuses = ["DELIVERED", "CANCELLED", "REJECTED"];
-        if (orderData && finalStatuses.includes(orderData.orderStatus)) {
-          stopped = true;
-          stopPolling();
+        // An order is finished only when no money is still owed back. A
+        // rejected order mid-refund is NOT finished: `orderStatus` has stopped
+        // moving, but `paymentStatus` has not — stopping here would freeze the
+        // banner on "Refund In Progress" until the customer reloaded the page.
+        if (orderData) {
+          if (isOrderFinished(orderData)) {
+            stopped = true;
+            stopPolling();
+          } else {
+            const refundPending = getRefundState(orderData) === "in_progress";
+            setPollDelay(refundPending ? REFUND_POLL_MS : LIVE_POLL_MS);
+          }
         }
       } catch (err: any) {
         if (isInitial) {
@@ -156,19 +183,30 @@ export default function TrackOrder() {
       }
     };
 
-    // Phase 2: poll every 5s for live updates, but ONLY while the tab is
-    // visible (a backgrounded tracking tab makes zero requests), and stop
-    // entirely once the order reaches a terminal state.
+    // Poll for live updates, but ONLY while the tab is visible (a backgrounded
+    // tracking tab makes zero requests), and stop entirely once the order is
+    // finished — which now includes "and the refund has settled".
     let stopped = false;
+    let currentDelay = LIVE_POLL_MS;
 
     const startPolling = () => {
       if (stopped || intervalRef.current) return;
-      intervalRef.current = setInterval(() => fetchOrder(false), 5000);
+      intervalRef.current = setInterval(() => fetchOrder(false), currentDelay);
     };
     const stopPolling = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+    };
+    /** Change cadence, re-arming the timer only if it is currently running —
+     *  a hidden tab must stay silent. */
+    const setPollDelay = (delay: number) => {
+      if (delay === currentDelay) return;
+      currentDelay = delay;
+      if (intervalRef.current) {
+        stopPolling();
+        startPolling();
       }
     };
     const handleVisibilityChange = () => {
@@ -303,7 +341,12 @@ export default function TrackOrder() {
   // matching the app, rather than as a standalone line.
   const subtotalTax = calc.totalTaxAmount || 0;
 
-  const steps = getOrderStep(order.orderStatus, t);
+  const steps = getOrderStep(order.orderStatus, t, getStatusNote(order));
+
+  // Derived from the payment fields, not `orderStatus` — a refund moves
+  // `paymentStatus`/`isPaid` while the order stays REJECTED/CANCELED.
+  const refundState = getRefundState(order);
+  const paymentStatusDisplay = getPaymentStatusDisplay(order.paymentStatus);
 
   return (
     <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-[#191c1d] dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
@@ -311,6 +354,12 @@ export default function TrackOrder() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column */}
           <div className="lg:col-span-7 space-y-6">
+            {/* Above the map, not instead of it: the right column is a fixed
+                min-h-175 timeline, so dropping the map would leave the grid
+                badly lopsided on desktop. Renders nothing unless a refund is
+                actually owed. */}
+            <RefundBanner state={refundState} />
+
             <OrderMap
               orderStatus={order.orderStatus}
               pickupLatitude={order.pickupAddress?.latitude}
@@ -522,9 +571,18 @@ export default function TrackOrder() {
                       {order.paymentMethod || t("notAvailable")}
                     </span>
                   </div>
-                  <span className="px-3 py-1 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-[10px] font-bold rounded-full border border-green-200 dark:border-green-900/30">
-                    {order.paymentStatus || t("paid")}
-                  </span>
+                  {/* No status from the backend means no badge. It used to
+                      fall back to the word "PAID", which invented the answer to
+                      the one question this badge exists to answer. */}
+                  {paymentStatusDisplay && (
+                    <span
+                      className={`px-3 py-1 text-[10px] font-bold rounded-full border ${paymentStatusDisplay.className}`}
+                    >
+                      {paymentStatusDisplay.labelKey
+                        ? t(paymentStatusDisplay.labelKey)
+                        : paymentStatusDisplay.rawLabel}
+                    </span>
+                  )}
                 </div>
                 <button
                   onClick={handleDownloadInvoice}
@@ -601,7 +659,7 @@ export default function TrackOrder() {
                       >
                         {step.description}
                       </p>
-                      {isCurrent && step.key !== "DELIVERED" && step.key !== "CANCELLED" && step.key !== "REJECTED" && (
+                      {isCurrent && step.key !== "DELIVERED" && !isTerminatedStatus(step.key) && (
                         <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] dark:bg-pink-950/40 text-[#f9186b] dark:text-pink-400 rounded-full text-xs font-bold">
                           <span className="w-1.5 h-1.5 bg-[#f9186b] dark:bg-pink-500 rounded-full animate-pulse" />
                           {t("inProgress")}

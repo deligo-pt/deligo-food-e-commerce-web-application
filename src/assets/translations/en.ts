@@ -211,8 +211,6 @@ const en = {
   estimatedTime: "Est. time",
   selectDeliveryAddress: "Select delivery address",
   failedToChangeAddress: "Failed to change delivery address",
-  calculatingDeliveryTime: "Calculating delivery time…",
-  selectAddressToSeeTime: "Select an address to see delivery time",
 
   yourOrder: "Your Order",
   addMoreItems: "Add more items",
@@ -495,6 +493,11 @@ const en = {
   recenterMap: "Recenter Map",
   cancelled: "Cancelled",
   rejected: "Rejected",
+  // Heading fallback on the Track Order delivery card when the address has no
+  // city. Without this key it rendered the literal lowercase word "location".
+  location: "Location",
+  orderWasCancelled: "Order was cancelled",
+  orderWasRejected: "Order was rejected by the restaurant",
   orderHasBeenDelivered: "Order has been delivered",
   riderIsHeadingToYourLocation: "Rider is heading to your location",
 
@@ -518,9 +521,21 @@ const en = {
 
   orderDelivered: "Order has been delivered",
 
+  refundInProgress: "Refund In Progress",
+  refundInProgressDescription:
+    "Your payment is being refunded. This may take 3–5 business days.",
+  refundCompleted: "Refund Completed",
+  refundCompletedDescription:
+    "Your payment has been successfully refunded to your account.",
+
   notAvailable: "N/A",
 
+  // Payment-status badge labels, upper-case as a set. Note `paymentFailed`
+  // already exists as the "Payment Failed" page title — a different thing.
   paid: "PAID",
+  refunded: "REFUNDED",
+  paymentPending: "PENDING",
+  failed: "FAILED",
 
   creditDebitCard: "Credit/Debit Card",
   visaMastercardMaestro: "Visa, Mastercard, Maestro",

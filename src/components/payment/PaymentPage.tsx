@@ -36,7 +36,6 @@ import { useStore } from "@/stores/translationStore";
 import { resolveAddonName } from "@/lib/cart";
 import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
 import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
-import { getDeliveryEstimate, type DeliveryEstimate } from "@/lib/distance";
 import { addressTypeLabel, normalizeAddressType } from "@/lib/addressType";
 import { formatAddressLine1, formatAddressLine2 } from "@/lib/addressFormat";
 import type { CartAddon } from "@/types/cart";
@@ -205,14 +204,11 @@ export default function PaymentPage() {
   const [removeOfferError, setRemoveOfferError] = useState("");
   const [showSupportModal, setShowSupportModal] = useState(false);
 
-  // Saved-address picker + the client-computed delivery distance/ETA (the
-  // backend returns 0 for both).
+  // Saved-address picker.
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [switchingAddressId, setSwitchingAddressId] = useState<string | null>(null);
   const [addressError, setAddressError] = useState("");
-  const [estimate, setEstimate] = useState<DeliveryEstimate | null>(null);
-  const [estimating, setEstimating] = useState(false);
 
   useEffect(() => {
     if (!checkoutId) {
@@ -235,6 +231,7 @@ export default function PaymentPage() {
           `/checkout/summary/${checkoutId}`,
         );
         const summaryData = summaryResponse.data.data;
+        console.log("Fetched checkout summary:", summaryData);
         setSummary(summaryData);
 
         if (summaryData.vendorId) {
@@ -297,42 +294,6 @@ export default function PaymentPage() {
   useEffect(() => {
     loadAddresses();
   }, []);
-
-  // The backend reports delivery.distance/estimatedTime as 0, so derive them on
-  // the client from the vendor's and the delivery address's coordinates.
-  useEffect(() => {
-    const origin = vendor?.businessLocation;
-    const dest = summary?.deliveryAddress;
-    if (
-      !origin?.latitude ||
-      !origin?.longitude ||
-      !dest?.latitude ||
-      !dest?.longitude
-    ) {
-      setEstimate(null);
-      return;
-    }
-
-    let cancelled = false;
-    setEstimating(true);
-    getDeliveryEstimate(
-      { lat: origin.latitude, lng: origin.longitude },
-      { lat: dest.latitude, lng: dest.longitude },
-    )
-      .then((result) => {
-        if (!cancelled) setEstimate(result);
-      })
-      .finally(() => {
-        if (!cancelled) setEstimating(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    vendor?.businessLocation,
-    summary?.deliveryAddress,
-  ]);
 
   const handleOpenOfferModal = async () => {
     if (!summary) return;
@@ -548,6 +509,14 @@ export default function PaymentPage() {
   const subtotalTax = orderCalculation.totalTaxAmount;
   const deliveryTax = getDeliveryTax(delivery);
 
+  // Guarded rather than assumed: these are typed as required, but an order the
+  // backend has not priced a route for would report 0, and "0 km • 0 min" is
+  // worse than saying nothing. Each half is shown only if it has a value.
+  const hasDeliveryDistance =
+    typeof delivery.distance === "number" && delivery.distance > 0;
+  const hasDeliveryEta =
+    typeof delivery.estimatedTime === "number" && delivery.estimatedTime > 0;
+
   const vendorRating = vendor?.rating.average ?? 0;
   const vendorReviewCount = vendor?.rating.totalReviews ?? 0;
 
@@ -660,28 +629,34 @@ export default function PaymentPage() {
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-pink-200 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
-                <MapPinned className="h-5 w-5 shrink-0 text-[#f9186b] dark:text-pink-400" />
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-neutral-100">{t("distanceAndTime")}</p>
-                  <p className="text-sm text-gray-500 dark:text-neutral-400">
-                    {estimate ? (
-                      <>
-                        {t("deliveryDistance")}: {estimate.distanceKm.toFixed(1)} km
-                        {" • "}
-                        {t("estimatedTime")}: {estimate.minutes} min
-                      </>
-                    ) : estimating ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        {t("calculatingDeliveryTime")}
-                      </span>
-                    ) : (
-                      t("selectAddressToSeeTime")
-                    )}
-                  </p>
+              {/* Distance and ETA come straight from `delivery` — the same
+                  object whose `totalDeliveryCharge` is billed in the summary
+                  opposite, so the fee and the distance it was priced from
+                  always agree. This used to be recomputed client-side from the
+                  two sets of coordinates, which showed the customer a distance
+                  that did not match what they were charged for. Rendered
+                  exactly as returned: no rounding, no unit conversion. */}
+              {(hasDeliveryDistance || hasDeliveryEta) && (
+                <div className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-pink-200 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
+                  <MapPinned className="h-5 w-5 shrink-0 text-[#f9186b] dark:text-pink-400" />
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-neutral-100">{t("distanceAndTime")}</p>
+                    <p className="text-sm text-gray-500 dark:text-neutral-400">
+                      {hasDeliveryDistance && (
+                        <>
+                          {t("deliveryDistance")}: {delivery.distance} km
+                        </>
+                      )}
+                      {hasDeliveryDistance && hasDeliveryEta && " • "}
+                      {hasDeliveryEta && (
+                        <>
+                          {t("estimatedTime")}: {delivery.estimatedTime} min
+                        </>
+                      )}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Your Order */}

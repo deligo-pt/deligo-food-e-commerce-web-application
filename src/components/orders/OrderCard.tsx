@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Clock3, Download, Loader2, RotateCcw, UtensilsCrossed, Star } from "lucide-react";
+import { CheckCircle, Clock3, Download, HandCoins, Loader2, RotateCcw, UtensilsCrossed, Star } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import SafeImage from "@/components/shared/SafeImage";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import { useReorder } from "@/hooks/queries/useOrders";
+import { refundStateLabelKey, type RefundState } from "@/lib/refund";
 
 interface OrderCardProps {
   dbId: string;
@@ -18,6 +19,12 @@ interface OrderCardProps {
   date: string;
   price: string;
   status: "accepted" | "pending" | "delivered" | "cancelled";
+  /**
+   * Whether money is owed back on this order. Kept separate from `status`
+   * rather than folded into it: `status` also decides which actions the card
+   * offers, and a refund does not change what the customer can do here.
+   */
+  refundState?: RefundState;
   items: string;
   progress: number;
   progressText: string;
@@ -33,6 +40,7 @@ export default function OrderCard({
   date,
   price,
   status,
+  refundState = "none",
   items,
   progress,
   progressText,
@@ -118,12 +126,32 @@ export default function OrderCard({
           ) : status === "cancelled" ? (
             <div className="flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-950/20 px-2 py-1 text-xs text-red-600 dark:text-red-400">
               <Clock3 size={12} />
-              {t("cancelled") || "Cancelled"}
+              {t("cancelled")}
             </div>
           ) : (
             <div className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-neutral-800 px-2 py-1 text-xs text-gray-600 dark:text-neutral-400">
               <Clock3 size={12} />
               {t("pending")}
+            </div>
+          )}
+
+          {/* A cancelled order the customer paid for says nothing about their
+              money without this — the red chip above only reports that the
+              food is not coming. */}
+          {refundState !== "none" && (
+            <div
+              className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs ${
+                refundState === "completed"
+                  ? "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400"
+                  : "bg-pink-50 dark:bg-pink-950/30 text-[#f9186b] dark:text-pink-400"
+              }`}
+            >
+              {refundState === "completed" ? (
+                <CheckCircle size={12} />
+              ) : (
+                <HandCoins size={12} />
+              )}
+              {t(refundStateLabelKey(refundState)!)}
             </div>
           )}
         </div>
