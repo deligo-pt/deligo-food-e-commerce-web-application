@@ -56,6 +56,25 @@ export function addressTypeLabelKey(value: string | null | undefined): string {
   return LABEL_KEYS[normalizeAddressType(value)];
 }
 
+/**
+ * What to show the customer for a saved address's type.
+ *
+ * `OTHER` carries a customer-written name in `customAddressType` ("Gym"), which
+ * the API requires for that type — so show the name they chose rather than the
+ * generic "Other". Falls back to the translated type for every other case, and
+ * for the legacy `OTHER` records saved before the field existed, which still
+ * hold an empty string.
+ */
+export function addressTypeLabel(
+  t: (key: string) => string,
+  addressType: string | null | undefined,
+  customAddressType?: string | null,
+): string {
+  const custom = customAddressType?.trim();
+  if (custom && normalizeAddressType(addressType) === "OTHER") return custom;
+  return t(addressTypeLabelKey(addressType));
+}
+
 /** Form selection -> backend enum. */
 export function toBackendAddressType(type: SelectableAddressType): AddressType {
   if (type === "home") return "HOME";

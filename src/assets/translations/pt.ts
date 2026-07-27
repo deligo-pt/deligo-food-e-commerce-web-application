@@ -100,6 +100,10 @@ const pt = {
   addressTypeOther: "Outro",
   addressTypeCurrentLocation: "Localização Atual",
 
+  customAddressTypeLabel: "Nome deste endereço",
+  customAddressTypePlaceholder: "ex.: Ginásio, Casa dos pais",
+  customAddressTypeRequired: "Indique um nome para guardar como Outro.",
+
   addressAddedSuccess: "Endereço adicionado com sucesso!",
   addressUpdatedSuccess: "Endereço atualizado com sucesso!",
   addressNotLoaded: "Endereço ainda não carregado. Tente novamente.",

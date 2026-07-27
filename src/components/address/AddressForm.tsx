@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { Building2, Globe, Home, MapPin, Navigation, Save } from "lucide-react";
+import { Building2, Globe, Home, MapPin, Navigation, Save, Tag } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Toaster, toast } from "sonner";
 import { addDeliveryAddress, updateDeliveryAddress } from "@/services/addressApi";
@@ -71,6 +71,10 @@ export default function AddressForm({
     return isEditMode ? value.replace(/\s*\*$/, "") : value;
   };
   const [addressType, setAddressType] = useState<SelectableAddressType>("home");
+  // The customer's own name for an "Other" address ("Gym"). Kept out of
+  // `formData` because it belongs to the type selection above it, not to the
+  // postal fields — and because it is only ever sent for OTHER.
+  const [customAddressType, setCustomAddressType] = useState("");
   const [formData, setFormData] = useState({
     street: "",
     detailedAddress: "",
@@ -97,6 +101,7 @@ export default function AddressForm({
       country: initialAddress.country || "",
       postalCode: initialAddress.postalCode || "",
     });
+    setCustomAddressType(initialAddress.customAddressType || "");
     if (initialAddress.addressType) {
       setAddressType(toSelectableAddressType(initialAddress.addressType));
     }
@@ -176,7 +181,18 @@ export default function AddressForm({
     );
   }, [coordinates, initialAddress, prefillFromOpeningLocation, prefillRequestId]);
 
+  // Only OTHER carries a custom name, and the API demands a non-empty one for
+  // it. Checked up front in both save paths so the customer gets a pointed
+  // message instead of a raw Zod error from the server.
+  const trimmedCustomType = customAddressType.trim();
+  const needsCustomType = addressType === "other";
+
   const handleSave = async () => {
+    if (needsCustomType && !trimmedCustomType) {
+      toast.error(t("customAddressTypeRequired"));
+      return;
+    }
+
     if (isGuestMode) {
       if (!coordinates) {
         toast.error(t("locationNotDetected"));
@@ -211,6 +227,9 @@ export default function AddressForm({
           longitude: coordinates.lng,
           detailedAddress: formData.detailedAddress.trim(),
           addressType: toBackendAddressType(addressType),
+          // Carried through so the name survives the guest→account sync on
+          // login, which replays this object to the API.
+          ...(needsCustomType ? { customAddressType: trimmedCustomType } : {}),
         };
         useLocationStore.getState().setGuestAddress(guestAddress);
         window.dispatchEvent(new Event("addressUpdated"));
@@ -263,6 +282,7 @@ export default function AddressForm({
         geoAccuracy: 10,
         detailedAddress: formData.detailedAddress.trim(),
         addressType: toBackendAddressType(addressType),
+        ...(needsCustomType ? { customAddressType: trimmedCustomType } : {}),
       };
 
       if (isEditMode) {
@@ -292,9 +312,16 @@ export default function AddressForm({
         const isCurrentLocation =
           normalizeAddressType(storedType) === "CURRENT_LOCATION";
 
+        // `OTHER` is likewise always sent: `customAddressType` is only
+        // meaningful next to it, and the server validates the pair. Omitting
+        // the type while sending a renamed label would be an untested
+        // half-update. This cannot resurrect the PRIMARY problem above —
+        // a stored PRIMARY seeds the form as Home, never Other.
+        const alwaysSendType = isCurrentLocation || needsCustomType;
+
         await updateDeliveryAddress(
           addressId,
-          untouched && !isCurrentLocation
+          untouched && !alwaysSendType
             ? addressFields
             : { ...addressFields, addressType: selectedType },
         );
@@ -351,6 +378,32 @@ export default function AddressForm({
             </button>
           ))}
         </div>
+
+        {/* Required by the API for OTHER, so it is marked required and blocks
+            the save. Sits inside the type block, directly under the button it
+            belongs to, rather than down among the postal fields. */}
+        {needsCustomType && (
+          <div className="mt-4">
+            <label
+              htmlFor="customAddressType"
+              className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200"
+            >
+              {t("customAddressTypeLabel")} *
+            </label>
+            <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#f9186b]">
+              <Tag size={18} className="mr-3 text-[#5a4044] dark:text-neutral-500" />
+              <input
+                id="customAddressType"
+                type="text"
+                value={customAddressType}
+                onChange={(e) => setCustomAddressType(e.target.value)}
+                placeholder={t("customAddressTypePlaceholder")}
+                maxLength={50}
+                className="h-14 w-full bg-transparent outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Street + Detailed */}
@@ -391,20 +444,11 @@ export default function AddressForm({
         </div>
       </div>
 
-      {/* City + Postal */}
+      {/* Postal + City, in that order — matching how the saved address is
+          rendered back ("1229 Dhaka, Bangladesh") so entry and display read the
+          same way. On mobile the grid collapses to one column, which makes this
+          the vertical order too. */}
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
-            {getLabelText("city")}
-          </label>
-          <input
-            type="text"
-            value={formData.city}
-            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            placeholder={t("enterCity")}
-            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
-          />
-        </div>
         <div>
           <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
             {getLabelText("postalCode")}
@@ -416,6 +460,18 @@ export default function AddressForm({
               setFormData({ ...formData, postalCode: e.target.value })
             }
             placeholder={t("enterPostalCode")}
+            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
+          />
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
+            {getLabelText("city")}
+          </label>
+          <input
+            type="text"
+            value={formData.city}
+            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+            placeholder={t("enterCity")}
             className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
           />
         </div>

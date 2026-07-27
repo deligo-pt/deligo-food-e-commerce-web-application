@@ -11,6 +11,16 @@ export interface DeliveryAddressPayload {
   latitude: number;
   geoAccuracy?: number;
   addressType: AddressType;
+  /**
+   * Required, and must be non-empty, whenever `addressType` is `OTHER` — the
+   * API rejects the save otherwise:
+   *   path: deliveryAddress.customAddressType
+   *   "Please provide a custom address type when selecting "Other" as the
+   *    address type"
+   * Ignored for the other types; switching an address away from OTHER clears it
+   * server-side.
+   */
+  customAddressType?: string;
   detailedAddress?: string;
   notes?: string;
 }

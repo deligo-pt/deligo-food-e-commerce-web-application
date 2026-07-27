@@ -37,7 +37,7 @@ import { resolveAddonName } from "@/lib/cart";
 import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
 import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
 import { getDeliveryEstimate, type DeliveryEstimate } from "@/lib/distance";
-import { addressTypeLabelKey, normalizeAddressType } from "@/lib/addressType";
+import { addressTypeLabel, normalizeAddressType } from "@/lib/addressType";
 import { formatAddressLine1, formatAddressLine2 } from "@/lib/addressFormat";
 import type { CartAddon } from "@/types/cart";
 import Link from "next/link";
@@ -104,6 +104,8 @@ interface SavedAddress {
   latitude: number;
   longitude: number;
   addressType: string;
+  /** The customer's own name for an `OTHER` address; "" on older records. */
+  customAddressType?: string;
   isActive: boolean;
   detailedAddress?: string;
 }
@@ -1201,7 +1203,7 @@ export default function PaymentPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-400">
-                          {t(addressTypeLabelKey(addr.addressType))}
+                          {addressTypeLabel(t, addr.addressType, addr.customAddressType)}
                         </span>
                         {addr.isActive && (
                           <span className="rounded bg-[#f9186b] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">

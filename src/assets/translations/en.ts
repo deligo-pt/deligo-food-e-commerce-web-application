@@ -92,6 +92,12 @@ const en = {
   addressTypeOther: "Other",
   addressTypeCurrentLocation: "Current Location",
 
+  // Shown only when "Other" is chosen. The API requires a non-empty
+  // `customAddressType` for OTHER and rejects the save without one.
+  customAddressTypeLabel: "Name this address",
+  customAddressTypePlaceholder: "e.g. Gym, Parents' house",
+  customAddressTypeRequired: "Name this address to save it as Other.",
+
   addressAddedSuccess: "Address added successfully!",
   addressUpdatedSuccess: "Address updated successfully!",
   addressNotLoaded: "Address not loaded yet. Please try again.",

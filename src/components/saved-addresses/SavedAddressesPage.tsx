@@ -12,7 +12,7 @@ import {
   Navigation,
 } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
-import { addressTypeLabelKey, normalizeAddressType } from "@/lib/addressType";
+import { addressTypeLabel, normalizeAddressType } from "@/lib/addressType";
 import {
   formatAddressLine1,
   formatAddressLine2,
@@ -42,6 +42,8 @@ interface DeliveryAddress {
   postalCode: string;
   detailedAddress?: string;
   addressType: string;
+  /** The customer's own name for an `OTHER` address; "" on older records. */
+  customAddressType?: string;
   isActive: boolean;
 }
 
@@ -215,7 +217,7 @@ export default function SavedAddressesPage() {
                     className={`text-sm font-semibold uppercase ${isActiveAddress ? "text-[#C2185B] dark:text-pink-400" : "text-black dark:text-neutral-200"
                       }`}
                   >
-                    {t(addressTypeLabelKey(address.addressType))}
+                    {addressTypeLabel(t, address.addressType, address.customAddressType)}
                   </span>
 
                   {isActiveAddress && (

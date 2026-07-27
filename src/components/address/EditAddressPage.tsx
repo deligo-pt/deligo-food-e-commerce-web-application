@@ -25,6 +25,8 @@ interface Address {
   postalCode: string;
   detailedAddress?: string;
   addressType: string;
+  /** The customer's own name for an `OTHER` address; "" on older records. */
+  customAddressType?: string;
   isActive: boolean;
   latitude?: number;
   longitude?: number;

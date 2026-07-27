@@ -16,6 +16,10 @@ export interface GuestAddress {
   longitude: number;
   detailedAddress?: string;
   addressType: AddressType;
+  /** The customer's own name for an `OTHER` address. Kept so re-opening the
+   *  guest form restores what they typed. Note the guest→account sync posts to
+   *  `update-live-location`, which carries neither this nor `addressType`. */
+  customAddressType?: string;
 }
 
 interface LocationState {
