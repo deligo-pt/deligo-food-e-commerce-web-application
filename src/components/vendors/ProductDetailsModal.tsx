@@ -14,6 +14,7 @@ import {
   Circle,
   CheckCircle,
   UtensilsCrossed,
+  Moon,
 } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,7 @@ import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useCartStore } from "@/stores/cartStore";
+import { useCartCache } from "@/hooks/queries/useCart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { currencySymbol } from "@/lib/currency";
 
@@ -58,6 +60,13 @@ interface Product {
   // The product references addon groups by their ObjectId; the full group
   // (title/options/limits) is fetched separately from /add-ons/:id.
   addonGroups?: string[];
+  // `/products/:id` populates the owning vendor, so the modal reads store
+  // status straight off the product response rather than taking it as a prop —
+  // one source of truth, and it stays correct however the modal was opened.
+  vendorId?: {
+    userId?: string;
+    businessDetails?: { isStoreOpen?: boolean };
+  };
 }
 
 interface VariantOption {
@@ -103,6 +112,11 @@ export default function ProductDetailsModal({
   // Selected quantity per addon option, keyed by the option sku.
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
   const { fetchCart } = useCartStore();
+  // The cart page reads from the React Query `useCart` cache (staleTime 60s), so
+  // updating only the zustand badge count leaves that page showing a stale empty
+  // cart until a hard reload. Invalidate the query cache on add so the cart page
+  // shows the new item immediately on client-side navigation.
+  const { invalidate: invalidateCart } = useCartCache();
 
   // Addon groups are auth-only and referenced by id on the product, so fetch
   // and populate them once the product loads (skipped for guests, who must log
@@ -142,6 +156,62 @@ export default function ProductDetailsModal({
       cancelled = true;
     };
   }, [product]);
+
+  // Preload the add-ons already saved on this cart line.
+  //
+  // `add-to-cart` MERGES add-ons into whatever the line already has (it only
+  // replaces the skus you name). So without preloading, the user sees an empty
+  // selection while the backend still counts the hidden ones: picking a single
+  // topping on a line already at its group maximum fails with "You can select a
+  // maximum of N" — an error they can't understand or fix from this screen.
+  // Showing the real state makes the group limits enforceable client-side.
+  useEffect(() => {
+    const productMongoId = product?._id ?? product?.productId;
+    if (!isOpen || !productMongoId || !addonGroups.length || !getAccessToken()) {
+      return;
+    }
+
+    const variationSku = selectedOption ? selectedOption.sku : null;
+    const knownSkus = new Set(
+      addonGroups.flatMap((g) => g.options.map((o) => o.sku)),
+    );
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.get("/carts/view-cart");
+        if (cancelled) return;
+        const items = (res.data?.data?.items ?? []) as Array<{
+          productId?: string;
+          variationSku?: string | null;
+          addons?: { sku?: string; quantity?: number }[];
+        }>;
+        const line = items.find(
+          (l) =>
+            l.productId === productMongoId &&
+            (l.variationSku ?? null) === variationSku,
+        );
+
+        const preloaded: Record<string, number> = {};
+        for (const addon of line?.addons ?? []) {
+          // Skip anything the current groups no longer offer, so a stale sku
+          // can't be echoed back and rejected on save.
+          if (addon.sku && addon.quantity && knownSkus.has(addon.sku)) {
+            preloaded[addon.sku] = addon.quantity;
+          }
+        }
+        setAddonQty(preloaded);
+      } catch {
+        // An unreadable cart just means no preload; the save path re-reads
+        // authoritatively before writing anything.
+        if (!cancelled) setAddonQty({});
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, product, selectedOption, addonGroups]);
 
   const groupSelectedCount = (group: AddonGroup) =>
     group.options.reduce((sum, o) => sum + (addonQty[o.sku] || 0), 0);
@@ -186,8 +256,10 @@ export default function ProductDetailsModal({
 
   if (!isOpen) return null;
 
+  // Decimal point, matching the cart, checkout, payment and invoice surfaces —
+  // this modal was the only place rendering the same product as "€5,42".
   const formatPrice = (price: number, currency = "€") => {
-    return `${currency}${price.toFixed(2)}`.replace(".", ",");
+    return `${currency}${price.toFixed(2)}`;
   };
 
   const groupedOptions: { groupName: string; options: VariantOption[] }[] = [];
@@ -258,8 +330,20 @@ export default function ProductDetailsModal({
     }
   };
 
+  // Only an explicit `false` means closed — if the backend omits the flag,
+  // stay out of the way and let the API be the judge.
+  const isStoreClosed =
+    product?.vendorId?.businessDetails?.isStoreOpen === false;
+
   const handleAddToCart = async () => {
     if (!product) return;
+
+    // The store can close between page load and this click (the backend flips
+    // this on a schedule), so re-check rather than trusting the disabled state.
+    if (isStoreClosed) {
+      toast.error(t("storeClosedCannotOrder"));
+      return;
+    }
 
     // Redirect guests to login
     const token = getAccessToken();
@@ -288,11 +372,63 @@ export default function ProductDetailsModal({
       const productMongoId = product._id ?? product.productId;
       const variationSku = selectedOption ? selectedOption.sku : null;
 
+      // Read the line fresh rather than trusting the preload or the React Query
+      // cache: `add-to-cart` SETs the quantity it receives, so a stale base here
+      // doesn't just render wrong — it destroys real quantity.
+      let existingQuantity = 0;
+      let existingAddonSkus: string[] = [];
+      try {
+        const cartRes = await apiClient.get("/carts/view-cart");
+        const cartItems = (cartRes.data?.data?.items ?? []) as Array<{
+          productId?: string;
+          variationSku?: string | null;
+          itemSummary?: { quantity?: number };
+          addons?: { sku?: string; quantity?: number }[];
+        }>;
+        const existingLine = cartItems.find(
+          (line) =>
+            line.productId === productMongoId &&
+            (line.variationSku ?? null) === variationSku,
+        );
+        existingQuantity = existingLine?.itemSummary?.quantity ?? 0;
+        existingAddonSkus = (existingLine?.addons ?? [])
+          .map((a) => a.sku)
+          .filter((sku): sku is string => !!sku);
+      } catch {
+        // An unreadable cart must not silently reset the line to the picker
+        // value — bail out instead of sending a quantity we can't trust.
+        toast.error(t("failedToAddToCart"));
+        return;
+      }
+
+      // Each { optionSku, quantity } SETs that add-on on the line and 0 removes
+      // it, but add-ons the payload omits are left untouched. So deselecting one
+      // in the modal has to be sent as an explicit 0 — otherwise it silently
+      // survives on the line and the user cannot remove it from here.
+      const selectedAddons = addonGroups.flatMap((g) =>
+        g.options
+          .filter((o) => (addonQty[o.sku] || 0) > 0)
+          .map((o) => ({ optionSku: o.sku, quantity: addonQty[o.sku] })),
+      );
+      const selectedSkus = new Set(selectedAddons.map((a) => a.optionSku));
+      const removedAddons = existingAddonSkus
+        .filter((sku) => !selectedSkus.has(sku))
+        .map((sku) => ({ optionSku: sku, quantity: 0 }));
+      const addonsPayload = [...selectedAddons, ...removedAddons];
+
+      // `add-to-cart` SETs the line quantity — it does not add to it (the
+      // Postman docs still describe the old additive behaviour). This modal
+      // means "add N more", so send existing + selected.
       const payload: any = {
-        items: [{ productId: productMongoId, quantity }],
+        items: [
+          { productId: productMongoId, quantity: existingQuantity + quantity },
+        ],
       };
       if (variationSku) {
         payload.items[0].variationSku = variationSku;
+      }
+      if (addonsPayload.length > 0) {
+        payload.items[0].addons = addonsPayload;
       }
 
       const response = await apiClient.post("/carts/add-to-cart", payload);
@@ -301,32 +437,12 @@ export default function ProductDetailsModal({
         throw new Error(response.data.message || "Failed to add to cart");
       }
 
-      // add-to-cart doesn't accept inline addons, so attach each selected
-      // addon to the just-added line via update-addon-quantity.
-      const selectedAddons = addonGroups.flatMap((g) =>
-        g.options
-          .filter((o) => (addonQty[o.sku] || 0) > 0)
-          .map((o) => ({ optionSku: o.sku, quantity: addonQty[o.sku] })),
-      );
-      for (const addon of selectedAddons) {
-        // Only include variationSku when a variant is selected. The backend's
-        // Zod schema expects a string (or the field omitted) and rejects null
-        // with "variationSku: Expected string, received null".
-        const addonPayload: any = {
-          productId: productMongoId,
-          optionSku: addon.optionSku,
-          quantity: addon.quantity,
-        };
-        if (variationSku) {
-          addonPayload.variationSku = variationSku;
-        }
-        await apiClient.patch("/carts/update-addon-quantity", addonPayload);
-      }
-
       await fetchCart();
+      invalidateCart();
       toast.success(t("itemAddedToCart"));
       onClose();
     } catch (err: any) {
+      // Store-closed and friends are translated centrally by errorKey.
       toast.error(getApiErrorMessage(err, "Could not add item to cart"));
     } finally {
       setCartLoading(false);
@@ -411,7 +527,7 @@ export default function ProductDetailsModal({
                         currentOriginalUnitPrice - unitPrice,
                         currency,
                       )}{" "}
-                      ({Math.round(discountPercentage)}% Off)
+                      ({discountPercentage}% Off)
                     </span>
                   </div>
                 )}
@@ -592,9 +708,25 @@ export default function ProductDetailsModal({
         {/* Sticky Footer */}
         {!loading && !error && product && (
           <div className="border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-8">
+            {isStoreClosed && (
+              <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4">
+                <Moon
+                  size={20}
+                  className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">
+                    {t("storeClosedTitle")}
+                  </p>
+                  <p className="mt-0.5 text-sm text-amber-800 dark:text-amber-400/80">
+                    {t("storeClosedNotice")}
+                  </p>
+                </div>
+              </div>
+            )}
             <button
               onClick={handleAddToCart}
-              disabled={cartLoading}
+              disabled={cartLoading || isStoreClosed}
               className={`relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-linear-to-r from-[#f9186b] to-[#d4145b] py-5 text-lg font-semibold text-white shadow-lg transition hover:from-[#d4145b] hover:to-[#b01254] active:scale-[0.98] disabled:opacity-50 ${
                 cartLoading ? "" : "cart-cta"
               }`}

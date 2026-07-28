@@ -14,7 +14,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
 import { getAccessToken } from "@/lib/authCookies";
 
-const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_LOCATION_API_KEY}&libraries=places`;
+const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
 
 interface Suggestion {
   placeId: string;
@@ -267,7 +267,7 @@ export default function CurrentLocationPage() {
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {/* Page Title */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#191c1d]">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d]">
             {t("myCurrentLocation") || "My Current Location"}
           </h1>
         </div>

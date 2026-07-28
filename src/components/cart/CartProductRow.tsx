@@ -1,19 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import {
-  MoreVertical,
-  CheckCircle,
-  Ban,
-  Trash2,
-  Loader2,
-  UtensilsCrossed,
-} from "lucide-react";
+import { useState, useRef } from "react";
+import { Trash2, Loader2, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import SafeImage from "@/components/shared/SafeImage";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getAddonsTotal } from "@/lib/cart";
+import type { CartAddon } from "@/types/cart";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +26,7 @@ interface CartItem {
   name: string;
   image: string;
   isActive: boolean;
+  addons?: CartAddon[];
   itemSummary: {
     quantity: number;
     grandTotal: number;
@@ -43,65 +39,17 @@ interface CartItem {
 
 interface CartProductRowProps {
   item: CartItem;
-  onUpdate: () => Promise<void>;
   onRemove: (productId: string, variationSku: string | null) => void;
 }
 
 export default function CartProductRow({
   item,
-  onUpdate,
   onRemove,
 }: CartProductRowProps) {
   const { t } = useTranslation();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isToggling, setIsToggling] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const processingRef = useRef(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleToggleActive = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (processingRef.current) return;
-    processingRef.current = true;
-    setIsToggling(true);
-
-    try {
-      // The endpoint takes no path param; it toggles via a `toggleMode` body.
-      // Variants must be targeted by their variationSku, plain products by
-      // productId (the ObjectId) — mixing them returns "not in your cart".
-      const body = item.variationSku
-        ? { toggleMode: "ITEM_LEVEL", variationSku: [item.variationSku] }
-        : { toggleMode: "ITEM_LEVEL", productIds: [item.productId] };
-      await apiClient.patch("/carts/toggle-item-status", body);
-      const newState = item.isActive ? "deactivated" : "activated";
-      toast.success(`"${item.name}" has been ${newState}`);
-      await onUpdate();
-    } catch (error: any) {
-      console.error("Toggle error:", error);
-      toast.error(
-        error?.response?.data?.message || "Could not change product status",
-      );
-    } finally {
-      setIsToggling(false);
-      setIsDropdownOpen(false);
-      processingRef.current = false;
-    }
-  };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -131,21 +79,16 @@ export default function CartProductRow({
       toast.success(`Removed "${item.name}" from cart`);
     } catch (error: any) {
       console.error("Deletion error:", error);
-      toast.error(error?.response?.data?.message || "Could not remove product");
+      toast.error(getApiErrorMessage(error, "Could not remove product"));
     } finally {
       setIsDeleting(false);
-      setIsDropdownOpen(false);
       processingRef.current = false;
     }
   };
 
   return (
     <div
-      className={`flex flex-col gap-4 rounded-2xl border p-4 transition-all sm:flex-row ${
-        item.isActive
-          ? "border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50"
-          : "border-gray-200 dark:border-neutral-800 bg-gray-100 dark:bg-neutral-800/40 opacity-75"
-      }`}
+      className="flex flex-col gap-4 rounded-2xl border border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-4 transition-all sm:flex-row"
     >
       {/* Product image */}
       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-200 dark:bg-neutral-800">
@@ -161,19 +104,7 @@ export default function CartProductRow({
       <div className="flex flex-1 flex-col justify-between">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-lg font-bold text-gray-900 dark:text-neutral-100">{item.name}</h4>
-              {/* Active/Inactive Badge */}
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  item.isActive
-                    ? "bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400"
-                    : "bg-gray-300 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300"
-                }`}
-              >
-                {item.isActive ? t("active") : t("inactive")}
-              </span>
-            </div>
+            <h4 className="text-lg font-bold text-gray-900 dark:text-neutral-100">{item.name}</h4>
             {item.variationSku && (
               <p className="text-xs text-gray-500 dark:text-neutral-400">
                 {t("sku")}: {item.variationSku}
@@ -181,46 +112,22 @@ export default function CartProductRow({
             )}
           </div>
 
-          {/* Three‑dot dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen((prev) => !prev)}
-              disabled={isToggling || isDeleting}
-              className="rounded-full p-1 transition-colors hover:bg-gray-200 dark:hover:bg-neutral-800 cursor-pointer"
-            >
-              <MoreVertical className="h-5 w-5 text-gray-500 dark:text-neutral-400" />
-            </button>
-            {isDropdownOpen && (
-              <div className="absolute right-0 z-10 mt-2 w-44 origin-top-right rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-805 py-1 shadow-lg">
-                <button
-                  onClick={handleToggleActive}
-                  disabled={isToggling || isDeleting}
-                  className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 dark:text-neutral-200 transition-colors hover:bg-gray-50 dark:hover:bg-neutral-700 disabled:opacity-50 cursor-pointer"
-                >
-                  {isToggling ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : item.isActive ? (
-                    <Ban className="h-4 w-4 text-orange-500" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  )}
-                  {item.isActive ? t("setAsInactive") : t("setAsActive")}
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={isToggling || isDeleting}
-                  className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 cursor-pointer"
-                >
-                  {isDeleting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                  {t("remove")}
-                </button>
-              </div>
+          {/* Remove is the only per-product action. Activate/deactivate is a
+              store-level concept (see CartStoreCard) because the backend only
+              lets one vendor be checked out at a time. */}
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            aria-label={t("remove")}
+            title={t("remove")}
+            className="rounded-full p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 cursor-pointer"
+          >
+            {isDeleting ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Trash2 className="h-5 w-5" />
             )}
-          </div>
+          </button>
         </div>
 
         {/* Quantity and price */}
@@ -234,7 +141,9 @@ export default function CartProductRow({
               <p className="text-xs text-gray-400 dark:text-neutral-500 line-through">
                 €
                 {(
-                  item.productPricing.originalPrice * item.itemSummary.quantity
+                  item.productPricing.originalPrice *
+                    item.itemSummary.quantity +
+                  getAddonsTotal(item)
                 ).toFixed(2)}
               </p>
             )}
@@ -250,7 +159,7 @@ export default function CartProductRow({
           <AlertDialogHeader>
             <AlertDialogTitle>{t("removeFromCart") || "Remove from cart?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove &ldquo;{item.name}&rdquo; from your cart?
+              {t("removeFromCartConfirm").replace("{product}", item.name)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -261,7 +170,7 @@ export default function CartProductRow({
             <AlertDialogAction onClick={(e) => {
               e?.stopPropagation();
               handleConfirmDelete();
-            }} className="bg-[#f9186b] hover:bg-[#d4145b] text-white cursor-pointer">
+            }}>
               {t("remove") || "Remove"}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -42,7 +42,7 @@ export default function SelectCountryPage() {
       <div className="mx-auto max-w-md">
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-neutral-50">{t("selectCountry")}</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-neutral-50">{t("selectCountry")}</h1>
           <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
             {t("selectCountryDescription")}
           </p>
@@ -50,7 +50,7 @@ export default function SelectCountryPage() {
 
         {/* Available */}
         <div className="mb-8">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
             {t("availableCountries")}
           </p>
 
@@ -74,7 +74,7 @@ export default function SelectCountryPage() {
 
         {/* Upcoming */}
         <div>
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
             {t("upcomingCountries")}
           </p>
 

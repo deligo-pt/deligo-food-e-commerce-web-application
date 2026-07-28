@@ -11,9 +11,11 @@ import {
   KeyRound,
   LoaderCircle,
   Mail,
+  MonitorSmartphone,
   Phone,
 } from "lucide-react";
 import Image from "next/image";
+import Logo from "@/components/shared/Logo";
 import { COUNTRY_OPTIONS, type CountryOption } from "../../data/countryCodes";
 import { useLoginFlow } from "../../hooks/useLoginFlow";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -52,18 +54,25 @@ function ClearSessionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-xl dark:shadow-none">
-        <h3 className="text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
+      <div className="w-full max-w-md rounded-3xl border border-transparent bg-white p-6 text-center shadow-2xl animate-scaleIn dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-none sm:p-8">
+        {/* Themed icon — pink brand tint, echoing the #f9186b accent used
+            throughout the app */}
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#ffe4ee] dark:bg-[#f9186b]/15">
+          <MonitorSmartphone className="h-8 w-8 text-[#f9186b]" />
+        </div>
+
+        <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50 sm:text-2xl">
           {t("deviceLimitExceeded")}
         </h3>
-        <p className="mt-2 text-[15px] text-[#5a4044] dark:text-neutral-400">
+        <p className="mx-auto mt-2 max-w-sm text-base leading-6 text-[#5a4044] dark:text-neutral-400">
           {t("deviceLimitExceededDescription")}
         </p>
-        <div className="mt-6 flex justify-end gap-3">
+
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="rounded-full border border-[#e3bdc3] dark:border-neutral-800 px-5 py-2 text-[15px] font-medium text-[#5a4044] dark:text-neutral-300 bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800"
+            className="cursor-pointer rounded-full border border-[#e3bdc3] bg-transparent px-6 py-2.5 text-base font-semibold text-[#5a4044] transition-colors hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
           >
             {t("cancel")}
           </button>
@@ -73,7 +82,7 @@ function ClearSessionModal({
               onRemove();
               onOpenChange(false);
             }}
-            className="rounded-full bg-[#f9186b] px-5 py-2 text-[15px] font-medium text-white shadow-sm hover:bg-[#8a0038]"
+            className="cursor-pointer rounded-full bg-[#f9186b] px-6 py-2.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-[#8a0038] active:scale-[0.98]"
           >
             {t("removeSession")}
           </button>
@@ -90,7 +99,6 @@ export default function LoginPage() {
   const {
     mode,
     step,
-    showReferral,
     showLanguageModal,
     showCountryMenu,
     selectedCountry,
@@ -107,7 +115,6 @@ export default function LoginPage() {
     loginIdentifier,
     showDeviceLimitModal,
     setShowDeviceLimitModal,
-    setShowReferral,
     setShowLanguageModal,
     setShowCountryMenu,
     setSelectedCountry,
@@ -141,21 +148,24 @@ export default function LoginPage() {
             <Link
               href="/"
               aria-label={t("returnToHome")}
-              className="overflow-hidden rounded-[28px] shadow-[0_18px_40px_rgba(0,0,0,0.18)] transition-transform hover:scale-105"
+              className="rounded-xl outline-none transition-transform duration-200 ease-out hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#ef2f7a] motion-reduce:transform-none motion-reduce:transition-none"
             >
-              <Image
-                src="/deligoLogo.png"
-                alt="DeliGo logo"
-                width={112}
-                height={112}
-                className="h-20 w-20 object-cover sm:h-24 sm:w-24 lg:h-28 lg:w-28"
+              {/* Panel is #ef2f7a, so the tile would be pink on pink; the
+                  knockout puts the mark straight on the panel. The rounding
+                  and drop shadow went with the tile and have nothing to sit
+                  on now. */}
+              <Logo
+                size={112}
+                variant="mark"
+                className="h-auto w-20 sm:w-24 lg:w-28"
                 priority
+                alt="DeliGo logo"
               />
             </Link>
-            <h1 className="mt-6 text-[40px] font-extrabold tracking-[-0.03em] text-white sm:text-[46px]">
+            <h1 className="mt-6 text-4xl font-extrabold tracking-[-0.03em] text-white sm:text-5xl">
               DeliGo
             </h1>
-            <p className="mt-4 text-[15px] leading-6 text-white/90 sm:text-[16px]">
+            <p className="mt-4 text-base leading-6 text-white/90 sm:text-base">
               {t("loginFastReliable")}
             </p>
           </div>
@@ -164,10 +174,10 @@ export default function LoginPage() {
         <div className="flex flex-1 items-start px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
           <div className="flex w-full flex-col">
             <div>
-              <h2 className="text-[30px] font-extrabold leading-tight tracking-[-0.03em] text-[#242424] dark:text-neutral-50 sm:text-[34px] lg:text-[38px]">
+              <h2 className="text-3xl font-extrabold leading-tight tracking-[-0.03em] text-[#242424] dark:text-neutral-50 sm:text-4xl">
                 {t("welcomeBack")}
               </h2>
-              <p className="mt-4 text-[16px] leading-7 text-[#8b8b8b] dark:text-neutral-400 sm:text-[17px]">
+              <p className="mt-4 text-base leading-7 text-[#8b8b8b] dark:text-neutral-400 sm:text-base">
                 {t("loginOrCreateAccount")}
               </p>
             </div>
@@ -176,7 +186,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => changeMode("mobile")}
-                className="relative pb-4 text-[18px] font-semibold transition-colors sm:text-[20px]"
+                className="relative pb-4 text-lg font-semibold transition-colors sm:text-xl"
               >
                 <span
                   className={
@@ -198,7 +208,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => changeMode("email")}
-                className="relative pb-4 text-[18px] font-semibold transition-colors sm:text-[20px]"
+                className="relative pb-4 text-lg font-semibold transition-colors sm:text-xl"
               >
                 <span
                   className={
@@ -219,18 +229,18 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-8 space-y-5 sm:mt-10">
-              <p className="text-[15px] leading-6 text-[#6e6e6e] dark:text-neutral-400 sm:text-[16px]">
+              <p className="text-base leading-6 text-[#6e6e6e] dark:text-neutral-400 sm:text-base">
                 {loginHint}
               </p>
 
               {errorMessage ? (
-                <div className="rounded-2xl border border-[#ffd4dc] dark:border-red-950 bg-[#fff4f7] dark:bg-red-950/20 px-4 py-3 text-[14px] font-medium text-[#b81f57] dark:text-red-400">
+                <div className="rounded-2xl border border-[#ffd4dc] dark:border-red-950 bg-[#fff4f7] dark:bg-red-950/20 px-4 py-3 text-sm font-medium text-[#b81f57] dark:text-red-400">
                   {errorMessage}
                 </div>
               ) : null}
 
               {successMessage ? (
-                <div className="rounded-2xl border border-[#cdeed9] dark:border-green-950 bg-[#f2fbf5] dark:bg-green-950/20 px-4 py-3 text-[14px] font-medium text-[#166534] dark:text-green-400">
+                <div className="rounded-2xl border border-[#cdeed9] dark:border-green-950 bg-[#f2fbf5] dark:bg-green-950/20 px-4 py-3 text-sm font-medium text-[#166534] dark:text-green-400">
                   {successMessage}
                 </div>
               ) : null}
@@ -244,7 +254,7 @@ export default function LoginPage() {
                         onClick={() =>
                           setShowCountryMenu((currentValue) => !currentValue)
                         }
-                        className="flex items-center gap-2 pr-3 text-[15px] font-medium text-[#3f3f3f] dark:text-neutral-300 transition-colors hover:text-[#d7357c] dark:hover:text-pink-400 sm:text-[16px]"
+                        className="flex items-center gap-2 pr-3 text-base font-medium text-[#3f3f3f] dark:text-neutral-300 transition-colors hover:text-[#d7357c] dark:hover:text-pink-400 sm:text-base"
                       >
                         <CountryFlag
                           countryCode={selectedCountry.flagCode}
@@ -268,7 +278,7 @@ export default function LoginPage() {
                             setMobileNumber(event.target.value)
                           }
                           placeholder={t("mobileNumber")}
-                          className="w-full border-0 bg-transparent text-[16px] text-[#5f5f5f] dark:text-neutral-200 outline-none placeholder:text-[#8c8c8c] dark:placeholder:text-neutral-500 sm:text-[17px]"
+                          className="w-full border-0 bg-transparent text-base text-[#5f5f5f] dark:text-neutral-200 outline-none placeholder:text-[#8c8c8c] dark:placeholder:text-neutral-500 sm:text-base"
                         />
                       </div>
                     </div>
@@ -280,7 +290,7 @@ export default function LoginPage() {
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         placeholder={t("emailAddress")}
-                        className="w-full border-0 bg-transparent text-[16px] text-[#5f5f5f] dark:text-neutral-200 outline-none placeholder:text-[#8c8c8c] dark:placeholder:text-neutral-500 sm:text-[17px]"
+                        className="w-full border-0 bg-transparent text-base text-[#5f5f5f] dark:text-neutral-200 outline-none placeholder:text-[#8c8c8c] dark:placeholder:text-neutral-500 sm:text-base"
                       />
                     </div>
                   )
@@ -298,7 +308,7 @@ export default function LoginPage() {
                         )
                       }
                       placeholder={t("enterOtp")}
-                      className="w-full border-0 bg-transparent text-[16px] text-[#5f5f5f] dark:text-neutral-200 outline-none placeholder:text-[#8c8c8c] dark:placeholder:text-neutral-500 sm:text-[17px]"
+                      className="w-full border-0 bg-transparent text-base text-[#5f5f5f] dark:text-neutral-200 outline-none placeholder:text-[#8c8c8c] dark:placeholder:text-neutral-500 sm:text-base"
                     />
                   </div>
                 )}
@@ -306,10 +316,10 @@ export default function LoginPage() {
                 {showCountryMenu && step === "credentials" ? (
                   <div className="absolute left-4 top-[calc(100%-0.25rem)] z-20 mt-3 w-[calc(100%-2rem)] max-w-80 overflow-hidden rounded-3xl border border-[#e7e7e7] dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_24px_60px_rgba(16,24,40,0.18)] dark:shadow-none">
                     <div className="border-b border-[#efefef] dark:border-neutral-800 px-4 py-3">
-                      <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#a0a0a0] dark:text-neutral-500">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#a0a0a0] dark:text-neutral-500">
                         {t("selectCountryCode")}
                       </p>
-                      <p className="mt-1 text-[15px] text-[#5d5d5d] dark:text-neutral-400">
+                      <p className="mt-1 text-base text-[#5d5d5d] dark:text-neutral-400">
                         {t("chooseCountryAndDialCode")}
                       </p>
                     </div>
@@ -336,10 +346,10 @@ export default function LoginPage() {
                               name={country.name}
                             />
                             <div className="flex flex-col">
-                              <span className="text-[15px] font-medium">
+                              <span className="text-base font-medium">
                                 {country.name}
                               </span>
-                              <span className="text-[13px] text-[#7d7d7d] dark:text-neutral-500">
+                              <span className="text-xs text-[#7d7d7d] dark:text-neutral-500">
                                 {country.dialCode}
                               </span>
                             </div>
@@ -355,7 +365,13 @@ export default function LoginPage() {
                 ) : null}
               </div>
 
-              {showReferral ? (
+              {/* Always visible rather than hidden behind a "Have a referral
+                  code?" toggle: the placeholder already says it is optional, so
+                  the toggle only cost a click for the people who did have a
+                  code and hid the feature from everyone else. Credentials step
+                  only — the code is read when the OTP is requested, so an input
+                  on the OTP step would silently do nothing. */}
+              {step === "credentials" ? (
                 <div className="rounded-2xl border border-[#dcdcdc] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-4 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none sm:px-5">
                   <div className="flex items-center gap-3 px-1">
                     <Gift size={18} className="text-[#7d7d7d] dark:text-neutral-500" />
@@ -363,40 +379,19 @@ export default function LoginPage() {
                       type="text"
                       value={referralCode}
                       onChange={(event) => setReferralCode(event.target.value)}
-                      placeholder={t("enterReferralCode")}
-                      className="w-full border-0 bg-transparent text-[16px] text-[#5f5f5f] dark:text-neutral-200 outline-none placeholder:text-[#8c8c8c] dark:placeholder:text-neutral-500 sm:text-[17px]"
+                      placeholder={t("referralCodeOptional")}
+                      className="w-full border-0 bg-transparent text-base text-[#5f5f5f] dark:text-neutral-200 outline-none placeholder:text-[#8c8c8c] dark:placeholder:text-neutral-500 sm:text-base"
                     />
                   </div>
                 </div>
               ) : null}
-
-              <div className="flex justify-end">
-                {showReferral ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowReferral(false)}
-                    className="inline-flex items-center gap-2 text-[15px] font-medium text-[#6f6f6f] dark:text-neutral-400 transition-colors hover:text-[#d7357c] dark:hover:text-pink-400"
-                  >
-                    <CircleX size={18} />
-                    {t("removeReferralCode")}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowReferral(true)}
-                    className="text-[15px] font-medium text-[#d7357c] dark:text-pink-400 transition-colors hover:opacity-80"
-                  >
-                    {t("haveReferralCode")}
-                  </button>
-                )}
-              </div>
 
               {step === "credentials" ? (
                 <button
                   type="button"
                   onClick={() => sendOtp()}
                   disabled={isSendingOtp}
-                  className="mt-1 flex h-14 w-full items-center justify-center rounded-4xl bg-linear-to-r from-[#d9357b] to-[#ff65b4] text-[18px] font-bold text-white shadow-[0_12px_28px_rgba(217,53,123,0.32)] transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[19px]"
+                  className="mt-1 flex h-14 w-full items-center justify-center rounded-4xl bg-linear-to-r from-[#d9357b] to-[#ff65b4] text-lg font-bold text-white shadow-[0_12px_28px_rgba(217,53,123,0.32)] transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSendingOtp ? (
                     <span className="inline-flex items-center gap-2">
@@ -412,7 +407,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={backToCredentials}
-                    className="mt-1 inline-flex h-14 items-center justify-center gap-2 rounded-4xl border border-[#e1e1e1] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[16px] font-semibold text-[#3f3f3f] dark:text-neutral-300 transition-colors hover:bg-[#fafafa] dark:hover:bg-neutral-800 sm:text-[17px]"
+                    className="mt-1 inline-flex h-14 items-center justify-center gap-2 rounded-4xl border border-[#e1e1e1] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-base font-semibold text-[#3f3f3f] dark:text-neutral-300 transition-colors hover:bg-[#fafafa] dark:hover:bg-neutral-800 sm:text-base"
                   >
                     <ArrowLeft size={18} />
                     {t("changeDetails")}
@@ -421,7 +416,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => verifyOtp()}
                     disabled={isVerifyingOtp}
-                    className="mt-1 inline-flex h-14 items-center justify-center rounded-4xl bg-linear-to-r from-[#d9357b] to-[#ff65b4] text-[18px] font-bold text-white shadow-[0_12px_28px_rgba(217,53,123,0.32)] transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[19px]"
+                    className="mt-1 inline-flex h-14 items-center justify-center rounded-4xl bg-linear-to-r from-[#d9357b] to-[#ff65b4] text-lg font-bold text-white shadow-[0_12px_28px_rgba(217,53,123,0.32)] transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {isVerifyingOtp ? (
                       <span className="inline-flex items-center gap-2">
@@ -441,7 +436,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={resendOtp}
                     disabled={isResendingOtp}
-                    className="inline-flex items-center gap-2 text-[15px] font-medium text-[#d7357c] dark:text-pink-400 transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex items-center gap-2 text-base font-medium text-[#d7357c] dark:text-pink-400 transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isResendingOtp ? (
                       <span className="inline-flex items-center gap-2">
@@ -452,7 +447,7 @@ export default function LoginPage() {
                       t("resendOtp")
                     )}
                   </button>
-                  <p className="text-[14px] text-[#7a7a7a] dark:text-neutral-400">
+                  <p className="text-sm text-[#7a7a7a] dark:text-neutral-400">
                     {t("otpSentTo")}{" "}
                     {loginIdentifier?.email ?? loginIdentifier?.contactNumber}
                   </p>
@@ -463,7 +458,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowLanguageModal(true)}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#f5f5f5] dark:bg-neutral-800 px-5 py-3 text-[15px] font-medium text-[#616161] dark:text-neutral-350 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#f5f5f5] dark:bg-neutral-800 px-5 py-3 text-base font-medium text-[#616161] dark:text-neutral-350 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none"
                 >
                   <Globe size={18} />
                   {lang === "pt" ? "Português" : "English"}
@@ -471,10 +466,10 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              <p className="pt-6 text-center text-[15px] leading-7 text-[#696969] dark:text-neutral-400 sm:text-[16px]">
+              <p className="pt-6 text-center text-base leading-7 text-[#696969] dark:text-neutral-400 sm:text-base">
                 {t("byContinuingAgree")}
               </p>
-              <p className="-mt-1 text-center text-[15px] font-semibold leading-7 text-[#d7357c] dark:text-pink-400 sm:text-[16px]">
+              <p className="-mt-1 text-center text-base font-semibold leading-7 text-[#d7357c] dark:text-pink-400 sm:text-base">
                 <Link href="/terms" className="transition-opacity hover:opacity-80">
                   {t("termsOfService")}
                 </Link>
@@ -492,7 +487,7 @@ export default function LoginPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4 backdrop-blur-[2px]">
           <div className="w-full max-w-140 rounded-[28px] bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] dark:shadow-none sm:p-8">
             <div className="flex items-center justify-between gap-4">
-              <h3 className="text-[28px] font-extrabold tracking-[-0.03em] text-[#252525] dark:text-neutral-50 sm:text-[34px]">
+              <h3 className="text-2xl font-extrabold tracking-[-0.03em] text-[#252525] dark:text-neutral-50 sm:text-3xl">
                 {t("selectLanguage")}
               </h3>
               <button
@@ -521,7 +516,7 @@ export default function LoginPage() {
               >
                 <div className="flex items-center gap-4">
                   <span className="text-[34px] leading-none">🇬🇧</span>
-                  <span className="text-[24px] font-semibold tracking-[-0.02em] text-[#2f2f2f] dark:text-neutral-200">
+                  <span className="text-2xl font-semibold tracking-[-0.02em] text-[#2f2f2f] dark:text-neutral-200">
                     {t("english")}
                   </span>
                 </div>
@@ -544,7 +539,7 @@ export default function LoginPage() {
               >
                 <div className="flex items-center gap-4">
                   <span className="text-[34px] leading-none">🇵🇹</span>
-                  <span className="text-[24px] font-semibold tracking-[-0.02em] text-[#2f2f2f] dark:text-neutral-200">
+                  <span className="text-2xl font-semibold tracking-[-0.02em] text-[#2f2f2f] dark:text-neutral-200">
                     {t("portugues")}
                   </span>
                 </div>

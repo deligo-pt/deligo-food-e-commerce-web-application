@@ -20,20 +20,33 @@ import {
   ChevronRight,
   Percent,
   UtensilsCrossed,
+  Briefcase,
+  MapPin,
+  Loader2,
+  Plus,
+  Navigation,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import SafeImage from "@/components/shared/SafeImage";
+import Loader from "@/components/shared/Loader";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { resolveAddonName } from "@/lib/cart";
+import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
+import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
+import { addressTypeLabel, normalizeAddressType } from "@/lib/addressType";
+import { formatAddressLine1, formatAddressLine2 } from "@/lib/addressFormat";
 import type { CartAddon } from "@/types/cart";
 import Link from "next/link";
 
 interface CheckoutItem {
   productId: string;
-  name: string;
+  // `GET /checkout/summary` resolves this via Accept-Language, but the summary
+  // returned by `POST /offers/validate-apply-offer` carries the raw bilingual
+  // document — so this field's shape depends on which call produced the summary.
+  name: LocalizedField;
   image: string;
   itemSummary: { quantity: number; grandTotal: number };
   productPricing: { priceAfterProductDiscount: number };
@@ -45,10 +58,17 @@ interface OrderCalculation {
   totalProductDiscount: number;
   totalOfferDiscount: number;
   totalTaxAmount: number;
+  // Net, with its VAT reported alongside.
   serviceCharge?: number;
+  serviceChargeVatRate?: number;
+  serviceChargeVatAmount?: number;
 }
 
 interface Delivery {
+  // `totalDeliveryCharge` is gross (charge + vatAmount).
+  charge?: number;
+  vatRate?: number;
+  vatAmount?: number;
   totalDeliveryCharge: number;
   distance: number;
   estimatedTime: number;
@@ -64,11 +84,34 @@ interface DeliveryAddress {
   state: string;
   country: string;
   postalCode: string;
+  // The checkout summary echoes the selected address's coordinates, used to
+  // compute the delivery distance/ETA on the client.
+  latitude?: number;
+  longitude?: number;
+}
+
+// A saved address from the customer profile (GET /profile → deliveryAddresses).
+// `isActive` marks the one checkout binds to; `_id` is what
+// toggle-delivery-address-status keys on.
+interface SavedAddress {
+  _id: string;
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  latitude: number;
+  longitude: number;
+  addressType: string;
+  /** The customer's own name for an `OTHER` address; "" on older records. */
+  customAddressType?: string;
+  isActive: boolean;
+  detailedAddress?: string;
 }
 
 interface OfferApplied {
   promoId: string;
-  title: string;
+  title: LocalizedField;
   discountValue: number;
   code: string;
 }
@@ -115,8 +158,10 @@ interface Vendor {
 
 interface AvailableOffer {
   _id: string;
-  title: string;
-  description: string;
+  // The offers endpoints ignore the Accept-Language header and return the raw
+  // bilingual document — resolve before rendering.
+  title: LocalizedField;
+  description: LocalizedField;
   offerType: "PERCENT" | "FLAT";
   isAutoApply: boolean;
   code: string;
@@ -125,20 +170,24 @@ interface AvailableOffer {
   minOrderAmount: number;
   expiresAt: string;
   isEligible: boolean;
-  message: string;
+  message: LocalizedField;
 }
 
 export default function PaymentPage() {
   const { t } = useTranslation();
   const lang = useStore((s) => s.lang);
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const checkoutId = searchParams.get("checkoutId");
 
   const [summary, setSummary] = useState<CheckoutSummary | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<string>("CARD");
+  // Default to Google Pay: CARD is currently rejected by the REDUNIQ sandbox
+  // (PAYMENT_INITIATION_FAILED_BY_GATEWAY), while the wallet methods work.
+  const [paymentMethod, setPaymentMethod] = useState<string>("GOOGLE_PAY");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentError, setPaymentError] = useState("");
 
@@ -149,7 +198,17 @@ export default function PaymentPage() {
   const [manualCode, setManualCode] = useState("");
   const [applyingOfferId, setApplyingOfferId] = useState<string | null>(null);
   const [offerApplyError, setOfferApplyError] = useState("");
+  const [isRemovingOffer, setIsRemovingOffer] = useState(false);
+  // Separate from `offerApplyError`, which only renders inside the offer modal —
+  // removal happens with that modal closed, so its error needs its own slot.
+  const [removeOfferError, setRemoveOfferError] = useState("");
   const [showSupportModal, setShowSupportModal] = useState(false);
+
+  // Saved-address picker.
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [switchingAddressId, setSwitchingAddressId] = useState<string | null>(null);
+  const [addressError, setAddressError] = useState("");
 
   useEffect(() => {
     if (!checkoutId) {
@@ -157,6 +216,12 @@ export default function PaymentPage() {
       setLoading(false);
       return;
     }
+
+    // A new checkoutId means any voucher removal that navigated here is done.
+    // Swapping the query string re-runs this effect without remounting, so
+    // these don't reset themselves.
+    setIsRemovingOffer(false);
+    setRemoveOfferError("");
 
     const fetchData = async () => {
       try {
@@ -166,6 +231,7 @@ export default function PaymentPage() {
           `/checkout/summary/${checkoutId}`,
         );
         const summaryData = summaryResponse.data.data;
+        console.log("Fetched checkout summary:", summaryData);
         setSummary(summaryData);
 
         if (summaryData.vendorId) {
@@ -212,6 +278,23 @@ export default function PaymentPage() {
     fetchData();
   }, [checkoutId, t]);
 
+  // Saved addresses for the "Change" picker — independent of the checkoutId, so
+  // fetched once on mount and refreshed after a switch.
+  const loadAddresses = async () => {
+    try {
+      const res = await apiClient.get("/profile");
+      const list = res.data?.data?.deliveryAddresses;
+      setAddresses(Array.isArray(list) ? list : []);
+    } catch {
+      // Non-fatal: the page still works without the picker.
+      setAddresses([]);
+    }
+  };
+
+  useEffect(() => {
+    loadAddresses();
+  }, []);
+
   const handleOpenOfferModal = async () => {
     if (!summary) return;
     setShowOfferModal(true);
@@ -224,7 +307,10 @@ export default function PaymentPage() {
       const res = await apiClient.get(
         `/offers/available-offers/${summary._id}`,
       );
-      setAvailableOffers(res.data.data ?? []);
+      // The list is mapped during render, where a try/catch can't reach — so a
+      // non-array payload has to be rejected here, not there.
+      const payload = res.data?.data;
+      setAvailableOffers(Array.isArray(payload) ? payload : []);
     } catch (err) {
       setOffersError(getApiErrorMessage(err, "Failed to load offers"));
     } finally {
@@ -264,6 +350,85 @@ export default function PaymentPage() {
     }
   };
 
+  /**
+   * Removes the applied voucher.
+   *
+   * WORKAROUND: the API has no way to un-apply an offer — `validate-apply-offer`
+   * only ever sets one, and the delete/toggle-status routes act on the offer
+   * itself in admin scope (they'd disable the voucher for every customer, not
+   * just this checkout). So the only lever is rebuilding the checkout from the
+   * cart, which yields a fresh, offer-free checkout.
+   *
+   * The cost is a new checkoutId and an abandoned old checkout. Replace this
+   * with a single call once the backend exposes a proper remove endpoint.
+   */
+  const removeOffer = async () => {
+    if (!summary || isRemovingOffer) return;
+
+    setIsRemovingOffer(true);
+    setRemoveOfferError("");
+
+    try {
+      const res = await apiClient.post("/checkout", { useCart: true });
+      const newCheckoutId = res.data?.data?._id;
+      if (!newCheckoutId) {
+        throw new Error("Checkout response did not include an id");
+      }
+
+      // `replace`, not `push`: the old checkoutId still carries the offer, so
+      // leaving it in history would let Back silently restore the discount.
+      router.replace(`${pathname}?checkoutId=${newCheckoutId}`);
+    } catch (err) {
+      setRemoveOfferError(getApiErrorMessage(err, t("failedToRemoveVoucher")));
+      setIsRemovingOffer(false);
+    }
+    // On success the flag stays set through the navigation and is cleared by the
+    // fetch effect when the new checkoutId lands — otherwise the button would
+    // flicker back to enabled while the old summary is still on screen.
+  };
+
+  /**
+   * Switches the delivery address. The checkout has no per-order address param
+   * and always binds to the customer's ACTIVE address, so we make the chosen
+   * address active, then rebuild the checkout from the cart (same pattern as
+   * removeOffer) and navigate to the fresh checkoutId — which reloads the
+   * summary with the new address and delivery fee.
+   *
+   * NOTE: toggling the active address changes the customer's primary address
+   * account-wide, not just for this order.
+   */
+  const selectAddress = async (addr: SavedAddress) => {
+    if (switchingAddressId) return;
+    if (addr.isActive) {
+      setShowAddressModal(false);
+      return;
+    }
+
+    setSwitchingAddressId(addr._id);
+    setAddressError("");
+
+    try {
+      await apiClient.patch(
+        `/customers/toggle-delivery-address-status/${addr._id}`,
+      );
+      const res = await apiClient.post("/checkout", { useCart: true });
+      const newCheckoutId = res.data?.data?._id;
+      if (!newCheckoutId) {
+        throw new Error("Checkout response did not include an id");
+      }
+
+      await loadAddresses();
+      setShowAddressModal(false);
+      // `replace`, not `push`: the old checkoutId is bound to the old address —
+      // leaving it in history would let Back silently restore it.
+      router.replace(`${pathname}?checkoutId=${newCheckoutId}`);
+    } catch (err) {
+      setAddressError(getApiErrorMessage(err, t("failedToChangeAddress")));
+    } finally {
+      setSwitchingAddressId(null);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (!summary) return;
     try {
@@ -278,7 +443,24 @@ export default function PaymentPage() {
         },
       );
 
-      const { redirectUrl } = response.data.data;
+      const { redirectUrl, paymentToken } = response.data.data;
+
+      // The post-payment return page finalizes the order via /orders/create-order,
+      // but REDUNIQ's return URL does NOT carry our internal checkoutSummaryId or
+      // paymentToken. Persist them here so the return page can read them back from
+      // sessionStorage — without this the order never completes after payment.
+      if (!redirectUrl) {
+        throw new Error("Payment could not be initiated. Please try again.");
+      }
+
+      sessionStorage.setItem(
+        "pendingOrder",
+        JSON.stringify({
+          checkoutSummaryId: summary._id,
+          paymentToken,
+          deliveryNotes: "",
+        }),
+      );
       window.location.href = redirectUrl;
     } catch (err) {
       const errorMsg = getApiErrorMessage(err, "Failed to process payment");
@@ -297,11 +479,7 @@ export default function PaymentPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 flex items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
-      </div>
-    );
+    return <Loader fullScreen />;
   }
 
   if (error || !summary) {
@@ -321,19 +499,23 @@ export default function PaymentPage() {
     orderCalculation.totalOriginalPrice - orderCalculation.totalProductDiscount;
 
   const offerDiscount = orderCalculation.totalOfferDiscount ?? 0;
+  // `serviceCharge` arrives NET while the grand total charges it with VAT, so
+  // the row has to show net + the reported VAT or it falls short by the tax.
+  const serviceCharge = getServiceChargeGross(orderCalculation);
   const orderTotal = payoutSummary.grandTotal;
 
-  // Prices are tax-inclusive. The subtotal's embedded VAT comes straight from the
-  // backend (totalTaxAmount). The delivery charge is also gross; the backend
-  // doesn't break out its VAT separately, so extract it at Portugal's standard
-  // 23% rate (delivery is standard-rated) to show the "incl. tax" note.
-  const DELIVERY_TAX_RATE = 23;
+  // Both taxes are the backend's own figures: `totalTaxAmount` for the items,
+  // `delivery.vatAmount` for the (gross) delivery charge.
   const subtotalTax = orderCalculation.totalTaxAmount;
-  const deliveryTax =
-    delivery.totalDeliveryCharge > 0
-      ? delivery.totalDeliveryCharge -
-        delivery.totalDeliveryCharge / (1 + DELIVERY_TAX_RATE / 100)
-      : 0;
+  const deliveryTax = getDeliveryTax(delivery);
+
+  // Guarded rather than assumed: these are typed as required, but an order the
+  // backend has not priced a route for would report 0, and "0 km • 0 min" is
+  // worse than saying nothing. Each half is shown only if it has a value.
+  const hasDeliveryDistance =
+    typeof delivery.distance === "number" && delivery.distance > 0;
+  const hasDeliveryEta =
+    typeof delivery.estimatedTime === "number" && delivery.estimatedTime > 0;
 
   const vendorRating = vendor?.rating.average ?? 0;
   const vendorReviewCount = vendor?.rating.totalReviews ?? 0;
@@ -412,41 +594,76 @@ export default function PaymentPage() {
 
                 {/* Delivery To */}
                 <div>
-                  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-455">
-                    {t("deliveryTo")}
-                  </p>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-455">
+                      {t("deliveryTo")}
+                    </p>
+                    {addresses.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setAddressError("");
+                          setShowAddressModal(true);
+                        }}
+                        className="text-xs font-semibold text-[#f9186b] dark:text-pink-400 underline transition hover:text-[#d4145b] dark:hover:text-pink-300"
+                      >
+                        {t("change")}
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
                       <Home className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-neutral-50">{deliveryAddress.city}</p>
-                      <p className="text-sm text-gray-500 dark:text-neutral-400">
-                        {deliveryAddress.street}, {deliveryAddress.postalCode}
+                    {/* The address the order is actually going to, so it shows
+                        in full. It used to headline the city and drop the
+                        apartment and country entirely. */}
+                    <div className="min-w-0">
+                      <p className="font-semibold break-words text-gray-900 dark:text-neutral-50">
+                        {formatAddressLine1(deliveryAddress)}
+                      </p>
+                      <p className="text-sm break-words text-gray-500 dark:text-neutral-400">
+                        {formatAddressLine2(deliveryAddress)}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-pink-200 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
-                <MapPinned className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-neutral-100">{t("distanceAndTime")}</p>
-                  <p className="text-sm text-gray-500 dark:text-neutral-400">
-                    {t("deliveryDistance")}:{" "}
-                    {(delivery.distance || 2.5).toFixed(1)} km •{" "}
-                    {t("estimatedTime")}: {delivery.estimatedTime || 25} min
-                  </p>
+              {/* Distance and ETA come straight from `delivery` — the same
+                  object whose `totalDeliveryCharge` is billed in the summary
+                  opposite, so the fee and the distance it was priced from
+                  always agree. This used to be recomputed client-side from the
+                  two sets of coordinates, which showed the customer a distance
+                  that did not match what they were charged for. Rendered
+                  exactly as returned: no rounding, no unit conversion. */}
+              {(hasDeliveryDistance || hasDeliveryEta) && (
+                <div className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-pink-200 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
+                  <MapPinned className="h-5 w-5 shrink-0 text-[#f9186b] dark:text-pink-400" />
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-neutral-100">{t("distanceAndTime")}</p>
+                    <p className="text-sm text-gray-500 dark:text-neutral-400">
+                      {hasDeliveryDistance && (
+                        <>
+                          {t("deliveryDistance")}: {delivery.distance} km
+                        </>
+                      )}
+                      {hasDeliveryDistance && hasDeliveryEta && " • "}
+                      {hasDeliveryEta && (
+                        <>
+                          {t("estimatedTime")}: {delivery.estimatedTime} min
+                        </>
+                      )}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Your Order */}
             <div className="rounded-lg border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-neutral-50">{t("yourOrder")}</h2>
-                <Link href={`/vendors`}>
+                <Link href={vendor?.userId ? `/vendors/${vendor.userId}` : "/vendors"}>
                   <button className="text-sm font-semibold text-[#f9186b] dark:text-pink-400 hover:text-[#d4145b] dark:hover:text-pink-300">
                     {t("addMoreItems")}
                   </button>
@@ -462,7 +679,7 @@ export default function PaymentPage() {
                     <div className="relative h-20 w-20 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
                       <SafeImage
                         src={item.image}
-                        alt={item.name}
+                        alt={resolveLocalized(item.name, lang)}
                         sizes="80px"
                         fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
                       />
@@ -471,7 +688,9 @@ export default function PaymentPage() {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-neutral-50">{item.name}</p>
+                      <p className="font-medium text-gray-900 dark:text-neutral-50">
+                        {resolveLocalized(item.name, lang)}
+                      </p>
                       <p className="text-sm text-gray-500 dark:text-neutral-400">
                         {t("basePrice")} €
                         {item.productPricing.priceAfterProductDiscount.toFixed(
@@ -533,6 +752,19 @@ export default function PaymentPage() {
                     €{subtotal.toFixed(2)}
                   </span>
                 </div>
+                {/* The service fee is part of `payoutSummary.grandTotal`, so it
+                    must be shown or the breakdown won't reconcile with the
+                    amount charged. */}
+                {serviceCharge > 0 && (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 text-gray-500 dark:text-neutral-400">
+                      {t("serviceCharge")}
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap font-semibold text-gray-900 dark:text-neutral-50">
+                      €{serviceCharge.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="min-w-0 text-gray-500 dark:text-neutral-400">
                     {t("deliveryFee")}
@@ -555,7 +787,7 @@ export default function PaymentPage() {
                     <span className="flex items-center gap-1.5 text-green-700 dark:text-green-400 font-medium">
                       <Tag className="h-3.5 w-3.5" />
                       {appliedOffer
-                        ? `${appliedOffer.title} (${appliedOffer.code})`
+                        ? `${resolveLocalized(appliedOffer.title, lang)} (${appliedOffer.code})`
                         : t("offerDiscount")}
                     </span>
                     <span className="font-semibold text-green-700 dark:text-green-400">
@@ -569,22 +801,50 @@ export default function PaymentPage() {
               <div className="my-6 border-t border-dashed border-gray-200 dark:border-neutral-800 pt-6">
                 {appliedOffer ? (
                   /* Applied offer pill */
-                  <div className="mb-6 flex items-center justify-between rounded-lg border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                      <span className="text-sm font-semibold text-green-700 dark:text-green-400">
-                        {appliedOffer.title}
-                      </span>
-                      <span className="rounded bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 text-xs font-bold text-green-700 dark:text-green-300">
-                        {appliedOffer.code}
-                      </span>
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 px-4 py-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <CheckCircle className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
+                        <span className="truncate text-sm font-semibold text-green-700 dark:text-green-400">
+                          {resolveLocalized(appliedOffer.title, lang)}
+                        </span>
+                        <span className="shrink-0 rounded bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 text-xs font-bold text-green-700 dark:text-green-300">
+                          {appliedOffer.code}
+                        </span>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <button
+                          onClick={handleOpenOfferModal}
+                          disabled={isRemovingOffer}
+                          className="text-xs font-semibold text-[#f9186b] dark:text-pink-400 underline hover:text-[#d4145b] dark:hover:text-pink-300 disabled:opacity-50"
+                        >
+                          {t("change")}
+                        </button>
+                        <button
+                          onClick={removeOffer}
+                          disabled={isRemovingOffer}
+                          aria-label={t("remove")}
+                          title={t("remove")}
+                          className="flex h-6 w-6 items-center justify-center rounded-full text-green-700 dark:text-green-400 transition hover:bg-green-100 dark:hover:bg-green-900/40 disabled:opacity-50"
+                        >
+                          {isRemovingOffer ? (
+                            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
+                          ) : (
+                            <X className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={handleOpenOfferModal}
-                      className="text-xs font-semibold text-[#f9186b] dark:text-pink-400 underline hover:text-[#d4145b] dark:hover:text-pink-300"
-                    >
-                      {t("change")}
-                    </button>
+                    {isRemovingOffer && (
+                      <p className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
+                        {t("removingVoucher")}
+                      </p>
+                    )}
+                    {removeOfferError && (
+                      <p className="mt-2 text-xs text-red-500 dark:text-red-400">
+                        {removeOfferError}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   /* Apply voucher button */
@@ -668,10 +928,17 @@ export default function PaymentPage() {
               <button
                 onClick={handlePlaceOrder}
                 disabled={isPlacingOrder}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#f9186b] py-4 font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
+                className={`relative mt-6 flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-[#f9186b] py-4 font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500 ${
+                  isPlacingOrder ? "" : "cart-cta"
+                }`}
               >
-                {isPlacingOrder ? t("processing") : t("placeOrder")}
-                <ArrowRight className="h-5 w-5" />
+                {!isPlacingOrder && (
+                  <span className="cart-cta-shine" aria-hidden="true" />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  {isPlacingOrder ? t("processing") : t("placeOrder")}
+                  <ArrowRight className="h-5 w-5" />
+                </span>
               </button>
 
               <div className="mt-6 text-center">
@@ -795,14 +1062,14 @@ export default function PaymentPage() {
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold text-gray-900 dark:text-neutral-100">
-                                {offer.title}
+                                {resolveLocalized(offer.title, lang)}
                               </p>
                               <span className="rounded-md bg-pink-100 dark:bg-pink-900/30 px-2 py-0.5 text-xs font-bold tracking-wide text-pink-700 dark:text-pink-300">
                                 {offer.code}
                               </span>
                             </div>
                             <p className="mt-0.5 text-sm text-gray-500 dark:text-neutral-400 line-clamp-2">
-                              {offer.description}
+                              {resolveLocalized(offer.description, lang)}
                             </p>
                             <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-neutral-500">
                               <span className="font-medium text-[#f9186b] dark:text-pink-400">
@@ -820,7 +1087,7 @@ export default function PaymentPage() {
                             </div>
                             {!offer.isEligible && (
                               <p className="mt-1 text-xs text-red-400">
-                                {offer.message}
+                                {resolveLocalized(offer.message, lang)}
                               </p>
                             )}
                           </div>
@@ -843,6 +1110,118 @@ export default function PaymentPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {showAddressModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => !switchingAddressId && setShowAddressModal(false)}
+          />
+
+          {/* Panel */}
+          <div className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-2xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl sm:rounded-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                <h3 className="text-lg font-bold text-gray-900 dark:text-neutral-50">
+                  {t("selectDeliveryAddress")}
+                </h3>
+              </div>
+              <button
+                onClick={() => !switchingAddressId && setShowAddressModal(false)}
+                disabled={!!switchingAddressId}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400 transition hover:bg-gray-200 dark:hover:bg-neutral-700 disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Scrollable body */}
+            <div className="flex-1 space-y-3 overflow-y-auto px-6 py-4">
+              {addressError && (
+                <div className="flex items-start gap-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 p-3">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />
+                  <p className="text-sm text-red-650 dark:text-red-400">{addressError}</p>
+                </div>
+              )}
+
+              {addresses.map((addr) => {
+                const isSwitching = switchingAddressId === addr._id;
+                const type = normalizeAddressType(addr.addressType);
+                const TypeIcon =
+                  type === "OFFICE"
+                    ? Briefcase
+                    : type === "HOME"
+                      ? Home
+                      : type === "CURRENT_LOCATION"
+                        ? Navigation
+                        : MapPin;
+                return (
+                  <button
+                    key={addr._id}
+                    onClick={() => selectAddress(addr)}
+                    disabled={!!switchingAddressId}
+                    className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition disabled:cursor-not-allowed ${
+                      addr.isActive
+                        ? "border-[#f9186b] dark:border-pink-500 bg-pink-50/60 dark:bg-pink-950/20"
+                        : "border-gray-200 dark:border-neutral-800 hover:border-pink-300 dark:hover:border-pink-700 hover:bg-gray-50 dark:hover:bg-neutral-800/50"
+                    } ${switchingAddressId && !isSwitching ? "opacity-50" : ""}`}
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
+                      <TypeIcon className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-400">
+                          {addressTypeLabel(t, addr.addressType, addr.customAddressType)}
+                        </span>
+                        {addr.isActive && (
+                          <span className="rounded bg-[#f9186b] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                            {t("active")}
+                          </span>
+                        )}
+                      </div>
+                      {/* Same two-line format as the navbar dropdown and the
+                          manage-addresses list. This is the last screen before
+                          payment, so it is the worst place to show a partial
+                          address — the apartment and country used to be
+                          dropped here and the postal code came after the city. */}
+                      <p className="mt-0.5 font-semibold break-words text-gray-900 dark:text-neutral-50">
+                        {formatAddressLine1(addr)}
+                      </p>
+                      <p className="text-sm break-words text-gray-500 dark:text-neutral-400">
+                        {formatAddressLine2(addr)}
+                      </p>
+                    </div>
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center self-center">
+                      {isSwitching ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-[#f9186b] dark:text-pink-400" />
+                      ) : (
+                        addr.isActive && (
+                          <CheckCircle className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                        )
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Footer — add new address */}
+            <div className="border-t border-gray-100 dark:border-neutral-800 px-6 py-4">
+              <button
+                onClick={() => router.push("/add-address")}
+                disabled={!!switchingAddressId}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-pink-300 dark:border-pink-850/40 bg-pink-50 dark:bg-pink-950/10 px-4 py-3 text-sm font-semibold text-[#f9186b] dark:text-pink-400 transition hover:bg-pink-100 dark:hover:bg-pink-950/25 disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+                {t("addNewAddress")}
+              </button>
             </div>
           </div>
         </div>

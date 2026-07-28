@@ -143,10 +143,10 @@ export default function CategoriesPage() {
           >
             <ChevronLeft size={18} /> {t("backToHome")}
           </Link>
-          <h1 className="text-[32px] font-bold leading-10 text-[#191c1d]">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d]">
             {t("allCategories")}
           </h1>
-          <p className="mt-2 text-[16px] leading-6 text-[#5a4044]">
+          <p className="mt-2 text-base leading-6 text-[#5a4044]">
             {t("browseAllCategories")}
           </p>
         </div>
@@ -181,7 +181,7 @@ export default function CategoriesPage() {
               </div>
 
               <div>
-                <h2 className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#191c1d] transition-colors group-hover:text-[#f9186b]">
+                <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[#191c1d] transition-colors group-hover:text-[#f9186b]">
                   {category.name}
                 </h2>
                 {category.description ? (

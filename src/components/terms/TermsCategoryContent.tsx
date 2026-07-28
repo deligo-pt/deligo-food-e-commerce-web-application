@@ -55,9 +55,12 @@ export default function TermsCategoryContent({ slug }: { slug: string }) {
         {/* CTA — consistent with the terms index */}
         <div className="text-center mt-12">
           <p className="text-gray-600 dark:text-neutral-400 mb-6">{t("termsContactSupportHelper")}</p>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition transform active:scale-95 shadow-md">
+          <Link
+            href="/contact-us"
+            className="inline-block rounded-full bg-linear-to-r from-[#f9186b] to-[#d4145b] px-8 py-3 font-bold text-white shadow-md transition hover:from-[#d4145b] hover:to-[#b01254] active:scale-95"
+          >
             {t("termsContactSupportButton")}
-          </button>
+          </Link>
         </div>
       </div>
     </main>

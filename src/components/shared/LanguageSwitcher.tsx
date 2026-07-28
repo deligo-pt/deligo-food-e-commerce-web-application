@@ -71,7 +71,7 @@ export default function LanguageSwitcher() {
         onClick={() => setOpen(!open)}
         suppressHydrationWarning
         aria-label="Change language"
-        className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/10 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
+        className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/10 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
       >
         {mounted ? lang.toUpperCase() : "PT"}
         <ChevronDown size={16} className={open ? "rotate-180 transition-transform" : "transition-transform"} />

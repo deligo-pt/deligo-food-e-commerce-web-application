@@ -267,7 +267,7 @@ export default function NotificationsPage() {
         {/* Header */}
         <div className="mb-6 flex items-start justify-between">
           <div>
-            <h1 className="text-[36px] font-bold leading-none text-[#1f1f1f] dark:text-neutral-100">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-none text-[#1f1f1f] dark:text-neutral-100">
               {t("notifications")}
             </h1>
             <p className="mt-2 text-sm text-[#777] dark:text-neutral-400">
@@ -356,7 +356,7 @@ export default function NotificationsPage() {
                   {/* Content */}
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
-                      <h3 className="text-[20px] font-semibold text-[#222] dark:text-neutral-100">
+                      <h3 className="text-xl font-semibold text-[#222] dark:text-neutral-100">
                         {notification.title}
                       </h3>
                       <div className="flex items-center gap-2">

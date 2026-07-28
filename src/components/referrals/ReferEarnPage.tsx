@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Gift, Copy, Share2, Clock3, Users, Wallet, Check } from "lucide-react";
+import { Gift, Copy, Share2, Clock3, Users, Wallet, Check, ChevronRight } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
 import ReferEarnSkeleton from "./ReferEarnSkeleton";
@@ -121,7 +121,9 @@ export default function ReferEarnPage() {
         {/* Breadcrumbs */}
         <div className="mb-6 flex items-center gap-2 text-xs text-[#5a4044] dark:text-neutral-400">
           <span>{t("home")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-[#5a4044]/60 dark:text-neutral-500" />
           <span>{t("settings")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-[#5a4044]/60 dark:text-neutral-500" />
           <span className="font-semibold text-[#191c1d] dark:text-neutral-200">
             {t("referrals")}
           </span>
@@ -135,7 +137,7 @@ export default function ReferEarnPage() {
                 <Gift className="h-8 w-8 text-pink-600 dark:text-pink-400" />
               </div>
 
-              <h1 className="mb-5 text-2xl font-bold text-[#191c1d] dark:text-neutral-50 md:text-3xl">
+              <h1 className="mb-5 text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
                 {t("yourReferralCode")}
               </h1>
 

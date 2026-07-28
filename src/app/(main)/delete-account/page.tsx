@@ -51,7 +51,7 @@ export default function DeleteAccountPage() {
       <div className="mx-auto max-w-lg rounded-3xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-xl dark:shadow-none md:p-8">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-black text-[#f9186b] dark:text-[#c2185b] md:text-3xl">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#f9186b] dark:text-[#c2185b]">
             {t("deleteAccount")}
           </h1>
           <Link
@@ -62,7 +62,7 @@ export default function DeleteAccountPage() {
           </Link>
         </div>
 
-        <p className="mb-8 text-[16px] text-[#5a4044] dark:text-neutral-400">
+        <p className="mb-8 text-base text-[#5a4044] dark:text-neutral-400">
           {t("deleteAccountWarning")}
         </p>
 
@@ -170,7 +170,7 @@ export default function DeleteAccountPage() {
             <h3 className="mb-2 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
               {t("requestSubmitted")}
             </h3>
-            <p className="mb-6 text-[16px] text-[#5a4044] dark:text-neutral-400">
+            <p className="mb-6 text-base text-[#5a4044] dark:text-neutral-400">
               {t("deleteAccountRequestReceived")}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">

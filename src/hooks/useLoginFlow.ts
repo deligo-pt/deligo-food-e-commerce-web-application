@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  AuthError,
   buildDeviceDetails,
   sendLoginOtp,
   type LoginIdentifier,
@@ -24,7 +25,6 @@ export function useLoginFlow() {
 
   const [mode, setMode] = useState<LoginMode>("mobile");
   const [step, setStep] = useState<LoginStep>("credentials");
-  const [showReferral, setShowReferral] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showCountryMenu, setShowCountryMenu] = useState(false);
   const [language, setLanguage] = useState<"english" | "portugues">("english");
@@ -161,7 +161,16 @@ export function useLoginFlow() {
       router.refresh();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to verify OTP.";
-      if (message.includes("LIMIT_EXCEEDED") || message.toLowerCase().includes("device limit")) {
+      // Branch on the backend's stable marker (err.errorKey === "LIMIT_EXCEEDED")
+      // surfaced via AuthError — the human message ("Request limit exceeded…")
+      // is misleading copy and must not be relied on. Keep the legacy string
+      // checks only as a defensive fallback.
+      const errorKey = error instanceof AuthError ? error.errorKey : undefined;
+      const isDeviceLimit =
+        errorKey === "LIMIT_EXCEEDED" ||
+        message.includes("LIMIT_EXCEEDED") ||
+        message.toLowerCase().includes("device limit");
+      if (isDeviceLimit) {
         setPendingAction("verify");
         setShowDeviceLimitModal(true);
       } else {
@@ -216,7 +225,6 @@ export function useLoginFlow() {
   return {
     mode,
     step,
-    showReferral,
     showLanguageModal,
     showCountryMenu,
     language,
@@ -234,7 +242,6 @@ export function useLoginFlow() {
     loginHint,
     loginIdentifier,
     showDeviceLimitModal,
-    setShowReferral,
     setShowLanguageModal,
     setShowCountryMenu,
     setLanguage,

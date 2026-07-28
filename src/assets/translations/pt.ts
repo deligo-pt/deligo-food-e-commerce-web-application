@@ -68,6 +68,7 @@ const pt = {
     "Acesso à localização negado. Ative-o nas definições do seu browser.",
   couldNotDetectLocation:
     "Não foi possível detetar a sua localização. Tente novamente.",
+  geolocationNotSupported: "A geolocalização não é suportada pelo seu browser.",
 
   confirmLocation: "Confirmar Localização",
   confirmLocationDescription:
@@ -91,6 +92,22 @@ const pt = {
   work: "Trabalho",
   other: "Outro",
 
+  // Rótulos de tipo de endereço. Separados das chaves genéricas
+  // `home`/`work`/`other` porque `home` significa "página inicial" noutros
+  // sítios ("Início"), o que não serve para o sítio onde se vive.
+  addressTypeHome: "Casa",
+  addressTypeWork: "Trabalho",
+  addressTypeOther: "Outro",
+  addressTypeCurrentLocation: "Localização Atual",
+
+  customAddressTypeLabel: "Nome deste endereço",
+  customAddressTypePlaceholder: "ex.: Ginásio, Casa dos pais",
+  customAddressTypeRequired: "Indique um nome para guardar como Outro.",
+
+  addressAddedSuccess: "Endereço adicionado com sucesso!",
+  addressUpdatedSuccess: "Endereço atualizado com sucesso!",
+  addressNotLoaded: "Endereço ainda não carregado. Tente novamente.",
+
   streetAddress: "Endereço *",
   enterStreetAddress: "Digite o endereço",
 
@@ -101,10 +118,13 @@ const pt = {
   enterCity: "Digite a cidade",
 
   postalCode: "Código Postal *",
+  enterPostalCode: "Introduza o código postal",
 
   stateRegion: "Estado / Região",
+  enterStateRegion: "Introduza o estado / região",
 
   country: "País",
+  enterCountry: "Introduza o país",
 
   gpsCoordinates: "Coordenadas GPS",
 
@@ -123,28 +143,33 @@ const pt = {
   yourCartIsEmpty: "Seu carrinho está vazio",
 
   addProductsToContinue: "Adicione alguns produtos para continuar.",
-  active: "Ativo",
-  inactive: "Inativo",
-
   sku: "SKU",
 
-  setAsActive: "Definir como Ativo",
-  setAsInactive: "Definir como Inativo",
+  // Seleção de loja no carrinho. Só é possível finalizar a compra de uma loja de
+  // cada vez, por isso a seleção é ao nível da loja — os produtos individuais não
+  // podem ser ativados nem desativados, apenas removidos.
+  selectStoreForCheckout: "Selecionar para Finalizar",
+  storeSelectedForCheckout: "Selecionado para Finalizar",
+  storeSelected: "Selecionado",
+  storeNotSelected: "Não selecionado",
+  showProducts: "Mostrar produtos",
+  hideProducts: "Ocultar produtos",
+  selectStoreToCheckout: "Selecione esta loja para finalizar a compra",
+  storeSelectedToast: "\"{store}\" selecionado para finalizar a compra",
+  storeDeselectedToast: "\"{store}\" desselecionado",
+  couldNotChangeStoreSelection: "Não foi possível alterar a seleção da loja",
 
   remove: "Remover",
 
   qty: "Qtd",
 
   removeFromCart: "Remover",
+  removeFromCartConfirm:
+    "Tem a certeza de que pretende remover \u201c{product}\u201d do seu carrinho?",
   new: "Novo",
 
   goToCheckout: "Ir para Checkout",
 
-  activateAtLeastOneProduct:
-    "Ative pelo menos um produto para finalizar a compra",
-
-  cannotCheckoutNoActiveItems:
-    "Não é possível finalizar a compra: não há produtos ativos nesta loja. Ative pelo menos um produto.",
   back: "Voltar",
 
   reviewYourCart: "Revise Seu Carrinho",
@@ -165,6 +190,7 @@ const pt = {
   productDiscount: "Desconto do Produto",
   tax: "Imposto",
   taxIncl: "Imposto (incl.)",
+  withoutDiscount: "sem desconto",
   incl: "incl.",
   inclTax: "Incl. imposto",
   finalPrice: "Preço Final",
@@ -191,6 +217,8 @@ const pt = {
   distanceAndTime: "Distância e Tempo",
   deliveryDistance: "Distância de entrega",
   estimatedTime: "Tempo estimado",
+  selectDeliveryAddress: "Selecionar endereço de entrega",
+  failedToChangeAddress: "Falha ao alterar o endereço de entrega",
 
   yourOrder: "Seu Pedido",
   addMoreItems: "Adicionar mais itens",
@@ -213,6 +241,8 @@ const pt = {
   enterVoucherCode: "Digite o código promocional",
   apply: "Aplicar",
   applying: "A aplicar...",
+  removingVoucher: "A remover...",
+  failedToRemoveVoucher: "Não foi possível remover o voucher. Tente novamente.",
   availableOffers: "Ofertas Disponíveis",
   noOffersAvailable: "Não há ofertas disponíveis para este pedido",
   offerDiscount: "Desconto de Oferta",
@@ -311,6 +341,7 @@ const pt = {
   locationNotAvailable: "Localização indisponível",
 
   closedNow: "Fechado agora",
+  currentlyClosed: "Fechado de Momento",
   hoursNotSet: "Horário não definido",
 
   preparationTime: "Tempo de Preparação",
@@ -368,6 +399,7 @@ const pt = {
   referralsDescription: "Ganhe recompensas ao convidar amigos para o DeliGo",
 
   savedAddresses: "Endereços Guardados",
+  manageAddresses: "Gerir Moradas",
   favoriteOrders: "Pedidos Favoritos",
 
   accountSettings: "Definições da Conta",
@@ -390,6 +422,9 @@ const pt = {
   required: "obrigatório",
   chooseUpTo: "Escolha até",
   selectRequiredAddons: "Selecione as opções obrigatórias",
+  increaseQuantity: "Aumentar quantidade",
+  decreaseQuantity: "Diminuir quantidade",
+  failedToUpdateAddon: "Falha ao atualizar o complemento",
 
   noAddressSaved: "Nenhum endereço guardado",
 
@@ -452,6 +487,19 @@ const pt = {
   invoiceDownloaded: "Fatura descarregada",
   invoiceDownloadFailed: "Não foi possível descarregar a fatura",
 
+  reorder: "Encomendar Novamente",
+  reorderAddedToCart: "Artigos adicionados ao seu carrinho",
+  reorderFailed: "Não foi possível encomendar estes artigos novamente",
+
+  storeClosedTitle: "Este restaurante está fechado",
+  storeClosedNotice: "Pode consultar o menu, mas não é possível encomendar até reabrir.",
+  storeClosedCannotOrder: "Este restaurante está fechado neste momento — ainda não pode encomendar.",
+
+  closingSoon: "Estamos a Fechar em Breve",
+  orderWithin: "Peça em",
+  minShort: "min",
+  secShort: "seg",
+
   orderStatus: "Estado do Pedido",
 
   support: "Suporte",
@@ -464,6 +512,9 @@ const pt = {
   recenterMap: "Centrar Mapa",
   cancelled: "Cancelado",
   rejected: "Rejeitado",
+  location: "Localização",
+  orderWasCancelled: "O pedido foi cancelado",
+  orderWasRejected: "O pedido foi rejeitado pelo restaurante",
   orderHasBeenDelivered: "O pedido foi entregue",
   riderIsHeadingToYourLocation: "O estafeta está a caminho da sua localização",
 
@@ -486,7 +537,18 @@ const pt = {
   riderHeadingLocation: "O estafeta está a caminho da sua localização",
 
   orderDelivered: "O pedido foi entregue",
+
+  refundInProgress: "Reembolso Em Progresso",
+  refundInProgressDescription:
+    "O seu pagamento está a ser reembolsado. Pode demorar 3 a 5 dias úteis.",
+  refundCompleted: "Reembolso Concluído",
+  refundCompletedDescription:
+    "O seu pagamento foi reembolsado com sucesso para a sua conta.",
+
   paid: "PAGO",
+  refunded: "REEMBOLSADO",
+  paymentPending: "PENDENTE",
+  failed: "FALHOU",
 
   creditDebitCard: "Cartão de Crédito/Débito",
   visaMastercardMaestro: "Visa, Mastercard, Maestro",
@@ -498,7 +560,7 @@ const pt = {
   oneTapCheckout: "Pagamento com um toque",
 
   otherMethods: "Outros Métodos",
-  paypalGooglePayEtc: "PayPal, Google Pay, etc.",
+  otherMethodsSubtitle: "MB WAY, PayPal, etc.",
 
   recommended: "Recomendado",
 
@@ -649,7 +711,7 @@ const pt = {
 
   loadingAddresses: "A carregar moradas...",
 
-  primary: "PRINCIPAL",
+  active: "ATIVO",
 
   noSavedAddressesFound: "Nenhuma morada guardada encontrada.",
   vouchersDescription:
@@ -681,9 +743,7 @@ const pt = {
   selectCountryCode: "Selecionar código do país",
   chooseCountryAndDialCode: "Escolha o seu país e código de marcação",
 
-  enterReferralCode: "Introduza o código de referência",
-
-  haveReferralCode: "Tem um código de referência?",
+  referralCodeOptional: "Código de referência (opcional)",
 
   sendingOtp: "A enviar OTP...",
 
@@ -709,7 +769,6 @@ const pt = {
     "Atingiu o número máximo de dispositivos permitidos. Pretende remover uma sessão existente e iniciar sessão neste dispositivo?",
 
   removeSession: "Remover",
-  removeReferralCode: "Remove",
   portugues: "Português",
   footerDescription:
     "𝗗𝗲𝗹𝗶𝗚𝗼 é 𝘂𝗺𝗮 𝗽𝗹𝗮𝘁𝗮𝗳𝗼𝗿𝗺𝗮 𝘁𝗲𝗰𝗻𝗼𝗹ó𝗴𝗶𝗰𝗮 𝗱𝗲 𝗺𝗲𝗿𝗰𝗮𝗱𝗼 𝗾𝘂𝗲 𝗹𝗶𝗴𝗮 𝗰𝗹𝗶𝗲𝗻𝘁𝗲𝘀, 𝗲𝘀𝘁𝗮𝗯𝗲𝗹𝗲𝗰𝗶𝗺𝗲𝗻𝘁𝗼𝘀 𝗰𝗼𝗺𝗲𝗿𝗰𝗶𝗮𝗶𝘀 𝗲 𝗲𝘀𝘁𝗮𝗳𝗲𝘁𝗮𝘀 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁𝗲𝘀.",
@@ -1405,7 +1464,7 @@ const pt = {
     "Modelos de ganhos flexíveis alinhados com as necessidades individuais.",
 
   // --- Phase 1: static UI copy (Issue_solve_plan.md) ---
-  popular: "POPULAR",
+  featured: "EM DESTAQUE",
   continueButton: "Continuar",
   deleteLabel: "Eliminar",
   deleteAddress: "Eliminar Endereço",
@@ -1442,8 +1501,6 @@ const pt = {
     "Pode explorar o mapa e escolher uma localização, mas precisa de",
   notSignedInSaveSuffix: "para guardar o seu endereço.",
   logInLink: "iniciar sessão",
-  editModePrimaryNote:
-    "Nota: O modo de edição atualiza o endereço PRINCIPAL independentemente do tipo selecionado.",
 
   // --- Phase 3: toasts, errors, empty/loading & route messages ---
   locationNotDetected: "Localização ainda não detetada. Aguarde ou utilize o GPS.",
@@ -1471,12 +1528,17 @@ const pt = {
   failedToShareReferralCode: "Falha ao partilhar o código de referência",
   pleaseLogInToAddToCart: "Inicie sessão para adicionar itens ao seu carrinho.",
   itemAddedToCart: "Item adicionado ao carrinho com sucesso!",
+  failedToAddToCart: "Não foi possível ler o seu carrinho. Tente novamente.",
   vendorInfoMissing: "Informação do vendedor em falta",
   provideAtLeastOneRating: "Forneça pelo menos uma avaliação.",
   currentLocationLoadedOnMap: "Localização atual carregada no mapa.",
   addressNotFound: "Endereço não encontrado",
   pleaseLogInToSearch: "Inicie sessão para pesquisar.",
   failedToLoadSearchResults: "Falha ao carregar os resultados da pesquisa.",
+  sortRelevance: "Relevância",
+  sortDistance: "Distância",
+  sortRating: "Avaliação",
+  sortPrice: "Preço",
   noCheckoutIdProvided: "Nenhum ID de finalização fornecido",
   failedToCreateOrder: "Falha ao criar a encomenda.",
   failedToLoadProfile: "Falha ao carregar o perfil",
@@ -1494,10 +1556,9 @@ const pt = {
   loading: "A carregar...",
   loadingSearch: "A carregar pesquisa...",
   markAllAsRead: "Marcar tudo como lido",
-  profileAddress: "Endereço do Perfil",
   deliveryAddresses: "Endereços de Entrega",
-  primaryAddressUpdated: "Endereço principal atualizado com sucesso",
-  failedToUpdatePrimaryAddress: "Falha ao atualizar o endereço principal",
+  activeAddressUpdated: "Endereço ativo atualizado com sucesso",
+  failedToUpdateActiveAddress: "Falha ao atualizar o endereço ativo",
   addressDeleted: "Endereço eliminado com sucesso",
   failedToDeleteAddress: "Falha ao eliminar o endereço",
 
@@ -1508,6 +1569,32 @@ const pt = {
   securityPrivacyInnovation: "Segurança, Privacidade e Inovação",
   questionsLabel: "Perguntas",
   deligoTagline: "DeliGo – A Entregar Conveniência, a Capacitar Comunidades.",
+
+  // --- Fatura PDF (src/lib/invoice.ts) ---
+  invoiceTitle: "Fatura",
+  invoiceTagline: "Entrega de comida rápida e fiável",
+  invoiceOrderId: "N.º da Encomenda",
+  invoiceDate: "Data",
+  invoiceShippedTo: "Morada de entrega",
+  invoicePayment: "Pagamento",
+  invoiceNo: "N.º",
+  invoiceItem: "Artigo",
+  invoiceQty: "Qtd.",
+  invoicePrice: "Preço",
+  invoiceTotal: "Total",
+  invoiceTotalPrice: "Preço Total",
+  invoiceDiscount: "Desconto",
+  invoiceSubtotal: "Subtotal (IVA incl.)",
+  invoiceOfferDiscount: "Desconto promocional",
+  invoiceServiceFee: "Taxa de Serviço",
+  invoiceDeliveryFee: "Taxa de entrega (IVA incl.)",
+  invoicePay: "A Pagar",
+  invoiceAddress: "Morada",
+  invoicePhone: "Telefone",
+  invoiceEmail: "Email",
+  invoiceWebsite: "Website",
+  invoicePageOf: "Página {page} de {total}",
+  invoiceFilePrefix: "fatura",
 };
 
 export default pt;

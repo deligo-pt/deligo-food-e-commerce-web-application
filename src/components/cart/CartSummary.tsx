@@ -88,8 +88,9 @@ export default function CartSummary({
 
       {/* Footer */}
       <div className="border-t border-gray-100 p-6">
-        <button className="w-full rounded-2xl bg-[#f9186b] py-4 text-lg font-semibold text-white transition-all hover:bg-[#d4145b]">
-          {t("proceedToCheckout")}
+        <button className="cart-cta relative w-full overflow-hidden rounded-2xl bg-[#f9186b] py-4 text-lg font-semibold text-white transition-all hover:bg-[#d4145b]">
+          <span className="cart-cta-shine" aria-hidden="true" />
+          <span className="relative z-10">{t("proceedToCheckout")}</span>
         </button>
       </div>
     </div>

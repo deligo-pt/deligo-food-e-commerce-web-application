@@ -2,6 +2,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   Minus,
@@ -14,10 +15,17 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
+import Loader from "@/components/shared/Loader";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
-import { getCartVendorId, resolveAddonName } from "@/lib/cart";
+import {
+  getCartVendorId,
+  getLineOriginalPrice,
+  getLineTaxForQuantity,
+  getLineTotalForQuantity,
+  resolveAddonName,
+} from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { useCartStore } from "@/stores/cartStore";
@@ -28,17 +36,51 @@ interface CheckoutPageProps {
   vendorId: string;
 }
 
+// Recomputes an add-on line for a new quantity. Add-ons are tax-inclusive and
+// carry their own rate, so the VAT is extracted from the gross rather than
+// added on top — mirroring the backend's per-add-on figures.
+function addonLineValues(addon: any, qty: number) {
+  const lineTotal = (addon.unitPrice || 0) * qty;
+  const rate = addon.taxRate ?? 0;
+  const taxAmount = lineTotal - lineTotal / (1 + rate / 100);
+  return { lineTotal, taxAmount };
+}
+
+// Flat sum of an add-ons array's gross total and embedded VAT. Add-ons are NOT
+// multiplied by the product quantity — each carries its own quantity.
+function sumAddons(addons: any[] | undefined | null) {
+  if (!addons?.length) return { total: 0, tax: 0 };
+  return addons.reduce(
+    (acc, a) => {
+      acc.total += a.lineTotal || 0;
+      acc.tax += a.taxAmount || 0;
+      return acc;
+    },
+    { total: 0, tax: 0 },
+  );
+}
+
 export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const { t } = useTranslation();
   const lang = useStore((s) => s.lang);
   const router = useRouter();
   const [cart, setCart] = useState<CartResponse | null>(null);
+  // Mirrors the latest optimistic cart so a debounced add-on sync can read the
+  // current product-line quantity (add-to-cart SETs it) without capturing a
+  // stale render's closure.
+  const cartRef = useRef<CartResponse | null>(null);
   const [deletingItem, setDeletingItem] = useState<string | null>(null);
 
   // Absolute target quantity per cart line while a debounced sync is pending.
   const pendingQtyRef = useRef<Record<string, number>>({});
   const syncTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
   const isSyncingRef = useRef<Record<string, boolean>>({});
+
+  // The same debounce/optimistic machinery for add-on quantities, keyed by
+  // line + add-on sku so one line's add-ons don't collide with another's.
+  const pendingAddonQtyRef = useRef<Record<string, number>>({});
+  const addonSyncTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const addonIsSyncingRef = useRef<Record<string, boolean>>({});
   const [instructions, setInstructions] = useState("");
   const [isProceeding, setIsProceeding] = useState(false);
 
@@ -75,27 +117,52 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       const key = cartItem.productId + "_" + (cartItem.variationSku || "default");
       const pendingQty = pendingQtyRef.current[key];
 
-      if (pendingQty === undefined) return cartItem;
+      // Re-apply any pending add-on quantities so an in-flight add-on edit
+      // survives a refetch (dropping lines the user zeroed out).
+      let addons = cartItem.addons;
+      let addonsChanged = false;
+      if (addons?.length) {
+        const mapped = addons
+          .map((a) => {
+            const aKey = key + "_" + a.sku;
+            const target = pendingAddonQtyRef.current[aKey];
+            if (target === undefined || target === a.quantity) return a;
+            addonsChanged = true;
+            return { ...a, quantity: target, ...addonLineValues(a, target) };
+          })
+          .filter((a) => a.quantity > 0);
+        if (mapped.length !== addons.length) addonsChanged = true;
+        addons = mapped;
+      }
+
+      if (pendingQty === undefined && !addonsChanged) return cartItem;
 
       const pricing = cartItem.productPricing;
-      const newQty = Math.max(1, pendingQty);
+      const newQty = pendingQty === undefined
+        ? cartItem.itemSummary.quantity
+        : Math.max(1, pendingQty);
 
       const newTotalProductDiscount = pricing.productDiscountAmount * newQty;
-      // Prices are tax-inclusive: unitPrice is the gross per-unit price and the
-      // grandTotal already contains the VAT, so scale the gross line total and
-      // extract the embedded tax rather than adding it on top.
-      const newGrandTotal = pricing.unitPrice * newQty;
-      const newTotalTaxAmount =
-        newGrandTotal - newGrandTotal / (1 + pricing.taxRate / 100);
+      // Prices are tax-inclusive: the gross line total already contains the VAT,
+      // so scale the line and extract the embedded tax rather than adding it on
+      // top. Only the product's share scales with quantity — add-ons carry their
+      // own — so the line is rebuilt from `grandTotal`, not `unitPrice * qty`.
+      // Isolate the product's share from the *original* add-ons, then re-add the
+      // (possibly edited) add-ons, so quantity and add-on edits compose.
+      const origAddons = sumAddons(cartItem.addons);
+      const productGross = getLineTotalForQuantity(cartItem, newQty) - origAddons.total;
+      const productTax = getLineTaxForQuantity(cartItem, newQty) - origAddons.tax;
+      const nextAddons = sumAddons(addons);
 
       return {
         ...cartItem,
+        addons,
         itemSummary: {
           ...cartItem.itemSummary,
           quantity: newQty,
           totalProductDiscount: newTotalProductDiscount,
-          totalTaxAmount: newTotalTaxAmount,
-          grandTotal: newGrandTotal,
+          totalTaxAmount: productTax + nextAddons.tax,
+          grandTotal: productGross + nextAddons.total,
         },
       };
     });
@@ -121,9 +188,15 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   }, [cartData, applyPendingUpdates]);
 
   useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
+
+  useEffect(() => {
     const timeouts = syncTimeoutRef.current;
+    const addonTimeouts = addonSyncTimeoutRef.current;
     return () => {
       Object.values(timeouts).forEach(clearTimeout);
+      Object.values(addonTimeouts).forEach(clearTimeout);
     };
   }, []);
   const vendorItems = useMemo(() => {
@@ -137,8 +210,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const summary = useMemo(() => {
     return vendorItems.reduce(
       (acc, item) => {
-        acc.originalPrice +=
-          item.productPricing.originalPrice * item.itemSummary.quantity;
+        // Includes the line's add-ons, matching the basis `grandTotal` (and the
+        // backend's totalOriginalPrice) uses. Without them "Total Price -
+        // Discount" comes out short of the amount actually due.
+        acc.originalPrice += getLineOriginalPrice(item);
         acc.discount += item.itemSummary.totalProductDiscount;
         acc.tax += item.itemSummary.totalTaxAmount;
         acc.total += item.itemSummary.grandTotal;
@@ -220,10 +295,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         if (itemKey === key) {
           const pricing = cartItem.productPricing;
           const newTotalProductDiscount = pricing.productDiscountAmount * newQty;
-          // Tax-inclusive: scale the gross line total and extract embedded VAT.
-          const newGrandTotal = pricing.unitPrice * newQty;
-          const newTotalTaxAmount =
-            newGrandTotal - newGrandTotal / (1 + pricing.taxRate / 100);
+          // Tax-inclusive. Only the product's share scales with quantity —
+          // add-ons carry their own — so rebuild the line from `grandTotal`
+          // rather than `unitPrice * qty`, and keep each add-on's own VAT rate.
+          const newGrandTotal = getLineTotalForQuantity(cartItem, newQty);
+          const newTotalTaxAmount = getLineTaxForQuantity(cartItem, newQty);
 
           return {
             ...cartItem,
@@ -254,6 +330,127 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     // 2. Record the absolute target quantity and queue the debounced sync
     pendingQtyRef.current[key] = newQty;
     triggerSync(key, item);
+  };
+
+  const executeAddonSync = async (aKey: string, item: any, addon: any) => {
+    const targetQty = pendingAddonQtyRef.current[aKey];
+    if (targetQty === undefined) return;
+
+    delete addonSyncTimeoutRef.current[aKey];
+    addonIsSyncingRef.current[aKey] = true;
+    delete pendingAddonQtyRef.current[aKey];
+
+    try {
+      // add-to-cart is the add-on write path now (update-addon-quantity is
+      // retired). It SETs each add-on's absolute quantity (0 removes it), MERGES
+      // by optionSku so untouched add-ons on the line survive, and SETs the
+      // product-line quantity — which is [Required] — so we must resend the
+      // line's current quantity (a pending qty edit, else the live cart value)
+      // to avoid resetting it.
+      const key = item.productId + "_" + (item.variationSku || "default");
+      const liveItem = cartRef.current?.items.find(
+        (ci) => ci.productId + "_" + (ci.variationSku || "default") === key,
+      );
+      const productQty = Math.max(
+        1,
+        pendingQtyRef.current[key] ??
+          liveItem?.itemSummary?.quantity ??
+          item.itemSummary?.quantity ??
+          1,
+      );
+
+      const payload: any = {
+        items: [
+          {
+            productId: item.productId,
+            quantity: productQty,
+            addons: [{ optionSku: addon.sku, quantity: targetQty }],
+          },
+        ],
+      };
+      if (item.variationSku) {
+        payload.items[0].variationSku = item.variationSku;
+      }
+
+      await apiClient.post("/carts/add-to-cart", payload);
+
+      await refetchCart();
+      useCartStore.getState().fetchCart();
+    } catch (error) {
+      // The backend enforces each add-on group's max (e.g. "You can select a
+      // maximum of 2 items for Cheese"); surface its message and revert the
+      // optimistic bump via the refetch below.
+      toast.error(getApiErrorMessage(error, t("failedToUpdateAddon")));
+      await refetchCart();
+    } finally {
+      addonIsSyncingRef.current[aKey] = false;
+      if (pendingAddonQtyRef.current[aKey] !== undefined) {
+        triggerAddonSync(aKey, item, addon);
+      }
+    }
+  };
+
+  const triggerAddonSync = (aKey: string, item: any, addon: any) => {
+    if (addonIsSyncingRef.current[aKey]) return;
+
+    if (addonSyncTimeoutRef.current[aKey]) {
+      clearTimeout(addonSyncTimeoutRef.current[aKey]);
+    }
+
+    addonSyncTimeoutRef.current[aKey] = setTimeout(() => {
+      executeAddonSync(aKey, item, addon);
+    }, 400);
+  };
+
+  const updateAddonQuantity = (
+    item: any,
+    addon: any,
+    action: "increment" | "decrement",
+  ) => {
+    const key = item.productId + "_" + (item.variationSku || "default");
+    const aKey = key + "_" + addon.sku;
+    const newAddonQty = addon.quantity + (action === "increment" ? 1 : -1);
+    // Zero removes the add-on (the API drops it); never go negative.
+    if (newAddonQty < 0) return;
+
+    setCart((prevCart) => {
+      if (!prevCart) return null;
+      const updatedItems = prevCart.items.map((cartItem) => {
+        const itemKey =
+          cartItem.productId + "_" + (cartItem.variationSku || "default");
+        if (itemKey !== key) return cartItem;
+
+        // Isolate the product's share from the *current* add-ons, then swap in
+        // the edited add-ons (dropping any zeroed out) and re-add their totals.
+        const curAddons = sumAddons(cartItem.addons);
+        const productGross = cartItem.itemSummary.grandTotal - curAddons.total;
+        const productTax = cartItem.itemSummary.totalTaxAmount - curAddons.tax;
+
+        const nextAddonsList = (cartItem.addons || [])
+          .map((a) =>
+            a.sku === addon.sku
+              ? { ...a, quantity: newAddonQty, ...addonLineValues(a, newAddonQty) }
+              : a,
+          )
+          .filter((a) => a.quantity > 0);
+        const nextAddons = sumAddons(nextAddonsList);
+
+        return {
+          ...cartItem,
+          addons: nextAddonsList,
+          itemSummary: {
+            ...cartItem.itemSummary,
+            totalTaxAmount: productTax + nextAddons.tax,
+            grandTotal: productGross + nextAddons.total,
+          },
+        };
+      });
+
+      return { ...prevCart, items: updatedItems };
+    });
+
+    pendingAddonQtyRef.current[aKey] = newAddonQty;
+    triggerAddonSync(aKey, item, addon);
   };
 
   const deleteItem = async (item: any) => {
@@ -302,11 +499,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8f9fa] dark:bg-neutral-950">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
-      </div>
-    );
+    return <Loader fullScreen />;
   }
 
   if (error) {
@@ -326,7 +519,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-      <h1 className="text-4xl font-extrabold text-gray-900 dark:text-neutral-50">
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-neutral-50">
         {t("reviewYourCart")}
       </h1>
       <p className="mt-2 text-gray-500 dark:text-neutral-400">{t("completeOrderDetails")}</p>
@@ -359,6 +552,16 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 </div>
               </div>
             </div>
+
+            {vendor?.userId && (
+              <Link
+                href={`/vendors/${vendor.userId}`}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-[#f9186b] px-5 py-2.5 text-sm font-semibold text-[#f9186b] transition-colors hover:bg-[#f9186b] hover:text-white dark:border-pink-500 dark:text-pink-400 dark:hover:bg-pink-600 dark:hover:text-white"
+              >
+                <Plus size={16} />
+                {t("addMoreItems")}
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -398,18 +601,49 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                             </p>
                           )}
                           {item.addons && item.addons.length > 0 && (
-                            <ul className="mt-2 space-y-1">
+                            <ul className="mt-3 space-y-2">
                               {item.addons.map((addon) => (
                                 <li
                                   key={addon.sku}
-                                  className="flex items-center gap-2 text-sm text-gray-500 dark:text-neutral-400"
+                                  className="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-neutral-800/50 px-3 py-2"
                                 >
-                                  <span className="text-[#f9186b] dark:text-pink-400">+</span>
-                                  <span>
-                                    {resolveAddonName(addon.name, lang)}
-                                    {addon.quantity > 1 ? ` ×${addon.quantity}` : ""}
+                                  <div className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm font-medium text-gray-700 dark:text-neutral-300">
+                                      <span className="text-[#f9186b] dark:text-pink-400">+ </span>
+                                      {resolveAddonName(addon.name, lang)}
+                                    </span>
+                                    <span className="text-xs text-gray-400 dark:text-neutral-500">
+                                      €{addon.unitPrice.toFixed(2)} × {addon.quantity}
+                                    </span>
+                                  </div>
+                                  <div className="flex shrink-0 items-center rounded-full border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                                    <button
+                                      type="button"
+                                      aria-label={t("decreaseQuantity")}
+                                      onClick={() => updateAddonQuantity(item, addon, "decrement")}
+                                      className="flex h-7 w-7 items-center justify-center rounded-full text-gray-500 dark:text-neutral-400 transition hover:bg-gray-100 dark:hover:bg-neutral-800 active:scale-90"
+                                    >
+                                      {addon.quantity <= 1 ? (
+                                        <Trash2 size={13} />
+                                      ) : (
+                                        <Minus size={13} />
+                                      )}
+                                    </button>
+                                    <span className="w-6 text-center text-sm font-bold text-gray-900 dark:text-neutral-50">
+                                      {addon.quantity}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      aria-label={t("increaseQuantity")}
+                                      onClick={() => updateAddonQuantity(item, addon, "increment")}
+                                      className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f9186b] text-white transition hover:bg-[#d4145b] active:scale-90"
+                                    >
+                                      <Plus size={13} />
+                                    </button>
+                                  </div>
+                                  <span className="w-14 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-neutral-50">
+                                    €{addon.lineTotal.toFixed(2)}
                                   </span>
-                                  <span className="ml-auto">€{addon.lineTotal.toFixed(2)}</span>
                                 </li>
                               ))}
                             </ul>
@@ -447,13 +681,15 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                           </button>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-400 dark:text-neutral-500 line-through">
-                            €
-                            {(
-                              item.productPricing.originalPrice *
-                              item.itemSummary.quantity
-                            ).toFixed(2)}
-                          </p>
+                          {/* Only a genuine saving gets a strikethrough, and it
+                              compares like with like — both sides include the
+                              line's add-ons. */}
+                          {getLineOriginalPrice(item) >
+                            item.itemSummary.grandTotal + 0.005 && (
+                            <p className="text-sm text-gray-400 dark:text-neutral-500 line-through">
+                              €{getLineOriginalPrice(item).toFixed(2)}
+                            </p>
+                          )}
                           <p className="text-2xl font-bold text-[#f9186b] dark:text-pink-400">
                             €{item.itemSummary.grandTotal.toFixed(2)}
                           </p>
@@ -524,9 +760,16 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               <button
                 onClick={handleProceedToCheckout}
                 disabled={isProceeding || vendorItems.length === 0}
-                className="w-full rounded-2xl bg-[#f9186b] py-4 text-lg font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
+                className={`relative w-full overflow-hidden rounded-2xl bg-[#f9186b] py-4 text-lg font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500 ${
+                  !isProceeding && vendorItems.length > 0 ? "cart-cta" : ""
+                }`}
               >
-                {isProceeding ? t("processing") : t("proceedToCheckout")}
+                {!isProceeding && vendorItems.length > 0 && (
+                  <span className="cart-cta-shine" aria-hidden="true" />
+                )}
+                <span className="relative z-10">
+                  {isProceeding ? t("processing") : t("proceedToCheckout")}
+                </span>
               </button>
               <p className="mt-3 text-center text-xs text-gray-400 dark:text-neutral-500">
                 {t("termsAndConditions")}

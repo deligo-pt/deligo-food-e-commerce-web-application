@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
+import type { AddressType } from "@/lib/addressType";
 
 export interface DeliveryAddressPayload {
   street: string;
@@ -9,7 +10,17 @@ export interface DeliveryAddressPayload {
   longitude: number;
   latitude: number;
   geoAccuracy?: number;
-  addressType: "HOME" | "OFFICE" | "OTHER";
+  addressType: AddressType;
+  /**
+   * Required, and must be non-empty, whenever `addressType` is `OTHER` — the
+   * API rejects the save otherwise:
+   *   path: deliveryAddress.customAddressType
+   *   "Please provide a custom address type when selecting "Other" as the
+   *    address type"
+   * Ignored for the other types; switching an address away from OTHER clears it
+   * server-side.
+   */
+  customAddressType?: string;
   detailedAddress?: string;
   notes?: string;
 }
@@ -54,9 +65,20 @@ export async function updateLiveLocation(
   return response.data;
 }
 
+/**
+ * `addressType` is optional on update. Older records are stored with the
+ * retired type `PRIMARY`, and the API rejects any attempt to move one off it
+ * ("The primary address type cannot be modified."). Omitting the field leaves
+ * the stored type untouched, so the rest of the address stays editable.
+ */
+export type UpdateDeliveryAddressPayload = Omit<
+  DeliveryAddressPayload,
+  "addressType"
+> & { addressType?: AddressType };
+
 export async function updateDeliveryAddress(
   addressId: string,
-  data: DeliveryAddressPayload
+  data: UpdateDeliveryAddressPayload
 ) {
   const response = await apiClient.patch(
     `/customers/update-delivery-address/${addressId}`,

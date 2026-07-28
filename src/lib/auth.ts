@@ -1,3 +1,4 @@
+import axios from "axios";
 import { apiClient, getApiErrorMessage } from "./apiClient";
 
 export type LoginIdentifier = {
@@ -34,7 +35,29 @@ type ApiErrorResponse = {
   success?: boolean;
   message?: string;
   errorSources?: Array<{ path?: string; message?: string }>;
+  // The backend attaches a stable, non-localized marker here (e.g.
+  // "LIMIT_EXCEEDED" for the device limit). The human `message` is unreliable
+  // to branch on, so callers should key off `err.errorKey` instead.
+  err?: { statusCode?: number; errorKey?: string };
 };
+
+// Error thrown by the auth requests that preserves the backend's machine
+// marker (`errorKey`) and HTTP status alongside the display message, so flows
+// like the device-limit modal can branch on the stable key rather than the
+// localized/free-text message.
+export class AuthError extends Error {
+  errorKey?: string;
+  statusCode?: number;
+  constructor(
+    message: string,
+    options?: { errorKey?: string; statusCode?: number },
+  ) {
+    super(message);
+    this.name = "AuthError";
+    this.errorKey = options?.errorKey;
+    this.statusCode = options?.statusCode;
+  }
+}
 
 const deviceStorageKey = "deligo-device-id";
 
@@ -99,11 +122,27 @@ async function requestJson<T>(url: string, body: unknown): Promise<T> {
     const response = await apiClient.post<T>(url, body);
     const payload = response.data as T & ApiErrorResponse;
     if (payload && typeof payload === "object" && "success" in payload && payload.success === false) {
-      throw new Error(payload.message || payload.errorSources?.[0]?.message || "Request failed");
+      // 2xx body that still reports failure — surface its errorKey too.
+      throw new AuthError(
+        payload.message || payload.errorSources?.[0]?.message || "Request failed",
+        { errorKey: payload.err?.errorKey, statusCode: payload.err?.statusCode },
+      );
     }
     return response.data;
   } catch (error) {
-    throw new Error(getApiErrorMessage(error));
+    if (error instanceof AuthError) throw error;
+    // A non-2xx (e.g. 403 device limit) rejects here as an AxiosError; the
+    // stable marker lives in error.response.data.err.errorKey. Preserve it so
+    // callers can branch on the key instead of the free-text message.
+    const data = axios.isAxiosError(error)
+      ? (error.response?.data as ApiErrorResponse | undefined)
+      : undefined;
+    throw new AuthError(getApiErrorMessage(error), {
+      errorKey: data?.err?.errorKey,
+      statusCode:
+        data?.err?.statusCode ??
+        (axios.isAxiosError(error) ? error.response?.status : undefined),
+    });
   }
 }
 

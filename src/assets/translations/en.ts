@@ -61,6 +61,7 @@ const en = {
   locationAccessDenied:
     "Location access denied. Please enable it in your browser settings.",
   couldNotDetectLocation: "Could not detect your location. Please try again.",
+  geolocationNotSupported: "Geolocation is not supported by your browser.",
 
   confirmLocation: "Confirm Location",
   confirmLocationDescription:
@@ -83,6 +84,24 @@ const en = {
   work: "Work",
   other: "Other",
 
+  // Address-type labels. Kept separate from the generic `home`/`work`/`other`
+  // keys because `home` means "homepage" elsewhere (pt: "Início"), which is the
+  // wrong word for a place you live.
+  addressTypeHome: "Home",
+  addressTypeWork: "Work",
+  addressTypeOther: "Other",
+  addressTypeCurrentLocation: "Current Location",
+
+  // Shown only when "Other" is chosen. The API requires a non-empty
+  // `customAddressType` for OTHER and rejects the save without one.
+  customAddressTypeLabel: "Name this address",
+  customAddressTypePlaceholder: "e.g. Gym, Parents' house",
+  customAddressTypeRequired: "Name this address to save it as Other.",
+
+  addressAddedSuccess: "Address added successfully!",
+  addressUpdatedSuccess: "Address updated successfully!",
+  addressNotLoaded: "Address not loaded yet. Please try again.",
+
   streetAddress: "Street Address *",
   enterStreetAddress: "Enter street address",
 
@@ -93,10 +112,13 @@ const en = {
   enterCity: "Enter city",
 
   postalCode: "Postal Code *",
+  enterPostalCode: "Enter postal code",
 
   stateRegion: "State / Region",
+  enterStateRegion: "Enter state / region",
 
   country: "Country",
+  enterCountry: "Enter country",
 
   gpsCoordinates: "GPS Coordinates",
 
@@ -115,27 +137,33 @@ const en = {
   yourCartIsEmpty: "Your cart is empty",
 
   addProductsToContinue: "Add some products to continue.",
-  active: "Active",
-  inactive: "Inactive",
-
   sku: "SKU",
 
-  setAsActive: "Set as Active",
-  setAsInactive: "Set as Inactive",
+  // Vendor-level cart selection. Only one store's items can be checked out at a
+  // time, so selection is a store-level action — individual products cannot be
+  // activated or deactivated, only removed.
+  selectStoreForCheckout: "Select for Checkout",
+  storeSelectedForCheckout: "Selected for Checkout",
+  storeSelected: "Selected",
+  storeNotSelected: "Not selected",
+  showProducts: "Show products",
+  hideProducts: "Hide products",
+  selectStoreToCheckout: "Select this store to checkout",
+  storeSelectedToast: "\"{store}\" selected for checkout",
+  storeDeselectedToast: "\"{store}\" deselected",
+  couldNotChangeStoreSelection: "Could not change store selection",
 
   remove: "Remove",
 
   qty: "Qty",
 
   removeFromCart: "Remove",
+  removeFromCartConfirm:
+    "Are you sure you want to remove \u201c{product}\u201d from your cart?",
   new: "New",
 
   goToCheckout: "Go to Checkout",
 
-  activateAtLeastOneProduct: "Activate at least one product to checkout",
-
-  cannotCheckoutNoActiveItems:
-    "Cannot checkout: no active items in this store. Please activate at least one product.",
   back: "Back",
 
   reviewYourCart: "Review Your Cart",
@@ -155,10 +183,11 @@ const en = {
   productDiscount: "Product Discount",
   tax: "Tax",
   taxIncl: "Tax (incl.)",
+  withoutDiscount: "without discount",
   incl: "incl.",
   inclTax: "Incl. tax",
   finalPrice: "Final Price",
-  serviceCharge: "Service Fee",
+  serviceCharge: "Service Charge",
   total: "Total",
 
   deliveryInstructions: "Delivery Instructions",
@@ -180,6 +209,8 @@ const en = {
   distanceAndTime: "Distance & Time",
   deliveryDistance: "Delivery distance",
   estimatedTime: "Est. time",
+  selectDeliveryAddress: "Select delivery address",
+  failedToChangeAddress: "Failed to change delivery address",
 
   yourOrder: "Your Order",
   addMoreItems: "Add more items",
@@ -201,6 +232,8 @@ const en = {
   enterVoucherCode: "Enter voucher code",
   apply: "Apply",
   applying: "Applying...",
+  removingVoucher: "Removing...",
+  failedToRemoveVoucher: "Could not remove the voucher. Please try again.",
   availableOffers: "Available Offers",
   noOffersAvailable: "No offers available for this order",
   offerDiscount: "Offer Discount",
@@ -294,6 +327,7 @@ const en = {
   locationNotAvailable: "Location not available",
 
   closedNow: "Closed now",
+  currentlyClosed: "Currently Closed",
   hoursNotSet: "Hours not set",
 
   preparationTime: "Preparation Time",
@@ -351,6 +385,7 @@ const en = {
   referralsDescription: "Earn rewards by inviting your friends to DeliGo",
 
   savedAddresses: "Saved Addresses",
+  manageAddresses: "Manage Addresses",
   favoriteOrders: "Favorite Orders",
   accountSettings: "Account Settings",
   helpCenter: "Help Center",
@@ -370,6 +405,9 @@ const en = {
   required: "required",
   chooseUpTo: "Choose up to",
   selectRequiredAddons: "Please select the required options",
+  increaseQuantity: "Increase quantity",
+  decreaseQuantity: "Decrease quantity",
+  failedToUpdateAddon: "Failed to update add-on",
   noAddressSaved: "No address saved",
 
   manageAccountInfo: "Manage your account information and preferences",
@@ -430,6 +468,19 @@ const en = {
   invoiceDownloaded: "Invoice downloaded",
   invoiceDownloadFailed: "Could not download the invoice",
 
+  reorder: "Re-order",
+  reorderAddedToCart: "Items added to your cart",
+  reorderFailed: "Could not re-order these items",
+
+  storeClosedTitle: "This restaurant is closed",
+  storeClosedNotice: "You can browse the menu, but ordering is unavailable until it reopens.",
+  storeClosedCannotOrder: "This restaurant is closed right now — you can't order from it yet.",
+
+  closingSoon: "We're Closing Soon",
+  orderWithin: "Order within",
+  minShort: "min",
+  secShort: "sec",
+
   orderStatus: "Order Status",
 
   support: "Support",
@@ -442,6 +493,11 @@ const en = {
   recenterMap: "Recenter Map",
   cancelled: "Cancelled",
   rejected: "Rejected",
+  // Heading fallback on the Track Order delivery card when the address has no
+  // city. Without this key it rendered the literal lowercase word "location".
+  location: "Location",
+  orderWasCancelled: "Order was cancelled",
+  orderWasRejected: "Order was rejected by the restaurant",
   orderHasBeenDelivered: "Order has been delivered",
   riderIsHeadingToYourLocation: "Rider is heading to your location",
 
@@ -465,9 +521,21 @@ const en = {
 
   orderDelivered: "Order has been delivered",
 
+  refundInProgress: "Refund In Progress",
+  refundInProgressDescription:
+    "Your payment is being refunded. This may take 3–5 business days.",
+  refundCompleted: "Refund Completed",
+  refundCompletedDescription:
+    "Your payment has been successfully refunded to your account.",
+
   notAvailable: "N/A",
 
+  // Payment-status badge labels, upper-case as a set. Note `paymentFailed`
+  // already exists as the "Payment Failed" page title — a different thing.
   paid: "PAID",
+  refunded: "REFUNDED",
+  paymentPending: "PENDING",
+  failed: "FAILED",
 
   creditDebitCard: "Credit/Debit Card",
   visaMastercardMaestro: "Visa, Mastercard, Maestro",
@@ -479,7 +547,7 @@ const en = {
   oneTapCheckout: "One-tap checkout",
 
   otherMethods: "Other Methods",
-  paypalGooglePayEtc: "PayPal, Google Pay, etc.",
+  otherMethodsSubtitle: "MB WAY, PayPal, etc.",
 
   recommended: "Recommended",
 
@@ -623,7 +691,10 @@ const en = {
 
   loadingAddresses: "Loading addresses...",
 
-  primary: "PRIMARY",
+  // Badge on the address the customer has selected. Named for the field it
+  // reflects (`isActive`), not the retired `PRIMARY` address *type* — the two
+  // are unrelated and sharing the word conflated them.
+  active: "ACTIVE",
 
   noSavedAddressesFound: "No saved addresses found.",
 
@@ -655,9 +726,7 @@ const en = {
   selectCountryCode: "Select country code",
   chooseCountryAndDialCode: "Choose your country and dial code",
 
-  enterReferralCode: "Enter referral code",
-
-  haveReferralCode: "Have a referral code?",
+  referralCodeOptional: "Referral code (optional)",
 
   sendingOtp: "Sending OTP...",
 
@@ -683,7 +752,6 @@ const en = {
     "You have reached your maximum device limit. Do you want to remove an existing session and log in here?",
 
   removeSession: "Remove",
-  removeReferralCode: "Remove",
   portugues: "Português",
   footerDescription:
     "𝗗𝗲𝗹𝗶𝗚𝗼 𝗶𝘀 𝗮 𝘁𝗲𝗰𝗵𝗻𝗼𝗹𝗼𝗴𝘆 𝗺𝗮𝗿𝗸𝗲𝘁𝗽𝗹𝗮𝗰𝗲 𝗽𝗹𝗮𝘁𝗳𝗼𝗿𝗺 𝘁𝗵𝗮𝘁 𝗰𝗼𝗻𝗻𝗲𝗰𝘁𝘀 𝗰𝘂𝘀𝘁𝗼𝗺𝗲𝗿𝘀, 𝗺𝗲𝗿𝗰𝗵𝗮𝗻𝘁𝘀, 𝗮𝗻𝗱 𝗶𝗻𝗱𝗲𝗽𝗲𝗻𝗱𝗲𝗻𝘁 𝗰𝗼𝘂𝗿𝗶𝗲𝗿𝘀.",
@@ -1402,7 +1470,7 @@ const en = {
     "Flexible earning models aligned with independent lifestyle requirements.",
 
   // --- Phase 1: static UI copy (Issue_solve_plan.md) ---
-  popular: "POPULAR",
+  featured: "FEATURED",
   continueButton: "Continue",
   deleteLabel: "Delete",
   deleteAddress: "Delete Address",
@@ -1439,8 +1507,6 @@ const en = {
     "You can explore the map and pick a location, but you need to",
   notSignedInSaveSuffix: "to save your address.",
   logInLink: "log in",
-  editModePrimaryNote:
-    "Note: Edit mode updates the PRIMARY address regardless of type selected.",
 
   // --- Phase 3: toasts, errors, empty/loading & route messages ---
   locationNotDetected: "Location not detected yet. Please wait or use GPS.",
@@ -1467,12 +1533,17 @@ const en = {
   failedToShareReferralCode: "Failed to share referral code",
   pleaseLogInToAddToCart: "Please log in to add items to your cart.",
   itemAddedToCart: "Item added to cart successfully!",
+  failedToAddToCart: "Could not read your cart. Please try again.",
   vendorInfoMissing: "Vendor information missing",
   provideAtLeastOneRating: "Please provide at least one rating.",
   currentLocationLoadedOnMap: "Current location loaded on map.",
   addressNotFound: "Address not found",
   pleaseLogInToSearch: "Please log in to search.",
   failedToLoadSearchResults: "Failed to load search results.",
+  sortRelevance: "Relevance",
+  sortDistance: "Distance",
+  sortRating: "Rating",
+  sortPrice: "Price",
   noCheckoutIdProvided: "No checkout ID provided",
   failedToCreateOrder: "Failed to create order.",
   failedToLoadProfile: "Failed to load profile",
@@ -1490,12 +1561,40 @@ const en = {
   loading: "Loading...",
   loadingSearch: "Loading search...",
   markAllAsRead: "Mark all as read",
-  profileAddress: "Profile Address",
   deliveryAddresses: "Delivery Addresses",
-  primaryAddressUpdated: "Primary address updated successfully",
-  failedToUpdatePrimaryAddress: "Failed to update primary address",
+  activeAddressUpdated: "Active address updated successfully",
+  failedToUpdateActiveAddress: "Failed to update active address",
   addressDeleted: "Address deleted successfully",
   failedToDeleteAddress: "Failed to delete address",
+
+  // --- Invoice PDF (src/lib/invoice.ts) ---
+  // Kept as a separate `invoice*` set rather than reusing the cart/checkout
+  // labels: the PDF has fixed column widths, so a wording change made for a
+  // screen must not silently reflow the printed table.
+  invoiceTitle: "Invoice",
+  invoiceTagline: "Fast and reliable food delivery",
+  invoiceOrderId: "Order ID",
+  invoiceDate: "Date",
+  invoiceShippedTo: "Shipped to",
+  invoicePayment: "Payment",
+  invoiceNo: "No.",
+  invoiceItem: "Item",
+  invoiceQty: "Qty",
+  invoicePrice: "Price",
+  invoiceTotal: "Total",
+  invoiceTotalPrice: "Total Price",
+  invoiceDiscount: "Discount",
+  invoiceSubtotal: "Subtotal (incl. tax)",
+  invoiceOfferDiscount: "Offer discount",
+  invoiceServiceFee: "Service Fee",
+  invoiceDeliveryFee: "Delivery fee (incl. tax)",
+  invoicePay: "Pay",
+  invoiceAddress: "Address",
+  invoicePhone: "Phone",
+  invoiceEmail: "Email",
+  invoiceWebsite: "Website",
+  invoicePageOf: "Page {page} of {total}",
+  invoiceFilePrefix: "invoice",
 };
 
 export default en;

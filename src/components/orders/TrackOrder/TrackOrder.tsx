@@ -15,453 +15,106 @@ import {
   Receipt,
   ShoppingBag,
   Utensils,
+  XCircle,
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
-import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getServiceChargeGross, getDeliveryTax } from "@/lib/tax";
+import { getRefundState, isOrderFinished, isTerminatedStatus } from "@/lib/refund";
+import {
+  getTerminalReason,
+  getTimelineStepIndex,
+  getTimelineStepKeys,
+} from "@/lib/orderTimeline";
+import { getPaymentStatusDisplay } from "@/lib/paymentStatus";
+import OrderMap from "./OrderMap/OrderMap";
+import RefundBanner from "./RefundBanner";
 
 
-// Google Maps component
-function OrderMap({
-  pickupLatitude,
-  pickupLongitude,
-  pickupAddress,
-  deliveryLatitude,
-  deliveryLongitude,
-  deliveryAddress,
-  riderLatitude,
-  riderLongitude,
-  riderName,
-}: {
-  pickupLatitude?: number;
-  pickupLongitude?: number;
-  pickupAddress: string;
-  deliveryLatitude?: number;
-  deliveryLongitude?: number;
-  deliveryAddress: string;
-  riderLatitude?: number;
-  riderLongitude?: number;
-  riderName?: string;
-}) {
-  const { t } = useTranslation();
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const hasFitBoundsRef = useRef(false);
+// A live order changes minute to minute, so it is worth watching closely. A
+// pending refund settles over days — polling that at 5s would be thousands of
+// requests to catch one field flip, so it drops to a background cadence.
+const LIVE_POLL_MS = 5000;
+const REFUND_POLL_MS = 30000;
 
-  const mapRef = useRef<any>(null);
-  const pickupMarkerRef = useRef<any>(null);
-  const deliveryMarkerRef = useRef<any>(null);
-  const riderMarkerRef = useRef<any>(null);
-  const directionsRendererRef = useRef<any>(null);
-  const fallbackPolylineRef = useRef<any>(null);
+// Copy and icon for every step the timeline can show. Which of these actually
+// appear — and in what order — is `getTimelineStepKeys`'s call, so that a
+// rejected order does not display the steps it never reached.
+const STEP_PRESENTATION: Record<
+  string,
+  { labelKey: string; descriptionKey: string; icon: typeof Check }
+> = {
+  PENDING: {
+    labelKey: "orderPending",
+    descriptionKey: "waitingRestaurantResponse",
+    icon: Check,
+  },
+  ACCEPTED: {
+    labelKey: "orderAccepted",
+    descriptionKey: "restaurantAcceptedOrder",
+    icon: CheckCircle,
+  },
+  PREPARING: {
+    labelKey: "preparing",
+    descriptionKey: "restaurantPreparingMeal",
+    icon: Utensils,
+  },
+  READY_FOR_PICKUP: {
+    labelKey: "readyForPickup",
+    descriptionKey: "orderReadyForPickup",
+    icon: CheckSquare,
+  },
+  PICKED_UP: {
+    labelKey: "pickedUp",
+    descriptionKey: "riderPickedUpOrder",
+    icon: Bike,
+  },
+  ON_THE_WAY: {
+    labelKey: "onTheWay",
+    descriptionKey: "riderHeadingLocation",
+    icon: Navigation,
+  },
+  DELIVERED: {
+    labelKey: "delivered",
+    descriptionKey: "orderDelivered",
+    icon: CheckCheck,
+  },
+  REJECTED: {
+    labelKey: "rejected",
+    descriptionKey: "orderWasRejected",
+    icon: XCircle,
+  },
+  CANCELLED: {
+    labelKey: "cancelled",
+    descriptionKey: "orderWasCancelled",
+    icon: XCircle,
+  },
+};
 
-  const animationFrameRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    loadGoogleMapsScript()
-      .then(() => setMapLoaded(true))
-      .catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    if (!mapLoaded || !window.google) return;
-
-    const mapDiv = document.getElementById("track-order-map");
-    if (!mapDiv || mapRef.current) return;
-
-    const center = {
-      lat: deliveryLatitude || pickupLatitude || 23.7282,
-      lng: deliveryLongitude || pickupLongitude || 89.1432,
+// `terminalNote` is the vendor's own reason for a rejection/cancellation, which
+// the API requires them to give — it replaces the generic description on the
+// terminal step, the way the app shows it.
+function getOrderStep(
+  order: any,
+  t: (key: string) => string,
+  terminalNote: string | null,
+) {
+  return getTimelineStepKeys(order).map((key) => {
+    const presentation = STEP_PRESENTATION[key];
+    const isTerminal = isTerminatedStatus(key);
+    return {
+      key,
+      label: t(presentation.labelKey),
+      description:
+        isTerminal && terminalNote ? terminalNote : t(presentation.descriptionKey),
+      icon: presentation.icon,
     };
-
-    const map = new window.google.maps.Map(mapDiv, {
-      center,
-      zoom: 14,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-      styles: [
-        {
-          featureType: "poi",
-          elementType: "labels",
-          stylers: [{ visibility: "off" }],
-        },
-        {
-          featureType: "transit",
-          elementType: "labels.icon",
-          stylers: [{ visibility: "off" }],
-        },
-      ],
-    });
-
-    mapRef.current = map;
-  }, [mapLoaded, deliveryLatitude, pickupLatitude, deliveryLongitude, pickupLongitude]);
-
-  useEffect(() => {
-    if (!mapLoaded || !mapRef.current || !window.google) return;
-
-    const map = mapRef.current;
-
-    // --- 1. Customer Marker ---
-    if (deliveryLatitude && deliveryLongitude) {
-      const deliveryPos = { lat: deliveryLatitude, lng: deliveryLongitude };
-
-      if (!deliveryMarkerRef.current) {
-        const customerIcon = {
-          url:
-            "data:image/svg+xml;charset=UTF-8," +
-            encodeURIComponent(`
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
-                <circle cx="20" cy="22" r="16" fill="rgba(0,0,0,0.15)" filter="blur(2px)" />
-                <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#008080" stroke-width="2" />
-                <circle cx="20" cy="20" r="12" fill="#008080" />
-                <path d="M20,11 C17.8,11 16,12.8 16,15 C16,18.2 20,23 20,23 C20,23 24,18.2 24,15 C24,12.8 22.2,11 20,11 Z M20,16.5 C19.2,16.5 18.5,15.8 18.5,15 C18.5,14.2 19.2,13.5 20,13.5 C20.8,13.5 21.5,14.2 21.5,15 C21.5,15.8 20.8,16.5 20,16.5 Z" fill="#ffffff" />
-              </svg>
-            `),
-          scaledSize: new window.google.maps.Size(40, 40),
-          anchor: new window.google.maps.Point(20, 20),
-        };
-
-        deliveryMarkerRef.current = new window.google.maps.Marker({
-          position: deliveryPos,
-          map,
-          title: deliveryAddress || t("deliveryTo"),
-          icon: customerIcon,
-          zIndex: 100,
-        });
-      } else {
-        deliveryMarkerRef.current.setPosition(deliveryPos);
-      }
-    }
-
-    // --- 2. Restaurant Marker ---
-    if (pickupLatitude && pickupLongitude) {
-      const pickupPos = { lat: pickupLatitude, lng: pickupLongitude };
-
-      if (!pickupMarkerRef.current) {
-        const storeIcon = {
-          url:
-            "data:image/svg+xml;charset=UTF-8," +
-            encodeURIComponent(`
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
-                <circle cx="20" cy="22" r="16" fill="rgba(0,0,0,0.15)" filter="blur(2px)" />
-                <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#f9186b" stroke-width="2" />
-                <circle cx="20" cy="20" r="12" fill="#f9186b" />
-                <path d="M14,14 L26,14 L26,18 L14,18 Z M13,11 L27,11 L27,14 L13,14 Z M15,18 L15,25 C15,25.6 15.4,26 16,26 L24,26 C24.6,26 25,25.6 25,25 L25,18 Z" fill="#ffffff" />
-              </svg>
-            `),
-          scaledSize: new window.google.maps.Size(40, 40),
-          anchor: new window.google.maps.Point(20, 20),
-        };
-
-        pickupMarkerRef.current = new window.google.maps.Marker({
-          position: pickupPos,
-          map,
-          title: pickupAddress || t("restaurant"),
-          icon: storeIcon,
-          zIndex: 90,
-        });
-      } else {
-        pickupMarkerRef.current.setPosition(pickupPos);
-      }
-    }
-
-    // --- 3. Directions Path ---
-    if (pickupLatitude && pickupLongitude && deliveryLatitude && deliveryLongitude) {
-      const origin = { lat: pickupLatitude, lng: pickupLongitude };
-      const destination = { lat: deliveryLatitude, lng: deliveryLongitude };
-
-      if (!directionsRendererRef.current) {
-        directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-          map,
-          suppressMarkers: true,
-          polylineOptions: {
-            strokeColor: "#f9186b",
-            strokeOpacity: 0.8,
-            strokeWeight: 5,
-          },
-        });
-
-        const directionsService = new window.google.maps.DirectionsService();
-        directionsService.route(
-          {
-            origin,
-            destination,
-            travelMode: window.google.maps.TravelMode.DRIVING,
-          },
-          (result: any, status: any) => {
-            if (status === window.google.maps.DirectionsStatus.OK && result) {
-              directionsRendererRef.current?.setDirections(result);
-              if (fallbackPolylineRef.current) {
-                fallbackPolylineRef.current.setMap(null);
-                fallbackPolylineRef.current = null;
-              }
-            } else {
-              console.warn("Directions request failed, drawing fallback line:", status);
-              if (!fallbackPolylineRef.current) {
-                fallbackPolylineRef.current = new window.google.maps.Polyline({
-                  path: [origin, destination],
-                  map,
-                  geodesic: true,
-                  strokeColor: "#f9186b",
-                  strokeOpacity: 0,
-                  icons: [
-                    {
-                      icon: {
-                        path: "M 0,-1 0,1",
-                        strokeOpacity: 0.8,
-                        strokeColor: "#f9186b",
-                        scale: 3,
-                      },
-                      offset: "0",
-                      repeat: "20px",
-                    },
-                  ],
-                });
-              } else {
-                fallbackPolylineRef.current.setPath([origin, destination]);
-              }
-            }
-          }
-        );
-      }
-    }
-
-    // --- 4. Rider Marker and Smooth Animation ---
-    const hasRider = typeof riderLatitude === "number" && typeof riderLongitude === "number";
-    if (hasRider) {
-      const newRiderPos = { lat: riderLatitude!, lng: riderLongitude! };
-
-      const getRiderIcon = () => {
-        return {
-          url:
-            "data:image/svg+xml;charset=UTF-8," +
-            encodeURIComponent(`
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44">
-                <!-- Drop shadow -->
-                <circle cx="22" cy="24" r="17" fill="rgba(0,0,0,0.16)" filter="blur(2.5px)" />
-                <!-- Outer white circle -->
-                <circle cx="22" cy="22" r="17" fill="#ffffff" stroke="#ffd9de" stroke-width="1.5" />
-                <!-- Inner pink/crimson circle -->
-                <circle cx="22" cy="22" r="14" fill="#f9186b" />
-                
-                <!-- Stylized delivery motorcycle rider (side view) -->
-                <g transform="translate(10, 11) scale(0.9)" fill="#ffffff">
-                  <circle cx="14" cy="4" r="2.5" />
-                  <rect x="2" y="8" width="6" height="6" rx="1" />
-                  <path d="M13,6.5 L15,6.5 C16.1,6.5 17,7.4 17,8.5 L17,11.5 L14,11.5 L12,9 L10,9 L9,8 L11.5,6.5 Z" />
-                  <path d="M14,11.5 L16,15 L11,15 L10.5,12 Z" />
-                  <rect x="19" y="8" width="1" height="8" rx="0.5" transform="rotate(15 19 8)" />
-                  <circle cx="17.5" cy="8.5" r="1" />
-                  <path d="M6,13.5 L19,13.5 L20,16.5 L10,16.5 Z" />
-                  <circle cx="7" cy="18" r="3" />
-                  <circle cx="19" cy="18" r="3" />
-                  <circle cx="7" cy="18" r="1" fill="#f9186b" />
-                  <circle cx="19" cy="18" r="1" fill="#f9186b" />
-                </g>
-              </svg>
-            `),
-          scaledSize: new window.google.maps.Size(44, 44),
-          anchor: new window.google.maps.Point(22, 22),
-        };
-      };
-
-      if (!riderMarkerRef.current) {
-        riderMarkerRef.current = new window.google.maps.Marker({
-          position: newRiderPos,
-          map,
-          title: riderName || t("rider"),
-          icon: getRiderIcon(),
-          zIndex: 110,
-        });
-      } else {
-        const riderMarker = riderMarkerRef.current;
-        const startPos = riderMarker.getPosition();
-
-        if (startPos) {
-          const startLat = startPos.lat();
-          const startLng = startPos.lng();
-          const endLat = newRiderPos.lat;
-          const endLng = newRiderPos.lng;
-
-          if (Math.abs(startLat - endLat) > 0.00001 || Math.abs(startLng - endLng) > 0.00001) {
-            if (animationFrameRef.current) {
-              cancelAnimationFrame(animationFrameRef.current);
-            }
-
-            const duration = 1500;
-            const startTime = performance.now();
-
-            const step = (currentTime: number) => {
-              const elapsed = currentTime - startTime;
-              const progress = Math.min(elapsed / duration, 1);
-
-              const easeProgress =
-                progress < 0.5
-                  ? 2 * progress * progress
-                  : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-
-              const currentLat = startLat + (endLat - startLat) * easeProgress;
-              const currentLng = startLng + (endLng - startLng) * easeProgress;
-
-              const currentPos = new window.google.maps.LatLng(currentLat, currentLng);
-              riderMarker.setPosition(currentPos);
-              riderMarker.setIcon(getRiderIcon());
-
-              if (progress < 1) {
-                animationFrameRef.current = requestAnimationFrame(step);
-              } else {
-                animationFrameRef.current = null;
-              }
-            };
-            animationFrameRef.current = requestAnimationFrame(step);
-          }
-        }
-      }
-    } else {
-      if (riderMarkerRef.current) {
-        riderMarkerRef.current.setMap(null);
-        riderMarkerRef.current = null;
-      }
-    }
-
-    // --- 5. Fit Bounds ---
-    const fitBounds = () => {
-      const bounds = new window.google.maps.LatLngBounds();
-      let hasPoints = false;
-
-      if (pickupLatitude && pickupLongitude) {
-        bounds.extend({ lat: pickupLatitude, lng: pickupLongitude });
-        hasPoints = true;
-      }
-      if (deliveryLatitude && deliveryLongitude) {
-        bounds.extend({ lat: deliveryLatitude, lng: deliveryLongitude });
-        hasPoints = true;
-      }
-      if (typeof riderLatitude === "number" && typeof riderLongitude === "number") {
-        bounds.extend({ lat: riderLatitude, lng: riderLongitude });
-        hasPoints = true;
-      }
-
-      if (hasPoints) {
-        map.fitBounds(bounds, {
-          top: 60,
-          right: 60,
-          bottom: 60,
-          left: 60,
-        });
-
-        const listener = window.google.maps.event.addListener(map, "bounds_changed", () => {
-          if (map.getZoom()! > 16) {
-            map.setZoom(16);
-          }
-          window.google.maps.event.removeListener(listener);
-        });
-      }
-    };
-
-    if (!hasFitBoundsRef.current && (pickupLatitude || deliveryLatitude)) {
-      fitBounds();
-      hasFitBoundsRef.current = true;
-    }
-  }, [
-    mapLoaded,
-    pickupLatitude,
-    pickupLongitude,
-    pickupAddress,
-    deliveryLatitude,
-    deliveryLongitude,
-    deliveryAddress,
-    riderLatitude,
-    riderLongitude,
-    riderName,
-    t,
-  ]);
-
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
-
-  return (
-    <div className="relative h-100 md:h-125 w-full rounded-4xl overflow-hidden shadow-xl group bg-gray-100">
-      <div id="track-order-map" className="w-full h-full" />
-      {!mapLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="animate-pulse text-gray-400">{t("loadingMap")}</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Timeline steps based on orderStatus
-function getOrderStep(orderStatus: string, t: (key: string) => string) {
-  const isCancelled = orderStatus === "CANCELLED" || orderStatus === "REJECTED";
-
-  const steps = [
-    {
-      key: "PENDING",
-      label: t("orderPending"),
-      description: t("waitingRestaurantResponse"),
-      icon: Check,
-    },
-    {
-      key: "ACCEPTED",
-      label: t("orderAccepted"),
-      description: t("restaurantAcceptedOrder"),
-      icon: CheckCircle,
-    },
-    {
-      key: "PREPARING",
-      label: t("preparing"),
-      description: t("restaurantPreparingMeal"),
-      icon: Utensils,
-    },
-    {
-      key: "READY_FOR_PICKUP",
-      label: t("readyForPickup"),
-      description: t("orderReadyForPickup"),
-      icon: CheckSquare,
-    },
-    {
-      key: "PICKED_UP",
-      label: t("pickedUp"),
-      description: t("riderPickedUpOrder"),
-      icon: Bike,
-    },
-    {
-      key: "ON_THE_WAY",
-      label: t("onTheWay"),
-      description: t("riderHeadingLocation"),
-      icon: Navigation,
-    },
-  ];
-
-  if (isCancelled) {
-    steps.push({
-      key: orderStatus,
-      label: orderStatus === "CANCELLED" ? (t("cancelled") || "Cancelled") : (t("rejected") || "Rejected"),
-      description: orderStatus === "CANCELLED" ? "Order was cancelled" : "Order was rejected by restaurant",
-      icon: CheckCircle,
-    });
-  } else {
-    steps.push({
-      key: "DELIVERED",
-      label: t("delivered"),
-      description: t("orderDelivered"),
-      icon: CheckCheck,
-    });
-  }
-
-  return steps;
+  });
 }
 
 export default function TrackOrder() {
@@ -478,7 +131,7 @@ export default function TrackOrder() {
     if (downloadingInvoice || !order?.orderId) return;
     setDownloadingInvoice(true);
     try {
-      await downloadInvoice(order.orderId);
+      await downloadInvoice(order.orderId, t);
       toast.success(t("invoiceDownloaded"));
     } catch (error) {
       toast.error(await extractBlobErrorMessage(error, t("invoiceDownloadFailed")));
@@ -497,32 +150,34 @@ export default function TrackOrder() {
         setOrder(orderData);
 
         if (orderData) {
-          const activeStatus = orderData.orderStatus === "ASSIGNED" ? "ACCEPTED" : orderData.orderStatus;
-          const STEP_KEYS = ["PENDING", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "ON_THE_WAY"];
-          let idx = STEP_KEYS.indexOf(activeStatus);
-          if (idx === -1) {
-            if (activeStatus === "DELIVERED" || activeStatus === "CANCELLED" || activeStatus === "REJECTED") {
-              idx = 6;
-            } else {
-              idx = 0;
-            }
-          }
+          const idx = getTimelineStepIndex(orderData);
+          // The timeline shortens the moment an order is rejected, so a max
+          // carried over from the live path can point past the last step —
+          // clamp, or nothing renders as current.
+          const lastIdx = getTimelineStepKeys(orderData).length - 1;
           if (isInitial) {
             setMaxStatusIndex(idx);
           } else {
-            setMaxStatusIndex((prevMax) => Math.max(prevMax, idx));
+            setMaxStatusIndex((prevMax) => Math.min(Math.max(prevMax, idx), lastIdx));
           }
         }
 
-        // Stop polling once the order reaches a final state
-        const finalStatuses = ["DELIVERED", "CANCELLED", "REJECTED"];
-        if (orderData && finalStatuses.includes(orderData.orderStatus)) {
-          stopped = true;
-          stopPolling();
+        // An order is finished only when no money is still owed back. A
+        // rejected order mid-refund is NOT finished: `orderStatus` has stopped
+        // moving, but `paymentStatus` has not — stopping here would freeze the
+        // banner on "Refund In Progress" until the customer reloaded the page.
+        if (orderData) {
+          if (isOrderFinished(orderData)) {
+            stopped = true;
+            stopPolling();
+          } else {
+            const refundPending = getRefundState(orderData) === "in_progress";
+            setPollDelay(refundPending ? REFUND_POLL_MS : LIVE_POLL_MS);
+          }
         }
       } catch (err: any) {
         if (isInitial) {
-          setError(err.response?.data?.message || "Failed to load order");
+          setError(getApiErrorMessage(err, "Failed to load order"));
         }
       } finally {
         if (isInitial) {
@@ -531,19 +186,30 @@ export default function TrackOrder() {
       }
     };
 
-    // Phase 2: poll every 5s for live updates, but ONLY while the tab is
-    // visible (a backgrounded tracking tab makes zero requests), and stop
-    // entirely once the order reaches a terminal state.
+    // Poll for live updates, but ONLY while the tab is visible (a backgrounded
+    // tracking tab makes zero requests), and stop entirely once the order is
+    // finished — which now includes "and the refund has settled".
     let stopped = false;
+    let currentDelay = LIVE_POLL_MS;
 
     const startPolling = () => {
       if (stopped || intervalRef.current) return;
-      intervalRef.current = setInterval(() => fetchOrder(false), 5000);
+      intervalRef.current = setInterval(() => fetchOrder(false), currentDelay);
     };
     const stopPolling = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+    };
+    /** Change cadence, re-arming the timer only if it is currently running —
+     *  a hidden tab must stay silent. */
+    const setPollDelay = (delay: number) => {
+      if (delay === currentDelay) return;
+      currentDelay = delay;
+      if (intervalRef.current) {
+        stopPolling();
+        startPolling();
       }
     };
     const handleVisibilityChange = () => {
@@ -659,12 +325,31 @@ export default function TrackOrder() {
     0,
   );
   const payout = order.payoutSummary || {};
+  const calc = order.orderCalculation || {};
   const grandTotal = payout.grandTotal || 0;
-  const subtotal = payout.vendor?.earningsWithoutTax || 0;
+  // What the customer paid for the items — NOT payoutSummary.vendor.earnings*,
+  // which is the restaurant's net take after commission and would neither
+  // reconcile with the total nor be any of the customer's business.
+  const totalOriginalPrice = calc.totalOriginalPrice || 0;
+  const productDiscount = calc.totalProductDiscount || 0;
+  const subtotal = totalOriginalPrice - productDiscount;
+  // `serviceCharge` arrives net; the total charges it with VAT, which the
+  // backend reports as `serviceChargeVatAmount`.
+  const serviceCharge = getServiceChargeGross(calc);
+  const serviceChargeTax = calc.serviceChargeVatAmount || 0;
+  const offerDiscount = calc.totalOfferDiscount || 0;
   const deliveryFee = order.delivery?.totalDeliveryCharge || 0;
-  const tax = order.orderCalculation?.totalTaxAmount || 0;
+  const deliveryTax = getDeliveryTax(order.delivery || {});
+  // Tax embedded in the items subtotal — shown inline on the subtotal row,
+  // matching the app, rather than as a standalone line.
+  const subtotalTax = calc.totalTaxAmount || 0;
 
-  const steps = getOrderStep(order.orderStatus, t);
+  const steps = getOrderStep(order, t, getTerminalReason(order));
+
+  // Derived from the payment fields, not `orderStatus` — a refund moves
+  // `paymentStatus`/`isPaid` while the order stays REJECTED/CANCELED.
+  const refundState = getRefundState(order);
+  const paymentStatusDisplay = getPaymentStatusDisplay(order.paymentStatus);
 
   return (
     <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-[#191c1d] dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
@@ -672,7 +357,14 @@ export default function TrackOrder() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column */}
           <div className="lg:col-span-7 space-y-6">
+            {/* Above the map, not instead of it: the right column is a fixed
+                min-h-175 timeline, so dropping the map would leave the grid
+                badly lopsided on desktop. Renders nothing unless a refund is
+                actually owed. */}
+            <RefundBanner state={refundState} />
+
             <OrderMap
+              orderStatus={order.orderStatus}
               pickupLatitude={order.pickupAddress?.latitude}
               pickupLongitude={order.pickupAddress?.longitude}
               pickupAddress={restaurantAddress}
@@ -682,6 +374,7 @@ export default function TrackOrder() {
               riderLatitude={order.deliveryPartnerId?.currentSessionLocation?.coordinates?.[1]}
               riderLongitude={order.deliveryPartnerId?.currentSessionLocation?.coordinates?.[0]}
               riderName={order.deliveryPartnerId ? `${order.deliveryPartnerId.name?.firstName || ""} ${order.deliveryPartnerId.name?.lastName || ""}` : ""}
+              etaMinutes={order.delivery?.estimatedTime}
             />
 
             {/* Rider Details Card (Dynamic Live view) */}
@@ -809,18 +502,60 @@ export default function TrackOrder() {
                   </h4>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
-                    <span>{t("subtotal")}</span>
-                    <span>€{subtotal.toFixed(2)}</span>
+                  <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                    <span className="min-w-0">
+                      {t("totalPrice")}
+                      <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
+                        ({t("withoutDiscount")})
+                      </span>
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap">€{totalOriginalPrice.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
-                    <span>{t("deliveryFee")}</span>
-                    <span>€{deliveryFee.toFixed(2)}</span>
+                  {productDiscount > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span>{t("discount")}</span>
+                      <span>-€{productDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                    <span className="min-w-0">
+                      {t("subtotal")}
+                      <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
+                        ({t("inclTax")}&nbsp;€{subtotalTax.toFixed(2)})
+                      </span>
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap">€{subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-[#5a4044] dark:text-neutral-400">
-                    <span>{t("taxIncl")}</span>
-                    <span>€{tax.toFixed(2)}</span>
+                  <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                    <span className="min-w-0">
+                      {t("deliveryFee")}
+                      {deliveryFee > 0 && (
+                        <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
+                          ({t("inclTax")}&nbsp;€{deliveryTax.toFixed(2)})
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap">€{deliveryFee.toFixed(2)}</span>
                   </div>
+                  {serviceCharge > 0 && (
+                    <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                      <span className="min-w-0">
+                        {t("serviceCharge")}
+                        {serviceChargeTax > 0 && (
+                          <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
+                            ({t("inclTax")}&nbsp;€{serviceChargeTax.toFixed(2)})
+                          </span>
+                        )}
+                      </span>
+                      <span className="shrink-0 whitespace-nowrap">€{serviceCharge.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {offerDiscount > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span>{t("offerDiscount")}</span>
+                      <span>-€{offerDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="pt-4 mt-2 border-t border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
                     <span className="text-2xl font-extrabold text-[#191c1d] dark:text-neutral-50">
                       {t("totalAmount")}
@@ -839,9 +574,18 @@ export default function TrackOrder() {
                       {order.paymentMethod || t("notAvailable")}
                     </span>
                   </div>
-                  <span className="px-3 py-1 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-[10px] font-bold rounded-full border border-green-200 dark:border-green-900/30">
-                    {order.paymentStatus || t("paid")}
-                  </span>
+                  {/* No status from the backend means no badge. It used to
+                      fall back to the word "PAID", which invented the answer to
+                      the one question this badge exists to answer. */}
+                  {paymentStatusDisplay && (
+                    <span
+                      className={`px-3 py-1 text-[10px] font-bold rounded-full border ${paymentStatusDisplay.className}`}
+                    >
+                      {paymentStatusDisplay.labelKey
+                        ? t(paymentStatusDisplay.labelKey)
+                        : paymentStatusDisplay.rawLabel}
+                    </span>
+                  )}
                 </div>
                 <button
                   onClick={handleDownloadInvoice}
@@ -918,7 +662,7 @@ export default function TrackOrder() {
                       >
                         {step.description}
                       </p>
-                      {isCurrent && step.key !== "DELIVERED" && step.key !== "CANCELLED" && step.key !== "REJECTED" && (
+                      {isCurrent && step.key !== "DELIVERED" && !isTerminatedStatus(step.key) && (
                         <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] dark:bg-pink-950/40 text-[#f9186b] dark:text-pink-400 rounded-full text-xs font-bold">
                           <span className="w-1.5 h-1.5 bg-[#f9186b] dark:bg-pink-500 rounded-full animate-pulse" />
                           {t("inProgress")}

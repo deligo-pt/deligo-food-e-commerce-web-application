@@ -1,12 +1,16 @@
 "use client";
 
-import { CheckCircle, Clock3, Download, Loader2, UtensilsCrossed, Star } from "lucide-react";
+import { CheckCircle, Clock3, Download, HandCoins, Loader2, RotateCcw, UtensilsCrossed, Star, XCircle } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
 import SafeImage from "@/components/shared/SafeImage";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
+import { useReorder } from "@/hooks/queries/useOrders";
+import { refundStateLabelKey, type RefundState } from "@/lib/refund";
 
 interface OrderCardProps {
   dbId: string;
@@ -14,7 +18,18 @@ interface OrderCardProps {
   orderId: string;
   date: string;
   price: string;
-  status: "accepted" | "pending" | "delivered" | "cancelled";
+  /**
+   * `rejected` and `cancelled` are kept apart because the backend keeps them
+   * apart — a restaurant refusing the order and an order being called off are
+   * different events, and the customer is told which one happened.
+   */
+  status: "accepted" | "pending" | "delivered" | "cancelled" | "rejected";
+  /**
+   * Whether money is owed back on this order. Kept separate from `status`
+   * rather than folded into it: `status` also decides which actions the card
+   * offers, and a refund does not change what the customer can do here.
+   */
+  refundState?: RefundState;
   items: string;
   progress: number;
   progressText: string;
@@ -30,6 +45,7 @@ export default function OrderCard({
   date,
   price,
   status,
+  refundState = "none",
   items,
   progress,
   progressText,
@@ -38,13 +54,36 @@ export default function OrderCard({
   onRateOrder,
 }: OrderCardProps) {
   const { t } = useTranslation();
+  const router = useRouter();
+  const reorder = useReorder();
   const [downloading, setDownloading] = useState(false);
+  const [reordering, setReordering] = useState(false);
+
+  // The two terminal statuses are labelled differently but behave identically:
+  // no food is coming, so the same actions make sense for both.
+  const isTerminated = status === "cancelled" || status === "rejected";
+
+  const handleReorder = async () => {
+    if (reordering) return;
+    setReordering(true);
+    try {
+      await reorder(orderId);
+      toast.success(t("reorderAddedToCart"));
+      router.push("/cart");
+    } catch (error) {
+      // A restaurant closing between the original order and this click is the
+      // likeliest failure; that message is translated centrally by errorKey.
+      toast.error(getApiErrorMessage(error, t("reorderFailed")));
+    } finally {
+      setReordering(false);
+    }
+  };
 
   const handleDownloadInvoice = async () => {
     if (downloading) return;
     setDownloading(true);
     try {
-      await downloadInvoice(orderId);
+      await downloadInvoice(orderId, t);
       toast.success(t("invoiceDownloaded"));
     } catch (error) {
       toast.error(await extractBlobErrorMessage(error, t("invoiceDownloadFailed")));
@@ -70,7 +109,7 @@ export default function OrderCard({
           <div>
             <h3 className="font-semibold text-[#191c1d] dark:text-neutral-50">{restaurant}</h3>
 
-            <div className="mt-1 flex items-center gap-2 text-[11px] text-[#5a4044] dark:text-neutral-400">
+            <div className="mt-1 flex items-center gap-2 text-xs text-[#5a4044] dark:text-neutral-400">
               <span>
                 {t("order")} #{orderId}
               </span>
@@ -93,15 +132,38 @@ export default function OrderCard({
               <CheckCircle size={12} />
               {t("delivered")}
             </div>
-          ) : status === "cancelled" ? (
+          ) : isTerminated ? (
+            // Whichever of the two the backend actually reported — this used to
+            // say "Cancelled" for both, contradicting the label under the
+            // progress bar on every rejected order.
             <div className="flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-950/20 px-2 py-1 text-xs text-red-600 dark:text-red-400">
-              <Clock3 size={12} />
-              {t("cancelled") || "Cancelled"}
+              <XCircle size={12} />
+              {t(status)}
             </div>
           ) : (
             <div className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-neutral-800 px-2 py-1 text-xs text-gray-600 dark:text-neutral-400">
               <Clock3 size={12} />
               {t("pending")}
+            </div>
+          )}
+
+          {/* A cancelled order the customer paid for says nothing about their
+              money without this — the red chip above only reports that the
+              food is not coming. */}
+          {refundState !== "none" && (
+            <div
+              className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs ${
+                refundState === "completed"
+                  ? "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400"
+                  : "bg-pink-50 dark:bg-pink-950/30 text-[#f9186b] dark:text-pink-400"
+              }`}
+            >
+              {refundState === "completed" ? (
+                <CheckCircle size={12} />
+              ) : (
+                <HandCoins size={12} />
+              )}
+              {t(refundStateLabelKey(refundState)!)}
             </div>
           )}
         </div>
@@ -130,8 +192,15 @@ export default function OrderCard({
         </div>
 
         <div className="h-1.5 rounded-full bg-gray-200 dark:bg-neutral-800">
+          {/* A full brand-pink bar reads as "completed successfully". On an
+              order that was rejected or cancelled it is the same claim the
+              track-order timeline used to make, so the terminal bar is red. */}
           <div
-            className="h-full rounded-full bg-[#f9186b] dark:bg-pink-600"
+            className={`h-full rounded-full ${
+              isTerminated
+                ? "bg-red-600 dark:bg-red-500"
+                : "bg-[#f9186b] dark:bg-pink-600"
+            }`}
             style={{
               width: `${progress}%`,
             }}
@@ -163,7 +232,24 @@ export default function OrderCard({
           </Link>
         )}
 
-        {status !== "cancelled" && (
+        {/* Re-order only makes sense once an order is finished — an in-flight
+            one is already on its way. */}
+        {(status === "delivered" || isTerminated) && (
+          <button
+            onClick={handleReorder}
+            disabled={reordering}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 dark:border-neutral-700 py-3 text-sm font-semibold text-[#191c1d] dark:text-neutral-100 transition hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {reordering ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <RotateCcw size={16} />
+            )}
+            {t("reorder")}
+          </button>
+        )}
+
+        {!isTerminated && (
           <button
             onClick={handleDownloadInvoice}
             disabled={downloading}

@@ -3,10 +3,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { Building2, Globe, Home, MapPin, Navigation, Save } from "lucide-react";
+import { Building2, Globe, Home, MapPin, Navigation, Save, Tag } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Toaster, toast } from "sonner";
-import { addDeliveryAddress, updateLiveLocation } from "@/services/addressApi";
+import { addDeliveryAddress, updateDeliveryAddress } from "@/services/addressApi";
+import { getApiErrorMessage } from "@/lib/apiClient";
+import {
+  addressTypeLabelKey,
+  normalizeAddressType,
+  toBackendAddressType,
+  toSelectableAddressType,
+  type SelectableAddressType,
+} from "@/lib/addressType";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/authCookies";
@@ -16,19 +24,39 @@ interface AddressFormProps {
   coordinates: { lat: number; lng: number } | null;
   initialAddress?: any;
   isEditMode?: boolean;
-  userId?: string;
+  /** Required in edit mode — identifies which saved address to update. */
   addressId?: string;
   onSuccess?: () => void;
   isGuestMode?: boolean;
+  /**
+   * Whether the position the page opens with should be reverse-geocoded into
+   * the fields. True suits "set my current location", where filling in the
+   * detected place is the point. False suits "add a new address", where that
+   * position is only a guess and presenting it as filled-in data misrepresents
+   * it as something the customer entered. Either way, a location they go on to
+   * choose — search result or dragged pin — always autofills.
+   */
+  prefillFromOpeningLocation?: boolean;
+  /**
+   * Bump this to request a one-off prefill from the current `coordinates`, even
+   * when they are the ones the page opened with. "Use Current Location" needs
+   * it: a desktop browser geolocating by Wi-Fi/IP routinely returns the exact
+   * same coordinates already on screen, and without an explicit signal that
+   * fill is indistinguishable from the opening position — so the button would
+   * silently do nothing.
+   */
+  prefillRequestId?: number;
 }
 
 export default function AddressForm({
   coordinates,
   initialAddress,
   isEditMode = false,
-  userId,
+  addressId,
   onSuccess,
   isGuestMode = false,
+  prefillFromOpeningLocation = true,
+  prefillRequestId = 0,
 }: AddressFormProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -42,9 +70,11 @@ export default function AddressForm({
     }
     return isEditMode ? value.replace(/\s*\*$/, "") : value;
   };
-  const [addressType, setAddressType] = useState<"home" | "work" | "other">(
-    "home"
-  );
+  const [addressType, setAddressType] = useState<SelectableAddressType>("home");
+  // The customer's own name for an "Other" address ("Gym"). Kept out of
+  // `formData` because it belongs to the type selection above it, not to the
+  // postal fields — and because it is only ever sent for OTHER.
+  const [customAddressType, setCustomAddressType] = useState("");
   const [formData, setFormData] = useState({
     street: "",
     detailedAddress: "",
@@ -55,6 +85,10 @@ export default function AddressForm({
   });
   const [isSaving, setIsSaving] = useState(false);
   const hasInitializedRef = useRef(false);
+  // The position the page opened with, latched once. Used to tell it apart from
+  // a location the customer actively picked afterwards.
+  const openedWithCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastPrefillRequestRef = useRef(prefillRequestId);
 
   // Initialize from initialAddress (edit mode)
   useEffect(() => {
@@ -67,14 +101,9 @@ export default function AddressForm({
       country: initialAddress.country || "",
       postalCode: initialAddress.postalCode || "",
     });
+    setCustomAddressType(initialAddress.customAddressType || "");
     if (initialAddress.addressType) {
-      setAddressType(
-        initialAddress.addressType === "OFFICE"
-          ? "work"
-          : initialAddress.addressType === "OTHER"
-            ? "other"
-            : "home"
-      );
+      setAddressType(toSelectableAddressType(initialAddress.addressType));
     }
     // Mark that the form is populated — geocode effect can now safely replace fields
     hasInitializedRef.current = true;
@@ -82,6 +111,22 @@ export default function AddressForm({
 
   useEffect(() => {
     if (!coordinates) return;
+
+    // Latch the opening position before any other guard, so a slow Maps script
+    // or a still-loading saved address can't let a later, user-chosen pin be
+    // mistaken for the one we opened with.
+    if (!openedWithCoordsRef.current) openedWithCoordsRef.current = coordinates;
+    const openedWith = openedWithCoordsRef.current;
+    const isOpeningLocation =
+      openedWith.lat === coordinates.lat && openedWith.lng === coordinates.lng;
+
+    // An explicit "fill from this position" request outranks the opening-
+    // location rule. Consumed once, so a later unrelated re-run doesn't replay.
+    const wasRequested = prefillRequestId !== lastPrefillRequestRef.current;
+    if (wasRequested) lastPrefillRequestRef.current = prefillRequestId;
+
+    if (isOpeningLocation && !prefillFromOpeningLocation && !wasRequested) return;
+
     if (!window.google?.maps) return;
 
     // In edit mode, skip until initialAddress has been loaded into the form
@@ -134,17 +179,20 @@ export default function AddressForm({
         }));
       }
     );
-  }, [coordinates, initialAddress]);
+  }, [coordinates, initialAddress, prefillFromOpeningLocation, prefillRequestId]);
 
-  const mapAddressTypeToBackend = (
-    type: string
-  ): "HOME" | "OFFICE" | "OTHER" => {
-    if (type === "home") return "HOME";
-    if (type === "work") return "OFFICE";
-    return "OTHER";
-  };
+  // Only OTHER carries a custom name, and the API demands a non-empty one for
+  // it. Checked up front in both save paths so the customer gets a pointed
+  // message instead of a raw Zod error from the server.
+  const trimmedCustomType = customAddressType.trim();
+  const needsCustomType = addressType === "other";
 
   const handleSave = async () => {
+    if (needsCustomType && !trimmedCustomType) {
+      toast.error(t("customAddressTypeRequired"));
+      return;
+    }
+
     if (isGuestMode) {
       if (!coordinates) {
         toast.error(t("locationNotDetected"));
@@ -178,7 +226,10 @@ export default function AddressForm({
           latitude: coordinates.lat,
           longitude: coordinates.lng,
           detailedAddress: formData.detailedAddress.trim(),
-          addressType: mapAddressTypeToBackend(addressType),
+          addressType: toBackendAddressType(addressType),
+          // Carried through so the name survives the guest→account sync on
+          // login, which replays this object to the API.
+          ...(needsCustomType ? { customAddressType: trimmedCustomType } : {}),
         };
         useLocationStore.getState().setGuestAddress(guestAddress);
         window.dispatchEvent(new Event("addressUpdated"));
@@ -220,53 +271,73 @@ export default function AddressForm({
 
     setIsSaving(true);
     try {
+      const payload = {
+        street: formData.street.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim(),
+        country: formData.country.trim(),
+        postalCode: formData.postalCode.trim(),
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
+        geoAccuracy: 10,
+        detailedAddress: formData.detailedAddress.trim(),
+        addressType: toBackendAddressType(addressType),
+        ...(needsCustomType ? { customAddressType: trimmedCustomType } : {}),
+      };
+
       if (isEditMode) {
-        // PATCH — update live location + primary address
-        if (!userId) {
-          toast.error(t("userNotLoaded"));
+        // PATCH the address being edited. Note this is NOT
+        // `update-live-location` — that endpoint is the GPS "where am I now"
+        // flow, which carries no addressType and makes the server append a
+        // fresh CURRENT_LOCATION record instead of updating this one.
+        if (!addressId) {
+          toast.error(t("addressNotLoaded"));
           setIsSaving(false);
           return;
         }
-        await updateLiveLocation(userId, {
-          latitude: coordinates.lat,
-          longitude: coordinates.lng,
-          geoAccuracy: 10,
-          isMocked: false,
-          street: formData.street.trim(),
-          city: formData.city.trim(),
-          state: formData.state.trim(),
-          country: formData.country.trim(),
-          postalCode: formData.postalCode.trim(),
-          detailedAddress: formData.detailedAddress.trim(),
-        });
+
+        // Older records are stored with the retired type `PRIMARY`. The form
+        // has no PRIMARY button, so `toSelectableAddressType` shows them as
+        // Home — and saving an unrelated change (street, postal code) would
+        // then submit HOME and be rejected with "The primary address type
+        // cannot be modified.", even though the customer never touched the
+        // type. Send `addressType` only when the selection actually changed.
+        const { addressType: selectedType, ...addressFields } = payload;
+        const storedType = initialAddress?.addressType;
+        const seeded = storedType ? toSelectableAddressType(storedType) : null;
+        const untouched = seeded !== null && seeded === addressType;
+        // `CURRENT_LOCATION` has no button of its own either, but there the
+        // whole point of editing is to give the row a real type — so it is
+        // always sent, untouched or not.
+        const isCurrentLocation =
+          normalizeAddressType(storedType) === "CURRENT_LOCATION";
+
+        // `OTHER` is likewise always sent: `customAddressType` is only
+        // meaningful next to it, and the server validates the pair. Omitting
+        // the type while sending a renamed label would be an untested
+        // half-update. This cannot resurrect the PRIMARY problem above —
+        // a stored PRIMARY seeds the form as Home, never Other.
+        const alwaysSendType = isCurrentLocation || needsCustomType;
+
+        await updateDeliveryAddress(
+          addressId,
+          untouched && !alwaysSendType
+            ? addressFields
+            : { ...addressFields, addressType: selectedType },
+        );
       } else {
-        // POST — add new delivery address
-        await addDeliveryAddress({
-          street: formData.street.trim(),
-          city: formData.city.trim(),
-          state: formData.state.trim(),
-          country: formData.country.trim(),
-          postalCode: formData.postalCode.trim(),
-          latitude: coordinates.lat,
-          longitude: coordinates.lng,
-          geoAccuracy: 10,
-          detailedAddress: formData.detailedAddress.trim(),
-          addressType: mapAddressTypeToBackend(addressType),
-        });
+        await addDeliveryAddress(payload);
       }
 
       // Notify navbar to refresh address text
       window.dispatchEvent(new Event("addressUpdated"));
 
       toast.success(
-        isEditMode
-          ? "Primary address updated successfully!"
-          : "Address added successfully!"
+        isEditMode ? t("addressUpdatedSuccess") : t("addressAddedSuccess")
       );
       onSuccess?.();
     } catch (error: any) {
-      const serverMessage = error.response?.data?.message || error.message;
-      toast.error(serverMessage || "Failed to save address. Please try again.");
+      toast.error(getApiErrorMessage(error, t("failedToSaveLocation")));
     } finally {
       setIsSaving(false);
     }
@@ -303,14 +374,35 @@ export default function AddressForm({
               {type === "home" && <Home size={18} />}
               {type === "work" && <Building2 size={18} />}
               {type === "other" && <Globe size={18} />}
-              {t(type)}
+              {t(addressTypeLabelKey(toBackendAddressType(type)))}
             </button>
           ))}
         </div>
-        {isEditMode && (
-          <p className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
-            {t("editModePrimaryNote")}
-          </p>
+
+        {/* Required by the API for OTHER, so it is marked required and blocks
+            the save. Sits inside the type block, directly under the button it
+            belongs to, rather than down among the postal fields. */}
+        {needsCustomType && (
+          <div className="mt-4">
+            <label
+              htmlFor="customAddressType"
+              className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200"
+            >
+              {t("customAddressTypeLabel")} *
+            </label>
+            <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#f9186b]">
+              <Tag size={18} className="mr-3 text-[#5a4044] dark:text-neutral-500" />
+              <input
+                id="customAddressType"
+                type="text"
+                value={customAddressType}
+                onChange={(e) => setCustomAddressType(e.target.value)}
+                placeholder={t("customAddressTypePlaceholder")}
+                maxLength={50}
+                className="h-14 w-full bg-transparent outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
+              />
+            </div>
+          </div>
         )}
       </div>
 
@@ -352,20 +444,11 @@ export default function AddressForm({
         </div>
       </div>
 
-      {/* City + Postal */}
+      {/* Postal + City, in that order — matching how the saved address is
+          rendered back ("1229 Dhaka, Bangladesh") so entry and display read the
+          same way. On mobile the grid collapses to one column, which makes this
+          the vertical order too. */}
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
-            {getLabelText("city")}
-          </label>
-          <input
-            type="text"
-            value={formData.city}
-            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            placeholder={t("enterCity")}
-            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
-          />
-        </div>
         <div>
           <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
             {getLabelText("postalCode")}
@@ -376,7 +459,19 @@ export default function AddressForm({
             onChange={(e) =>
               setFormData({ ...formData, postalCode: e.target.value })
             }
-            placeholder="1000-001"
+            placeholder={t("enterPostalCode")}
+            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
+          />
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
+            {getLabelText("city")}
+          </label>
+          <input
+            type="text"
+            value={formData.city}
+            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+            placeholder={t("enterCity")}
             className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
           />
         </div>
@@ -394,7 +489,7 @@ export default function AddressForm({
             onChange={(e) =>
               setFormData({ ...formData, state: e.target.value })
             }
-            placeholder="Lisbon"
+            placeholder={t("enterStateRegion")}
             className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
           />
         </div>
@@ -410,6 +505,7 @@ export default function AddressForm({
               onChange={(e) =>
                 setFormData({ ...formData, country: e.target.value })
               }
+              placeholder={t("enterCountry")}
               className="h-14 w-full bg-transparent outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
             />
           </div>

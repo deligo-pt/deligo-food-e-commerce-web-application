@@ -2,8 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw, Home, Pencil, Trash2 } from "lucide-react";
+import {
+  Home,
+  Pencil,
+  Trash2,
+  Plus,
+  Briefcase,
+  MapPin,
+  Navigation,
+} from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { addressTypeLabel, normalizeAddressType } from "@/lib/addressType";
+import {
+  formatAddressLine1,
+  formatAddressLine2,
+} from "@/lib/addressFormat";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
@@ -29,23 +42,26 @@ interface DeliveryAddress {
   postalCode: string;
   detailedAddress?: string;
   addressType: string;
+  /** The customer's own name for an `OTHER` address; "" on older records. */
+  customAddressType?: string;
   isActive: boolean;
 }
 
-interface ProfileAddress {
-  street: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
-  detailedAddress?: string;
-}
+const ADDRESS_TYPE_ICONS = {
+  HOME: Home,
+  OFFICE: Briefcase,
+  OTHER: MapPin,
+  CURRENT_LOCATION: Navigation,
+} as const;
 
+// NOTE: the profile also carries an `address` object, but it is only a mirror of
+// whichever delivery address is currently active — verified against the API by
+// toggling the active address and watching `profile.address` follow it. It is
+// deliberately not read here; the active card below is the same record.
 interface ProfileResponse {
   success: boolean;
   message: string;
   data: {
-    address: ProfileAddress;
     deliveryAddresses: DeliveryAddress[];
   };
 }
@@ -67,12 +83,11 @@ export default function SavedAddressesPage() {
   const invalidateProfile = useInvalidateProfile();
 
   const addresses = profile?.deliveryAddresses ?? [];
-  const profileAddress = profile?.address ?? null;
   const error = profileError
     ? getApiErrorMessage(profileError, "Failed to load addresses")
     : "";
 
-  const handleSetPrimaryAddress = async (addressId: string) => {
+  const handleSetActiveAddress = async (addressId: string) => {
     try {
       setUpdatingId(addressId);
 
@@ -82,9 +97,9 @@ export default function SavedAddressesPage() {
 
       await invalidateProfile();
       window.dispatchEvent(new Event("addressUpdated"));
-      toast.success(t("primaryAddressUpdated"));
+      toast.success(t("activeAddressUpdated"));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, t("failedToUpdatePrimaryAddress")));
+      toast.error(getApiErrorMessage(error, t("failedToUpdateActiveAddress")));
     } finally {
       setUpdatingId(null);
     }
@@ -138,51 +153,14 @@ export default function SavedAddressesPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold text-black dark:text-neutral-50">
-            {t("savedAddresses")}
-          </h1>
-        </div>
-
-        <button onClick={() => invalidateProfile()}>
-          <RefreshCw className="h-4 w-4 text-black dark:text-neutral-200" />
-        </button>
+      {/* Header. No manual refresh control: the list already re-fetches on
+          window focus and after every mutation, so the button gave the user
+          nothing to observe. */}
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black dark:text-neutral-50">
+          {t("manageAddresses")}
+        </h1>
       </div>
-
-      {/* Profile Address */}
-      {profileAddress && (
-        <div className="mb-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-neutral-400">
-            {t("profileAddress") || "Profile Address"}
-          </h2>
-          <div className="flex items-start gap-4 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-950/20 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-neutral-800">
-              <Home className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-            </div>
-            <div className="flex-1">
-              <div className="mb-1 flex items-center gap-2">
-                <span className="text-sm font-semibold uppercase text-blue-600 dark:text-blue-400">
-                  {t("profileAddress") || "Profile Address"}
-                </span>
-              </div>
-              <p className="truncate text-sm font-semibold text-black dark:text-neutral-100">
-                {profileAddress.detailedAddress || profileAddress.street}
-              </p>
-              <p className="truncate text-xs text-gray-600 dark:text-neutral-400">
-                {profileAddress.city}, {profileAddress.state}, {profileAddress.country}{" "}
-                {profileAddress.postalCode}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link href="/edit-profile">
-                <Pencil className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delivery Addresses */}
       <div className="space-y-4">
@@ -193,17 +171,23 @@ export default function SavedAddressesPage() {
         )}
 
         {addresses.map((address) => {
-          const isPrimary = address.isActive;
+          // The selected address, badged ACTIVE / ATIVO. Distinct from the
+          // retired `addressType: "PRIMARY"` some stored records still carry —
+          // the old badge wording made those two look like the same thing.
+          const isActiveAddress = address.isActive;
+          // Never render `addressType` raw — it would leak internal enum values
+          // (CURRENT_LOCATION) and legacy ones (PRIMARY) straight to the user.
+          const TypeIcon = ADDRESS_TYPE_ICONS[normalizeAddressType(address.addressType)];
 
           return (
             <div
               key={address._id}
               onClick={() => {
                 if (!address.isActive) {
-                  handleSetPrimaryAddress(address._id);
+                  handleSetActiveAddress(address._id);
                 }
               }}
-              className={`flex cursor-pointer items-start gap-4 rounded-xl p-4 transition-all ${isPrimary
+              className={`flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all sm:gap-4 sm:p-5 ${isActiveAddress
                 ? "border border-pink-200 dark:border-pink-900/50 bg-pink-50 dark:bg-pink-950/20"
                 : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/30 hover:border-pink-300 dark:hover:border-pink-500/30 hover:bg-pink-50/40 dark:hover:bg-pink-950/5"
                 } ${updatingId === address._id || deletingId === address._id
@@ -211,56 +195,75 @@ export default function SavedAddressesPage() {
                   : ""
                 }`}
             >
+              {/* shrink-0: without it the icon is squeezed into an oval as soon
+                  as the address text is long enough to compete for width. */}
               <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full ${isPrimary ? "bg-white dark:bg-neutral-800" : "bg-gray-100 dark:bg-neutral-800"
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isActiveAddress ? "bg-white dark:bg-neutral-800" : "bg-gray-100 dark:bg-neutral-800"
                   }`}
               >
-                <Home
-                  className={`h-4 w-4 ${isPrimary ? "text-[#C2185B] dark:text-pink-400" : "text-gray-600 dark:text-neutral-400"
+                <TypeIcon
+                  className={`h-4 w-4 ${isActiveAddress ? "text-[#C2185B] dark:text-pink-400" : "text-gray-600 dark:text-neutral-400"
                     }`}
                 />
               </div>
 
-              <div className="flex-1">
-                <div className="mb-1 flex items-center gap-2">
+              {/* min-w-0 is what keeps a long address inside the card: a flex
+                  item defaults to min-width:auto, i.e. its content width, so
+                  without this the row grows past the card and pushes the action
+                  buttons out of the background entirely. */}
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
                   <span
-                    className={`text-sm font-semibold uppercase ${isPrimary ? "text-[#C2185B] dark:text-pink-400" : "text-black dark:text-neutral-200"
+                    className={`text-sm font-semibold uppercase ${isActiveAddress ? "text-[#C2185B] dark:text-pink-400" : "text-black dark:text-neutral-200"
                       }`}
                   >
-                    {address.addressType}
+                    {addressTypeLabel(t, address.addressType, address.customAddressType)}
                   </span>
 
-                  {isPrimary && (
-                    <span className="rounded bg-[#C2185B] dark:bg-pink-600 px-1.5 py-1px text-[9px] font-semibold text-white">
-                      {t("primary")}
+                  {isActiveAddress && (
+                    <span className="rounded bg-[#C2185B] dark:bg-pink-600 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-white">
+                      {t("active")}
                     </span>
                   )}
                 </div>
 
-                <p className="truncate text-sm font-semibold text-black dark:text-neutral-100">
-                  {address.detailedAddress || address.street}
+                {/* Addresses wrap rather than truncate — a clipped street line
+                    is the half a courier can least afford to lose, and these
+                    cards have no other place to show it. */}
+                <p className="text-sm leading-snug font-semibold break-words text-black dark:text-neutral-100">
+                  {formatAddressLine1(address)}
                 </p>
 
-                <p className="truncate text-xs text-gray-600 dark:text-neutral-400">
-                  {address.city}, {address.state}, {address.country}
+                <p className="mt-0.5 text-xs leading-snug break-words text-gray-600 dark:text-neutral-400">
+                  {formatAddressLine2(address)}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              {/* Icon-only, so they carry their own labels. Sized to a real
+                  36px tap target instead of the bare 16px glyph. */}
+              <div className="flex shrink-0 items-center gap-1">
                 <button
+                  type="button"
+                  aria-label={t("editAddress")}
+                  title={t("editAddress")}
                   onClick={(e) => {
                     e.stopPropagation();
                     router.push(`/edit-address/${address._id}`);
                   }}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-[#C2185B] focus-visible:outline-none dark:hover:bg-white/10"
                 >
                   <Pencil className="h-4 w-4 text-[#C2185B] dark:text-pink-400" />
                 </button>
 
                 <button
+                  type="button"
+                  aria-label={t("deleteAddress")}
+                  title={t("deleteAddress")}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteAddress(address._id);
                   }}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-[#C2185B] focus-visible:outline-none dark:hover:bg-white/10"
                 >
                   <Trash2 className="h-4 w-4 text-[#C2185B] dark:text-pink-400" />
                 </button>
@@ -270,10 +273,18 @@ export default function SavedAddressesPage() {
         })}
 
         {addresses.length === 0 && (
-          <div className="rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 text-center text-sm text-gray-500 dark:text-neutral-450">
+          <div className="rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 text-center text-sm text-gray-500 dark:text-neutral-400">
             {t("noSavedAddressesFound")}
           </div>
         )}
+
+        <Link
+          href="/add-address"
+          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-pink-300 dark:border-pink-500/40 bg-white dark:bg-neutral-900/30 px-4 py-4 text-sm font-semibold text-[#C2185B] dark:text-pink-400 transition-all hover:border-[#C2185B] dark:hover:border-pink-400 hover:bg-pink-50/60 dark:hover:bg-pink-950/10"
+        >
+          <Plus className="h-4 w-4" />
+          {t("addNewAddress")}
+        </Link>
 
       </div>
 
@@ -287,7 +298,7 @@ export default function SavedAddressesPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteAddress} className="bg-[#C2185B] hover:bg-[#A01248] dark:bg-pink-600 dark:hover:bg-pink-700 text-white">
+            <AlertDialogAction onClick={confirmDeleteAddress}>
               {t("deleteLabel")}
             </AlertDialogAction>
           </AlertDialogFooter>

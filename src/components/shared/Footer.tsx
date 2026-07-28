@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import Logo from "@/components/shared/Logo";
 import { useTranslation } from "@/hooks/useTranslation";
 
 // Custom Facebook Icon
@@ -120,9 +121,9 @@ export default function Footer() {
   ];
 
   const linkClass =
-    "text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#f9186b] dark:hover:text-pink-500";
+    "text-base leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#f9186b] dark:hover:text-pink-500";
   const headingClass =
-    "mb-4 md:mb-6 text-[13px] font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white";
+    "mb-4 md:mb-6 text-xs font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white";
 
   return (
     <footer className="w-full border-t border-[#e3bdc3]/20 dark:border-neutral-800 bg-[#e1e3e4] dark:bg-neutral-900 px-6 py-12 sm:px-8 sm:py-14 md:py-16 lg:px-16 lg:py-20 transition-colors duration-200">
@@ -132,26 +133,25 @@ export default function Footer() {
       <div className="mb-10 grid w-full grid-cols-2 gap-x-8 gap-y-10 md:mb-16 md:grid-cols-12 md:gap-10 lg:gap-16">
         {/* Brand */}
         <div className="col-span-2 md:col-span-4">
-          <Link href="/" className="mb-6 flex items-center gap-3">
-            {/* Same white "chip" lockup as the navbar so the brand mark reads
-                consistently and gets some depth instead of a flat tile. */}
-            <span className="flex items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 p-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.08)] ring-1 ring-black/5 dark:ring-white/10">
-              <Image
-                src="/deligoLogo.png"
-                alt="DeliGo Logo"
-                width={44}
-                height={44}
-                loading="lazy"
-                className="h-10 w-10 rounded-xl sm:h-11 sm:w-11"
-              />
-            </span>
+          <Link
+            href="/"
+            className="group mb-6 flex w-fit items-center gap-2.5 rounded-xl outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#f9186b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#e1e3e4] dark:focus-visible:ring-offset-neutral-900"
+          >
+            {/* The footer is a neutral surface (#e1e3e4 / neutral-900), where
+                the tile reads on its own — 3.9:1 on light, 4.6:1 on dark — so
+                it needs no plate behind it. */}
+            <Logo
+              size={44}
+              alt="DeliGo Logo"
+              className="h-10 w-10 transition-transform duration-200 ease-out group-hover:scale-110 group-active:scale-95 motion-reduce:transform-none motion-reduce:transition-none sm:h-11 sm:w-11"
+            />
 
-            <span className="block text-[32px] font-black tracking-tight text-[#f9186b] sm:text-[36px] lg:text-[40px]">
+            <span className="block text-3xl font-black tracking-tight text-[#f9186b] sm:text-4xl">
               DeliGo
             </span>
           </Link>
 
-          <p className="max-w-md text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-[16px]">
+          <p className="max-w-md text-base leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-base">
             {t("footerDescription")}
           </p>
 
@@ -211,7 +211,7 @@ export default function Footer() {
         {/* App Store Badges */}
         <div className="col-span-2 md:col-span-4">
           <h4 className={headingClass}>{t("getTheApp")}</h4>
-          <p className="mb-5 max-w-md text-[15px] leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-[16px]">
+          <p className="mb-5 max-w-md text-base leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-base">
             {t("mobileExperience")}
           </p>
           <div className="flex flex-row flex-wrap gap-3 sm:flex-col">
@@ -253,7 +253,7 @@ export default function Footer() {
       <div className="mb-6 h-px w-full bg-[#e3bdc3]/30 dark:bg-neutral-800 md:mb-8" />
 
       {/* Bottom */}
-      <div className="flex w-full flex-col items-center justify-between gap-4 text-center text-[13px] leading-5 text-[#5a4044] dark:text-neutral-400 sm:text-[14px] md:flex-row md:text-left">
+      <div className="flex w-full flex-col items-center justify-between gap-4 text-center text-xs leading-5 text-[#5a4044] dark:text-neutral-400 sm:text-sm md:flex-row md:text-left">
         <div>
           © {currentYear} DeliGo PIXELMIRACLE, LDA. {t("allRightsReserved")}
         </div>

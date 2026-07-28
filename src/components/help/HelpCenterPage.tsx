@@ -81,7 +81,7 @@ export default function HelpCenterPage() {
       <div className="mx-auto max-w-5xl px-4 py-10 md:px-6">
         {/* Header */}
         <section className="mb-14 text-center">
-          <h1 className="text-3xl font-bold text-[#191c1d] dark:text-neutral-50 md:text-4xl">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
             {t("helpCenter")}
           </h1>
 

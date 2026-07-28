@@ -11,7 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Bike, Plus, Star, Store, UtensilsCrossed } from "lucide-react";
+import { Bike, Moon, Plus, Star, Store, UtensilsCrossed } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useProfile, useActiveAddressCoords } from "@/hooks/queries/useProfile";
@@ -25,6 +25,7 @@ const VendorDetailsModal = dynamic(() => import("./VendorDetailsModal"), {
   ssr: false,
 });
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
+import ClosingCountdown from "./ClosingCountdown";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useVendor, useVendorProducts } from "@/hooks/queries/useVendors";
 import { useLocationStore } from "@/stores/locationStore";
@@ -102,6 +103,7 @@ interface Vendor {
     businessType: string;
     openingHours: string;
     closingHours: string;
+    closingDays?: string[];
     preparationTimeMinutes: number;
     restaurantCuisineType?: string[] | string;
     isStoreOpen: boolean;
@@ -130,11 +132,21 @@ interface Product {
     currency: string;
   };
   category?: { name: string };
+  // `isFeatured` is the vendor's own curation flag from GET /products. It is
+  // the only merchandising signal the API exposes — there is no order-count or
+  // popularity metric — so the tab is labelled "Featured" for what it is.
+  meta?: { isFeatured?: boolean };
 }
 
+// Sentinel for the Featured tab. Namespaced so it cannot be mistaken for a real
+// category — the other tabs are keyed by the category's own (localized) name,
+// and a vendor is perfectly entitled to call a category "Featured".
+const FEATURED_KEY = "__featured__";
+
 // Pure + module-scoped so it has a stable identity (safe as a memo dep).
+// Decimal point, matching the cart, checkout, payment and invoice surfaces.
 function formatPrice(price: number, currency: string) {
-  return `${currency}${price.toFixed(2)}`.replace(".", ",");
+  return `${currency}${price.toFixed(2)}`;
 }
 
 // Memoized menu row — only re-renders when its product or the select handler
@@ -143,9 +155,15 @@ function formatPrice(price: number, currency: string) {
 const MenuProductCard = memo(function MenuProductCard({
   product,
   onSelect,
+  storeClosed = false,
 }: {
   product: Product;
   onSelect: (productId: string) => void;
+  // When the store is closed the menu stays browsable but nothing in the row is
+  // actionable: the add button is disabled and the hover affordance is dropped,
+  // so the card never invites a click it won't honour. Customers can still see
+  // what's on offer, which is the point of letting them in here at all.
+  storeClosed?: boolean;
 }) {
   const { t } = useTranslation();
   // Guard against a product record with missing/partial pricing — an unguarded
@@ -157,7 +175,11 @@ const MenuProductCard = memo(function MenuProductCard({
   const currency = currencySymbol(pricing?.currency);
 
   return (
-    <div className="group flex overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none transition hover:shadow-lg dark:hover:bg-neutral-800/30">
+    <div
+      className={`group flex overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none transition ${
+        storeClosed ? "" : "hover:shadow-lg dark:hover:bg-neutral-800/30"
+      }`}
+    >
       <div className="relative h-36 w-32 shrink-0">
         <SafeImage
           src={product.images?.[0]}
@@ -167,7 +189,7 @@ const MenuProductCard = memo(function MenuProductCard({
         />
         {hasDiscount && (
           <span className="absolute left-2 top-2 rounded-full bg-pink-600 px-2 py-1 text-[10px] font-bold text-white">
-            {Math.round(pricing?.discount ?? 0)}% {t("off")}
+            {pricing?.discount ?? 0}% {t("off")}
           </span>
         )}
       </div>
@@ -193,7 +215,9 @@ const MenuProductCard = memo(function MenuProductCard({
           </div>
           <button
             onClick={() => onSelect(product.productId)}
-            className="rounded-xl bg-pink-600 p-2 text-white transition hover:scale-105"
+            disabled={storeClosed}
+            aria-label={storeClosed ? t("storeClosedTitle") : t("addToCart")}
+            className="rounded-xl bg-pink-600 p-2 text-white transition hover:scale-105 disabled:cursor-not-allowed disabled:bg-gray-300 dark:disabled:bg-neutral-700 disabled:hover:scale-100"
           >
             <Plus size={18} />
           </button>
@@ -230,7 +254,7 @@ export default function VendorDetailsPage({
     ? getApiErrorMessage(productsErrorObj, "Unable to load menu")
     : "";
   // Category filter selection. Keyed by a stable value — the sentinels "all" /
-  // "popular", or a category's (localized) name for real categories — decoupled
+  // FEATURED_KEY, or a category's (localized) name for real categories — decoupled
   // from the translated display label. A language switch remounts this page via
   // LanguageBoundary, which re-inits this back to "all", so no stale (old
   // language) selection can survive and match nothing.
@@ -239,6 +263,11 @@ export default function VendorDetailsPage({
     null,
   );
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+
+  // Closed vendors are openable from the listings on purpose — the menu stays
+  // browsable and only ordering is withdrawn — and a store can also close while
+  // this page is open. Only an explicit `false` counts as closed.
+  const isStoreClosed = vendor?.businessDetails?.isStoreOpen === false;
 
   // Defer the category filter so a tab click highlights instantly while the grid
   // re-filters in the background — keeps the tab bar responsive on large menus.
@@ -263,9 +292,13 @@ export default function VendorDetailsPage({
             ),
           ]
         : [];
+    // Only offer the Featured tab when this vendor has actually flagged
+    // something. Rendering it unconditionally is what made the old "Popular"
+    // tab a dead control: always present, never filtering.
+    const hasFeatured = products.some((p) => p.meta?.isFeatured);
     return [
       { key: "all", label: t("all") },
-      { key: "popular", label: t("popular") },
+      ...(hasFeatured ? [{ key: FEATURED_KEY, label: t("featured") }] : []),
       ...(vendorCategoryNames.length > 0
         ? vendorCategoryNames
         : productCategoryNames
@@ -274,8 +307,9 @@ export default function VendorDetailsPage({
   }, [vendor, products, t]);
 
   const filteredProducts = useMemo(() => {
-    if (deferredCategory === "all" || deferredCategory === "popular")
-      return products;
+    if (deferredCategory === "all") return products;
+    if (deferredCategory === FEATURED_KEY)
+      return products.filter((product) => product.meta?.isFeatured);
     return products.filter((product) => {
       const productCategory = product.category?.name;
       if (!productCategory) return false;
@@ -389,6 +423,13 @@ export default function VendorDetailsPage({
   return (
     <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-full px-4 py-6 lg:px-8">
+        <ClosingCountdown
+          closingHours={vendor.businessDetails.closingHours}
+          openingHours={vendor.businessDetails.openingHours}
+          closingDays={vendor.businessDetails.closingDays}
+          isStoreOpen={vendor.businessDetails.isStoreOpen}
+        />
+
         {/* Hero Section */}
         <section className="mb-6">
           <div className="relative overflow-hidden rounded-3xl shadow-lg">
@@ -398,13 +439,26 @@ export default function VendorDetailsPage({
                 alt={vendor.businessDetails.businessName}
                 priority
                 sizes="100vw"
+                className={`object-cover ${isStoreClosed ? "grayscale" : ""}`}
                 fallbackIcon={<Store className="h-14 w-14" />}
               />
               <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+              {/* Same treatment the listing card carries, so arriving here from
+                  a dimmed card reads as continuity rather than a state change.
+                  Sits above the gradient but clear of the info panel, which is
+                  anchored to the bottom-left. */}
+              {isStoreClosed && (
+                <div className="pointer-events-none absolute inset-0 flex items-start justify-center bg-black/40 pt-10 md:pt-16">
+                  <span className="flex items-center gap-2 rounded-full bg-black/70 px-5 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
+                    <Moon size={18} />
+                    {t("currentlyClosed")}
+                  </span>
+                </div>
+              )}
               <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8">
                 <div className="rounded-2xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 p-5 shadow-xl dark:shadow-none">
                   <div className="mb-1 flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
                       {vendor.businessDetails.businessName}
                     </h1>
                     <span
@@ -470,6 +524,23 @@ export default function VendorDetailsPage({
           />
         )}
 
+        {isStoreClosed && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-5">
+            <Moon
+              size={22}
+              className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500"
+            />
+            <div>
+              <p className="font-semibold text-amber-900 dark:text-amber-300">
+                {t("storeClosedTitle")}
+              </p>
+              <p className="mt-1 text-sm text-amber-800 dark:text-amber-400/80">
+                {t("storeClosedNotice")}
+              </p>
+            </div>
+          </div>
+        )}
+
         <section>
           <h2 className="mb-6 text-xl font-bold text-gray-900 dark:text-white">{t("menu")}</h2>
 
@@ -507,6 +578,7 @@ export default function VendorDetailsPage({
                     key={product.productId ?? product.id}
                     product={product}
                     onSelect={handleSelectProduct}
+                    storeClosed={isStoreClosed}
                   />
                 ))}
               </div>

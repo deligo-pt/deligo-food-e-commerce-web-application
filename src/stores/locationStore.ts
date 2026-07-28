@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { AddressType } from "@/lib/addressType";
 
 export interface Coords {
   latitude: number;
@@ -14,7 +15,11 @@ export interface GuestAddress {
   latitude: number;
   longitude: number;
   detailedAddress?: string;
-  addressType: "HOME" | "OFFICE" | "OTHER";
+  addressType: AddressType;
+  /** The customer's own name for an `OTHER` address. Kept so re-opening the
+   *  guest form restores what they typed. Note the guest→account sync posts to
+   *  `update-live-location`, which carries neither this nor `addressType`. */
+  customAddressType?: string;
 }
 
 interface LocationState {

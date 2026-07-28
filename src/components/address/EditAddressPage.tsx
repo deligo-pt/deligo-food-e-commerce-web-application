@@ -14,7 +14,7 @@ import AddressForm from "./AddressForm";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile } from "@/hooks/queries/useProfile";
 
-const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_LOCATION_API_KEY}&libraries=places`;
+const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
 
 interface Address {
   _id: string;
@@ -25,6 +25,8 @@ interface Address {
   postalCode: string;
   detailedAddress?: string;
   addressType: string;
+  /** The customer's own name for an `OTHER` address; "" on older records. */
+  customAddressType?: string;
   isActive: boolean;
   latitude?: number;
   longitude?: number;
@@ -63,7 +65,6 @@ export default function EditAddressPage({ addressId }: Props) {
     lat: number;
     lng: number;
   } | null>(null);
-  const [userId, setUserId] = useState<string>("");
   const error = profileErr
     ? getApiErrorMessage(profileErr, "Failed to load address")
     : "";
@@ -87,9 +88,8 @@ export default function EditAddressPage({ addressId }: Props) {
     const found = (profile.deliveryAddresses || []).find(
       (item) => item._id === addressId,
     );
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUserId(profile.userId || "");
     if (!found) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAddress(found);
     setCoordinates({
       lat: found.latitude ?? 23.8103,
@@ -294,7 +294,7 @@ export default function EditAddressPage({ addressId }: Props) {
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {/* Page Title */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#191c1d] dark:text-neutral-50">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
             {t("editAddress")}
           </h1>
         </div>
@@ -429,7 +429,6 @@ export default function EditAddressPage({ addressId }: Props) {
               coordinates={coordinates}
               initialAddress={address}
               isEditMode={true}
-              userId={userId}
               addressId={addressId}
               onSuccess={() => router.push("/saved-addresses")}
             />
