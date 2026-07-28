@@ -39,12 +39,13 @@ interface CartItem {
 
 interface CartProductRowProps {
   item: CartItem;
-  onRemove: (productId: string, variationSku: string | null) => void;
+  /** Re-read the cart from the server — see `CartPage.resyncCart`. */
+  onCartChanged: () => Promise<void>;
 }
 
 export default function CartProductRow({
   item,
-  onRemove,
+  onCartChanged,
 }: CartProductRowProps) {
   const { t } = useTranslation();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -75,12 +76,15 @@ export default function CartProductRow({
         target.variationSku = item.variationSku;
       }
       await apiClient.delete("/carts/delete-item", { data: [target] });
-      onRemove(item.productId, item.variationSku);
       toast.success(`Removed "${item.name}" from cart`);
     } catch (error: any) {
       console.error("Deletion error:", error);
       toast.error(getApiErrorMessage(error, "Could not remove product"));
     } finally {
+      // Both paths: on success to pick up the totals the backend recalculated,
+      // on failure because the rejection usually means the server's cart has
+      // already moved past the copy this row was rendered from.
+      await onCartChanged();
       setIsDeleting(false);
       processingRef.current = false;
     }

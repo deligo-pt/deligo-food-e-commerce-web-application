@@ -8,7 +8,6 @@ import {
 import { apiClient } from "@/lib/apiClient";
 import { useStore } from "@/stores/translationStore";
 import { useCartCache } from "@/hooks/queries/useCart";
-import { useCartStore } from "@/stores/cartStore";
 
 export const orderKeys = {
   all: ["orders"] as const,
@@ -67,7 +66,7 @@ export function useReorder() {
     // The response *is* the new cart — seed the cache with it so /cart paints
     // immediately, then revalidate.
     if (cart) setCart(cart);
-    await Promise.all([invalidate(), useCartStore.getState().fetchCart()]);
+    await invalidate();
     return cart;
   };
 }

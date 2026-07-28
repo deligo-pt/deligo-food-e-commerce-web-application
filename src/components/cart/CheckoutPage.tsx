@@ -28,7 +28,6 @@ import {
 } from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
-import { useCartStore } from "@/stores/cartStore";
 import { useCart } from "@/hooks/queries/useCart";
 import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 
@@ -253,7 +252,6 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       await apiClient.post("/carts/add-to-cart", payload);
 
       await refetchCart();
-      useCartStore.getState().fetchCart();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to sync cart updates"));
       await refetchCart();
@@ -375,7 +373,6 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       await apiClient.post("/carts/add-to-cart", payload);
 
       await refetchCart();
-      useCartStore.getState().fetchCart();
     } catch (error) {
       // The backend enforces each add-on group's max (e.g. "You can select a
       // maximum of 2 items for Cheese"); surface its message and revert the
