@@ -15,6 +15,7 @@ import {
   Receipt,
   ShoppingBag,
   Utensils,
+  XCircle,
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
@@ -25,7 +26,11 @@ import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getServiceChargeGross, getDeliveryTax } from "@/lib/tax";
 import { getRefundState, isOrderFinished, isTerminatedStatus } from "@/lib/refund";
-import { getStatusNote, normalizeOrderStatus } from "@/lib/orderStatus";
+import {
+  getTerminalReason,
+  getTimelineStepIndex,
+  getTimelineStepKeys,
+} from "@/lib/orderTimeline";
 import { getPaymentStatusDisplay } from "@/lib/paymentStatus";
 import OrderMap from "./OrderMap/OrderMap";
 import RefundBanner from "./RefundBanner";
@@ -37,76 +42,79 @@ import RefundBanner from "./RefundBanner";
 const LIVE_POLL_MS = 5000;
 const REFUND_POLL_MS = 30000;
 
-// Timeline steps based on orderStatus. `terminalNote` is the vendor's own
-// reason for a rejection/cancellation, which the API requires them to give.
+// Copy and icon for every step the timeline can show. Which of these actually
+// appear — and in what order — is `getTimelineStepKeys`'s call, so that a
+// rejected order does not display the steps it never reached.
+const STEP_PRESENTATION: Record<
+  string,
+  { labelKey: string; descriptionKey: string; icon: typeof Check }
+> = {
+  PENDING: {
+    labelKey: "orderPending",
+    descriptionKey: "waitingRestaurantResponse",
+    icon: Check,
+  },
+  ACCEPTED: {
+    labelKey: "orderAccepted",
+    descriptionKey: "restaurantAcceptedOrder",
+    icon: CheckCircle,
+  },
+  PREPARING: {
+    labelKey: "preparing",
+    descriptionKey: "restaurantPreparingMeal",
+    icon: Utensils,
+  },
+  READY_FOR_PICKUP: {
+    labelKey: "readyForPickup",
+    descriptionKey: "orderReadyForPickup",
+    icon: CheckSquare,
+  },
+  PICKED_UP: {
+    labelKey: "pickedUp",
+    descriptionKey: "riderPickedUpOrder",
+    icon: Bike,
+  },
+  ON_THE_WAY: {
+    labelKey: "onTheWay",
+    descriptionKey: "riderHeadingLocation",
+    icon: Navigation,
+  },
+  DELIVERED: {
+    labelKey: "delivered",
+    descriptionKey: "orderDelivered",
+    icon: CheckCheck,
+  },
+  REJECTED: {
+    labelKey: "rejected",
+    descriptionKey: "orderWasRejected",
+    icon: XCircle,
+  },
+  CANCELLED: {
+    labelKey: "cancelled",
+    descriptionKey: "orderWasCancelled",
+    icon: XCircle,
+  },
+};
+
+// `terminalNote` is the vendor's own reason for a rejection/cancellation, which
+// the API requires them to give — it replaces the generic description on the
+// terminal step, the way the app shows it.
 function getOrderStep(
-  orderStatus: string,
+  order: any,
   t: (key: string) => string,
   terminalNote: string | null,
 ) {
-  const isTerminated = isTerminatedStatus(orderStatus);
-
-  const steps = [
-    {
-      key: "PENDING",
-      label: t("orderPending"),
-      description: t("waitingRestaurantResponse"),
-      icon: Check,
-    },
-    {
-      key: "ACCEPTED",
-      label: t("orderAccepted"),
-      description: t("restaurantAcceptedOrder"),
-      icon: CheckCircle,
-    },
-    {
-      key: "PREPARING",
-      label: t("preparing"),
-      description: t("restaurantPreparingMeal"),
-      icon: Utensils,
-    },
-    {
-      key: "READY_FOR_PICKUP",
-      label: t("readyForPickup"),
-      description: t("orderReadyForPickup"),
-      icon: CheckSquare,
-    },
-    {
-      key: "PICKED_UP",
-      label: t("pickedUp"),
-      description: t("riderPickedUpOrder"),
-      icon: Bike,
-    },
-    {
-      key: "ON_THE_WAY",
-      label: t("onTheWay"),
-      description: t("riderHeadingLocation"),
-      icon: Navigation,
-    },
-  ];
-
-  if (isTerminated) {
-    const isRejected = normalizeOrderStatus(orderStatus) === "REJECTED";
-    steps.push({
-      key: orderStatus,
-      label: isRejected ? t("rejected") : t("cancelled"),
-      // The vendor's own words, the way the app shows them. The API makes a
-      // reason mandatory on both of these transitions, so the generic below is
-      // a safety net rather than the expected case.
+  return getTimelineStepKeys(order).map((key) => {
+    const presentation = STEP_PRESENTATION[key];
+    const isTerminal = isTerminatedStatus(key);
+    return {
+      key,
+      label: t(presentation.labelKey),
       description:
-        terminalNote ?? t(isRejected ? "orderWasRejected" : "orderWasCancelled"),
-      icon: CheckCircle,
-    });
-  } else {
-    steps.push({
-      key: "DELIVERED",
-      label: t("delivered"),
-      description: t("orderDelivered"),
-      icon: CheckCheck,
-    });
-  }
-
-  return steps;
+        isTerminal && terminalNote ? terminalNote : t(presentation.descriptionKey),
+      icon: presentation.icon,
+    };
+  });
 }
 
 export default function TrackOrder() {
@@ -142,20 +150,15 @@ export default function TrackOrder() {
         setOrder(orderData);
 
         if (orderData) {
-          const activeStatus = orderData.orderStatus === "ASSIGNED" ? "ACCEPTED" : orderData.orderStatus;
-          const STEP_KEYS = ["PENDING", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "ON_THE_WAY"];
-          let idx = STEP_KEYS.indexOf(activeStatus);
-          if (idx === -1) {
-            if (activeStatus === "DELIVERED" || isTerminatedStatus(activeStatus)) {
-              idx = 6;
-            } else {
-              idx = 0;
-            }
-          }
+          const idx = getTimelineStepIndex(orderData);
+          // The timeline shortens the moment an order is rejected, so a max
+          // carried over from the live path can point past the last step —
+          // clamp, or nothing renders as current.
+          const lastIdx = getTimelineStepKeys(orderData).length - 1;
           if (isInitial) {
             setMaxStatusIndex(idx);
           } else {
-            setMaxStatusIndex((prevMax) => Math.max(prevMax, idx));
+            setMaxStatusIndex((prevMax) => Math.min(Math.max(prevMax, idx), lastIdx));
           }
         }
 
@@ -341,7 +344,7 @@ export default function TrackOrder() {
   // matching the app, rather than as a standalone line.
   const subtotalTax = calc.totalTaxAmount || 0;
 
-  const steps = getOrderStep(order.orderStatus, t, getStatusNote(order));
+  const steps = getOrderStep(order, t, getTerminalReason(order));
 
   // Derived from the payment fields, not `orderStatus` — a refund moves
   // `paymentStatus`/`isPaid` while the order stays REJECTED/CANCELED.

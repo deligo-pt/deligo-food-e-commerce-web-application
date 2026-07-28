@@ -1,12 +1,13 @@
 "use client";
 
-import { CheckCircle2, HandCoins } from "lucide-react";
+import { Check } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   refundStateDescriptionKey,
   refundStateLabelKey,
   type RefundState,
 } from "@/lib/refund";
+import RefundIllustration from "./RefundIllustration";
 
 /**
  * What happened to the customer's money after their paid order was rejected or
@@ -25,7 +26,6 @@ export default function RefundBanner({ state }: { state: RefundState }) {
   if (!labelKey || !descriptionKey) return null;
 
   const isCompleted = state === "completed";
-  const Icon = isCompleted ? CheckCircle2 : HandCoins;
 
   return (
     // role="status" + aria-live: once polling is kept alive through the refund
@@ -41,19 +41,16 @@ export default function RefundBanner({ state }: { state: RefundState }) {
           : "border-l-[#f9186b] dark:border-l-[#f9186b]"
       }`}
     >
-      <div
-        className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full ${
-          isCompleted
-            ? "bg-green-600 dark:bg-green-500"
-            : "bg-[#ffd9de] dark:bg-pink-950/30"
-        }`}
-      >
-        <Icon
-          className={`h-8 w-8 ${
-            isCompleted ? "text-white" : "text-[#f9186b] dark:text-pink-400"
-          }`}
-        />
-      </div>
+      {/* Completed is a solid green disc and in-progress the money bag, the
+          same pairing the app uses — the two states must not be
+          distinguishable only by colour. */}
+      {isCompleted ? (
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-green-600 dark:bg-green-500">
+          <Check className="h-10 w-10 text-white" strokeWidth={3} />
+        </div>
+      ) : (
+        <RefundIllustration className="h-20" />
+      )}
 
       <div className="space-y-1">
         <h2

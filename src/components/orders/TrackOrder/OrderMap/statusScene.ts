@@ -1,3 +1,4 @@
+import { toTimelineStatus } from "@/lib/orderTimeline";
 import type { StatusScene } from "./types";
 
 /**
@@ -21,13 +22,14 @@ export const STATUS_SCENES: Record<string, StatusScene> = {
 const DEFAULT_SCENE: StatusScene = STATUS_SCENES.PENDING;
 
 /**
- * Normalize a raw backend status to the canonical set. `ASSIGNED` is treated
- * as `ACCEPTED` to match TrackOrder's timeline logic; everything else is just
- * upper-cased.
+ * Normalize a raw backend status to the canonical set — the same folding the
+ * timeline uses, so the map and the timeline can never disagree about what an
+ * order's status means. That includes the API's `CANCELED`, which used to miss
+ * the key above and drop a cancelled order onto the PENDING scene: a map
+ * animating "waiting for the restaurant" beside a refund banner.
  */
 export function normalizeStatus(status: string | undefined | null): string {
-  const s = (status || "").toUpperCase();
-  return s === "ASSIGNED" ? "ACCEPTED" : s;
+  return toTimelineStatus(status);
 }
 
 /** Resolve the scene for a raw status, falling back to the PENDING scene. */

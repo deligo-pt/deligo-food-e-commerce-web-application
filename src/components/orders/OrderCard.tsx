@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Clock3, Download, HandCoins, Loader2, RotateCcw, UtensilsCrossed, Star } from "lucide-react";
+import { CheckCircle, Clock3, Download, HandCoins, Loader2, RotateCcw, UtensilsCrossed, Star, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,7 +18,12 @@ interface OrderCardProps {
   orderId: string;
   date: string;
   price: string;
-  status: "accepted" | "pending" | "delivered" | "cancelled";
+  /**
+   * `rejected` and `cancelled` are kept apart because the backend keeps them
+   * apart — a restaurant refusing the order and an order being called off are
+   * different events, and the customer is told which one happened.
+   */
+  status: "accepted" | "pending" | "delivered" | "cancelled" | "rejected";
   /**
    * Whether money is owed back on this order. Kept separate from `status`
    * rather than folded into it: `status` also decides which actions the card
@@ -53,6 +58,10 @@ export default function OrderCard({
   const reorder = useReorder();
   const [downloading, setDownloading] = useState(false);
   const [reordering, setReordering] = useState(false);
+
+  // The two terminal statuses are labelled differently but behave identically:
+  // no food is coming, so the same actions make sense for both.
+  const isTerminated = status === "cancelled" || status === "rejected";
 
   const handleReorder = async () => {
     if (reordering) return;
@@ -123,10 +132,13 @@ export default function OrderCard({
               <CheckCircle size={12} />
               {t("delivered")}
             </div>
-          ) : status === "cancelled" ? (
+          ) : isTerminated ? (
+            // Whichever of the two the backend actually reported — this used to
+            // say "Cancelled" for both, contradicting the label under the
+            // progress bar on every rejected order.
             <div className="flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-950/20 px-2 py-1 text-xs text-red-600 dark:text-red-400">
-              <Clock3 size={12} />
-              {t("cancelled")}
+              <XCircle size={12} />
+              {t(status)}
             </div>
           ) : (
             <div className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-neutral-800 px-2 py-1 text-xs text-gray-600 dark:text-neutral-400">
@@ -180,8 +192,15 @@ export default function OrderCard({
         </div>
 
         <div className="h-1.5 rounded-full bg-gray-200 dark:bg-neutral-800">
+          {/* A full brand-pink bar reads as "completed successfully". On an
+              order that was rejected or cancelled it is the same claim the
+              track-order timeline used to make, so the terminal bar is red. */}
           <div
-            className="h-full rounded-full bg-[#f9186b] dark:bg-pink-600"
+            className={`h-full rounded-full ${
+              isTerminated
+                ? "bg-red-600 dark:bg-red-500"
+                : "bg-[#f9186b] dark:bg-pink-600"
+            }`}
             style={{
               width: `${progress}%`,
             }}
@@ -215,7 +234,7 @@ export default function OrderCard({
 
         {/* Re-order only makes sense once an order is finished — an in-flight
             one is already on its way. */}
-        {(status === "delivered" || status === "cancelled") && (
+        {(status === "delivered" || isTerminated) && (
           <button
             onClick={handleReorder}
             disabled={reordering}
@@ -230,7 +249,7 @@ export default function OrderCard({
           </button>
         )}
 
-        {status !== "cancelled" && (
+        {!isTerminated && (
           <button
             onClick={handleDownloadInvoice}
             disabled={downloading}

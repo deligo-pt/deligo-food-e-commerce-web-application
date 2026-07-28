@@ -350,49 +350,54 @@ export default function OrdersPage() {
                 <p className="text-[#5a4044] dark:text-neutral-400">{t("previousOrdersMessage")}</p>
               </div>
             ) : (
-              historyOrders.map((order) => (
-                <OrderCard
-                  key={order._id}
-                  dbId={order._id}
-                  image={order.items?.[0]?.image}
-                  restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
-                    order.vendorId?.name?.lastName ?? ""
-                  }`}
-                  orderId={order.orderId}
-                  date={new Date(order.createdAt).toLocaleString()}
-                  price={formatOrderPrice(order.payoutSummary?.grandTotal)}
-                  status={
-                    normalizeOrderStatus(order.orderStatus) === "DELIVERED"
-                      ? "delivered"
-                      : "cancelled"
-                  }
-                  refundState={getRefundState(order)}
-                  items={order.items
-                    ?.map(
-                      (item: any) =>
-                        `${item.itemSummary?.quantity}x ${item.name}`,
-                    )
-                    .join(", ")}
-                  progress={100}
-                  progressText={
-                    normalizeOrderStatus(order.orderStatus) === "DELIVERED"
-                      ? t("delivered")
-                      : normalizeOrderStatus(order.orderStatus) === "CANCELLED"
-                        ? t("cancelled")
-                        : t("rejected")
-                  }
-                  isRated={isOrderRated(order._id)}
-                  onRateOrder={() => {
-                    setFoodRating(0);
-                    setFoodQuality(0);
-                    setPackaging(0);
-                    setDeliveryRating(0);
-                    setDeliverySpeed(0);
-                    setRiderBehavior(0);
-                    setActiveRatingOrder(order);
-                  }}
-                />
-              ))
+              historyOrders.map((order) => {
+                // One derivation, used for both the chip and the label under
+                // the progress bar. They used to be worked out separately and
+                // disagreed: a REJECTED order was chipped "Cancelled" while the
+                // label right below it read "Rejected".
+                const normalized = normalizeOrderStatus(order.orderStatus);
+                const cardStatus =
+                  normalized === "DELIVERED"
+                    ? "delivered"
+                    : normalized === "REJECTED"
+                      ? "rejected"
+                      : "cancelled";
+                return (
+                  <OrderCard
+                    key={order._id}
+                    dbId={order._id}
+                    image={order.items?.[0]?.image}
+                    restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
+                      order.vendorId?.name?.lastName ?? ""
+                    }`}
+                    orderId={order.orderId}
+                    date={new Date(order.createdAt).toLocaleString()}
+                    price={formatOrderPrice(order.payoutSummary?.grandTotal)}
+                    status={cardStatus}
+                    refundState={getRefundState(order)}
+                    items={order.items
+                      ?.map(
+                        (item: any) =>
+                          `${item.itemSummary?.quantity}x ${item.name}`,
+                      )
+                      .join(", ")}
+                    progress={100}
+                    // The three card statuses are also the three dictionary
+                    // keys, so this cannot drift from the chip again.
+                    progressText={t(cardStatus)}
+                    isRated={isOrderRated(order._id)}
+                    onRateOrder={() => {
+                      setFoodRating(0);
+                      setFoodQuality(0);
+                      setPackaging(0);
+                      setDeliveryRating(0);
+                      setDeliverySpeed(0);
+                      setRiderBehavior(0);
+                      setActiveRatingOrder(order);
+                    }}
+                  />
+                );
+              })
             )}
           </div>
         )}
