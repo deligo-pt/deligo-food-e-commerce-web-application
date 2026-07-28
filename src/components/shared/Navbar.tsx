@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Image from "next/image";
 import Logo from "@/components/shared/Logo";
 import Link from "next/link";
@@ -27,7 +27,9 @@ import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
 } from "../../lib/authCookies";
-import { useCartStore } from "@/stores/cartStore";
+import { useCart, useCartCache } from "@/hooks/queries/useCart";
+import { getCartVendorId } from "@/lib/cart";
+import type { CartResponse } from "@/types/cart";
 import { useLocationStore } from "@/stores/locationStore";
 import { updateLiveLocation } from "@/services/addressApi";
 import { clearCachedFCMToken } from "@/lib/fcmToken";
@@ -90,7 +92,20 @@ export default function Navbar() {
     enabled: isLoggedIn,
   });
   const invalidateUnreadCount = useInvalidateUnreadCount();
-  const { vendorCount, fetchCart } = useCartStore();
+
+  // The badge reads the same cart query the cart and checkout pages read, so
+  // the number on the icon and the contents of the page cannot disagree. It
+  // used to be a separate store with its own fetch, which is how a cart deleted
+  // server-side could stay on screen with a confident count above it.
+  const { data: cart } = useCart<CartResponse | null>({ enabled: isLoggedIn });
+  const { clear: clearCartCache } = useCartCache();
+  const vendorCount = useMemo(() => {
+    // Logged out, the query is disabled but its last data is still cached —
+    // gate on the session so a signed-out navbar can't show the old basket.
+    if (!isLoggedIn) return 0;
+    return new Set((cart?.items ?? []).map((item) => getCartVendorId(item.vendorId)))
+      .size;
+  }, [isLoggedIn, cart]);
   const { coords, permissionStatus, isAutoSavingAddress, guestAddress } = useLocationStore();
   const [guestGeocoding, setGuestGeocoding] = useState(false);
   const [isAddressRefetching, setIsAddressRefetching] = useState(false);
@@ -417,17 +432,16 @@ export default function Navbar() {
       );
   }, [invalidateUnreadCount]);
 
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchCart();
-    }
-  }, [isLoggedIn, pathname, fetchCart]);
+  // No per-navigation cart fetch here any more: `useCart` re-reads on mount,
+  // window focus and reconnect, and every cart mutation invalidates it, so this
+  // observer stays current on its own.
 
   const handleLogout = () => {
     clearCachedFCMToken();
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
     useLocationStore.getState().setHasAutoSavedAddress(false);
+    clearCartCache();
     setIsLoggedIn(false);
     setFirstName(null);
     setProfilePhoto(null);

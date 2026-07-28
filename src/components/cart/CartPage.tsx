@@ -5,13 +5,8 @@ import { useMemo } from "react";
 import CartStoreCard from "./CartStoreCard";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
-import {
-  getCartVendorId,
-  getCartVendorName,
-  getLineOriginalPrice,
-} from "@/lib/cart";
+import { getCartVendorId, getCartVendorName } from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useCartStore } from "@/stores/cartStore";
 import { useCart, useCartCache } from "@/hooks/queries/useCart";
 import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 
@@ -28,77 +23,30 @@ export default function CartPage() {
     page: 1,
     limit: 100,
   });
-  const { setCart, invalidate: invalidateCart } = useCartCache();
+  const { invalidate: invalidateCart } = useCartCache();
 
   const error = cartError
     ? getApiErrorMessage(cartError, "Failed to load cart")
     : "";
 
-  // Optimistic removal of a single product (used by product row)
-  const removeProductFromCart = (
-    productId: string,
-    variationSku: string | null,
-  ) => {
-    if (!cart) return;
-
-    const newItems = cart.items.filter(
-      (item) =>
-        !(item.productId === productId && item.variationSku === variationSku),
-    );
-
-    // Recalculate totals
-    const totalItems = newItems.reduce(
-      (sum, item) => sum + item.itemSummary.quantity,
-      0,
-    );
-    // Add-ons are part of a line's list price, matching the basis the backend
-    // uses for totalOriginalPrice. Summing `originalPrice * quantity` alone
-    // would leave this short of the amount actually due.
-    const totalOriginalPrice = newItems.reduce(
-      (sum, item) => sum + getLineOriginalPrice(item),
-      0,
-    );
-    const totalProductDiscount = newItems.reduce(
-      (sum, item) =>
-        sum +
-        (item.productPricing.productDiscountAmount || 0) *
-          item.itemSummary.quantity,
-      0,
-    );
-    const totalTaxAmount = newItems.reduce(
-      (sum, item) => sum + (item.itemSummary.totalTaxAmount || 0),
-      0,
-    );
-    const grandTotal = newItems.reduce(
-      (sum, item) => sum + item.itemSummary.grandTotal,
-      0,
-    );
-    // Prices are tax-inclusive, so the taxable base is the gross grandTotal
-    // minus the embedded VAT (the removed priceAfterProductDiscount field is no
-    // longer returned by the cart endpoint).
-    const taxableAmount = grandTotal - totalTaxAmount;
-
-    setCart({
-      ...cart,
-      items: newItems,
-      totalItems,
-      cartCalculation: {
-        totalOriginalPrice,
-        totalProductDiscount,
-        taxableAmount,
-        totalTaxAmount,
-        grandTotal,
-      },
-    });
-
-    // Sync Navbar badge instantly — recalculate unique vendors from the new items
-    const newVendorCount = new Set(
-      newItems.map((item) => getCartVendorId(item.vendorId))
-    ).size;
-    useCartStore.setState({
-      vendorCount: newVendorCount,
-      itemCount: totalItems,
-    });
+  /**
+   * Where every cart mutation on this page ends up, on success and on failure
+   * alike.
+   *
+   * This used to rebuild the cart locally instead — filtering the removed line
+   * out and re-deriving totals, discounts and VAT on the client. Two problems:
+   * it duplicated pricing rules that belong to the backend, and writing to the
+   * query cache reset the entry's freshness timer, so a hand-built cart could
+   * outlive the real one indefinitely. Re-reading is the only thing that can't
+   * drift.
+   *
+   * The failure path matters most: a rejected mutation is usually the app
+   * finding out the server's cart already differs from what's on screen.
+   */
+  const resyncCart = async () => {
+    // One request, one answer: the navbar badge subscribes to this same query,
+    // so invalidating it updates the icon and the page together.
+    await invalidateCart();
   };
 
   const stores = useMemo(() => {
@@ -235,8 +183,7 @@ export default function CartPage() {
               items={store.items}
               total={store.total}
               collapsible={stores.length > 1}
-              onProductUpdate={() => invalidateCart()}
-              onProductRemove={removeProductFromCart}
+              onCartChanged={resyncCart}
             />
           ))
         )}

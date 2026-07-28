@@ -21,7 +21,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
-import { useCartStore } from "@/stores/cartStore";
 import { useCartCache } from "@/hooks/queries/useCart";
 import { useTranslation } from "@/hooks/useTranslation";
 import { currencySymbol } from "@/lib/currency";
@@ -111,11 +110,8 @@ export default function ProductDetailsModal({
   const [addonGroups, setAddonGroups] = useState<AddonGroup[]>([]);
   // Selected quantity per addon option, keyed by the option sku.
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
-  const { fetchCart } = useCartStore();
-  // The cart page reads from the React Query `useCart` cache (staleTime 60s), so
-  // updating only the zustand badge count leaves that page showing a stale empty
-  // cart until a hard reload. Invalidate the query cache on add so the cart page
-  // shows the new item immediately on client-side navigation.
+  // The cart page and the navbar badge both read the `useCart` query, so a
+  // single invalidation after adding updates the icon and the page together.
   const { invalidate: invalidateCart } = useCartCache();
 
   // Addon groups are auth-only and referenced by id on the product, so fetch
@@ -437,8 +433,7 @@ export default function ProductDetailsModal({
         throw new Error(response.data.message || "Failed to add to cart");
       }
 
-      await fetchCart();
-      invalidateCart();
+      await invalidateCart();
       toast.success(t("itemAddedToCart"));
       onClose();
     } catch (err: any) {

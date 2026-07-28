@@ -44,8 +44,11 @@ interface CartStoreCardProps {
   total: number;
   /** True when the cart holds more than one store — enables collapsing. */
   collapsible?: boolean;
-  onProductUpdate: () => Promise<void>;
-  onProductRemove: (productId: string, variationSku: string | null) => void;
+  /**
+   * Re-read the cart from the server. Called after every mutation in this
+   * subtree, including the ones that failed — see `CartPage.resyncCart`.
+   */
+  onCartChanged: () => Promise<void>;
 }
 
 export default function CartStoreCard({
@@ -55,8 +58,7 @@ export default function CartStoreCard({
   rating,
   items,
   collapsible = false,
-  onProductUpdate,
-  onProductRemove,
+  onCartChanged,
 }: CartStoreCardProps) {
   const { t } = useTranslation();
   const [isToggling, setIsToggling] = useState(false);
@@ -97,7 +99,6 @@ export default function CartStoreCard({
         toggleMode: "VENDOR_BULK",
         vendorId,
       });
-      await onProductUpdate();
       toast.success(
         (hasActive ? t("storeDeselectedToast") : t("storeSelectedToast")).replace(
           "{store}",
@@ -109,6 +110,9 @@ export default function CartStoreCard({
         getApiErrorMessage(error, t("couldNotChangeStoreSelection")),
       );
     } finally {
+      // Both paths, not just the successful one: a rejected toggle is often the
+      // server saying this cart no longer looks the way the page thinks it does.
+      await onCartChanged();
       setIsToggling(false);
       togglingRef.current = false;
     }
@@ -241,7 +245,7 @@ export default function CartStoreCard({
             <CartProductRow
               key={`${item.productId}-${item.variationSku ?? "default"}`}
               item={item}
-              onRemove={onProductRemove}
+              onCartChanged={onCartChanged}
             />
           ))}
         </div>
