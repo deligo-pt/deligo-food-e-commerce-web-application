@@ -64,7 +64,14 @@ export default function AddressForm({
 
   const getLabelText = (key: string) => {
     const value = t(key);
-    const requiredKeys = ["streetAddress", "city", "stateRegion", "country"];
+    const requiredKeys = [
+      "streetAddress",
+      // The courier needs the door, not just the street.
+      "houseApartmentFloor",
+      "city",
+      "stateRegion",
+      "country",
+    ];
     if (requiredKeys.includes(key)) {
       return value.endsWith("*") ? value : `${value} *`;
     }
@@ -202,6 +209,10 @@ export default function AddressForm({
         toast.error(t("streetRequired"));
         return;
       }
+      if (!formData.detailedAddress.trim()) {
+        toast.error(t("houseApartmentFloorRequired"));
+        return;
+      }
       if (!formData.city.trim()) {
         toast.error(t("cityRequired"));
         return;
@@ -254,6 +265,10 @@ export default function AddressForm({
     }
     if (!formData.street.trim()) {
       toast.error(t("streetRequired"));
+      return;
+    }
+    if (!formData.detailedAddress.trim()) {
+      toast.error(t("houseApartmentFloorRequired"));
       return;
     }
     if (!formData.city.trim()) {

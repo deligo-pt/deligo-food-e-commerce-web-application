@@ -374,18 +374,18 @@ export default function AccountPage() {
             {/* Features list */}
             <div className="px-6 py-6 space-y-4 bg-white dark:bg-neutral-900">
               {[
-                { emoji: "🚚", title: "Free Delivery", desc: "Enjoy free delivery on every order" },
-                { emoji: "🎟️", title: "Exclusive Vouchers", desc: "Access member-only discount codes" },
-                { emoji: "⚡", title: "Priority Support", desc: "Skip the queue with dedicated support" },
-                { emoji: "🎁", title: "Bonus Reward Points", desc: "Earn 2× points on every purchase" },
+                { emoji: "🚚", key: "proFreeDelivery" },
+                { emoji: "🎟️", key: "proExclusiveVouchers" },
+                { emoji: "⚡", key: "proPrioritySupport" },
+                { emoji: "🎁", key: "proBonusRewardPoints" },
               ].map((f) => (
-                <div key={f.title} className="flex items-center gap-4">
+                <div key={f.key} className="flex items-center gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-50 dark:bg-pink-950/40 text-xl">
                     {f.emoji}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800 dark:text-neutral-100">{f.title}</p>
-                    <p className="text-sm text-gray-500 dark:text-neutral-400">{f.desc}</p>
+                    <p className="font-semibold text-gray-800 dark:text-neutral-100">{t(f.key)}</p>
+                    <p className="text-sm text-gray-500 dark:text-neutral-400">{t(`${f.key}Desc`)}</p>
                   </div>
                 </div>
               ))}
@@ -397,7 +397,7 @@ export default function AccountPage() {
                 onClick={() => setShowProModal(false)}
                 className="w-full rounded-lg bg-gray-100 dark:bg-neutral-800 py-2.5 text-sm font-semibold text-gray-600 dark:text-neutral-300 transition hover:bg-gray-200 dark:hover:bg-neutral-700"
               >
-                {t("cancel")}
+                {t("ok")}
               </button>
             </div>
           </div>

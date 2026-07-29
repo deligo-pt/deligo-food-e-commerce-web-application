@@ -15,6 +15,8 @@ type Translate = (key: string) => string;
  * ------------------------------------------------------------------ */
 interface InvoiceAddress {
   street?: string;
+  /** House / apartment / floor. Empty string on older orders. */
+  detailedAddress?: string;
   city?: string;
   state?: string;
   country?: string;
@@ -103,20 +105,29 @@ function formatDate(iso: string | undefined, lang: Lang): string {
   });
 }
 
+/**
+ * The "Shipped to" block, as two lines:
+ *
+ *   [Street] [House / Apartment / Floor]
+ *   [Postal code] [City]
+ *
+ * Postal code before city is the Portuguese postal convention ("1750-126
+ * Lisboa"), and it matches the order the address form asks for them in.
+ * Region and country are deliberately absent — deliveries are domestic, and
+ * the label ("Home"/"Work") is the customer's own filing name, not part of
+ * where the courier goes.
+ */
 function formatAddress(addr?: InvoiceAddress): string[] {
   if (!addr) return [];
-  const line1 = addr.street?.trim();
-  const line2 = [
-    addr.city,
-    [addr.state, addr.postalCode].filter(Boolean).join(" "),
-    addr.country,
-  ]
+  const line1 = [addr.street, addr.detailedAddress]
+    .map((part) => part?.trim())
     .filter(Boolean)
     .join(", ");
-  const tag = addr.label || addr.name;
-  return [line1, line2, tag && tag !== addr.city ? tag : undefined].filter(
-    (l): l is string => Boolean(l),
-  );
+  const line2 = [addr.postalCode, addr.city]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+  return [line1, line2].filter((l): l is string => Boolean(l));
 }
 
 /**

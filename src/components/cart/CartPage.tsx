@@ -3,11 +3,15 @@
 
 import { useMemo } from "react";
 import CartStoreCard from "./CartStoreCard";
-import { getApiErrorMessage } from "@/lib/apiClient";
+import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
-import { getCartVendorId, getCartVendorName } from "@/lib/cart";
+import {
+  getCartVendorId,
+  getCartVendorName,
+  getCartVendorOrder,
+} from "@/lib/cart";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useCart, useCartCache } from "@/hooks/queries/useCart";
+import { useCart } from "@/hooks/queries/useCart";
 import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 
 export default function CartPage() {
@@ -18,12 +22,12 @@ export default function CartPage() {
     data: cart = null,
     isLoading: loading,
     error: cartError,
+    refetch: refetchCart,
   } = useCart<CartResponse | null>();
   const { data: vendors = [] } = useVendorsCustomer<any>({
     page: 1,
     limit: 100,
   });
-  const { invalidate: invalidateCart } = useCartCache();
 
   const error = cartError
     ? getApiErrorMessage(cartError, "Failed to load cart")
@@ -43,11 +47,55 @@ export default function CartPage() {
    * The failure path matters most: a rejected mutation is usually the app
    * finding out the server's cart already differs from what's on screen.
    */
-  const resyncCart = async () => {
+  const resyncCart = async (options?: { deactivatedVendorId?: string }) => {
     // One request, one answer: the navbar badge subscribes to this same query,
-    // so invalidating it updates the icon and the page together.
-    await invalidateCart();
+    // so refetching here updates the icon and the page together.
+    const { data: fresh } = await refetchCart();
+    const items = fresh?.items ?? [];
+    if (items.length === 0) return;
+
+    // The cart is never left with nothing selected while orders remain: whether
+    // the active order was deactivated, emptied item by item, or deleted
+    // outright, the most recent remaining one takes over.
+    if (items.some((item) => item.isActive)) return;
+
+    // …except the order the customer just switched off. Without this exclusion
+    // deactivating the newest order would immediately re-activate it, and it
+    // could never be turned off at all.
+    const [mostRecent] = getCartVendorOrder(items).filter(
+      (vendorId) => vendorId !== options?.deactivatedVendorId,
+    );
+    if (!mostRecent) return;
+
+    try {
+      await apiClient.patch("/carts/toggle-item-status", {
+        toggleMode: "VENDOR_BULK",
+        vendorId: mostRecent,
+      });
+    } catch {
+      // Deliberately quiet. Nobody asked for this call, so a red toast would be
+      // reporting the failure of something the customer never initiated — and a
+      // cart with nothing selected is a valid state they can fix by tapping
+      // Activate.
+      return;
+    }
+    await refetchCart();
   };
+
+  /** Every product of one store, in the shape `/carts/delete-item` expects. */
+  const getStoreDeleteTargets = (vendorId: string) =>
+    (cart?.items ?? [])
+      .filter((item) => getCartVendorId(item.vendorId) === vendorId)
+      .map((item) => {
+        // Plain products must omit `variationSku` entirely rather than send
+        // null — the backend's Zod schema rejects null. Same rule as the
+        // single-product delete in CartProductRow.
+        const target: { productId: string; variationSku?: string } = {
+          productId: item.productId,
+        };
+        if (item.variationSku) target.variationSku = item.variationSku;
+        return target;
+      });
 
   const stores = useMemo(() => {
     if (!cart?.items) return [];
@@ -84,7 +132,11 @@ export default function CartPage() {
       {} as Record<string, any>,
     );
 
-    return Object.values(grouped);
+    // Newest order first. `getCartVendorOrder` explains what stands in for the
+    // date the API doesn't send.
+    return getCartVendorOrder(cart.items)
+      .map((vendorId) => grouped[vendorId])
+      .filter(Boolean);
   }, [cart, vendors, t]);
 
   if (loading) {
@@ -161,8 +213,11 @@ export default function CartPage() {
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-neutral-50">
           {t("myShoppingCart")}
         </h1>
+        {/* Counted here rather than read from `cart.totalItems`: the API's
+            figure covers only the active items, and since just one store can be
+            active at a time it could never describe the basket as a whole. */}
         <p className="mt-2 text-gray-500 dark:text-neutral-400">
-          {cart?.totalItems ?? 0} {t("itemsInCart")}
+          {cart?.items?.length ?? 0} {t("itemsInCart")}
         </p>
       </div>
 
@@ -183,6 +238,7 @@ export default function CartPage() {
               items={store.items}
               total={store.total}
               collapsible={stores.length > 1}
+              deleteTargets={getStoreDeleteTargets(store.vendorId)}
               onCartChanged={resyncCart}
             />
           ))

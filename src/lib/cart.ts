@@ -75,6 +75,38 @@ export function getCartVendorId(vendorRef: CartItem["vendorId"]): string {
   return vendorRef._id ?? vendorRef.id ?? "";
 }
 
+/**
+ * The cart's vendors, most recent basket first.
+ *
+ * The cart page calls each vendor's group of items an "order", and those orders
+ * are listed newest-first. There is no date to sort on: `/carts/view-cart`
+ * timestamps the cart document as a whole (`createdAt`/`updatedAt`) but returns
+ * no timestamp on the individual items. What it does return is an array the
+ * backend appends to, so **position is insertion order** — and a vendor's first
+ * appearance in it is when that basket was started.
+ *
+ * First appearance rather than last, deliberately: adding a second product to a
+ * store you already have shouldn't make that store jump the queue. Only starting
+ * a new basket does.
+ *
+ * This is a stand-in for a real timestamp and it inherits that array's fate — if
+ * the backend ever rewrites `items` instead of appending, the order changes with
+ * no error to say so. Swap in a per-item `createdAt` here the day one exists.
+ */
+export function getCartVendorOrder(
+  items: readonly Pick<CartItem, "vendorId">[] | null | undefined,
+): string[] {
+  const firstSeenAt = new Map<string, number>();
+  (items ?? []).forEach((item, index) => {
+    const vendorId = getCartVendorId(item.vendorId);
+    if (!vendorId || firstSeenAt.has(vendorId)) return;
+    firstSeenAt.set(vendorId, index);
+  });
+  return [...firstSeenAt.entries()]
+    .sort(([, a], [, b]) => b - a)
+    .map(([vendorId]) => vendorId);
+}
+
 // The vendor's display name is only available when `vendorId` is populated as an
 // object; returns null when it's a bare id (caller falls back to a placeholder).
 export function getCartVendorName(
