@@ -1600,7 +1600,9 @@ const pt = {
   deligoTagline: "DeliGo – A Entregar Conveniência, a Capacitar Comunidades.",
 
   // --- Fatura PDF (src/lib/invoice.ts) ---
-  invoiceTitle: "Fatura",
+  // O título no canto superior direito do documento. "Recibo", não "Fatura":
+  // comprova um pagamento já efetuado, não o pedido de pagamento.
+  invoiceTitle: "Recibo",
   invoiceTagline: "Entrega de comida rápida e fiável",
   invoiceOrderId: "N.º da Encomenda",
   invoiceDate: "Data",

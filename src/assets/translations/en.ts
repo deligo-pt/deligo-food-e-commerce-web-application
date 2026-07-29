@@ -1599,7 +1599,9 @@ const en = {
   // Kept as a separate `invoice*` set rather than reusing the cart/checkout
   // labels: the PDF has fixed column widths, so a wording change made for a
   // screen must not silently reflow the printed table.
-  invoiceTitle: "Invoice",
+  // The heading in the document's top-right corner. "Receipt", not "Invoice":
+  // this is proof of a payment already taken, not a request for one.
+  invoiceTitle: "Receipt",
   invoiceTagline: "Fast and reliable food delivery",
   invoiceOrderId: "Order ID",
   invoiceDate: "Date",
