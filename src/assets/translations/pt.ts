@@ -1,5 +1,5 @@
 const pt = {
-  addAddress: "Adicionar Endereço",
+  addAddress: "Adicionar Morada",
   locationPromptTitle: "Permitir Acesso à Localização",
   locationPromptDescription:
     "Descubra os melhores restaurantes, lojas locais e obtenha tempos de entrega precisos na sua área.",
@@ -55,12 +55,12 @@ const pt = {
 
   openNow: "Aberto Agora",
   closed: "Fechado",
-  editAddress: "Editar Endereço",
-  addNewAddress: "Adicionar Novo Endereço",
+  editAddress: "Editar Morada",
+  addNewAddress: "Adicionar Nova Morada",
 
   myCurrentLocation: "A Minha Localização Atual",
   currentLocationDescription:
-    "Utilize o GPS do seu dispositivo para atualizar o endereço de entrega instantaneamente.",
+    "Utilize o GPS do seu dispositivo para atualizar a morada de entrega instantaneamente.",
   useCurrentLocation: "Usar Localização Atual",
   detecting: "A detetar localização…",
   locationUpdated: "Localização atualizada!",
@@ -83,11 +83,11 @@ const pt = {
   updateLocation: "Atualizar Localização",
 
   locationConfirmed: "LOCALIZAÇÃO CONFIRMADA",
-  addressDetails: "Detalhes do Endereço",
+  addressDetails: "Detalhes da Morada",
   addressDetailsDescription:
-    "Preencha os detalhes para salvar este endereço para futuras entregas.",
+    "Preencha os detalhes para guardar esta morada para futuras entregas.",
 
-  labelAddressAs: "Rotular Endereço Como",
+  labelAddressAs: "Rotular Morada Como",
 
   work: "Trabalho",
   other: "Outro",
@@ -100,16 +100,16 @@ const pt = {
   addressTypeOther: "Outro",
   addressTypeCurrentLocation: "Localização Atual",
 
-  customAddressTypeLabel: "Nome deste endereço",
+  customAddressTypeLabel: "Nome desta morada",
   customAddressTypePlaceholder: "ex.: Ginásio, Casa dos pais",
   customAddressTypeRequired: "Indique um nome para guardar como Outro.",
 
-  addressAddedSuccess: "Endereço adicionado com sucesso!",
-  addressUpdatedSuccess: "Endereço atualizado com sucesso!",
-  addressNotLoaded: "Endereço ainda não carregado. Tente novamente.",
+  addressAddedSuccess: "Morada adicionada com sucesso!",
+  addressUpdatedSuccess: "Morada atualizada com sucesso!",
+  addressNotLoaded: "Morada ainda não carregada. Tente novamente.",
 
-  streetAddress: "Endereço *",
-  enterStreetAddress: "Digite o endereço",
+  streetAddress: "Rua *",
+  enterStreetAddress: "Introduza a rua",
 
   houseApartmentFloor: "Casa / Apartamento / Andar",
   apartmentPlaceholder: "Apto 4B, Andar 2",
@@ -132,8 +132,8 @@ const pt = {
   longitude: "Longitude",
 
   saving: "Salvando...",
-  updateAddress: "Atualizar Endereço",
-  saveAddress: "Salvar Endereço",
+  updateAddress: "Atualizar Morada",
+  saveAddress: "Guardar Morada",
   cartBreadcrumb: "Início / Carrinhos Ativos",
 
   myShoppingCart: "Meu Carrinho de Compras",
@@ -158,6 +158,20 @@ const pt = {
   storeSelectedToast: "\"{store}\" selecionado para finalizar a compra",
   storeDeselectedToast: "\"{store}\" desselecionado",
   couldNotChangeStoreSelection: "Não foi possível alterar a seleção da loja",
+
+  // Ação de ativar/desativar no cartão da loja. É um botão, não um interruptor,
+  // por isso a legenda diz o que acontece ao carregar — daí as duas legendas.
+  activateOrder: "Ativar",
+  deactivateOrder: "Desativar",
+  activateOrderTooltip: "Ativar Pedido",
+  deactivateOrderTooltip: "Desativar Pedido",
+
+  // Eliminar o pedido inteiro de uma loja, não apenas um produto.
+  deleteOrder: "Eliminar Pedido",
+  deleteOrderConfirm:
+    "Remover todos os produtos de “{store}” do seu carrinho? Esta ação não pode ser anulada.",
+  orderDeletedToast: "“{store}” removido do seu carrinho",
+  couldNotDeleteOrder: "Não foi possível eliminar o pedido",
 
   remove: "Remover",
 
@@ -217,8 +231,8 @@ const pt = {
   distanceAndTime: "Distância e Tempo",
   deliveryDistance: "Distância de entrega",
   estimatedTime: "Tempo estimado",
-  selectDeliveryAddress: "Selecionar endereço de entrega",
-  failedToChangeAddress: "Falha ao alterar o endereço de entrega",
+  selectDeliveryAddress: "Selecionar morada de entrega",
+  failedToChangeAddress: "Falha ao alterar a morada de entrega",
 
   yourOrder: "Seu Pedido",
   addMoreItems: "Adicionar mais itens",
@@ -398,7 +412,7 @@ const pt = {
   referrals: "Referências",
   referralsDescription: "Ganhe recompensas ao convidar amigos para o DeliGo",
 
-  savedAddresses: "Endereços Guardados",
+  savedAddresses: "Moradas Guardadas",
   manageAddresses: "Gerir Moradas",
   favoriteOrders: "Pedidos Favoritos",
 
@@ -416,7 +430,7 @@ const pt = {
   emailAddress: "Endereço de Email",
   mobileNumber: "Número de Telemóvel",
   nifTaxId: "NIF / ID Fiscal",
-  deliveryAddress: "Endereço de Entrega",
+  deliveryAddress: "Morada de Entrega",
 
   optional: "opcional",
   required: "obrigatório",
@@ -426,13 +440,13 @@ const pt = {
   decreaseQuantity: "Diminuir quantidade",
   failedToUpdateAddon: "Falha ao atualizar o complemento",
 
-  noAddressSaved: "Nenhum endereço guardado",
+  noAddressSaved: "Nenhuma morada guardada",
 
   manageAccountInfo: "Gerencie as informações e preferências da sua conta",
 
   basicInformation: "Informação Básica",
 
-  searchAddressPlaceholder: "Pesquise o seu endereço...",
+  searchAddressPlaceholder: "Pesquise a sua morada...",
 
   labelAs: "Identificar como",
 
@@ -473,9 +487,9 @@ const pt = {
   locationPlaceholder: "Localização",
 
   restaurantAddressPending:
-    "O endereço do restaurante aparecerá após a confirmação do pedido",
+    "A morada do restaurante aparecerá após a confirmação do pedido",
 
-  restaurantAddressComingSoon: "Endereço disponível em breve",
+  restaurantAddressComingSoon: "Morada disponível em breve",
 
   items: "Itens",
 
@@ -674,7 +688,7 @@ const pt = {
 
   locationServices: "Serviços de Localização",
   locationServicesDescription:
-    "Para deteção mais rápida do endereço de entrega",
+    "Para deteção mais rápida da morada de entrega",
 
   language: "Idioma",
 
@@ -1467,9 +1481,9 @@ const pt = {
   featured: "EM DESTAQUE",
   continueButton: "Continuar",
   deleteLabel: "Eliminar",
-  deleteAddress: "Eliminar Endereço",
+  deleteAddress: "Eliminar Morada",
   deleteAddressConfirm:
-    "Tem a certeza de que pretende eliminar este endereço? Esta ação não pode ser anulada.",
+    "Tem a certeza de que pretende eliminar esta morada? Esta ação não pode ser anulada.",
   paymentSuccessful: "Pagamento Bem-sucedido",
   orderCreationFailed: "Falha na Criação do Pedido",
   creatingYourOrder: "A criar o seu pedido...",
@@ -1489,6 +1503,20 @@ const pt = {
   unlockExclusiveFeatures: "Desbloqueie Funcionalidades Exclusivas",
   unlockExclusiveFeaturesDesc:
     "Utilize a aplicação regularmente e faça mais encomendas para desbloquear e aproveitar estas funcionalidades exclusivas.",
+
+  // As quatro vantagens DeliGo Pro. Estavam fixas no componente em inglês, e é
+  // por isso que um cliente português as lia em inglês.
+  proFreeDelivery: "Entrega Grátis",
+  proFreeDeliveryDesc: "Aproveite a entrega gratuita em todos os pedidos",
+  proExclusiveVouchers: "Cupões Exclusivos",
+  proExclusiveVouchersDesc:
+    "Aceda a códigos de desconto exclusivos para membros",
+  proPrioritySupport: "Suporte Prioritário",
+  proPrioritySupportDesc: "Evite a espera com suporte dedicado",
+  proBonusRewardPoints: "Pontos de Recompensa Bónus",
+  proBonusRewardPointsDesc: "Ganhe o dobro dos pontos em cada compra",
+  // Fecha um painel que apenas informa — não há nada para cancelar.
+  ok: "Ok",
   selectedLocation: "Localização Selecionada",
   places: "Locais",
   dishes: "Pratos",
@@ -1499,18 +1527,19 @@ const pt = {
   notSignedIn: "Sessão não iniciada.",
   notSignedInExplore:
     "Pode explorar o mapa e escolher uma localização, mas precisa de",
-  notSignedInSaveSuffix: "para guardar o seu endereço.",
+  notSignedInSaveSuffix: "para guardar a sua morada.",
   logInLink: "iniciar sessão",
 
   // --- Phase 3: toasts, errors, empty/loading & route messages ---
   locationNotDetected: "Localização ainda não detetada. Aguarde ou utilize o GPS.",
-  streetRequired: "A morada é obrigatória.",
+  streetRequired: "A rua é obrigatória.",
+  houseApartmentFloorRequired: "A casa / apartamento / andar é obrigatório.",
   cityRequired: "A cidade é obrigatória.",
   regionRequired: "A região/distrito é obrigatória.",
   countryRequired: "O país é obrigatório.",
   locationSavedLocally: "Localização guardada localmente!",
   failedToSaveLocation: "Falha ao guardar a localização.",
-  pleaseLogInToSaveAddress: "Inicie sessão para guardar o seu endereço.",
+  pleaseLogInToSaveAddress: "Inicie sessão para guardar a sua morada.",
   userNotLoaded: "Utilizador não carregado. Atualize a página.",
   enterNewEmailToUpdate: "Introduza um novo endereço de email para atualizar",
   otpSentToNewEmail: "Código OTP enviado para o seu novo email",
@@ -1532,7 +1561,7 @@ const pt = {
   vendorInfoMissing: "Informação do vendedor em falta",
   provideAtLeastOneRating: "Forneça pelo menos uma avaliação.",
   currentLocationLoadedOnMap: "Localização atual carregada no mapa.",
-  addressNotFound: "Endereço não encontrado",
+  addressNotFound: "Morada não encontrada",
   pleaseLogInToSearch: "Inicie sessão para pesquisar.",
   failedToLoadSearchResults: "Falha ao carregar os resultados da pesquisa.",
   sortRelevance: "Relevância",
@@ -1556,11 +1585,11 @@ const pt = {
   loading: "A carregar...",
   loadingSearch: "A carregar pesquisa...",
   markAllAsRead: "Marcar tudo como lido",
-  deliveryAddresses: "Endereços de Entrega",
-  activeAddressUpdated: "Endereço ativo atualizado com sucesso",
-  failedToUpdateActiveAddress: "Falha ao atualizar o endereço ativo",
-  addressDeleted: "Endereço eliminado com sucesso",
-  failedToDeleteAddress: "Falha ao eliminar o endereço",
+  deliveryAddresses: "Moradas de Entrega",
+  activeAddressUpdated: "Morada ativa atualizada com sucesso",
+  failedToUpdateActiveAddress: "Falha ao atualizar a morada ativa",
+  addressDeleted: "Morada eliminada com sucesso",
+  failedToDeleteAddress: "Falha ao eliminar a morada",
 
   // --- Parity fill: keys that previously existed only in en.ts ---
   searchFaqs: "Pesquisar FAQs...",

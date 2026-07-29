@@ -7,16 +7,26 @@ import {
   Star,
   UtensilsCrossed,
   Check,
-  X,
   Loader2,
   ChevronDown,
   ChevronUp,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import CartProductRow from "./CartProductRow";
 import { useTranslation } from "@/hooks/useTranslation";
 import SafeImage from "@/components/shared/SafeImage";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface CartItem {
   productId: string;
@@ -45,10 +55,18 @@ interface CartStoreCardProps {
   /** True when the cart holds more than one store — enables collapsing. */
   collapsible?: boolean;
   /**
+   * Every product of this store, in the shape `/carts/delete-item` expects.
+   * Built by the page, which holds the raw cart, so the card doesn't have to
+   * know the endpoint's null-vs-omitted rule for `variationSku`.
+   */
+  deleteTargets: { productId: string; variationSku?: string }[];
+  /**
    * Re-read the cart from the server. Called after every mutation in this
    * subtree, including the ones that failed — see `CartPage.resyncCart`.
+   * `deactivatedVendorId` marks an order the customer switched off, so the
+   * auto-activate rule skips it instead of turning it straight back on.
    */
-  onCartChanged: () => Promise<void>;
+  onCartChanged: (options?: { deactivatedVendorId?: string }) => Promise<void>;
 }
 
 export default function CartStoreCard({
@@ -58,12 +76,16 @@ export default function CartStoreCard({
   rating,
   items,
   collapsible = false,
+  deleteTargets,
   onCartChanged,
 }: CartStoreCardProps) {
   const { t } = useTranslation();
   const [isToggling, setIsToggling] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const togglingRef = useRef(false);
+  const deletingRef = useRef(false);
 
   const activeItems = useMemo(
     () => items.filter((item) => item.isActive),
@@ -93,6 +115,7 @@ export default function CartStoreCard({
     if (togglingRef.current) return;
     togglingRef.current = true;
     setIsToggling(true);
+    const wasActive = hasActive;
 
     try {
       await apiClient.patch("/carts/toggle-item-status", {
@@ -112,57 +135,94 @@ export default function CartStoreCard({
     } finally {
       // Both paths, not just the successful one: a rejected toggle is often the
       // server saying this cart no longer looks the way the page thinks it does.
-      await onCartChanged();
+      // `wasActive` is read before the refetch: if this press switched the order
+      // off, the page must not hand activation straight back to it.
+      await onCartChanged(wasActive ? { deactivatedVendorId: vendorId } : undefined);
       setIsToggling(false);
       togglingRef.current = false;
     }
   };
 
+  /**
+   * Delete this store's whole basket, not one product.
+   *
+   * `/carts/delete-item` takes an array, so the entire order goes in a single
+   * request — no per-product loop that could half-succeed and leave a basket
+   * the customer thought they had thrown away.
+   */
+  const handleDeleteStore = async () => {
+    setIsConfirmOpen(false);
+    if (deletingRef.current) return;
+    deletingRef.current = true;
+    setIsDeleting(true);
+
+    try {
+      await apiClient.delete("/carts/delete-item", { data: deleteTargets });
+      toast.success(t("orderDeletedToast").replace("{store}", businessName));
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t("couldNotDeleteOrder")));
+    } finally {
+      // No exclusion here: this order is gone, so it can't be the one the
+      // auto-activate rule picks.
+      await onCartChanged();
+      setIsDeleting(false);
+      deletingRef.current = false;
+    }
+  };
+
   return (
     <div className="rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm transition-colors duration-200 sm:p-6">
-      {/* Store header — the vendor's identity (avatar, name, meta) is centred as
-          a column. The toggle is an action rather than part of that identity, so
-          it is pinned out of flow: left in the row it would consume width on one
-          side only and push the "centred" content visibly off-axis. */}
-      <div className="relative mb-5 flex flex-col items-center text-center">
-        {/* Store selection — only one store can be checked out at a time */}
+      {/* Actions get their own row above the identity block. They used to be
+          pinned to the card's top-right corner, which worked while the control
+          was a 56px switch; a captioned button plus a delete button is wide
+          enough to reach the centred avatar on a narrow screen. */}
+      <div className="mb-3 flex items-center justify-end gap-2">
+        {/* Store selection — only one store can be checked out at a time. A
+            button rather than a switch, so the caption names the action the
+            press performs. */}
         <button
           type="button"
-          role="switch"
           onClick={handleToggleStore}
-          disabled={isToggling}
-          aria-checked={hasActive}
+          disabled={isToggling || isDeleting}
           aria-label={
-            hasActive ? t("storeSelected") : t("selectStoreForCheckout")
+            hasActive ? t("deactivateOrderTooltip") : t("activateOrderTooltip")
           }
-          title={hasActive ? t("storeSelected") : t("selectStoreForCheckout")}
-          className={`absolute right-0 top-0 inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-60 cursor-pointer ${
+          title={
+            hasActive ? t("deactivateOrderTooltip") : t("activateOrderTooltip")
+          }
+          className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors duration-200 disabled:opacity-60 cursor-pointer ${
             hasActive
-              ? "bg-green-500 dark:bg-green-600"
-              : "bg-gray-300 dark:bg-neutral-700"
+              ? "border border-gray-300 dark:border-neutral-700 text-gray-600 dark:text-neutral-300 hover:border-gray-400 dark:hover:border-neutral-600"
+              : "bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700"
           }`}
         >
-          {/* Icon sits on the side opposite the knob */}
-          <span
-            className={`absolute flex items-center text-white transition-all duration-200 ${
-              hasActive ? "left-2" : "right-2"
-            }`}
-          >
-            {isToggling ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : hasActive ? (
-              <Check className="h-4 w-4" strokeWidth={3} />
-            ) : (
-              <X className="h-4 w-4" strokeWidth={3} />
-            )}
-          </span>
-          <span
-            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200 ${
-              hasActive ? "translate-x-7" : "translate-x-1"
-            }`}
-          />
+          {isToggling ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            hasActive && <Check className="h-4 w-4" strokeWidth={3} />
+          )}
+          {hasActive ? t("deactivateOrder") : t("activateOrder")}
         </button>
 
+        {/* Removes the whole order, unlike the per-product bin in each row. */}
+        <button
+          type="button"
+          onClick={() => setIsConfirmOpen(true)}
+          disabled={isDeleting || isToggling}
+          aria-label={t("deleteOrder")}
+          title={t("deleteOrder")}
+          className="rounded-full p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 cursor-pointer"
+        >
+          {isDeleting ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Trash2 className="h-5 w-5" />
+          )}
+        </button>
+      </div>
+
+      {/* Store identity — avatar, name and meta, centred as a column. */}
+      <div className="mb-5 flex flex-col items-center text-center">
         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-4 border-pink-100 dark:border-pink-950 sm:h-20 sm:w-20">
           <SafeImage
             src={image}
@@ -173,8 +233,7 @@ export default function CartStoreCard({
         </div>
 
         {/* Wraps rather than truncating — centred text has the full card width
-            to work with, and the name clears the pinned toggle vertically (the
-            toggle is 32px tall at the top; this sits below a 64px avatar). */}
+            to work with, and the action row above is out of its way entirely. */}
         <h3 className="mt-3 max-w-full break-words text-lg font-bold text-gray-900 dark:text-neutral-100 sm:text-2xl">
           {businessName}
         </h3>
@@ -264,15 +323,24 @@ export default function CartStoreCard({
           className={`relative flex items-center justify-between gap-3 overflow-hidden rounded-3xl px-4 py-4 text-white transition cursor-pointer sm:px-6 sm:py-5 ${
             hasActive
               ? "cart-cta bg-linear-to-r from-[#f9186b] to-[#d4145b] hover:from-[#d4145b] hover:to-[#b01254]"
-              : "cursor-not-allowed bg-gray-400 dark:bg-neutral-750 text-neutral-200 dark:text-neutral-400"
+              : "cursor-not-allowed bg-gray-400 dark:bg-neutral-750"
           }`}
         >
           {hasActive && <span className="cart-cta-shine" aria-hidden="true" />}
           <span className="relative z-10 min-w-0 truncate text-base font-bold sm:text-xl">
             {t("goToCheckout")}
           </span>
-          <div className="relative z-10 shrink-0 rounded-xl bg-white/20 px-3 py-1.5 font-bold sm:px-4 sm:py-2">
-            €{activeTotal.toFixed(2)}
+          {/* The price used to sit in a translucent white pill, which read as a
+              second, lighter block of colour inside the button. A hairline in
+              the same grey as the Show Products border does the separating
+              instead. On the inactive (grey) button that line all but
+              disappears — accepted, rather than special-cased. */}
+          <div className="relative z-10 flex shrink-0 items-center gap-3 sm:gap-4">
+            <span
+              aria-hidden="true"
+              className="h-6 w-px bg-gray-200 dark:bg-neutral-800 sm:h-7"
+            />
+            <span className="font-bold">€{activeTotal.toFixed(2)}</span>
           </div>
         </Link>
         {!hasActive && (
@@ -281,6 +349,25 @@ export default function CartStoreCard({
           </p>
         )}
       </div>
+
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteOrder")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("deleteOrderConfirm").replace("{store}", businessName)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsConfirmOpen(false)}>
+              {t("cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteStore}>
+              {t("remove")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -261,9 +261,13 @@ export default function AddAddressPage() {
           </h1>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left Panel – Map */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
+        {/* Stacked, not side by side: locating the address on the map is the
+            part that decides everything below it, so it gets the full width and
+            comes first. The form follows underneath, filled in from whatever
+            the customer picks up here. */}
+        <div className="flex flex-col gap-6">
+          {/* Map + GPS — full width */}
+          <div className="flex flex-col gap-6">
             {/* The one-tap way to fill the form from where the customer is
                 standing. The page opens on the device's position but no longer
                 writes it into the fields unasked, so this is what turns that
@@ -392,8 +396,8 @@ export default function AddAddressPage() {
             </div>
           </div>
 
-          {/* Right Panel – Form */}
-          <div className="lg:col-span-7">
+          {/* Form – full width, below the map */}
+          <div>
             {/* Blank form on open: the pin is seeded from the device's current
                 position, which is a guess about where the new address is, not
                 the address itself. Filling six fields from it hands the customer

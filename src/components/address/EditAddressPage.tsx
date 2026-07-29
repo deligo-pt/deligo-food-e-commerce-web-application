@@ -5,8 +5,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Search, X, Navigation, MapPin, Plus, Loader2 } from "lucide-react";
+import { Search, X, Navigation, Loader2 } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { Toaster, toast } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
@@ -299,9 +298,12 @@ export default function EditAddressPage({ addressId }: Props) {
           </h1>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left Panel */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
+        {/* Stacked, not side by side: locating the address on the map is the
+            part that decides everything below it, so it gets the full width and
+            comes first. The form follows underneath. */}
+        <div className="flex flex-col gap-6">
+          {/* Map + GPS — full width */}
+          <div className="flex flex-col gap-6">
             {/* Quick Instant GPS Update Card (Original Functionality preserved) */}
             <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
               <h2 className="mb-2 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
@@ -423,8 +425,8 @@ export default function EditAddressPage({ addressId }: Props) {
             </div>
           </div>
 
-          {/* Right Panel */}
-          <div className="lg:col-span-7">
+          {/* Form – full width, below the map */}
+          <div>
             <AddressForm
               coordinates={coordinates}
               initialAddress={address}
@@ -432,20 +434,6 @@ export default function EditAddressPage({ addressId }: Props) {
               addressId={addressId}
               onSuccess={() => router.push("/saved-addresses")}
             />
-          </div>
-        </div>
-
-        {/* Divider + Add New Address */}
-        <div className="mt-10">
-          <hr className="border-t border-[#e3bdc3] dark:border-neutral-800" />
-          <div className="mt-6 flex items-center justify-center">
-            <Link
-              href="/add-address"
-              className="inline-flex items-center gap-2 rounded-full bg-[#f9186b] px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[#d4145b] active:scale-95"
-            >
-              <span className="text-xl font-bold leading-none">+</span>
-              {t("addNewAddress")}
-            </Link>
           </div>
         </div>
       </div>

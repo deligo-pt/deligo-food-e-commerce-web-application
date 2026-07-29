@@ -153,6 +153,20 @@ const en = {
   storeDeselectedToast: "\"{store}\" deselected",
   couldNotChangeStoreSelection: "Could not change store selection",
 
+  // The store card's activate/deactivate action. A button rather than a switch,
+  // so its caption states what pressing it will do — hence two captions.
+  activateOrder: "Activate",
+  deactivateOrder: "Deactivate",
+  activateOrderTooltip: "Activate Order",
+  deactivateOrderTooltip: "Deactivate Order",
+
+  // Deleting a whole store's basket, not one product.
+  deleteOrder: "Delete Order",
+  deleteOrderConfirm:
+    "Remove every product from “{store}” from your cart? This cannot be undone.",
+  orderDeletedToast: "“{store}” removed from your cart",
+  couldNotDeleteOrder: "Could not delete the order",
+
   remove: "Remove",
 
   qty: "Qty",
@@ -1495,6 +1509,19 @@ const en = {
   unlockExclusiveFeatures: "Unlock Exclusive Features",
   unlockExclusiveFeaturesDesc:
     "Use the app regularly and place more orders to unlock and enjoy these exclusive features.",
+
+  // The four DeliGo Pro perks. Hardcoded in the component until now, which is
+  // why a Portuguese customer was reading them in English.
+  proFreeDelivery: "Free Delivery",
+  proFreeDeliveryDesc: "Enjoy free delivery on every order",
+  proExclusiveVouchers: "Exclusive Vouchers",
+  proExclusiveVouchersDesc: "Access member-only discount codes",
+  proPrioritySupport: "Priority Support",
+  proPrioritySupportDesc: "Skip the queue with dedicated support",
+  proBonusRewardPoints: "Bonus Reward Points",
+  proBonusRewardPointsDesc: "Earn 2× points on every purchase",
+  // Dismisses a panel that only tells you things — there is nothing to cancel.
+  ok: "Ok",
   selectedLocation: "Selected Location",
   places: "Places",
   dishes: "Dishes",
@@ -1511,6 +1538,7 @@ const en = {
   // --- Phase 3: toasts, errors, empty/loading & route messages ---
   locationNotDetected: "Location not detected yet. Please wait or use GPS.",
   streetRequired: "Street address is required.",
+  houseApartmentFloorRequired: "House / apartment / floor is required.",
   cityRequired: "City is required.",
   regionRequired: "Region/State is required.",
   countryRequired: "Country is required.",
