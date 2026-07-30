@@ -150,15 +150,12 @@ const en = {
   hideProducts: "Hide products",
   selectStoreToCheckout: "Select this store to checkout",
   storeSelectedToast: "\"{store}\" selected for checkout",
-  storeDeselectedToast: "\"{store}\" deselected",
   couldNotChangeStoreSelection: "Could not change store selection",
 
-  // The store card's activate/deactivate action. A button rather than a switch,
-  // so its caption states what pressing it will do — hence two captions.
+  // The store card's activate action. It only appears on an order that isn't
+  // selected, so there is one caption and no deactivate wording to go with it.
   activateOrder: "Activate",
-  deactivateOrder: "Deactivate",
   activateOrderTooltip: "Activate Order",
-  deactivateOrderTooltip: "Deactivate Order",
 
   // Deleting a whole store's basket, not one product.
   deleteOrder: "Delete Order",

@@ -47,7 +47,7 @@ export default function CartPage() {
    * The failure path matters most: a rejected mutation is usually the app
    * finding out the server's cart already differs from what's on screen.
    */
-  const resyncCart = async (options?: { deactivatedVendorId?: string }) => {
+  const resyncCart = async () => {
     // One request, one answer: the navbar badge subscribes to this same query,
     // so refetching here updates the icon and the page together.
     const { data: fresh } = await refetchCart();
@@ -55,16 +55,15 @@ export default function CartPage() {
     if (items.length === 0) return;
 
     // The cart is never left with nothing selected while orders remain: whether
-    // the active order was deactivated, emptied item by item, or deleted
-    // outright, the most recent remaining one takes over.
+    // the selected order was emptied item by item or deleted outright, the most
+    // recent remaining one takes over.
+    //
+    // No exclusion for a just-deselected order any more — there is no Deactivate
+    // button. An order stops being selected only when another one is activated
+    // or when it stops existing, and neither can be undone by this rule.
     if (items.some((item) => item.isActive)) return;
 
-    // …except the order the customer just switched off. Without this exclusion
-    // deactivating the newest order would immediately re-activate it, and it
-    // could never be turned off at all.
-    const [mostRecent] = getCartVendorOrder(items).filter(
-      (vendorId) => vendorId !== options?.deactivatedVendorId,
-    );
+    const [mostRecent] = getCartVendorOrder(items);
     if (!mostRecent) return;
 
     try {

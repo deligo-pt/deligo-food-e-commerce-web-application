@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useCartCache } from "@/hooks/queries/useCart";
+import { activateAddedOrder } from "@/lib/cartActivation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { currencySymbol } from "@/lib/currency";
 
@@ -432,6 +433,11 @@ export default function ProductDetailsModal({
       if (!response.data.success) {
         throw new Error(response.data.message || "Failed to add to cart");
       }
+
+      // The store just added to becomes the cart's active order and the others
+      // go quiet, so the basket the customer is building is always the one
+      // selected for checkout.
+      await activateAddedOrder({ productId: productMongoId, variationSku });
 
       await invalidateCart();
       toast.success(t("itemAddedToCart"));
