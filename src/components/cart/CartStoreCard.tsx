@@ -6,7 +6,6 @@ import { useMemo, useRef, useState } from "react";
 import {
   Star,
   UtensilsCrossed,
-  Check,
   Loader2,
   ChevronDown,
   ChevronUp,
@@ -17,6 +16,7 @@ import CartProductRow from "./CartProductRow";
 import { useTranslation } from "@/hooks/useTranslation";
 import SafeImage from "@/components/shared/SafeImage";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { activateOrder } from "@/lib/cartActivation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,10 +63,8 @@ interface CartStoreCardProps {
   /**
    * Re-read the cart from the server. Called after every mutation in this
    * subtree, including the ones that failed — see `CartPage.resyncCart`.
-   * `deactivatedVendorId` marks an order the customer switched off, so the
-   * auto-activate rule skips it instead of turning it straight back on.
    */
-  onCartChanged: (options?: { deactivatedVendorId?: string }) => Promise<void>;
+  onCartChanged: () => Promise<void>;
 }
 
 export default function CartStoreCard({
@@ -103,31 +101,23 @@ export default function CartStoreCard({
   );
 
   /**
-   * Select or deselect this whole store.
+   * Select this whole store for checkout.
    *
-   * The backend enforces vendor lock-in: only one store's items can be active
-   * at a time, so selection belongs here rather than on individual products.
-   * `VENDOR_BULK` flips every item for this vendor in one call; activating a
-   * second store while another is selected is rejected server-side, and that
-   * message is surfaced as-is.
+   * The backend enforces vendor lock-in: only one store's items can be active at
+   * a time, so selection belongs here rather than on individual products. There
+   * is no matching deselect — the button only exists on an order that isn't
+   * selected, and choosing another order is how the selection moves. That makes
+   * `activateOrder` responsible for switching the previous one off, since the
+   * server rejects a second active vendor outright.
    */
-  const handleToggleStore = async () => {
+  const handleActivateStore = async () => {
     if (togglingRef.current) return;
     togglingRef.current = true;
     setIsToggling(true);
-    const wasActive = hasActive;
 
     try {
-      await apiClient.patch("/carts/toggle-item-status", {
-        toggleMode: "VENDOR_BULK",
-        vendorId,
-      });
-      toast.success(
-        (hasActive ? t("storeDeselectedToast") : t("storeSelectedToast")).replace(
-          "{store}",
-          businessName,
-        ),
-      );
+      await activateOrder(vendorId);
+      toast.success(t("storeSelectedToast").replace("{store}", businessName));
     } catch (error) {
       toast.error(
         getApiErrorMessage(error, t("couldNotChangeStoreSelection")),
@@ -135,9 +125,7 @@ export default function CartStoreCard({
     } finally {
       // Both paths, not just the successful one: a rejected toggle is often the
       // server saying this cart no longer looks the way the page thinks it does.
-      // `wasActive` is read before the refetch: if this press switched the order
-      // off, the page must not hand activation straight back to it.
-      await onCartChanged(wasActive ? { deactivatedVendorId: vendorId } : undefined);
+      await onCartChanged();
       setIsToggling(false);
       togglingRef.current = false;
     }
@@ -177,32 +165,24 @@ export default function CartStoreCard({
           was a 56px switch; a captioned button plus a delete button is wide
           enough to reach the centred avatar on a narrow screen. */}
       <div className="mb-3 flex items-center justify-end gap-2">
-        {/* Store selection — only one store can be checked out at a time. A
-            button rather than a switch, so the caption names the action the
-            press performs. */}
-        <button
-          type="button"
-          onClick={handleToggleStore}
-          disabled={isToggling || isDeleting}
-          aria-label={
-            hasActive ? t("deactivateOrderTooltip") : t("activateOrderTooltip")
-          }
-          title={
-            hasActive ? t("deactivateOrderTooltip") : t("activateOrderTooltip")
-          }
-          className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors duration-200 disabled:opacity-60 cursor-pointer ${
-            hasActive
-              ? "border border-gray-300 dark:border-neutral-700 text-gray-600 dark:text-neutral-300 hover:border-gray-400 dark:hover:border-neutral-600"
-              : "bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700"
-          }`}
-        >
-          {isToggling ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            hasActive && <Check className="h-4 w-4" strokeWidth={3} />
-          )}
-          {hasActive ? t("deactivateOrder") : t("activateOrder")}
-        </button>
+        {/* Store selection — only one store can be checked out at a time.
+            Present only on an order that isn't selected, and it says one thing:
+            Activate. The order that *is* selected has nothing to press; the
+            "Selected" chip below states it, and the selection moves by
+            activating a different order. */}
+        {!hasActive && (
+          <button
+            type="button"
+            onClick={handleActivateStore}
+            disabled={isToggling || isDeleting}
+            aria-label={t("activateOrderTooltip")}
+            title={t("activateOrderTooltip")}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-green-500 dark:bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-green-600 dark:hover:bg-green-700 disabled:opacity-60 cursor-pointer"
+          >
+            {isToggling && <Loader2 className="h-4 w-4 animate-spin" />}
+            {t("activateOrder")}
+          </button>
+        )}
 
         {/* Removes the whole order, unlike the per-product bin in each row. */}
         <button
@@ -330,18 +310,12 @@ export default function CartStoreCard({
           <span className="relative z-10 min-w-0 truncate text-base font-bold sm:text-xl">
             {t("goToCheckout")}
           </span>
-          {/* The price used to sit in a translucent white pill, which read as a
-              second, lighter block of colour inside the button. A hairline in
-              the same grey as the Show Products border does the separating
-              instead. On the inactive (grey) button that line all but
-              disappears — accepted, rather than special-cased. */}
-          <div className="relative z-10 flex shrink-0 items-center gap-3 sm:gap-4">
-            <span
-              aria-hidden="true"
-              className="h-6 w-px bg-gray-200 dark:bg-neutral-800 sm:h-7"
-            />
-            <span className="font-bold">€{activeTotal.toFixed(2)}</span>
-          </div>
+          {/* Bare price: no pill behind it and no rule in front of it. The
+              caption truncates and this doesn't, so the gap between them is
+              what keeps the two apart. */}
+          <span className="relative z-10 shrink-0 font-bold">
+            €{activeTotal.toFixed(2)}
+          </span>
         </Link>
         {!hasActive && (
           <p className="mt-2 text-center text-sm text-gray-500 dark:text-neutral-400">

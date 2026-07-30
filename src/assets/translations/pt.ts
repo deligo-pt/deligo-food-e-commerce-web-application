@@ -156,15 +156,12 @@ const pt = {
   hideProducts: "Ocultar produtos",
   selectStoreToCheckout: "Selecione esta loja para finalizar a compra",
   storeSelectedToast: "\"{store}\" selecionado para finalizar a compra",
-  storeDeselectedToast: "\"{store}\" desselecionado",
   couldNotChangeStoreSelection: "Não foi possível alterar a seleção da loja",
 
-  // Ação de ativar/desativar no cartão da loja. É um botão, não um interruptor,
-  // por isso a legenda diz o que acontece ao carregar — daí as duas legendas.
+  // Ação de ativar no cartão da loja. Só aparece num pedido que não está
+  // selecionado, por isso há uma única legenda e nenhuma de desativar.
   activateOrder: "Ativar",
-  deactivateOrder: "Desativar",
   activateOrderTooltip: "Ativar Pedido",
-  deactivateOrderTooltip: "Desativar Pedido",
 
   // Eliminar o pedido inteiro de uma loja, não apenas um produto.
   deleteOrder: "Eliminar Pedido",

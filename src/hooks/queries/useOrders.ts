@@ -5,9 +5,12 @@ import {
   useQueryClient,
   keepPreviousData,
 } from "@tanstack/react-query";
+import axios from "axios";
 import { apiClient } from "@/lib/apiClient";
 import { useStore } from "@/stores/translationStore";
 import { useCartCache } from "@/hooks/queries/useCart";
+import { activateReorderedOrder } from "@/lib/cartActivation";
+import type { CartItem } from "@/types/cart";
 
 export const orderKeys = {
   all: ["orders"] as const,
@@ -61,10 +64,25 @@ export function useRatings<T = unknown>(options?: { enabled?: boolean }) {
 export function useReorder() {
   const { setCart, invalidate } = useCartCache();
   return async (orderId: string) => {
+    // Read the cart as it stands first: the store the re-order revives is found
+    // by diffing it against the response, and afterwards it is made the cart's
+    // active order. A 404 is an empty cart, not a failed read.
+    let before: CartItem[] | null = null;
+    try {
+      const current = await apiClient.get("/carts/view-cart");
+      before = (current.data?.data?.items ?? []) as CartItem[];
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        before = [];
+      }
+    }
+
     const res = await apiClient.post(`/orders/reorder/${orderId}`);
     const cart = res.data?.data ?? null;
+    await activateReorderedOrder(before, cart?.items ?? null);
     // The response *is* the new cart — seed the cache with it so /cart paints
-    // immediately, then revalidate.
+    // immediately, then revalidate. Its `isActive` flags predate the activation
+    // above; the invalidation on the next line is what settles them.
     if (cart) setCart(cart);
     await invalidate();
     return cart;
