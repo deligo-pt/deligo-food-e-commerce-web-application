@@ -195,7 +195,7 @@ const pt = {
     "Este vendedor atualmente não possui produtos no seu carrinho.",
 
   orderSummary: "Resumo do Pedido",
-  reviewOrderDetails: "Revise os detalhes do seu pedido",
+  reviewOrderDetails: "Reveja os detalhes do seu pedido",
 
   originalPrice: "Preço Original",
   productDiscount: "Desconto do Produto",
@@ -208,7 +208,7 @@ const pt = {
   serviceCharge: "Taxa de Serviço",
   total: "Total",
 
-  deliveryInstructions: "Instruções de Entrega",
+  deliveryInstructions: "Instruções de entrega",
   deliveryInstructionsPlaceholder:
     "Adicione quaisquer instruções especiais para a entrega...",
 
