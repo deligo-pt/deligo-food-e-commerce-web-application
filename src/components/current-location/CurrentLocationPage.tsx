@@ -6,7 +6,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, X, Navigation, MapPin, Plus, Loader2 } from "lucide-react";
+import { Search, Navigation, MapPin, Plus, Loader2 } from "lucide-react";
+import ClearFilterButton from "@/components/shared/ClearFilterButton";
 import { Toaster, toast } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "@/components/address/AddressForm";
@@ -329,14 +330,7 @@ export default function CurrentLocationPage() {
                   className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-10 outline-none focus:border-[#f9186b]"
                   autoComplete="off"
                 />
-                {searchValue && (
-                  <button
-                    onClick={clearSearch}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+                {searchValue && <ClearFilterButton onClear={clearSearch} />}
 
                 {/* Suggestions Dropdown */}
                 {showSuggestions && suggestions.length > 0 && (

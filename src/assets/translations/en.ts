@@ -1256,6 +1256,8 @@ const en = {
     "DeliGo may update these Terms from time to time. Continued use of the platform after changes constitutes acceptance. You will be notified of material changes via email or in-app notification.",
   filter: "Filter",
   clearAll: "Clear all",
+  clearSearch: "Clear search",
+  noResultsFound: "No results found.",
 
   // en.ts
   faqTitle: "Frequently Asked Questions",
@@ -1565,6 +1567,9 @@ const en = {
   addressNotFound: "Address not found",
   pleaseLogInToSearch: "Please log in to search.",
   failedToLoadSearchResults: "Failed to load search results.",
+  searchPromptTitle: "Search Deligo",
+  searchPromptHint:
+    "Type the name of a restaurant, store or dish to see results.",
   sortRelevance: "Relevance",
   sortDistance: "Distance",
   sortRating: "Rating",

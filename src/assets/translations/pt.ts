@@ -1253,6 +1253,8 @@ const pt = {
     "A DeliGo pode atualizar estes Termos periodicamente. A utilização continuada da plataforma após alterações constitui aceitação. Será notificado de alterações materiais por email ou notificação na aplicação.",
   filter: "Filtro",
   clearAll: "Limpar tudo",
+  clearSearch: "Limpar pesquisa",
+  noResultsFound: "Nenhum resultado encontrado.",
 
   faqTitle: "Perguntas Frequentes",
   faqSubtitle: "Tudo o que precisa de saber sobre a DeliGo",
@@ -1561,6 +1563,9 @@ const pt = {
   addressNotFound: "Morada não encontrada",
   pleaseLogInToSearch: "Inicie sessão para pesquisar.",
   failedToLoadSearchResults: "Falha ao carregar os resultados da pesquisa.",
+  searchPromptTitle: "Pesquisar na Deligo",
+  searchPromptHint:
+    "Escreva o nome de um restaurante, loja ou prato para ver resultados.",
   sortRelevance: "Relevância",
   sortDistance: "Distância",
   sortRating: "Avaliação",

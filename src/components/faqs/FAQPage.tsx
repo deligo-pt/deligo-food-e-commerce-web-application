@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Logo from "@/components/shared/Logo";
+import ClearFilterButton from "@/components/shared/ClearFilterButton";
 import {
   ChevronDown,
   Search,
@@ -129,8 +130,9 @@ export default function FAQPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("faqSearchPlaceholder")}
-                className="h-14 w-full rounded-2xl border-0 bg-white dark:bg-neutral-900 pl-12 pr-4 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-[#f9186b]/30"
+                className="h-14 w-full rounded-2xl border-0 bg-white dark:bg-neutral-900 pl-12 pr-11 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-[#f9186b]/30"
               />
+              {search && <ClearFilterButton onClear={() => setSearch("")} />}
             </div>
           </div>
         </div>
