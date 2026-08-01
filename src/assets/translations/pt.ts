@@ -406,6 +406,21 @@ const pt = {
   paymentMethodsDescription:
     "Gerencie os seus cartões e contas de pagamento guardados",
 
+  card: "Cartão",
+  savedCards: "Cartões Guardados",
+  saveThisCard: "Guardar este cartão",
+  saveThisCardSubtitle: "Pague mais rápido da próxima vez com um toque",
+  instantOrderNote:
+    "A sua encomenda será feita instantaneamente — sem redirecionamento.",
+  payNow: "Pagar Agora",
+  defaultCard: "Predefinido",
+  expiresOn: "Expira",
+  removeCard: "Remover cartão",
+  removeCardConfirm:
+    "Este cartão será removido da sua conta. Pode guardá-lo novamente da próxima vez que pagar com cartão.",
+  cardRemoved: "Cartão removido.",
+  failedToRemoveCard: "Não foi possível remover o cartão. Tente novamente.",
+
   referrals: "Referências",
   referralsDescription: "Ganhe recompensas ao convidar amigos para o DeliGo",
 

@@ -392,6 +392,20 @@ const en = {
   paymentMethods: "Payment Methods",
   paymentMethodsDescription: "Manage your saved cards and payment accounts",
 
+  card: "Card",
+  savedCards: "Saved Cards",
+  saveThisCard: "Save this card",
+  saveThisCardSubtitle: "Pay faster next time with one tap",
+  instantOrderNote: "Your order will be placed instantly — no redirect needed.",
+  payNow: "Pay Now",
+  defaultCard: "Default",
+  expiresOn: "Expires",
+  removeCard: "Remove card",
+  removeCardConfirm:
+    "This card will be removed from your account. You can save it again next time you pay by card.",
+  cardRemoved: "Card removed.",
+  failedToRemoveCard: "Could not remove the card. Please try again.",
+
   referrals: "Referrals",
   referralsDescription: "Earn rewards by inviting your friends to DeliGo",
 
