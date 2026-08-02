@@ -1,4 +1,9 @@
-/** Card brands the API can report. Used to pick an icon — nothing else. */
+/**
+ * Card brands the API can report. Rendered as text next to the last four
+ * digits — deliberately not as scheme logos, which the mobile app does not show
+ * either. Widen this only when the backend starts sending something new; the
+ * value is printed verbatim, so an unlisted brand still renders correctly.
+ */
 export type CardBrand = "VISA" | "MASTERCARD" | "AMEX" | "OTHER";
 
 /**
@@ -9,8 +14,11 @@ export type CardBrand = "VISA" | "MASTERCARD" | "AMEX" | "OTHER";
  * an opaque handle it passes back to our own backend. That is what keeps the
  * frontend out of PCI scope.
  *
- * `label` and `expiryDate` arrive display-ready. Render them as they are; do
- * not rebuild the label out of `brand` + `last4`.
+ * `label` and `expiryDate` arrive display-ready. `expiryDate` is rendered as
+ * sent. `label` ("Visa ending in 4242") is used verbatim where the card has to
+ * be named in prose — the remove confirmation — while the card *rows* compose
+ * `brand` + `last4` themselves, so the two lines of a row stay aligned in
+ * length and casing.
  */
 export interface SavedCard {
   /** Our id, not REDUNIQ's — that one never leaves the backend. */

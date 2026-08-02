@@ -4,6 +4,7 @@
 import { useMemo, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import OrderCard from "./OrderCard";
+import CancelOrderDialog from "./CancelOrderDialog";
 import OrdersPageSkeleton from "./OrdersPageSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -13,8 +14,8 @@ import {
 } from "@/hooks/queries/useOrders";
 import { Star, X } from "lucide-react";
 import { toast } from "sonner";
-import { getRefundState, isTerminatedStatus } from "@/lib/refund";
-import { normalizeOrderStatus } from "@/lib/orderStatus";
+import { canCancelOrder, getRefundState, isTerminatedStatus } from "@/lib/refund";
+import { isOngoingStatus, normalizeOrderStatus } from "@/lib/orderStatus";
 
 // An order with no total is a data problem, not something to render as
 // "€undefined" — fall back to a dash.
@@ -67,6 +68,7 @@ export default function OrdersPage() {
   const { data: ratings = [] } = useRatings<any>();
   const invalidateOrders = useInvalidateOrders();
   const [activeRatingOrder, setActiveRatingOrder] = useState<any | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
 
   // Food Rating State
   const [foodRating, setFoodRating] = useState<number>(0);
@@ -199,20 +201,10 @@ export default function OrdersPage() {
   // Split once per orders change — not on every rating-modal keystroke (this
   // page holds a lot of rating state that would otherwise re-filter each time).
   const { ongoingOrders, historyOrders } = useMemo(() => {
-    const ongoing = orders.filter((order) =>
-      [
-        "PENDING",
-        "ACCEPTED",
-        "ASSIGNED",
-        "PREPARING",
-        "READY_FOR_PICKUP",
-        "PICKED_UP",
-        "ON_THE_WAY",
-      ].includes(order.orderStatus),
-    );
-    // `isTerminatedStatus` rather than a literal list: the API's enum is
-    // `CANCELED` with one L, so the old comparison matched neither bucket and a
-    // cancelled order disappeared from this page entirely.
+    // Both buckets go through the normalizer. The literal list this used to
+    // compare against did not, so the two halves of the split disagreed about
+    // casing and about the API's one-L `CANCELED`.
+    const ongoing = orders.filter((order) => isOngoingStatus(order.orderStatus));
     const history = orders.filter(
       (order) =>
         normalizeOrderStatus(order.orderStatus) === "DELIVERED" ||
@@ -338,6 +330,8 @@ export default function OrdersPage() {
                       .join(", ")}
                     progress={progress}
                     progressText={text}
+                    canCancel={canCancelOrder(order)}
+                    onCancelOrder={setOrderToCancel}
                   />
                 );
               })
@@ -554,6 +548,16 @@ export default function OrdersPage() {
           </div>
         </div>
       )}
+
+      {/* A cancelled order stops being ongoing, so the refetch also moves the
+          card into History rather than just restyling it in place. */}
+      <CancelOrderDialog
+        orderId={orderToCancel}
+        onClose={() => setOrderToCancel(null)}
+        onCancelled={async () => {
+          await invalidateOrders();
+        }}
+      />
     </section>
   );
 }

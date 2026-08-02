@@ -394,11 +394,14 @@ const en = {
 
   card: "Card",
   savedCards: "Saved Cards",
+  acceptedPaymentMethods: "Accepted Payment Methods",
+  noSavedCards: "No saved cards yet",
+  noSavedCardsHint: "Cards you choose to save at checkout will appear here.",
+  failedToLoadSavedCards: "Could not load your saved cards",
   saveThisCard: "Save this card",
   saveThisCardSubtitle: "Pay faster next time with one tap",
   instantOrderNote: "Your order will be placed instantly — no redirect needed.",
   payNow: "Pay Now",
-  defaultCard: "Default",
   expiresOn: "Expires",
   removeCard: "Remove card",
   removeCardConfirm:
@@ -552,6 +555,20 @@ const en = {
   refundCompleted: "Refund Completed",
   refundCompletedDescription:
     "Your payment has been successfully refunded to your account.",
+  refundNotEligible: "No Refund",
+  refundNotEligibleDescription:
+    "The restaurant had already accepted this order when it was cancelled, so it is not eligible for a refund.",
+
+  cancelOrder: "Cancel Order",
+  cancelOrderTitle: "Cancel this order?",
+  cancelOrderDescription:
+    "If the restaurant has not accepted your order yet, you will be refunded. Once they have accepted it, no refund is due.",
+  cancelReason: "Reason",
+  cancelReasonPlaceholder: "Tell us why you are cancelling",
+  keepOrder: "Keep Order",
+  confirmCancelOrder: "Cancel Order",
+  orderCanceled: "Your order has been cancelled",
+  cancelOrderFailed: "Could not cancel this order",
 
   notAvailable: "N/A",
 

@@ -25,7 +25,6 @@ import {
   Loader2,
   Plus,
   Navigation,
-  Trash2,
   Zap,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -41,23 +40,8 @@ import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
 import { addressTypeLabel, normalizeAddressType } from "@/lib/addressType";
 import { formatAddressLine1, formatAddressLine2 } from "@/lib/addressFormat";
 import type { CartAddon } from "@/types/cart";
-import {
-  useSavedCards,
-  useInvalidateSavedCards,
-} from "@/hooks/queries/usePaymentTokens";
-import { disableSavedCard, payWithSavedCard } from "@/services/paymentTokenApi";
-import type { SavedCard } from "@/types/payment";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
+import { useSavedCards } from "@/hooks/queries/usePaymentTokens";
+import { payWithSavedCard } from "@/services/paymentTokenApi";
 import Link from "next/link";
 
 interface CheckoutItem {
@@ -215,13 +199,11 @@ export default function PaymentPage() {
   // silently ignores it elsewhere, so the toggle is only offered under CARD
   // and is cleared whenever the method moves away from it.
   const [saveCard, setSaveCard] = useState(false);
-  const [cardToRemove, setCardToRemove] = useState<SavedCard | null>(null);
-  const [removingCardId, setRemovingCardId] = useState<string | null>(null);
 
-  // The customer's saved cards. Empty until CARD payments work — the section
-  // simply doesn't render, and this page behaves exactly as it did before.
+  // The customer's saved cards. Read-only here: this list exists to be paid
+  // with, and managing it (removing a card) lives on /payment-methods, away
+  // from the pay button.
   const { data: savedCards = [] } = useSavedCards();
-  const invalidateSavedCards = useInvalidateSavedCards();
   // Only under Card, matching the app. Elsewhere the section is hidden.
   const showSavedCards = paymentMethod === "CARD" && savedCards.length > 0;
   // Selecting a card switches the whole flow: one call, no redirect.
@@ -464,27 +446,6 @@ export default function PaymentPage() {
       setAddressError(getApiErrorMessage(err, t("failedToChangeAddress")));
     } finally {
       setSwitchingAddressId(null);
-    }
-  };
-
-  const confirmRemoveCard = async () => {
-    if (!cardToRemove) return;
-    const { id } = cardToRemove;
-    setCardToRemove(null);
-
-    try {
-      setRemovingCardId(id);
-      await disableSavedCard(id);
-      // Selecting a card that no longer exists would send a dead token to the
-      // gateway, so drop the selection with it and fall back to the normal
-      // Card flow.
-      setSelectedCardId((current) => (current === id ? null : current));
-      await invalidateSavedCards();
-      toast.success(t("cardRemoved"));
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, t("failedToRemoveCard")));
-    } finally {
-      setRemovingCardId(null);
     }
   };
 
@@ -1026,55 +987,39 @@ export default function PaymentPage() {
                   <div className="space-y-3">
                     {savedCards.map((card) => {
                       const isSelected = selectedCardId === card.id;
-                      const isRemoving = removingCardId === card.id;
 
                       return (
-                        <div
+                        <label
                           key={card.id}
-                          className={`flex items-center gap-3 rounded-xl border p-4 transition ${
+                          className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
                             isSelected
                               ? "border-[#f9186b] dark:border-pink-500 bg-pink-50 dark:bg-pink-950/20"
                               : "border-gray-200 dark:border-neutral-800"
-                          } ${isRemoving ? "pointer-events-none opacity-60" : ""}`}
+                          }`}
                         >
-                          <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
-                            <CreditCard className="h-5 w-5 shrink-0 text-[#f9186b] dark:text-pink-400" />
-                            <div className="min-w-0 flex-1">
-                              {/* Both strings arrive display-ready. */}
-                              <span className="block truncate font-medium text-gray-900 dark:text-neutral-50">
-                                {card.label}
-                              </span>
-                              <span className="block text-xs text-gray-500 dark:text-neutral-400">
-                                {t("expiresOn")} {card.expiryDate}
-                                {card.isDefault && ` • ${t("defaultCard")}`}
-                              </span>
-                            </div>
-                            <input
-                              type="radio"
-                              name="savedCard"
-                              checked={isSelected}
-                              onChange={() => {
-                                setSelectedCardId(card.id);
-                                // Nothing to save — this card already is saved.
-                                setSaveCard(false);
-                              }}
-                              className="h-4 w-4 shrink-0 text-[#f9186b] dark:text-pink-500 focus:ring-pink-500"
-                            />
-                          </label>
-
-                          <div className="h-8 w-px shrink-0 bg-gray-200 dark:bg-neutral-800" />
-
-                          <button
-                            type="button"
-                            aria-label={t("removeCard")}
-                            title={t("removeCard")}
-                            onClick={() => setCardToRemove(card)}
-                            disabled={isRemoving}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-[#f9186b] focus-visible:outline-none dark:hover:bg-white/10"
-                          >
-                            <Trash2 className="h-4 w-4 text-[#f9186b] dark:text-pink-400" />
-                          </button>
-                        </div>
+                          <CreditCard className="h-5 w-5 shrink-0 text-[#f9186b] dark:text-pink-400" />
+                          <div className="min-w-0 flex-1">
+                            {/* Same row treatment as /payment-methods: brand
+                                and last digits, both verbatim from the API. */}
+                            <span className="block truncate font-medium tracking-wide text-gray-900 dark:text-neutral-50">
+                              {card.brand} •••• {card.last4}
+                            </span>
+                            <span className="block text-xs text-gray-500 dark:text-neutral-400">
+                              {t("expiresOn")} {card.expiryDate}
+                            </span>
+                          </div>
+                          <input
+                            type="radio"
+                            name="savedCard"
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedCardId(card.id);
+                              // Nothing to save — this card already is saved.
+                              setSaveCard(false);
+                            }}
+                            className="h-4 w-4 shrink-0 text-[#f9186b] dark:text-pink-500 focus:ring-pink-500"
+                          />
+                        </label>
                       );
                     })}
                   </div>
@@ -1555,27 +1500,6 @@ export default function PaymentPage() {
         </div>
       )}
 
-      <AlertDialog
-        open={cardToRemove !== null}
-        onOpenChange={(open) => !open && setCardToRemove(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("removeCard")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {cardToRemove?.label
-                ? `${cardToRemove.label} — ${t("removeCardConfirm")}`
-                : t("removeCardConfirm")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRemoveCard}>
-              {t("remove")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

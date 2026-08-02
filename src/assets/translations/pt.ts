@@ -408,12 +408,15 @@ const pt = {
 
   card: "Cartão",
   savedCards: "Cartões Guardados",
+  acceptedPaymentMethods: "Métodos de Pagamento Aceites",
+  noSavedCards: "Ainda não tem cartões guardados",
+  noSavedCardsHint: "Os cartões que optar por guardar no checkout aparecem aqui.",
+  failedToLoadSavedCards: "Não foi possível carregar os seus cartões guardados",
   saveThisCard: "Guardar este cartão",
   saveThisCardSubtitle: "Pague mais rápido da próxima vez com um toque",
   instantOrderNote:
     "A sua encomenda será feita instantaneamente — sem redirecionamento.",
   payNow: "Pagar Agora",
-  defaultCard: "Predefinido",
   expiresOn: "Expira",
   removeCard: "Remover cartão",
   removeCardConfirm:
@@ -570,6 +573,20 @@ const pt = {
   refundCompleted: "Reembolso Concluído",
   refundCompletedDescription:
     "O seu pagamento foi reembolsado com sucesso para a sua conta.",
+  refundNotEligible: "Sem Reembolso",
+  refundNotEligibleDescription:
+    "O restaurante já tinha aceite este pedido quando foi cancelado, pelo que não há direito a reembolso.",
+
+  cancelOrder: "Cancelar Pedido",
+  cancelOrderTitle: "Cancelar este pedido?",
+  cancelOrderDescription:
+    "Se o restaurante ainda não tiver aceite o seu pedido, será reembolsado. Depois de aceite, não há direito a reembolso.",
+  cancelReason: "Motivo",
+  cancelReasonPlaceholder: "Diga-nos porque está a cancelar",
+  keepOrder: "Manter Pedido",
+  confirmCancelOrder: "Cancelar Pedido",
+  orderCanceled: "O seu pedido foi cancelado",
+  cancelOrderFailed: "Não foi possível cancelar este pedido",
 
   paid: "PAGO",
   refunded: "REEMBOLSADO",

@@ -25,15 +25,22 @@ import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getServiceChargeGross, getDeliveryTax } from "@/lib/tax";
-import { getRefundState, isOrderFinished, isTerminatedStatus } from "@/lib/refund";
+import {
+  canCancelOrder,
+  getRefundState,
+  isOrderFinished,
+  isTerminatedStatus,
+} from "@/lib/refund";
 import {
   getTerminalReason,
   getTimelineStepIndex,
   getTimelineStepKeys,
 } from "@/lib/orderTimeline";
 import { getPaymentStatusDisplay } from "@/lib/paymentStatus";
+import { useInvalidateOrders } from "@/hooks/queries/useOrders";
 import OrderMap from "./OrderMap/OrderMap";
 import RefundBanner from "./RefundBanner";
+import CancelOrderDialog from "../CancelOrderDialog";
 
 
 // A live order changes minute to minute, so it is worth watching closely. A
@@ -125,7 +132,9 @@ export default function TrackOrder() {
   const [error, setError] = useState<string | null>(null);
   const [maxStatusIndex, setMaxStatusIndex] = useState(0);
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const invalidateOrders = useInvalidateOrders();
 
   const handleDownloadInvoice = async () => {
     if (downloadingInvoice || !order?.orderId) return;
@@ -599,6 +608,17 @@ export default function TrackOrder() {
                   )}
                   <span>{t("downloadInvoice")}</span>
                 </button>
+                {/* Below the invoice, and outlined rather than filled: this is
+                    the only destructive action on the page. */}
+                {canCancelOrder(order) && (
+                  <button
+                    onClick={() => setCancelDialogOpen(true)}
+                    className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-red-200 dark:border-red-900/40 bg-white dark:bg-neutral-950 px-6 py-3 font-bold text-red-600 dark:text-red-400 transition-all hover:bg-red-50 dark:hover:bg-red-950/20 active:scale-95"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>{t("cancelOrder")}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -676,6 +696,31 @@ export default function TrackOrder() {
           </aside>
         </div>
       </div>
+
+      {/* The response carries the new status, refundStatus and cancelReason, so
+          the timeline, banner and payment badge all repaint from it — no need
+          to wait for the next poll tick, which then stops the polling itself. */}
+      <CancelOrderDialog
+        orderId={cancelDialogOpen ? order.orderId : null}
+        onClose={() => setCancelDialogOpen(false)}
+        onCancelled={async (updated) => {
+          if (updated) {
+            setOrder(updated);
+            // The timeline shortens to end on CANCELED, so a max index carried
+            // over from the live path would point past the last step and
+            // nothing would render as current. Set, not max: the terminal step
+            // is always the last one, so it is the furthest this order will
+            // ever get.
+            setMaxStatusIndex(getTimelineStepIndex(updated as any));
+          }
+          // This page owns its order in local state; /orders keeps its own
+          // cached list. Without this the customer cancels here, navigates
+          // back, and finds the order still in Ongoing offering to cancel it
+          // again. Outside the `if`: the list is wrong whether or not the
+          // response carried a body.
+          await invalidateOrders();
+        }}
+      />
     </main>
   );
 }
