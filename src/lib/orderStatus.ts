@@ -14,6 +14,28 @@ export function normalizeOrderStatus(status: string | null | undefined): string 
   return upper === "CANCELED" ? "CANCELLED" : upper;
 }
 
+/**
+ * Statuses where the order is still live and the customer is waiting on food.
+ * Everything else — `DELIVERED`, plus the terminated pair — belongs to history.
+ *
+ * Lives here rather than inline in the orders page because two places need the
+ * same answer: which tab a card belongs in, and whether the list is worth
+ * polling at all.
+ */
+const ONGOING_STATUSES = new Set([
+  "PENDING",
+  "ACCEPTED",
+  "ASSIGNED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "PICKED_UP",
+  "ON_THE_WAY",
+]);
+
+export function isOngoingStatus(status: string | null | undefined): boolean {
+  return ONGOING_STATUSES.has(normalizeOrderStatus(status));
+}
+
 export interface StatusHistoryEntry {
   status?: string | null;
   note?: string | null;

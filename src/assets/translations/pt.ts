@@ -406,6 +406,24 @@ const pt = {
   paymentMethodsDescription:
     "Gerencie os seus cartões e contas de pagamento guardados",
 
+  card: "Cartão",
+  savedCards: "Cartões Guardados",
+  acceptedPaymentMethods: "Métodos de Pagamento Aceites",
+  noSavedCards: "Ainda não tem cartões guardados",
+  noSavedCardsHint: "Os cartões que optar por guardar no checkout aparecem aqui.",
+  failedToLoadSavedCards: "Não foi possível carregar os seus cartões guardados",
+  saveThisCard: "Guardar este cartão",
+  saveThisCardSubtitle: "Pague mais rápido da próxima vez com um toque",
+  instantOrderNote:
+    "A sua encomenda será feita instantaneamente — sem redirecionamento.",
+  payNow: "Pagar Agora",
+  expiresOn: "Expira",
+  removeCard: "Remover cartão",
+  removeCardConfirm:
+    "Este cartão será removido da sua conta. Pode guardá-lo novamente da próxima vez que pagar com cartão.",
+  cardRemoved: "Cartão removido.",
+  failedToRemoveCard: "Não foi possível remover o cartão. Tente novamente.",
+
   referrals: "Referências",
   referralsDescription: "Ganhe recompensas ao convidar amigos para o DeliGo",
 
@@ -555,6 +573,20 @@ const pt = {
   refundCompleted: "Reembolso Concluído",
   refundCompletedDescription:
     "O seu pagamento foi reembolsado com sucesso para a sua conta.",
+  refundNotEligible: "Sem Reembolso",
+  refundNotEligibleDescription:
+    "O restaurante já tinha aceite este pedido quando foi cancelado, pelo que não há direito a reembolso.",
+
+  cancelOrder: "Cancelar Pedido",
+  cancelOrderTitle: "Cancelar este pedido?",
+  cancelOrderDescription:
+    "Se o restaurante ainda não tiver aceite o seu pedido, será reembolsado. Depois de aceite, não há direito a reembolso.",
+  cancelReason: "Motivo",
+  cancelReasonPlaceholder: "Diga-nos porque está a cancelar",
+  keepOrder: "Manter Pedido",
+  confirmCancelOrder: "Cancelar Pedido",
+  orderCanceled: "O seu pedido foi cancelado",
+  cancelOrderFailed: "Não foi possível cancelar este pedido",
 
   paid: "PAGO",
   refunded: "REEMBOLSADO",
@@ -1253,6 +1285,8 @@ const pt = {
     "A DeliGo pode atualizar estes Termos periodicamente. A utilização continuada da plataforma após alterações constitui aceitação. Será notificado de alterações materiais por email ou notificação na aplicação.",
   filter: "Filtro",
   clearAll: "Limpar tudo",
+  clearSearch: "Limpar pesquisa",
+  noResultsFound: "Nenhum resultado encontrado.",
 
   faqTitle: "Perguntas Frequentes",
   faqSubtitle: "Tudo o que precisa de saber sobre a DeliGo",
@@ -1561,6 +1595,9 @@ const pt = {
   addressNotFound: "Morada não encontrada",
   pleaseLogInToSearch: "Inicie sessão para pesquisar.",
   failedToLoadSearchResults: "Falha ao carregar os resultados da pesquisa.",
+  searchPromptTitle: "Pesquisar na Deligo",
+  searchPromptHint:
+    "Escreva o nome de um restaurante, loja ou prato para ver resultados.",
   sortRelevance: "Relevância",
   sortDistance: "Distância",
   sortRating: "Avaliação",

@@ -109,6 +109,17 @@ const ERROR_KEY_MESSAGES: Record<string, LocalizedField> = {
     en: "This restaurant is closed right now — you can't order from it yet.",
     pt: "Este restaurante está fechado neste momento — ainda não pode encomendar.",
   },
+  // Both of these mean the same thing to a customer trying to cancel: the order
+  // moved on since the page was painted. The server's own wording ("Only paid
+  // orders can be canceled.") describes a backend rule, not their situation.
+  ONLY_PAID_ORDER_CAN_BE_CANCELED: {
+    en: "This order can no longer be cancelled.",
+    pt: "Este pedido já não pode ser cancelado.",
+  },
+  ORDER_CANNOT_BE_CANCELED_OR_REJECTED_AT_STAGE: {
+    en: "This order can no longer be cancelled.",
+    pt: "Este pedido já não pode ser cancelado.",
+  },
 };
 
 export function getApiErrorMessage(error: unknown, fallbackMessage = "Request failed") {

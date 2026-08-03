@@ -9,11 +9,32 @@
  *   refund settled    paymentStatus: "REFUNDED"  isPaid: false
  *
  * So anything keyed off `orderStatus` alone cannot see a refund happen.
+ *
+ * Since customer-side cancellation shipped, orders also carry an explicit
+ * `refundStatus`, which this module prefers — see `getRefundState`.
  */
 
 import { normalizeOrderStatus } from "./orderStatus";
 
-export type RefundState = "none" | "in_progress" | "completed";
+export type RefundState = "none" | "not_eligible" | "in_progress" | "completed";
+
+/**
+ * The backend's own verdict on the money, present on any order that has been
+ * cancelled through `PATCH /orders/:orderId/cancel` (and absent on orders that
+ * were never cancelled).
+ *
+ * Confirmed against the test API: cancelling before the vendor accepts gives
+ * `REFUNDED` outright for a wallet payment; cancelling afterwards gives
+ * `NOT_APPLICABLE`. `PENDING` is the documented in-flight value for refunds
+ * that do not settle synchronously.
+ */
+export type RefundStatus = "NOT_APPLICABLE" | "PENDING" | "REFUNDED";
+
+const REFUND_STATUS_STATES: Record<RefundStatus, RefundState> = {
+  NOT_APPLICABLE: "not_eligible",
+  PENDING: "in_progress",
+  REFUNDED: "completed",
+};
 
 /**
  * Statuses that end an order with the customer's money already taken.
@@ -32,11 +53,23 @@ export interface RefundableOrder {
   orderStatus?: string | null;
   paymentStatus?: string | null;
   isPaid?: boolean | null;
+  refundStatus?: string | null;
 }
 
 export function getRefundState(order: RefundableOrder | null | undefined): RefundState {
   if (!order || !isTerminatedStatus(order.orderStatus)) return "none";
 
+  // `refundStatus` outranks everything below it. The payment fields cannot tell
+  // "cancelled too late, no refund" apart from "cancelled in time, money on its
+  // way" — both sit at paymentStatus PAID / isPaid true — so without this a
+  // customer who cancelled after the restaurant accepted was promised a refund
+  // that is never coming.
+  const declared = (order.refundStatus ?? "").toUpperCase();
+  const mapped = REFUND_STATUS_STATES[declared as RefundStatus];
+  if (mapped) return mapped;
+
+  // No `refundStatus`: a vendor-side rejection, or an order that predates the
+  // field. Fall back to reading the payment fields.
   const paymentStatus = (order.paymentStatus ?? "").toUpperCase();
 
   // Tested before `isPaid`, which the backend flips back to false once the
@@ -69,12 +102,46 @@ export function isOrderFinished(order: RefundableOrder | null | undefined): bool
   );
 }
 
+/**
+ * Statuses past the point of no return. `DELIVERED` is self-evident; the other
+ * two mean the order is already dead, and the API answers a second cancel with
+ * `ORDER_CANNOT_BE_CANCELED_OR_REJECTED_AT_STAGE`.
+ */
+const UNCANCELLABLE_STATUSES = new Set(["DELIVERED", "CANCELLED", "REJECTED"]);
+
+/** The subset of an order `canCancelOrder` reads. */
+export interface CancellableOrder {
+  orderStatus?: string | null;
+  isPaid?: boolean | null;
+}
+
+/**
+ * May the customer still call off this order?
+ *
+ * Deliberately does not ask whether a refund would follow — that is the
+ * backend's call, made at cancel time, and reported back as `refundStatus`.
+ * This only answers whether the button should be on screen at all.
+ */
+export function canCancelOrder(order: CancellableOrder | null | undefined): boolean {
+  if (!order) return false;
+
+  const status = normalizeOrderStatus(order.orderStatus);
+  if (!status || UNCANCELLABLE_STATUSES.has(status)) return false;
+
+  // Only paid orders can be cancelled (`ONLY_PAID_ORDER_CAN_BE_CANCELED`).
+  // Tested against `false` rather than truthiness so an order whose response
+  // omits the field is still offered the button rather than silently losing it.
+  return order.isPaid !== false;
+}
+
 const LABEL_KEYS: Record<Exclude<RefundState, "none">, string> = {
+  not_eligible: "refundNotEligible",
   in_progress: "refundInProgress",
   completed: "refundCompleted",
 };
 
 const DESCRIPTION_KEYS: Record<Exclude<RefundState, "none">, string> = {
+  not_eligible: "refundNotEligibleDescription",
   in_progress: "refundInProgressDescription",
   completed: "refundCompletedDescription",
 };

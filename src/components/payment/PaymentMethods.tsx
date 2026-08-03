@@ -1,10 +1,66 @@
 "use client";
 
-import { CreditCard, Smartphone, Grid3X3, Wallet, Lock } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
+import { CreditCard, Smartphone, Grid3X3, Wallet, Lock, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getAccessToken } from "@/lib/authCookies";
+import { getApiErrorMessage } from "@/lib/apiClient";
+import { useSavedCards, useInvalidateSavedCards } from "@/hooks/queries/usePaymentTokens";
+import { disableSavedCard } from "@/services/paymentTokenApi";
+import type { SavedCard } from "@/types/payment";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function PaymentMethodPage() {
   const { t } = useTranslation();
+  const [cardToRemove, setCardToRemove] = useState<SavedCard | null>(null);
+  const [removingCardId, setRemovingCardId] = useState<string | null>(null);
+
+  // Reading the cookie during render would make the server and the first client
+  // paint disagree. `mounted` is false on the server and on the first client
+  // render, true afterwards — the same guard SearchContent uses.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const authed = mounted && !!getAccessToken();
+
+  // Gated on `authed`: `GET /payment-tokens` answers 401 for a guest, and the
+  // response interceptor turns that into a redirect to /login — so an ungated
+  // query would throw a visitor off this page for simply opening it.
+  const {
+    data: savedCards = [],
+    isLoading,
+    isError,
+  } = useSavedCards({ enabled: authed });
+  const invalidateSavedCards = useInvalidateSavedCards();
+
+  const confirmRemoveCard = async () => {
+    if (!cardToRemove) return;
+    const { id } = cardToRemove;
+    setCardToRemove(null);
+
+    try {
+      setRemovingCardId(id);
+      await disableSavedCard(id);
+      await invalidateSavedCards();
+      toast.success(t("cardRemoved"));
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, t("failedToRemoveCard")));
+    } finally {
+      setRemovingCardId(null);
+    }
+  };
 
   const paymentMethods = [
     {
@@ -48,8 +104,99 @@ export default function PaymentMethodPage() {
             </p>
           </div>
 
+          {/* Saved cards — first, because they are the only thing on this page
+              the customer can actually act on. Hidden entirely for guests:
+              there is nothing to manage and nothing to invite them to do here,
+              since a card can only be saved during a checkout. */}
+          {authed && (
+            <div className="border-b border-gray-200 dark:border-neutral-800 px-5 py-6 sm:px-8">
+              <h2 className="mb-3 text-base font-semibold text-[#222] dark:text-neutral-50">
+                {t("savedCards")}
+              </h2>
+
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[0, 1].map((row) => (
+                    <div
+                      key={row}
+                      className="h-[68px] animate-pulse rounded-xl bg-gray-100 dark:bg-neutral-800"
+                    />
+                  ))}
+                </div>
+              ) : isError ? (
+                <p className="rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                  {t("failedToLoadSavedCards")}
+                </p>
+              ) : savedCards.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-300 dark:border-neutral-700 px-4 py-6 text-center">
+                  <CreditCard className="mx-auto h-6 w-6 text-gray-400 dark:text-neutral-500" />
+                  <p className="mt-2 text-sm font-medium text-[#222] dark:text-neutral-100">
+                    {t("noSavedCards")}
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-neutral-400">
+                    {t("noSavedCardsHint")}
+                  </p>
+                </div>
+              ) : (
+                <ul className="space-y-3">
+                  {savedCards.map((card) => {
+                    const isRemoving = removingCardId === card.id;
+                    return (
+                      <li
+                        key={card.id}
+                        className={`flex items-center gap-3 rounded-xl border border-gray-200 dark:border-neutral-800 px-4 py-3.5 transition ${
+                          isRemoving ? "pointer-events-none opacity-60" : ""
+                        }`}
+                      >
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0f5] dark:bg-pink-950/20">
+                          <CreditCard className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          {/* Brand and last digits, both verbatim from the API.
+                              No scheme logos: the app doesn't show them, and
+                              the web should not be first. `label` still reads
+                              "Visa ending in 4242" and is used as-is in the
+                              remove dialog, where the card is named in prose. */}
+                          <h3 className="truncate text-base font-semibold tracking-wide text-[#222] dark:text-neutral-50">
+                            {card.brand} •••• {card.last4}
+                          </h3>
+                          {/* `isDefault` is deliberately not surfaced. It is
+                              read-only (no set-default endpoint) and nothing on
+                              the web acts on it — checkout preselects no card —
+                              so a badge would label a behaviour that does not
+                              exist here. It survives only as the sort order the
+                              API returns: default first, then newest. */}
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-neutral-400">
+                            {t("expiresOn")} {card.expiryDate}
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          aria-label={t("removeCard")}
+                          title={t("removeCard")}
+                          onClick={() => setCardToRemove(card)}
+                          disabled={isRemoving}
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-[#f9186b] focus-visible:outline-none dark:hover:bg-white/10"
+                        >
+                          <Trash2 className="h-4 w-4 text-[#f9186b] dark:text-pink-400" />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
+
           {/* Accepted methods */}
-          <ul className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 sm:p-8">
+          <div className="px-5 pt-6 sm:px-8">
+            <h2 className="text-base font-semibold text-[#222] dark:text-neutral-50">
+              {t("acceptedPaymentMethods")}
+            </h2>
+          </div>
+          <ul className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 sm:p-8 sm:pt-4">
             {paymentMethods.map((method) => {
               const Icon = method.icon;
               return (
@@ -90,6 +237,28 @@ export default function PaymentMethodPage() {
           </div>
         </div>
       </div>
+
+      <AlertDialog
+        open={cardToRemove !== null}
+        onOpenChange={(open) => !open && setCardToRemove(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("removeCard")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cardToRemove?.label
+                ? `${cardToRemove.label} — ${t("removeCardConfirm")}`
+                : t("removeCardConfirm")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveCard}>
+              {t("remove")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

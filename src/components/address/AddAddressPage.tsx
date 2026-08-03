@@ -4,7 +4,8 @@
 
 "use client";
 
-import { CheckCircle, Loader2, Navigation, Search, X } from "lucide-react";
+import { CheckCircle, Loader2, Navigation, Search } from "lucide-react";
+import ClearFilterButton from "@/components/shared/ClearFilterButton";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Toaster, toast } from "sonner";
 import LocationPicker from "@/components/profile/locationPicker";
@@ -325,14 +326,7 @@ export default function AddAddressPage() {
                   className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b] dark:focus:border-[#f9186b]"
                   autoComplete="off"
                 />
-                {searchValue && (
-                  <button
-                    onClick={clearSearch}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-neutral-500 hover:text-gray-600 dark:hover:text-neutral-300"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+                {searchValue && <ClearFilterButton onClear={clearSearch} />}
 
                 {/* Suggestions Dropdown */}
                 {showSuggestions && suggestions.length > 0 && (

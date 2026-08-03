@@ -8,6 +8,7 @@ import {
 import axios from "axios";
 import { apiClient } from "@/lib/apiClient";
 import { useStore } from "@/stores/translationStore";
+import { isOngoingStatus } from "@/lib/orderStatus";
 import { useCartCache } from "@/hooks/queries/useCart";
 import { activateReorderedOrder } from "@/lib/cartActivation";
 import type { CartItem } from "@/types/cart";
@@ -33,6 +34,28 @@ export function useOrders<T = unknown>(options?: { enabled?: boolean }) {
       return (res.data?.data ?? []) as T[];
     },
     enabled: options?.enabled ?? true,
+    // The global 60s staleTime is tuned for catalog and profile data, which does
+    // not change on its own. Orders do — a vendor accepts, a rider picks up, and
+    // a cancellation can land from the tracking page, the mobile app or another
+    // tab. Serving that from a minute-old cache is what left a cancelled order
+    // sitting in Ongoing with a working Cancel button. Zero still paints from
+    // cache instantly; it just always revalidates behind it.
+    staleTime: 0,
+    // Same reason: the customer alt-tabs to check something and comes back to a
+    // list that moved on without them. Off globally, on for this one query.
+    refetchOnWindowFocus: true,
+    // While anything is still in flight, keep the list moving without the
+    // customer reloading. Returns false once everything has settled, so a
+    // history-only page makes no requests, and React Query's default of not
+    // refetching in the background keeps a hidden tab silent either way.
+    refetchInterval: (query) => {
+      const list = query.state.data as
+        | ({ orderStatus?: string | null } | null)[]
+        | undefined;
+      return list?.some((order) => isOngoingStatus(order?.orderStatus))
+        ? 30_000
+        : false;
+    },
     // Keep the current list visible during a language-switch refetch.
     placeholderData: keepPreviousData,
   });

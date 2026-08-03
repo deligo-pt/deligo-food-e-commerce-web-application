@@ -14,10 +14,15 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import ClearFilterButton from "@/components/shared/ClearFilterButton";
 
 export default function HelpCenterPage() {
   const { t } = useTranslation();
-  const [openFaq, setOpenFaq] = useState<number>(0);
+  // Keyed by question text, not list index: the index shifts as the search
+  // filters the list, which would silently move the open panel to another FAQ.
+  // `null` = untouched, so the first visible question shows expanded.
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const contactItems = [
     {
@@ -76,6 +81,19 @@ export default function HelpCenterPage() {
     },
   ];
 
+  // The box above used to be decorative — it held no state and filtered
+  // nothing. It now narrows both lists below on any visible text.
+  const term = search.trim().toLowerCase();
+  const matches = (...fields: string[]) =>
+    !term || fields.some((f) => f.toLowerCase().includes(term));
+
+  const filteredCategories = categories.filter((c) =>
+    matches(c.title, c.description),
+  );
+  const filteredFaqs = faqs.filter((f) => matches(f.question, f.answer));
+  const noMatches =
+    !!term && filteredCategories.length === 0 && filteredFaqs.length === 0;
+
   return (
     <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 transition-colors duration-200 text-gray-900 dark:text-neutral-100">
       <div className="mx-auto max-w-5xl px-4 py-10 md:px-6">
@@ -95,10 +113,20 @@ export default function HelpCenterPage() {
 
             <input
               type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder={t("searchHelpPlaceholder")}
-              className="h-14 w-full rounded-2xl border border-[#e5e7eb] dark:border-neutral-800 bg-white dark:bg-neutral-900 pl-14 pr-4 text-sm shadow-sm outline-none transition-all focus:border-[#f9186b] dark:focus:border-pink-500 text-gray-900 dark:text-neutral-100"
+              className="h-14 w-full rounded-2xl border border-[#e5e7eb] dark:border-neutral-800 bg-white dark:bg-neutral-900 pl-14 pr-11 text-sm shadow-sm outline-none transition-all focus:border-[#f9186b] dark:focus:border-pink-500 text-gray-900 dark:text-neutral-100"
             />
+
+            {search && <ClearFilterButton onClear={() => setSearch("")} />}
           </div>
+
+          {noMatches && (
+            <p className="mt-6 text-sm text-[#6b7280] dark:text-neutral-400">
+              {t("noResultsFound")}
+            </p>
+          )}
 
           {/* Banner */}
           <div className="relative mt-10 overflow-hidden rounded-3xl bg-[#f9186b] dark:bg-pink-600 p-6 text-left text-white shadow-lg md:flex md:items-center md:justify-between md:p-10">
@@ -164,13 +192,14 @@ export default function HelpCenterPage() {
         </section>
 
         {/* Categories */}
+        {filteredCategories.length > 0 && (
         <section className="mb-16">
           <h2 className="mb-6 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
             {t("browseByCategory")}
           </h2>
 
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {categories.map((item) => {
+            {filteredCategories.map((item) => {
               const Icon = item.icon;
 
               return (
@@ -194,8 +223,10 @@ export default function HelpCenterPage() {
             })}
           </div>
         </section>
+        )}
 
         {/* FAQ */}
+        {filteredFaqs.length > 0 && (
         <section className="mx-auto max-w-4xl">
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
@@ -208,8 +239,9 @@ export default function HelpCenterPage() {
           </div>
 
           <div className="space-y-4">
-            {faqs.map((faq, index) => {
-              const isOpen = openFaq === index;
+            {filteredFaqs.map((faq, index) => {
+              const isOpen =
+                openFaq === null ? index === 0 : openFaq === faq.question;
 
               return (
                 <div
@@ -217,7 +249,7 @@ export default function HelpCenterPage() {
                   className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none"
                 >
                   <button
-                    onClick={() => setOpenFaq(isOpen ? -1 : index)}
+                    onClick={() => setOpenFaq(isOpen ? "" : faq.question)}
                     className="flex w-full items-center justify-between px-6 py-5 text-left"
                   >
                     <span className="font-medium text-[#191c1d] dark:text-neutral-50">
@@ -246,6 +278,7 @@ export default function HelpCenterPage() {
             })}
           </div>
         </section>
+        )}
       </div>
     </div>
   );

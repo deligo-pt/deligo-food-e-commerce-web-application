@@ -390,6 +390,19 @@ export default function SearchContent() {
     );
   }
 
+  // No query — either the page was opened directly or the cross in the navbar
+  // wiped the search. Prompt instead of reporting no results for "".
+  if (!term) {
+    return (
+      <main className="w-full px-4 py-8 lg:px-16">
+        <div className="py-20 text-center">
+          <h1 className="text-2xl font-bold">{t("searchPromptTitle")}</h1>
+          <p className="mt-2 text-gray-600">{t("searchPromptHint")}</p>
+        </div>
+      </main>
+    );
+  }
+
   const totalVendors = sortedPlaces.length;
   const totalProducts = sortedDishes.length;
   const activeSortLabel = t(

@@ -34,6 +34,7 @@ import { useLocationStore } from "@/stores/locationStore";
 import { updateLiveLocation } from "@/services/addressApi";
 import { clearCachedFCMToken } from "@/lib/fcmToken";
 import LanguageSwitcher from "./LanguageSwitcher";
+import ClearFilterButton from "./ClearFilterButton";
 import { useTranslation } from "@/hooks/useTranslation";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 import {
@@ -351,6 +352,18 @@ export default function Navbar() {
     }
   };
 
+  // Emptying the box has to drop the results too, otherwise the page keeps
+  // showing hits for a term that is no longer on screen. The pending debounce is
+  // killed first so it can't re-push the old term a moment later.
+  const clearSearch = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    setLocalSearchTerm("");
+    if (pathname === "/search") router.replace("/search");
+  }, [pathname, router]);
+
   useEffect(() => {
     if (pathname !== "/search") {
       setLocalSearchTerm("");
@@ -630,8 +643,11 @@ export default function Navbar() {
               value={localSearchTerm}
               onChange={onSearchChange}
               onKeyDown={onKeyDown}
-              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-base text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
+              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-11 text-base text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
             />
+            {localSearchTerm && (
+              <ClearFilterButton onClear={clearSearch} />
+            )}
           </div>
         </div>
 
@@ -741,8 +757,11 @@ export default function Navbar() {
             value={localSearchTerm}
             onChange={onSearchChange}
             onKeyDown={onKeyDown}
-            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-4 text-base text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
+            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-11 text-base text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
           />
+          {localSearchTerm && (
+            <ClearFilterButton onClear={clearSearch} />
+          )}
         </div>
       </div>
 

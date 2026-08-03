@@ -392,6 +392,23 @@ const en = {
   paymentMethods: "Payment Methods",
   paymentMethodsDescription: "Manage your saved cards and payment accounts",
 
+  card: "Card",
+  savedCards: "Saved Cards",
+  acceptedPaymentMethods: "Accepted Payment Methods",
+  noSavedCards: "No saved cards yet",
+  noSavedCardsHint: "Cards you choose to save at checkout will appear here.",
+  failedToLoadSavedCards: "Could not load your saved cards",
+  saveThisCard: "Save this card",
+  saveThisCardSubtitle: "Pay faster next time with one tap",
+  instantOrderNote: "Your order will be placed instantly — no redirect needed.",
+  payNow: "Pay Now",
+  expiresOn: "Expires",
+  removeCard: "Remove card",
+  removeCardConfirm:
+    "This card will be removed from your account. You can save it again next time you pay by card.",
+  cardRemoved: "Card removed.",
+  failedToRemoveCard: "Could not remove the card. Please try again.",
+
   referrals: "Referrals",
   referralsDescription: "Earn rewards by inviting your friends to DeliGo",
 
@@ -538,6 +555,20 @@ const en = {
   refundCompleted: "Refund Completed",
   refundCompletedDescription:
     "Your payment has been successfully refunded to your account.",
+  refundNotEligible: "No Refund",
+  refundNotEligibleDescription:
+    "The restaurant had already accepted this order when it was cancelled, so it is not eligible for a refund.",
+
+  cancelOrder: "Cancel Order",
+  cancelOrderTitle: "Cancel this order?",
+  cancelOrderDescription:
+    "If the restaurant has not accepted your order yet, you will be refunded. Once they have accepted it, no refund is due.",
+  cancelReason: "Reason",
+  cancelReasonPlaceholder: "Tell us why you are cancelling",
+  keepOrder: "Keep Order",
+  confirmCancelOrder: "Cancel Order",
+  orderCanceled: "Your order has been cancelled",
+  cancelOrderFailed: "Could not cancel this order",
 
   notAvailable: "N/A",
 
@@ -1256,6 +1287,8 @@ const en = {
     "DeliGo may update these Terms from time to time. Continued use of the platform after changes constitutes acceptance. You will be notified of material changes via email or in-app notification.",
   filter: "Filter",
   clearAll: "Clear all",
+  clearSearch: "Clear search",
+  noResultsFound: "No results found.",
 
   // en.ts
   faqTitle: "Frequently Asked Questions",
@@ -1565,6 +1598,9 @@ const en = {
   addressNotFound: "Address not found",
   pleaseLogInToSearch: "Please log in to search.",
   failedToLoadSearchResults: "Failed to load search results.",
+  searchPromptTitle: "Search Deligo",
+  searchPromptHint:
+    "Type the name of a restaurant, store or dish to see results.",
   sortRelevance: "Relevance",
   sortDistance: "Distance",
   sortRating: "Rating",

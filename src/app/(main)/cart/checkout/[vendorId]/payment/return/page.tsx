@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useInvalidateSavedCards } from "@/hooks/queries/usePaymentTokens";
 import Loader from "@/components/shared/Loader";
 
 export default function PaymentReturnPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const invalidateSavedCards = useInvalidateSavedCards();
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
 
@@ -48,6 +50,12 @@ export default function PaymentReturnPage() {
           // Clear temporary storage
           sessionStorage.removeItem("pendingOrder");
           sessionStorage.removeItem("deliveryNotes");
+          // This call is where a "save this card" request actually becomes a
+          // saved card, so the cached list is now potentially wrong. Marking it
+          // stale costs nothing here — there's no observer on this page, so it
+          // just means the next visit to /payment-methods re-reads instead of
+          // serving a minute-old empty list.
+          invalidateSavedCards();
           setStatus("success");
           // Redirect to the order detail / tracking page. The route is
           // /orders/track-order/[orderId] — a bare /orders/[orderId] has no
@@ -66,7 +74,7 @@ export default function PaymentReturnPage() {
     };
 
     finalizeOrder();
-  }, [router, searchParams, t]);
+  }, [router, searchParams, t, invalidateSavedCards]);
 
   if (status === "loading") {
     return <Loader fullScreen label={t("finalizingYourOrder")} />;

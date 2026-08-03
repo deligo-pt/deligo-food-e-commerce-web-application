@@ -25,6 +25,7 @@ import {
   Loader2,
   Plus,
   Navigation,
+  Zap,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -39,6 +40,8 @@ import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
 import { addressTypeLabel, normalizeAddressType } from "@/lib/addressType";
 import { formatAddressLine1, formatAddressLine2 } from "@/lib/addressFormat";
 import type { CartAddon } from "@/types/cart";
+import { useSavedCards } from "@/hooks/queries/usePaymentTokens";
+import { payWithSavedCard } from "@/services/paymentTokenApi";
 import Link from "next/link";
 
 interface CheckoutItem {
@@ -188,6 +191,23 @@ export default function PaymentPage() {
   // Default to Google Pay: CARD is currently rejected by the REDUNIQ sandbox
   // (PAYMENT_INITIATION_FAILED_BY_GATEWAY), while the wallet methods work.
   const [paymentMethod, setPaymentMethod] = useState<string>("GOOGLE_PAY");
+  // A saved card is a sub-choice OF Card, not a peer of the four methods —
+  // it's still a card payment, just with a token instead of the hosted page.
+  // So it hangs off `paymentMethod === "CARD"` and is cleared with it.
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  // Tokenization is CARD-only — the API accepts `saveCard` on any method but
+  // silently ignores it elsewhere, so the toggle is only offered under CARD
+  // and is cleared whenever the method moves away from it.
+  const [saveCard, setSaveCard] = useState(false);
+
+  // The customer's saved cards. Read-only here: this list exists to be paid
+  // with, and managing it (removing a card) lives on /payment-methods, away
+  // from the pay button.
+  const { data: savedCards = [] } = useSavedCards();
+  // Only under Card, matching the app. Elsewhere the section is hidden.
+  const showSavedCards = paymentMethod === "CARD" && savedCards.length > 0;
+  // Selecting a card switches the whole flow: one call, no redirect.
+  const isInstantPayment = showSavedCards && selectedCardId !== null;
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentError, setPaymentError] = useState("");
 
@@ -435,15 +455,45 @@ export default function PaymentPage() {
       setIsPlacingOrder(true);
       setPaymentError("");
 
+      // One-click: no hosted page, no redirect, no return trip. The order
+      // already exists once this resolves, so none of the redirect bookkeeping
+      // below applies — writing `pendingOrder` here would leave a stale entry
+      // for a later redirect flow to pick up.
+      if (isInstantPayment && selectedCardId) {
+        await payWithSavedCard({
+          checkoutSummaryId: summary._id,
+          paymentTokenId: selectedCardId,
+        });
+
+        // Straight to the orders list, not the tracking page. Nothing is read
+        // out of the response, which also sidesteps its undocumented shape —
+        // the spec never says whether the id comes back as `orderId` or `_id`.
+        router.replace("/orders");
+        return;
+      }
+
       const response = await apiClient.post(
         "/payment/reduniq/create-payment-intent",
         {
           checkoutSummaryId: summary._id,
           paymentMethod,
+          // Only sent for CARD. The field is ignored server-side for the other
+          // methods, but omitting it keeps the wallet request — the one path
+          // that currently works end to end — byte-identical to before.
+          ...(paymentMethod === "CARD" && { saveCard }),
         },
       );
 
-      const { redirectUrl, paymentToken } = response.data.data;
+      const { redirectUrl, paymentToken, cardWillBeSaved } = response.data.data;
+
+      // The gateway gets the final say on whether the card can be tokenized.
+      // If it says no while the customer ticked the box, that divergence is
+      // silent everywhere else — leave a trace so it's findable.
+      if (saveCard && cardWillBeSaved === false) {
+        console.warn(
+          "[payment] saveCard was requested but the gateway returned cardWillBeSaved: false",
+        );
+      }
 
       // The post-payment return page finalizes the order via /orders/create-order,
       // but REDUNIQ's return URL does NOT carry our internal checkoutSummaryId or
@@ -466,6 +516,12 @@ export default function PaymentPage() {
       const errorMsg = getApiErrorMessage(err, "Failed to process payment");
       setPaymentError(errorMsg);
 
+      // Also runs for a declined saved-card payment. Whether the backend
+      // already unwinds the summary's payment status in that case is unknown —
+      // TO CONFIRM. Calling it is the failure-safe side of that unknown: if the
+      // backend does unwind, this is a redundant reset whose own errors are
+      // already swallowed below; if it doesn't, skipping it would leave the
+      // summary stuck and the customer unable to retry.
       try {
         await apiClient.post(
           `/payment/reduniq/handle-payment-failure/${summary._id}`,
@@ -876,40 +932,139 @@ export default function PaymentPage() {
                 {t("paymentMethod")}
               </h3>
 
-              <div className="space-y-3">
+              {/* 2×2 tiles, matching the app. */}
+              <div className="grid grid-cols-2 gap-3">
                 {[
-                  {
-                    icon: CreditCard,
-                    name: "Debit/Credit Card",
-                    value: "CARD",
-                  },
+                  { icon: CreditCard, name: t("card"), value: "CARD" },
                   { icon: Smartphone, name: "MB WAY", value: "MB_WAY" },
-                  { icon: Wallet, name: "Google Pay", value: "GOOGLE_PAY" },
-                  { icon: Wallet, name: "Other", value: "OTHER" },
+                  { icon: Wallet, name: t("googlePay"), value: "GOOGLE_PAY" },
+                  { icon: Wallet, name: t("other"), value: "OTHER" },
                 ].map((method) => (
                   <label
                     key={method.value}
-                    className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 transition ${
+                    className={`flex cursor-pointer items-center justify-between gap-2 rounded-xl border p-4 transition ${
                       paymentMethod === method.value
                         ? "border-[#f9186b] dark:border-pink-500 bg-pink-50 dark:bg-pink-950/20 text-gray-900 dark:text-neutral-50"
                         : "border-gray-200 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <method.icon className="h-5 w-5" />
-                      <span className="font-medium">{method.name}</span>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <method.icon className="h-5 w-5 shrink-0" />
+                      <span className="truncate text-sm font-medium">
+                        {method.name}
+                      </span>
                     </div>
                     <input
                       type="radio"
                       name="payment"
                       value={method.value}
                       checked={paymentMethod === method.value}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="h-4 w-4 text-[#f9186b] dark:text-pink-500 focus:ring-pink-500"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setPaymentMethod(value);
+                        // Both only mean anything under Card, so both are
+                        // cleared with it — a stale `true` or a stale token
+                        // must never ride along in another method's request.
+                        if (value !== "CARD") {
+                          setSaveCard(false);
+                          setSelectedCardId(null);
+                        }
+                      }}
+                      className="h-4 w-4 shrink-0 text-[#f9186b] dark:text-pink-500 focus:ring-pink-500"
                     />
                   </label>
                 ))}
               </div>
+
+              {/* Saved cards live under Card, because that is what they are:
+                  a card payment with a token instead of the hosted page. */}
+              {showSavedCards && (
+                <div className="mt-5">
+                  <p className="mb-2 text-sm font-semibold text-gray-900 dark:text-neutral-50">
+                    {t("savedCards")}
+                  </p>
+
+                  <div className="space-y-3">
+                    {savedCards.map((card) => {
+                      const isSelected = selectedCardId === card.id;
+
+                      return (
+                        <label
+                          key={card.id}
+                          className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
+                            isSelected
+                              ? "border-[#f9186b] dark:border-pink-500 bg-pink-50 dark:bg-pink-950/20"
+                              : "border-gray-200 dark:border-neutral-800"
+                          }`}
+                        >
+                          <CreditCard className="h-5 w-5 shrink-0 text-[#f9186b] dark:text-pink-400" />
+                          <div className="min-w-0 flex-1">
+                            {/* Same row treatment as /payment-methods: brand
+                                and last digits, both verbatim from the API. */}
+                            <span className="block truncate font-medium tracking-wide text-gray-900 dark:text-neutral-50">
+                              {card.brand} •••• {card.last4}
+                            </span>
+                            <span className="block text-xs text-gray-500 dark:text-neutral-400">
+                              {t("expiresOn")} {card.expiryDate}
+                            </span>
+                          </div>
+                          <input
+                            type="radio"
+                            name="savedCard"
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedCardId(card.id);
+                              // Nothing to save — this card already is saved.
+                              setSaveCard(false);
+                            }}
+                            className="h-4 w-4 shrink-0 text-[#f9186b] dark:text-pink-500 focus:ring-pink-500"
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Why the button below says "Pay Now" and nothing redirects. */}
+              {isInstantPayment && (
+                <p className="mt-3 flex items-start gap-2 text-xs text-[#f9186b] dark:text-pink-400">
+                  <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  {t("instantOrderNote")}
+                </p>
+              )}
+
+              {/* CARD only, and pointless once a saved card is picked: no other
+                  method can be tokenized, and offering it under a wallet would
+                  promise something that quietly doesn't happen. */}
+              {paymentMethod === "CARD" && !isInstantPayment && (
+                <label className="mt-5 flex cursor-pointer items-center justify-between gap-4">
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-gray-900 dark:text-neutral-50">
+                      {t("saveThisCard")}
+                    </span>
+                    <span className="block text-xs text-gray-500 dark:text-neutral-400">
+                      {t("saveThisCardSubtitle")}
+                    </span>
+                  </span>
+
+                  {/* Switch, not a checkbox — the native input stays in the
+                      tree (peer) so keyboard and screen readers get a real
+                      control, and the track/knob are drawn from its state. */}
+                  <span className="relative inline-flex shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={saveCard}
+                      onChange={(e) => setSaveCard(e.target.checked)}
+                      className="peer h-6 w-11 cursor-pointer appearance-none rounded-full bg-gray-200 transition-colors checked:bg-[#f9186b] focus-visible:ring-2 focus-visible:ring-[#f9186b] focus-visible:ring-offset-2 focus-visible:outline-none dark:bg-neutral-700 dark:checked:bg-pink-500"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"
+                    />
+                  </span>
+                </label>
+              )}
 
               {paymentError && (
                 <div className="mt-6 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 p-4">
@@ -935,9 +1090,20 @@ export default function PaymentPage() {
                 {!isPlacingOrder && (
                   <span className="cart-cta-shine" aria-hidden="true" />
                 )}
+                {/* The label is the honest signal of what the tap does: a
+                    saved card charges immediately, everything else hands off
+                    to the gateway's page first. */}
                 <span className="relative z-10 flex items-center gap-2">
-                  {isPlacingOrder ? t("processing") : t("placeOrder")}
-                  <ArrowRight className="h-5 w-5" />
+                  {isPlacingOrder
+                    ? t("processing")
+                    : isInstantPayment
+                      ? t("payNow")
+                      : t("placeOrder")}
+                  {isInstantPayment ? (
+                    <Zap className="h-5 w-5" />
+                  ) : (
+                    <ArrowRight className="h-5 w-5" />
+                  )}
                 </span>
               </button>
 
@@ -1333,6 +1499,7 @@ export default function PaymentPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

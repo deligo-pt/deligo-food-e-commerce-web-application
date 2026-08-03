@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Clock3, Download, HandCoins, Loader2, RotateCcw, UtensilsCrossed, Star, XCircle } from "lucide-react";
+import { CheckCircle, Clock3, Download, HandCoins, Info, Loader2, RotateCcw, UtensilsCrossed, Star, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +11,29 @@ import { getApiErrorMessage } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import { useReorder } from "@/hooks/queries/useOrders";
 import { refundStateLabelKey, type RefundState } from "@/lib/refund";
+
+/**
+ * How each refund state is chipped. `not_eligible` is amber and neutral on
+ * purpose: it is not a failure worth red, and it must not be mistaken for
+ * either of the two states where money is actually moving.
+ */
+const REFUND_CHIP: Record<
+  Exclude<RefundState, "none">,
+  { className: string; icon: typeof CheckCircle }
+> = {
+  completed: {
+    className: "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400",
+    icon: CheckCircle,
+  },
+  in_progress: {
+    className: "bg-pink-50 dark:bg-pink-950/30 text-[#f9186b] dark:text-pink-400",
+    icon: HandCoins,
+  },
+  not_eligible: {
+    className: "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400",
+    icon: Info,
+  },
+};
 
 interface OrderCardProps {
   dbId: string;
@@ -36,6 +59,12 @@ interface OrderCardProps {
   image?: string;
   isRated?: boolean;
   onRateOrder?: (dbId: string) => void;
+  /**
+   * Whether this order may still be called off. Decided by the caller with
+   * `canCancelOrder`, since it reads fields (`isPaid`) this card never needs.
+   */
+  canCancel?: boolean;
+  onCancelOrder?: (orderId: string) => void;
 }
 
 export default function OrderCard({
@@ -52,6 +81,8 @@ export default function OrderCard({
   image,
   isRated = false,
   onRateOrder,
+  canCancel = false,
+  onCancelOrder,
 }: OrderCardProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -150,22 +181,15 @@ export default function OrderCard({
           {/* A cancelled order the customer paid for says nothing about their
               money without this — the red chip above only reports that the
               food is not coming. */}
-          {refundState !== "none" && (
-            <div
-              className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs ${
-                refundState === "completed"
-                  ? "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400"
-                  : "bg-pink-50 dark:bg-pink-950/30 text-[#f9186b] dark:text-pink-400"
-              }`}
-            >
-              {refundState === "completed" ? (
-                <CheckCircle size={12} />
-              ) : (
-                <HandCoins size={12} />
-              )}
-              {t(refundStateLabelKey(refundState)!)}
-            </div>
-          )}
+          {refundState !== "none" && (() => {
+            const { className, icon: RefundIcon } = REFUND_CHIP[refundState];
+            return (
+              <div className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs ${className}`}>
+                <RefundIcon size={12} />
+                {t(refundStateLabelKey(refundState)!)}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -261,6 +285,18 @@ export default function OrderCard({
               <Download size={16} />
             )}
             {t("downloadInvoice")}
+          </button>
+        )}
+
+        {/* Last, and the only destructive action here — kept away from Track
+            Order so it is never the button a customer reaches for by habit. */}
+        {canCancel && onCancelOrder && (
+          <button
+            onClick={() => onCancelOrder(orderId)}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 dark:border-red-900/40 py-3 text-sm font-semibold text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-950/20"
+          >
+            <XCircle size={16} />
+            {t("cancelOrder")}
           </button>
         )}
       </div>
