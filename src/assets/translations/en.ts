@@ -1658,6 +1658,196 @@ const en = {
   invoiceWebsite: "Website",
   invoicePageOf: "Page {page} of {total}",
   invoiceFilePrefix: "invoice",
+
+  // ---------------------------------------------------------------------------
+  // Legal & Compliance (/legal) — the statutory Terms + GDPR text for
+  // Pixel Miracle LDA. Source of truth: GDR_complience.md at the repo root.
+  // The Portuguese text is the authoritative one; keep the two in step.
+  // ---------------------------------------------------------------------------
+  // NOTE: `legal` already exists further up this file — don't re-add it here.
+  // The `legal*` prefix on the keys below is an internal namespace only; the
+  // page and route are named GDPR Compliance.
+  gdprCompliance: "GDPR Compliance",
+  gdprComplianceHeroTitle: "GDPR Compliance",
+  gdprComplianceHeroDescription:
+    "The Terms and Conditions governing your use of DeliGo, and how we collect, use and protect your personal data under the GDPR.",
+  legalEntityLabel: "Entity",
+  legalEntityValue: "Pixel Miracle LDA",
+  legalJurisdictionLabel: "Jurisdiction",
+  legalJurisdictionValue: "Portugal (EU)",
+  legalLastUpdatedLabel: "Last updated",
+  legalLastUpdatedValue: "August 2026",
+  legalPart1Label: "Part 1",
+  legalPart1Title: "Terms and Conditions of Service",
+  legalPart2Label: "Part 2",
+  legalPart2Title: "Privacy and Data Protection Policy (GDPR)",
+
+  legalNavCompany: "Company & Service",
+  legalNavAccount: "Account & Eligibility",
+  legalNavOrders: "Orders & Payments",
+  legalNavInvoicing: "Certified Invoicing",
+  legalNavCancellations: "Cancellations & Refunds",
+  legalNavDisputes: "Disputes & Complaints",
+  legalNavController: "Data Controller & DPO",
+  legalNavDataCategories: "Data We Collect",
+  legalNavLegalBases: "Legal Bases",
+  legalNavSharing: "Sharing With Third Parties",
+  legalNavRights: "Your Rights",
+  legalNavRetention: "Retention & Security",
+  legalNavContactDpo: "Contact our DPO",
+
+  legalCompanyTitle: "1. Company Identification and Purpose of the Service",
+  legalCompanyIntro:
+    "These Terms and Conditions govern the use of the DeliGo digital platform, lawfully operated by Pixel Miracle LDA, a private limited company headquartered in Portugal.",
+  legalCompanyRole:
+    "DeliGo acts as a technology-based intermediation platform (marketplace), connecting:",
+  legalCompanyParty1: "users (end customers);",
+  legalCompanyParty2:
+    "partner establishments (restaurants, shops and commercial partners);",
+  legalCompanyParty3: "self-employed couriers or logistics companies,",
+  legalCompanyPurpose:
+    "for the ordering and delivery of meals, food products and consumer goods.",
+
+  legalAccountTitle: "2. Account Registration and Eligibility",
+  legalAccountEligibilityTitle: "Eligibility",
+  legalAccountEligibilityText:
+    "To create an account and make purchases on DeliGo, the user must be at least 18 years of age or have full legal capacity under Portuguese law.",
+  legalAccountAccuracyTitle: "Accuracy of Data",
+  legalAccountAccuracyText:
+    "The user undertakes to provide truthful, accurate, current and complete information during registration (name, tax number (NIF), phone number, e-mail and delivery address).",
+  legalAccountSecurityTitle: "Account Security",
+  legalAccountSecurityText:
+    "The user is solely responsible for maintaining the confidentiality of their access credentials and for all activity carried out under their account.",
+
+  legalOrdersTitle: "3. Orders, Prices and Payments",
+  legalOrdersIntro:
+    "The presentation of products and prices in the DeliGo application constitutes an invitation to treat. By submitting an order, the user expressly accepts the total amounts presented, broken down as follows:",
+  legalTableComponent: "Price Component",
+  legalTableVatRate: "Applicable VAT Rate (Mainland Portugal)",
+  legalTableIssuer: "Invoice-Issuing Entity",
+  legalTableRow1Component: "Products / Meals",
+  legalTableRow1Vat: "13% (or 6% / 23% depending on the type of good)",
+  legalTableRow1Issuer: "Commercial Partner / Restaurant",
+  legalTableRow2Component: "Delivery Fee",
+  legalTableRow2Vat: "23% (Standard Rate)",
+  legalTableRow2Issuer: "DeliGo (Pixel Miracle LDA)",
+  legalTableRow3Component: "Service / Platform Fee",
+  legalTableRow3Vat: "23% (Standard Rate)",
+  legalTableRow3Issuer: "DeliGo (Pixel Miracle LDA)",
+  legalPaymentMethodsTitle: "Payment Methods",
+  legalPaymentMethodsText:
+    "Payments are made electronically through payment service providers authorised by the Bank of Portugal (MB WAY, Multibanco, Credit/Debit Card). The charge is applied immediately upon confirmation of the order.",
+
+  legalInvoicingTitle: "4. Tax-Certified Invoicing (AT Compliance)",
+  legalInvoicingIntro:
+    "In accordance with the rules of the Portuguese Tax and Customs Authority (Autoridade Tributária e Aduaneira — AT), DeliGo and its partner establishments issue automated certified electronic invoices (Invoice / Invoice-Receipt) bearing:",
+  legalInvoicingQr: "a two-dimensional code (QR Code);",
+  legalInvoicingAtcud: "a unique document code (ATCUD).",
+  legalInvoicingNif:
+    "Should you wish to have your tax number (NIF) included on the invoice, you must ensure it is recorded in your profile or entered at the time of checkout.",
+
+  legalCancelTitle: "5. Cancellations, Refunds and Right of Withdrawal",
+  legalCancelPerishableTitle: "Perishable Products (Meals)",
+  legalCancelPerishableText:
+    "Under Article 17 of Decree-Law No. 24/2014 of 14 February, the right of withdrawal (14 days) does not apply to the supply of goods made to the consumer's specifications or liable to deteriorate rapidly (hot meals and food products).",
+  legalCancelUserTitle: "Cancellation by the User",
+  legalCancelUserText:
+    "You may cancel an order free of charge only before the restaurant accepts the order or begins preparing it. Once preparation has begun, the full amount may be charged.",
+  legalCancelDefectsTitle: "Missing or Defective Items",
+  legalCancelDefectsText:
+    "Should the order contain missing or incorrect items, or items in poor hygienic condition, you must report this immediately through in-app support. DeliGo reserves the right to issue the corresponding refund following verification.",
+
+  legalDisputesTitle: "6. Alternative Dispute Resolution and Complaints Book",
+  legalDisputesIntro:
+    "In compliance with Portuguese consumer protection legislation:",
+  legalDisputesComplaintsBook:
+    "DeliGo provides direct access to the Electronic Complaints Book (Livro de Reclamações Eletrónico) through the platform and in the mobile application.",
+  legalDisputesAdr:
+    "In the event of a consumer dispute, you may refer the matter to Alternative Consumer Dispute Resolution (ADR) bodies, such as CNIACC or the Lisbon Consumer Dispute Arbitration Centre.",
+
+  legalControllerTitle: "1. Data Controller and DPO",
+  legalControllerText:
+    "The entity responsible for processing the personal data collected through the DeliGo application is Pixel Miracle LDA.",
+  legalControllerDpoText:
+    "For any questions regarding data protection, or to exercise your legal rights under the General Data Protection Regulation (GDPR — Regulation (EU) 2016/679), you may contact our Data Protection Officer (DPO) by e-mail at:",
+
+  legalDataTitle: "2. Categories of Data Collected and Purposes",
+  legalDataIntro:
+    "DeliGo collects and processes the following categories of personal data, strictly necessary for the provision of the service:",
+  legalDataIdentityTitle: "Identification and Contact Data",
+  legalDataIdentityText:
+    "Name, e-mail address, phone number, tax number (NIF, for tax and invoicing purposes) and profile photograph (optional).",
+  legalDataLocationTitle: "Location and Geolocation Data",
+  legalDataLocationText:
+    "Precise real-time GPS location during use of the application, for calculating delivery time, selecting nearby restaurants and tracking the courier.",
+  legalDataFinancialTitle: "Financial and Transaction Data",
+  legalDataFinancialText:
+    "Order history, transaction details and encrypted payment tokens.",
+  legalDataFinancialNote:
+    "Card data is never stored on our servers — it is processed by licensed payment gateways.",
+  legalDataTechnicalTitle: "Technical and Device Data",
+  legalDataTechnicalText:
+    "IP address, mobile device model, operating system and cookie/analytics identifiers.",
+
+  legalBasesTitle: "3. Legal Bases for Processing",
+  legalBasesIntro:
+    "DeliGo's processing of personal data rests on the following legal bases, under Article 6 GDPR:",
+  legalBasesContractTitle: "Performance of a Contract",
+  legalBasesContractText:
+    "Necessary to process orders, carry out deliveries and provide customer support.",
+  legalBasesObligationTitle: "Compliance with Legal Obligations",
+  legalBasesObligationText:
+    "Issuance of certified invoices (AT) and compliance with tax and accounting rules in Portugal.",
+  legalBasesConsentTitle: "User Consent",
+  legalBasesConsentText:
+    "Sending direct marketing communications and newsletters, and continued access to background geolocation data. This may be withdrawn at any time in the application settings.",
+  legalBasesInterestTitle: "Legitimate Interest",
+  legalBasesInterestText:
+    "Improving application security, fraud prevention, and optimising routes and algorithm performance.",
+
+  legalSharingTitle: "4. Sharing Data with Third Parties",
+  legalSharingIntro:
+    "Your personal data is shared with third parties only to the extent strictly necessary for the operation of the services:",
+  legalSharingCouriersTitle: "Couriers and Logistics Companies",
+  legalSharingCouriersText:
+    "First name, delivery address and a temporary phone contact only, for the purpose of completing the delivery.",
+  legalSharingPartnersTitle: "Commercial Partners (Restaurants)",
+  legalSharingPartnersText:
+    "Order details and first name, for preparing the order.",
+  legalSharingAuthoritiesTitle: "Public and Tax Authorities",
+  legalSharingAuthoritiesText:
+    "The Tax and Customs Authority (AT) and police or judicial bodies, under strict legal obligation.",
+  legalSharingProcessorsTitle: "IT and Payment Processors",
+  legalSharingProcessorsText:
+    "EU-based cloud hosting providers, SMS and notification services, and payment gateways regulated by the Bank of Portugal.",
+
+  legalRightsTitle: "5. Data Subject Rights (Under the GDPR)",
+  legalRightsIntro:
+    "Under the General Data Protection Regulation, and subject to the supervision of the Portuguese National Data Protection Commission (CNPD), you have the following rights:",
+  legalRightsAccessTitle: "Right of Access",
+  legalRightsAccessText:
+    "To obtain confirmation of, and a copy of, the personal data held by DeliGo.",
+  legalRightsRectificationTitle: "Right to Rectification",
+  legalRightsRectificationText:
+    "To correct inaccurate or outdated data directly in the application or by e-mail.",
+  legalRightsErasureTitle: "Right to Erasure (“Right to be Forgotten”)",
+  legalRightsErasureText:
+    "To request the permanent deletion of your account and associated data, except for data DeliGo is legally obliged to retain for tax purposes.",
+  legalRightsPortabilityTitle: "Right to Data Portability",
+  legalRightsPortabilityText:
+    "To receive your data in a structured, commonly used and machine-readable format.",
+  legalRightsObjectionTitle: "Right to Object and to Restriction",
+  legalRightsObjectionText:
+    "To object to processing for direct marketing purposes at any time.",
+  legalRightsComplaintTitle: "Right to Lodge a Complaint",
+  legalRightsComplaintText:
+    "To lodge a complaint with the national supervisory authority in Portugal: Comissão Nacional de Proteção de Dados (CNPD).",
+
+  legalRetentionTitle: "6. Data Retention and Security",
+  legalRetentionText:
+    "Personal data is retained for the period strictly necessary to fulfil the purposes described, or for the mandatory legal retention periods — for example, 10 years for tax documents and invoices under Portuguese law.",
+  legalSecurityText:
+    "All transmitted data is encrypted using advanced security protocols (SSL/TLS).",
 };
 
 export default en;

@@ -265,6 +265,12 @@ export default function Footer() {
             {t("privacyPolicy")}
           </Link>
           <Link
+            href="/gdpr-compliance"
+            className="transition-colors hover:text-[#f9186b] dark:hover:text-pink-500"
+          >
+            {t("gdprCompliance")}
+          </Link>
+          <Link
             href="/terms"
             className="transition-colors hover:text-[#f9186b] dark:hover:text-pink-500"
           >

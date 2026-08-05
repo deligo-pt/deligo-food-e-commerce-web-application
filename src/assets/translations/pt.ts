@@ -1660,6 +1660,196 @@ const pt = {
   invoiceWebsite: "Website",
   invoicePageOf: "Página {page} de {total}",
   invoiceFilePrefix: "fatura",
+
+  // ---------------------------------------------------------------------------
+  // Legal e Conformidade (/legal) — Termos estatutários + texto RGPD da
+  // Pixel Miracle LDA. Fonte: GDR_complience.md na raiz do repositório.
+  // ESTE é o texto autêntico — o inglês é uma tradução de cortesia.
+  // ---------------------------------------------------------------------------
+  // NOTA: `legal` já existe mais acima neste ficheiro — não voltar a adicioná-lo.
+  // O prefixo `legal*` nas chaves abaixo é apenas um namespace interno; a
+  // página e a rota chamam-se GDPR Compliance (RGPD em português).
+  gdprCompliance: "Conformidade RGPD",
+  gdprComplianceHeroTitle: "Conformidade RGPD",
+  gdprComplianceHeroDescription:
+    "Os Termos e Condições que regem a utilização da DeliGo, e a forma como recolhemos, utilizamos e protegemos os seus dados pessoais ao abrigo do RGPD.",
+  legalEntityLabel: "Entidade",
+  legalEntityValue: "Pixel Miracle LDA",
+  legalJurisdictionLabel: "Jurisdição",
+  legalJurisdictionValue: "Portugal (UE)",
+  legalLastUpdatedLabel: "Última atualização",
+  legalLastUpdatedValue: "Agosto de 2026",
+  legalPart1Label: "Parte 1",
+  legalPart1Title: "Termos e Condições de Serviço",
+  legalPart2Label: "Parte 2",
+  legalPart2Title: "Política de Privacidade e Proteção de Dados (RGPD)",
+
+  legalNavCompany: "Empresa e Serviço",
+  legalNavAccount: "Conta e Elegibilidade",
+  legalNavOrders: "Encomendas e Pagamentos",
+  legalNavInvoicing: "Faturação Certificada",
+  legalNavCancellations: "Cancelamentos e Reembolsos",
+  legalNavDisputes: "Litígios e Reclamações",
+  legalNavController: "Responsável e DPO",
+  legalNavDataCategories: "Dados Recolhidos",
+  legalNavLegalBases: "Fundamentos Jurídicos",
+  legalNavSharing: "Partilha com Terceiros",
+  legalNavRights: "Os Seus Direitos",
+  legalNavRetention: "Conservação e Segurança",
+  legalNavContactDpo: "Contactar o nosso DPO",
+
+  legalCompanyTitle: "1. Identificação da Empresa e Objeto do Serviço",
+  legalCompanyIntro:
+    "Os presentes Termos e Condições regem a utilização da plataforma digital DeliGo, operada legalmente pela Pixel Miracle LDA, sociedade por quotas com sede em Portugal.",
+  legalCompanyRole:
+    "A DeliGo atua como uma plataforma tecnológica de intermediação (marketplace), conectando:",
+  legalCompanyParty1: "utilizadores (clientes finais);",
+  legalCompanyParty2:
+    "estabelecimentos parceiros (restaurantes, lojas e parceiros comerciais);",
+  legalCompanyParty3: "estafetas autónomos ou empresas de logística,",
+  legalCompanyPurpose:
+    "para a encomenda e entrega de refeições, produtos alimentares e bens de consumo.",
+
+  legalAccountTitle: "2. Registo de Conta e Elegibilidade",
+  legalAccountEligibilityTitle: "Elegibilidade",
+  legalAccountEligibilityText:
+    "Para criar uma conta e efetuar compras na DeliGo, o utilizador deve ter pelo menos 18 anos de idade ou capacidade jurídica plena nos termos da lei portuguesa.",
+  legalAccountAccuracyTitle: "Exatidão dos Dados",
+  legalAccountAccuracyText:
+    "O utilizador compromete-se a fornecer informações verdadeiras, exatas, atuais e completas durante o registo (nome, NIF, número de telefone, e-mail e morada de entrega).",
+  legalAccountSecurityTitle: "Segurança da Conta",
+  legalAccountSecurityText:
+    "O utilizador é o único responsável por manter a confidencialidade das suas credenciais de acesso e por todas as atividades efetuadas na sua conta.",
+
+  legalOrdersTitle: "3. Encomendas, Preços e Pagamentos",
+  legalOrdersIntro:
+    "A apresentação de produtos e preços na aplicação DeliGo constitui um convite à contratação. Ao submeter uma encomenda, o utilizador aceita expressamente os valores totais apresentados, discriminados da seguinte forma:",
+  legalTableComponent: "Componente do Preço",
+  legalTableVatRate: "Taxa de IVA Aplicável (Portugal Continental)",
+  legalTableIssuer: "Entidade Emissora da Fatura",
+  legalTableRow1Component: "Produtos / Refeições",
+  legalTableRow1Vat: "13% (ou 6% / 23% consoante o tipo de bem)",
+  legalTableRow1Issuer: "Parceiro Comercial / Restaurante",
+  legalTableRow2Component: "Taxa de Entrega (Delivery Fee)",
+  legalTableRow2Vat: "23% (Taxa Normal)",
+  legalTableRow2Issuer: "DeliGo (Pixel Miracle LDA)",
+  legalTableRow3Component: "Taxa de Serviço / Plataforma",
+  legalTableRow3Vat: "23% (Taxa Normal)",
+  legalTableRow3Issuer: "DeliGo (Pixel Miracle LDA)",
+  legalPaymentMethodsTitle: "Métodos de Pagamento",
+  legalPaymentMethodsText:
+    "Os pagamentos são efetuados de forma eletrónica através de prestadores de serviços de pagamento autorizados pelo Banco de Portugal (MB WAY, Multibanco, Cartão de Crédito/Débito). O débito ocorre imediatamente após a confirmação da encomenda.",
+
+  legalInvoicingTitle: "4. Faturação Fiscalmente Certificada (Conformidade AT)",
+  legalInvoicingIntro:
+    "Em conformidade com as normas da Autoridade Tributária e Aduaneira (AT) de Portugal, a DeliGo e os seus estabelecimentos parceiros emitem faturas eletrónicas certificadas de forma automatizada (Fatura / Fatura-Recibo) com:",
+  legalInvoicingQr: "código bidimensional (QR Code);",
+  legalInvoicingAtcud: "código único de documento (ATCUD).",
+  legalInvoicingNif:
+    "Caso pretenda a inclusão do seu NIF na fatura, deverá garanti-lo no perfil ou no momento de finalização do pedido.",
+
+  legalCancelTitle: "5. Cancelamentos, Reembolsos e Direito de Livre Resolução",
+  legalCancelPerishableTitle: "Produtos Perecíveis (Refeições)",
+  legalCancelPerishableText:
+    "Nos termos do Artigo 17.º do Decreto-Lei n.º 24/2014, de 14 de fevereiro, o direito de livre resolução (14 dias) não se aplica ao fornecimento de bens confecionados de acordo com especificações do consumidor ou rapidamente deterioráveis (refeições quentes e produtos alimentares).",
+  legalCancelUserTitle: "Cancelamento pelo Utilizador",
+  legalCancelUserText:
+    "Pode cancelar a encomenda sem custos apenas antes de o restaurante aceitar ou iniciar a preparação do pedido. Após o início da preparação, o valor total poderá ser cobrado.",
+  legalCancelDefectsTitle: "Faltas ou Defeitos",
+  legalCancelDefectsText:
+    "Caso o pedido apresente itens em falta, incorretos ou em más condições de higiene, deve reportar imediatamente através do suporte da aplicação, reservando-se a DeliGo ao direito de efetuar o reembolso correspondente após verificação.",
+
+  legalDisputesTitle: "6. Resolução Alternativa de Litígios e Livro de Reclamações",
+  legalDisputesIntro:
+    "Em cumprimento da legislação portuguesa de proteção ao consumidor:",
+  legalDisputesComplaintsBook:
+    "A DeliGo disponibiliza o acesso direto ao Livro de Reclamações Eletrónico através da plataforma e na aplicação móvel.",
+  legalDisputesAdr:
+    "Em caso de litígio de consumo, pode recorrer a entidades de Resolução Alternativa de Litígios de Consumo (RAL), tais como o CNIACC ou o Centro de Arbitragem de Conflitos de Consumo de Lisboa.",
+
+  legalControllerTitle: "1. Responsável pelo Tratamento de Dados e DPO",
+  legalControllerText:
+    "A entidade responsável pelo tratamento dos dados pessoais recolhidos através da aplicação DeliGo é a Pixel Miracle LDA.",
+  legalControllerDpoText:
+    "Para quaisquer questões relativas à proteção de dados ou para exercer os seus direitos legais sob o Regulamento Geral sobre a Proteção de Dados (RGPD — Regulamento (UE) 2016/679), pode contactar o nosso Encarregado de Proteção de Dados (DPO) através do e-mail:",
+
+  legalDataTitle: "2. Categorias de Dados Recolhidos e Finalidades",
+  legalDataIntro:
+    "A DeliGo recolhe e trata as seguintes categorias de dados pessoais, estritamente necessárias para a prestação do serviço:",
+  legalDataIdentityTitle: "Dados de Identificação e Contacto",
+  legalDataIdentityText:
+    "Nome, endereço de e-mail, número de telefone, NIF (para efeitos fiscais e de faturação) e fotografia de perfil (opcional).",
+  legalDataLocationTitle: "Dados de Localização e Geolocalização",
+  legalDataLocationText:
+    "Localização GPS exata em tempo real durante a utilização da aplicação, para cálculo do tempo de entrega, seleção de restaurantes próximos e acompanhamento do estafeta.",
+  legalDataFinancialTitle: "Dados Financeiros e de Transação",
+  legalDataFinancialText:
+    "Histórico de encomendas, detalhes da transação e tokens de pagamento encriptados.",
+  legalDataFinancialNote:
+    "Os dados de cartão nunca são armazenados nos nossos servidores — são processados por gateways de pagamento licenciadas.",
+  legalDataTechnicalTitle: "Dados Técnicos e de Dispositivo",
+  legalDataTechnicalText:
+    "Endereço IP, modelo do dispositivo móvel, sistema operativo e identificadores de cookies e de análise.",
+
+  legalBasesTitle: "3. Fundamentos Jurídicos para o Tratamento",
+  legalBasesIntro:
+    "O tratamento de dados pessoais pela DeliGo assenta nos seguintes fundamentos legais, nos termos do Artigo 6.º do RGPD:",
+  legalBasesContractTitle: "Execução de Contrato",
+  legalBasesContractText:
+    "Necessário para processar encomendas, realizar entregas e prestar apoio ao cliente.",
+  legalBasesObligationTitle: "Cumprimento de Obrigações Legais",
+  legalBasesObligationText:
+    "Emissão de faturas certificadas (AT) e cumprimento de normas fiscais e contabilísticas em Portugal.",
+  legalBasesConsentTitle: "Consentimento do Utilizador",
+  legalBasesConsentText:
+    "Envio de comunicações de marketing direto e newsletters, e acesso continuado a dados de geolocalização em segundo plano. Pode ser revogado a qualquer momento nas definições da aplicação.",
+  legalBasesInterestTitle: "Interesse Legítimo",
+  legalBasesInterestText:
+    "Melhoria da segurança da aplicação, prevenção contra fraudes e otimização de rotas e desempenho do algoritmo.",
+
+  legalSharingTitle: "4. Partilha de Dados com Terceiros",
+  legalSharingIntro:
+    "Os seus dados pessoais apenas são partilhados com terceiros na medida estritamente necessária para a operacionalização dos serviços:",
+  legalSharingCouriersTitle: "Estafetas e Empresas de Logística",
+  legalSharingCouriersText:
+    "Apenas o primeiro nome, morada de entrega e contacto telefónico temporário, para efeitos de conclusão da entrega.",
+  legalSharingPartnersTitle: "Parceiros Comerciais (Restaurantes)",
+  legalSharingPartnersText:
+    "Detalhes do pedido e primeiro nome, para preparação da encomenda.",
+  legalSharingAuthoritiesTitle: "Autoridades Públicas e Fiscais",
+  legalSharingAuthoritiesText:
+    "Autoridade Tributária e Aduaneira (AT) e órgãos policiais ou judiciais, sob obrigação legal estrita.",
+  legalSharingProcessorsTitle: "Subcontratantes de IT e Pagamentos",
+  legalSharingProcessorsText:
+    "Fornecedores de alojamento em nuvem na UE, serviços de SMS e notificações, e gateways de pagamento reguladas pelo Banco de Portugal.",
+
+  legalRightsTitle: "5. Direitos dos Titulares dos Dados (Conforme o RGPD)",
+  legalRightsIntro:
+    "Nos termos do Regulamento Geral de Proteção de Dados e sob supervisão da Comissão Nacional de Proteção de Dados (CNPD) de Portugal, dispõe dos seguintes direitos:",
+  legalRightsAccessTitle: "Direito de Acesso",
+  legalRightsAccessText:
+    "Obter confirmação e cópia dos dados pessoais mantidos pela DeliGo.",
+  legalRightsRectificationTitle: "Direito de Retificação",
+  legalRightsRectificationText:
+    "Corrigir dados inexatos ou desatualizados diretamente na aplicação ou via e-mail.",
+  legalRightsErasureTitle: "Direito ao Apagamento («Direito a ser Esquecido»)",
+  legalRightsErasureText:
+    "Solicitar a eliminação definitiva da sua conta e dados associados, exceto os dados que a DeliGo seja legalmente obrigada a reter para efeitos fiscais.",
+  legalRightsPortabilityTitle: "Direito à Portabilidade",
+  legalRightsPortabilityText:
+    "Receber os seus dados num formato estruturado, de uso corrente e leitura automática.",
+  legalRightsObjectionTitle: "Direito de Oposição e Limitação",
+  legalRightsObjectionText:
+    "Opor-se ao tratamento para efeitos de marketing direto a qualquer momento.",
+  legalRightsComplaintTitle: "Direito de Reclamação",
+  legalRightsComplaintText:
+    "Apresentar reclamação junto da autoridade de controlo nacional em Portugal: Comissão Nacional de Proteção de Dados (CNPD).",
+
+  legalRetentionTitle: "6. Conservação e Segurança dos Dados",
+  legalRetentionText:
+    "Os dados pessoais são conservados durante o período estritamente necessário para cumprir as finalidades descritas, ou durante os prazos legais obrigatórios — por exemplo, 10 anos para documentos fiscais e faturas sob a lei portuguesa.",
+  legalSecurityText:
+    "Todos os dados transmitidos são encriptados através de protocolos de segurança avançados (SSL/TLS).",
 };
 
 export default pt;
