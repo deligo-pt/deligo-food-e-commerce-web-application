@@ -148,7 +148,11 @@ const en = {
   storeNotSelected: "Not selected",
   showProducts: "Show products",
   hideProducts: "Hide products",
+  // Label on the checkout button while this store is NOT the active one.
   selectStoreToCheckout: "Select this store to checkout",
+  // The caption under that button, and the toast if it's pressed anyway. Names
+  // the Activate control, which is what actually resolves the situation.
+  activateToCheckout: "Press the Activate button to be able to checkout this order",
   storeSelectedToast: "\"{store}\" selected for checkout",
   couldNotChangeStoreSelection: "Could not change store selection",
 
@@ -202,8 +206,7 @@ const en = {
   total: "Total",
 
   deliveryInstructions: "Delivery Instructions",
-  deliveryInstructionsPlaceholder:
-    "Add any special instructions for delivery...",
+  deliveryInstructionsPlaceholder: "Enter your delivery instructions",
 
   processing: "Processing...",
   proceedToCheckout: "Proceed to Checkout",

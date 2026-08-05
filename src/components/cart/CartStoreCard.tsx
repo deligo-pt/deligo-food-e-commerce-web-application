@@ -297,7 +297,7 @@ export default function CartStoreCard({
           onClick={(e) => {
             if (!hasActive) {
               e.preventDefault();
-              toast.error(t("selectStoreToCheckout"));
+              toast.error(t("activateToCheckout"));
             }
           }}
           className={`relative flex items-center justify-between gap-3 overflow-hidden rounded-3xl px-4 py-4 text-white transition cursor-pointer sm:px-6 sm:py-5 ${
@@ -307,19 +307,35 @@ export default function CartStoreCard({
           }`}
         >
           {hasActive && <span className="cart-cta-shine" aria-hidden="true" />}
-          <span className="relative z-10 min-w-0 truncate text-base font-bold sm:text-xl">
-            {t("goToCheckout")}
+          {/* The inactive label is a whole sentence rather than two words, so it
+              wraps instead of truncating — "Select this store to ch…" would be
+              worse than two lines. It also centres, because there is no price
+              beside it to balance against. */}
+          <span
+            className={
+              hasActive
+                ? "relative z-10 min-w-0 truncate text-base font-bold sm:text-xl"
+                : "relative z-10 w-full text-center text-sm font-bold sm:text-base"
+            }
+          >
+            {hasActive ? t("goToCheckout") : t("selectStoreToCheckout")}
           </span>
           {/* Bare price: no pill behind it and no rule in front of it. The
               caption truncates and this doesn't, so the gap between them is
-              what keeps the two apart. */}
-          <span className="relative z-10 shrink-0 font-bold">
-            €{activeTotal.toFixed(2)}
-          </span>
+              what keeps the two apart.
+
+              Hidden while inactive: `activeTotal` sums only the active items, so
+              it is always €0.00 here — a total that describes nothing, sitting
+              next to a label telling you to select the store first. */}
+          {hasActive && (
+            <span className="relative z-10 shrink-0 font-bold">
+              €{activeTotal.toFixed(2)}
+            </span>
+          )}
         </Link>
         {!hasActive && (
           <p className="mt-2 text-center text-sm text-gray-500 dark:text-neutral-400">
-            {t("selectStoreToCheckout")}
+            {t("activateToCheckout")}
           </p>
         )}
       </div>

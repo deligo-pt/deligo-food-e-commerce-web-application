@@ -154,7 +154,12 @@ const pt = {
   storeNotSelected: "Não selecionado",
   showProducts: "Mostrar produtos",
   hideProducts: "Ocultar produtos",
-  selectStoreToCheckout: "Selecione esta loja para finalizar a compra",
+  // Etiqueta do botão de checkout enquanto esta loja NÃO é a ativa.
+  selectStoreToCheckout: "Selecione esta loja para fazer checkout",
+  // A legenda por baixo desse botão, e o toast se for clicado mesmo assim.
+  // Refere o botão Ativar, que é o que resolve efetivamente a situação.
+  activateToCheckout:
+    "Clique no botão Ativar para poder fazer checkout deste pedido",
   storeSelectedToast: "\"{store}\" selecionado para finalizar a compra",
   couldNotChangeStoreSelection: "Não foi possível alterar a seleção da loja",
 
@@ -209,8 +214,7 @@ const pt = {
   total: "Total",
 
   deliveryInstructions: "Instruções de entrega",
-  deliveryInstructionsPlaceholder:
-    "Adicione quaisquer instruções especiais para a entrega...",
+  deliveryInstructionsPlaceholder: "Indique as instruções de entrega",
 
   processing: "Processando...",
   proceedToCheckout: "Prosseguir para o Checkout",
