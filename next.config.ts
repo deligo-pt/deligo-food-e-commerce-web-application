@@ -99,9 +99,20 @@ const nextConfig: NextConfig = {
 // Cloud Messaging (*.googleapis.com, fcmregistrations), the payment redirect flow,
 // remote images (cloudinary/unsplash/placehold/googleusercontent/flagcdn), and
 // Next's inline hydration script (needs 'unsafe-inline' or per-request nonces).
+//
+// Social login adds more. Omitting any of these does not degrade the page — it
+// breaks sign-in outright, and only for customers using that provider:
+//   script-src   accounts.google.com  connect.facebook.net
+//   connect-src  accounts.google.com  graph.facebook.com
+//   frame-src    accounts.google.com  www.facebook.com  web.facebook.com
+//   img-src      lh3.googleusercontent.com  (already allowed for avatars)
+// Google Identity Services renders its button and consent UI in a frame from
+// accounts.google.com, and the Facebook SDK opens its dialog on facebook.com —
+// so frame-src matters as much as script-src for these two.
+//
 // Recommended rollout: ship as `Content-Security-Policy-Report-Only` with a report
 // endpoint first, watch for violations, then promote to enforcing. Left off here
-// so we never ship a policy that breaks maps/payments untested.
+// so we never ship a policy that breaks maps/payments/login untested.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default bundleAnalyzer(nextConfig);

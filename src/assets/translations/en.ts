@@ -126,6 +126,9 @@ const en = {
   longitude: "Longitude",
 
   saving: "Saving...",
+  // In-flight label for buttons that submit a request (account deletion,
+  // order cancellation). Sits with `saving`/`processing` as a generic verb.
+  submitting: "Submitting...",
   updateAddress: "Update Address",
   saveAddress: "Save Address",
   cartBreadcrumb: "Home / Active Carts",
@@ -318,6 +321,11 @@ const en = {
 
   previous: "Previous",
   next: "Next",
+  // Pagination caption, composed in JSX as: Page {n} of {n} — {n} total.
+  // t() has no interpolation, so the sentence is assembled from these pieces.
+  page: "Page",
+  of: "of",
+  totalNotifications: "total",
   allVendors: "All Vendors",
 
   browseAllVendors: "Browse all stores and restaurants available on DeliGo.",
@@ -784,6 +792,35 @@ const en = {
   resendingOtp: "Resending OTP...",
 
   otpSentTo: "OTP sent to",
+
+  // OTP delivery channel picker — mobile tab only. The backend ignores
+  // `otpChannel` on email requests, so the control is not shown there.
+  sendCodeVia: "Send code via",
+  channelSms: "SMS",
+  channelWhatsapp: "WhatsApp",
+  // Replaces the generic `otpSentTo` caption once a channel has been chosen, so
+  // the user knows which app to go look in.
+  otpSentViaSms: "Code sent by SMS to",
+  otpSentViaWhatsapp: "Code sent on WhatsApp to",
+  // WhatsApp send failed at the provider. Named separately from the generic
+  // error because the backend's own message says "SMS service is temporarily
+  // unavailable", which points at the wrong channel and confuses people.
+  whatsappUnavailable: "WhatsApp is temporarily unavailable. Please use SMS.",
+
+  // Social login. `orWith` labels the rule separating the OTP form from the
+  // provider buttons.
+  orWith: "or with",
+  continueWithGoogle: "Continue with Google",
+  continueWithFacebook: "Continue with Facebook",
+  socialLoginFailed: "Sign-in failed. Please try again.",
+  // Facebook only returns an email if the account has a *confirmed* one on
+  // file. That is a common state for phone-first accounts and is not something
+  // we can fix, so the copy offers a way forward instead of just failing.
+  socialEmailRequired:
+    "We could not get your email address from that account. Allow email access and try again, or log in with your phone number.",
+  socialAccountAlreadyLinked:
+    "That account is already connected to another DeliGo user.",
+  socialUnavailable: "This sign-in option is temporarily unavailable.",
 
   byContinuingAgree: "By continuing, you agree to our",
 

@@ -538,7 +538,7 @@ export default function OrdersPage() {
                 {submittingRating ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    <span>{t("submitting") || "Submitting..."}</span>
+                    <span>{t("submitting")}</span>
                   </>
                 ) : (
                   <span>{t("submitReview")}</span>

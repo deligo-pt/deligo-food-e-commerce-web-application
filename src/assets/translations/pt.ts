@@ -132,6 +132,9 @@ const pt = {
   longitude: "Longitude",
 
   saving: "Salvando...",
+  // Estado em curso para botões que submetem um pedido (eliminação de conta,
+  // cancelamento de encomenda). Fica junto de `saving`/`processing`.
+  submitting: "A submeter...",
   updateAddress: "Atualizar Morada",
   saveAddress: "Guardar Morada",
   cartBreadcrumb: "Início / Carrinhos Ativos",
@@ -331,6 +334,11 @@ const pt = {
 
   previous: "Anterior",
   next: "Seguinte",
+  // Legenda da paginação, composta em JSX: Página {n} de {n} — {n} no total.
+  // t() não faz interpolação, por isso a frase é montada a partir destas peças.
+  page: "Página",
+  of: "de",
+  totalNotifications: "no total",
 
   allVendors: "Todos os Vendedores",
 
@@ -803,6 +811,36 @@ const pt = {
   resendingOtp: "A reenviar OTP...",
 
   otpSentTo: "OTP enviado para",
+
+  // Seletor do canal de envio do OTP — apenas no separador Telemóvel. O backend
+  // ignora `otpChannel` nos pedidos por email, por isso o controlo não aparece lá.
+  sendCodeVia: "Enviar código por",
+  channelSms: "SMS",
+  channelWhatsapp: "WhatsApp",
+  // Substitui a legenda genérica `otpSentTo` depois de escolhido um canal, para
+  // o utilizador saber em que aplicação procurar.
+  otpSentViaSms: "Código enviado por SMS para",
+  otpSentViaWhatsapp: "Código enviado no WhatsApp para",
+  // Falha no envio por WhatsApp. Separado do erro genérico porque a mensagem do
+  // backend diz "SMS service is temporarily unavailable", que aponta para o
+  // canal errado.
+  whatsappUnavailable:
+    "O WhatsApp está temporariamente indisponível. Por favor, use SMS.",
+
+  // Autenticação social. `orWith` identifica a linha que separa o formulário de
+  // OTP dos botões dos fornecedores.
+  orWith: "ou com",
+  continueWithGoogle: "Continuar com Google",
+  continueWithFacebook: "Continuar com Facebook",
+  socialLoginFailed: "A autenticação falhou. Tente novamente.",
+  // O Facebook só devolve o email se a conta tiver um email *confirmado*. É um
+  // estado comum em contas criadas com número de telemóvel e não é algo que
+  // possamos corrigir, por isso o texto indica uma alternativa.
+  socialEmailRequired:
+    "Não conseguimos obter o seu email dessa conta. Permita o acesso ao email e tente novamente, ou entre com o seu número de telemóvel.",
+  socialAccountAlreadyLinked:
+    "Essa conta já está associada a outro utilizador DeliGo.",
+  socialUnavailable: "Esta opção de entrada está temporariamente indisponível.",
 
   byContinuingAgree: "Ao continuar, concorda com os nossos",
 

@@ -434,9 +434,8 @@ export default function NotificationsPage() {
           <div className="mt-8 flex items-center justify-between">
             {/* Info */}
             <p className="text-sm text-[#888] dark:text-neutral-400">
-              {t("page") || "Page"} {meta.page} {t("of") || "of"}{" "}
-              {meta.totalPage} &mdash; {meta.total}{" "}
-              {t("totalNotifications") || "total"}
+              {t("page")} {meta.page} {t("of")} {meta.totalPage} &mdash;{" "}
+              {meta.total} {t("totalNotifications")}
             </p>
 
             {/* Controls */}

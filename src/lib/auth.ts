@@ -7,6 +7,18 @@ export type LoginIdentifier = {
   referralCode?: string;
 };
 
+/**
+ * OTP delivery channel, mirroring the backend's `otpChannel` enum.
+ *
+ * Deliberately NOT part of `LoginIdentifier`: the caller spreads that object
+ * into the `/verify-otp` body as well, and the channel has no business there —
+ * the code is verified the same way whichever channel delivered it.
+ */
+export type OtpChannel = "SMS" | "WHATSAPP";
+
+/** Social providers the backend accepts on `/auth/social-login`. */
+export type SocialProvider = "GOOGLE" | "FACEBOOK";
+
 export type DeviceDetails = {
   deviceId: string;
   deviceType: string;
@@ -146,9 +158,47 @@ async function requestJson<T>(url: string, body: unknown): Promise<T> {
   }
 }
 
-export async function sendLoginOtp(payload: LoginIdentifier): Promise<LoginResponse> {
-  return requestJson<LoginResponse>("/auth/login-customer", payload);
+/**
+ * Requests a login OTP.
+ *
+ * `otpChannel` is only sent when it is `"WHATSAPP"`. Omitting it is identical to
+ * sending `"SMS"` as far as the backend is concerned, and keeping the default
+ * request shape byte-for-byte what it has always been means the SMS path cannot
+ * regress on the back of this feature.
+ *
+ * The channel is ignored by the backend for email identifiers, so callers
+ * should not pass one in that mode.
+ */
+export async function sendLoginOtp(
+  payload: LoginIdentifier,
+  otpChannel?: OtpChannel,
+): Promise<LoginResponse> {
+  return requestJson<LoginResponse>("/auth/login-customer", {
+    ...payload,
+    ...(otpChannel === "WHATSAPP" ? { otpChannel } : {}),
+  });
 }
+/**
+ * Exchanges a provider token for a DeliGo session.
+ *
+ * `token` is the provider's own token, never a DeliGo one — a Google **ID
+ * token** (the `credential` JWT from Google Identity Services) or a Facebook
+ * **access token**. The backend verifies it with the provider, then links or
+ * creates the customer account and issues our tokens.
+ *
+ * The response is the same shape `/verify-otp` returns, so the caller can hand
+ * it to exactly the same post-login path.
+ */
+export async function socialLogin(payload: {
+  provider: SocialProvider;
+  token: string;
+  referralCode?: string;
+  deviceDetails: DeviceDetails;
+  forceLogin?: boolean;
+}): Promise<VerifyOtpResponse> {
+  return requestJson<VerifyOtpResponse>("/auth/social-login", payload);
+}
+
 export async function verifyLoginOtp(payload: {
   email?: string;
   contactNumber?: string;

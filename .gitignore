@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...except the reference file, which holds only placeholders and is the only
+# record of which variables exist. Without this negation it was ignored too, and
+# three feature flags lived solely in one untracked file on one machine.
+!.env.example
 
 # vercel
 .vercel
