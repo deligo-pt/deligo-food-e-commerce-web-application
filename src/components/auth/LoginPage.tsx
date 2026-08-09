@@ -11,12 +11,21 @@ import {
   KeyRound,
   LoaderCircle,
   Mail,
+  MessageSquare,
   MonitorSmartphone,
   Phone,
 } from "lucide-react";
 import Image from "next/image";
 import Logo from "@/components/shared/Logo";
 import { COUNTRY_OPTIONS, type CountryOption } from "../../data/countryCodes";
+import { FacebookMark, WhatsappMark } from "./BrandIcons";
+import GoogleSignInButton from "./GoogleSignInButton";
+import SocialButton from "./SocialButton";
+import { useTheme } from "@/hooks/useTheme";
+// Inlined by Next at build time. Empty is handled: GoogleSignInButton falls
+// back to a plain button that reports the option unavailable, so a missing ID
+// degrades rather than crashes.
+const googleOAuthClientId = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
 import { useLoginFlow } from "../../hooks/useLoginFlow";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
@@ -36,6 +45,43 @@ function CountryFlag({
       height={20}
       className="h-5 w-5 object-contain "
     />
+  );
+}
+
+/**
+ * One segment of the SMS / WhatsApp picker.
+ *
+ * `role="radio"` rather than a plain button: this is a choice between two
+ * delivery channels, not two actions. Nothing is sent until the user presses
+ * the CTA below, so a screen reader has to hear it as a selection.
+ */
+function ChannelOption({
+  selected,
+  onSelect,
+  label,
+  icon,
+}: {
+  selected: boolean;
+  onSelect: () => void;
+  label: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onSelect}
+      className={[
+        "flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border text-base font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d7357c] focus-visible:ring-offset-1",
+        selected
+          ? "border-[#d7357c] bg-[#fff4f8] text-[#d7357c] dark:bg-pink-950/20 dark:text-pink-400"
+          : "border-transparent text-[#707070] hover:bg-[#fafafa] dark:text-neutral-400 dark:hover:bg-neutral-900",
+      ].join(" ")}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 
@@ -95,6 +141,8 @@ function ClearSessionModal({
 export default function LoginPage() {
   const { t } = useTranslation();
   const lang = useStore((state) => state.lang);
+  // Google's button has no automatic dark mode; it has to be told.
+  const { theme } = useTheme();
   const setLang = useStore((state) => state.setLang);
   const {
     mode,
@@ -110,9 +158,17 @@ export default function LoginPage() {
     isVerifyingOtp,
     isResendingOtp,
     errorMessage,
+    errorMessageKey,
     successMessage,
     loginHint,
     loginIdentifier,
+    otpChannel,
+    sentChannel,
+    socialProviderInFlight,
+    setOtpChannel,
+    handleGoogleCredential,
+    startFacebookLogin,
+    reportSocialUnavailable,
     showDeviceLimitModal,
     setShowDeviceLimitModal,
     setShowLanguageModal,
@@ -233,9 +289,15 @@ export default function LoginPage() {
                 {loginHint}
               </p>
 
-              {errorMessage ? (
-                <div className="rounded-2xl border border-[#ffd4dc] dark:border-red-950 bg-[#fff4f7] dark:bg-red-950/20 px-4 py-3 text-sm font-medium text-[#b81f57] dark:text-red-400">
-                  {errorMessage}
+              {/* `errorMessageKey` holds copy we word ourselves and must
+                  translate; `errorMessage` is the backend's own already
+                  localized text. Only one is ever set at a time. */}
+              {errorMessageKey || errorMessage ? (
+                <div
+                  role="alert"
+                  className="rounded-2xl border border-[#ffd4dc] dark:border-red-950 bg-[#fff4f7] dark:bg-red-950/20 px-4 py-3 text-sm font-medium text-[#b81f57] dark:text-red-400"
+                >
+                  {errorMessageKey ? t(errorMessageKey) : errorMessage}
                 </div>
               ) : null}
 
@@ -386,6 +448,40 @@ export default function LoginPage() {
                 </div>
               ) : null}
 
+              {/* OTP delivery channel. Mobile only — the backend ignores
+                  `otpChannel` on email requests, so offering it there would be
+                  a control that does nothing. It is a selector, not two send
+                  buttons: the CTA below still performs the send, which keeps
+                  one loading state and one error surface, and lets a mistaken
+                  tap be undone before anything is triggered. */}
+              {step === "credentials" && mode === "mobile" ? (
+                <div>
+                  <p className="mb-2 px-1 text-sm font-medium text-[#6e6e6e] dark:text-neutral-400">
+                    {t("sendCodeVia")}
+                  </p>
+                  <div
+                    role="radiogroup"
+                    aria-label={t("sendCodeVia")}
+                    className="grid grid-cols-2 gap-2 rounded-2xl border border-[#dcdcdc] bg-white p-1.5 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:border-neutral-800 dark:bg-neutral-950 dark:shadow-none"
+                  >
+                    <ChannelOption
+                      selected={otpChannel === "SMS"}
+                      onSelect={() => setOtpChannel("SMS")}
+                      label={t("channelSms")}
+                      icon={<MessageSquare size={17} />}
+                    />
+                    {/* The WhatsApp glyph keeps its brand green in both states;
+                        the SMS glyph inherits the segment's text colour. */}
+                    <ChannelOption
+                      selected={otpChannel === "WHATSAPP"}
+                      onSelect={() => setOtpChannel("WHATSAPP")}
+                      label={t("channelWhatsapp")}
+                      icon={<WhatsappMark size={18} />}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
               {step === "credentials" ? (
                 <button
                   type="button"
@@ -447,10 +543,59 @@ export default function LoginPage() {
                       t("resendOtp")
                     )}
                   </button>
+                  {/* Composed in JSX rather than interpolated: t() takes a
+                      single key and has no placeholder support. Phone sends
+                      name the channel that delivered the code so the user
+                      knows where to look; email has no channel. */}
                   <p className="text-sm text-[#7a7a7a] dark:text-neutral-400">
-                    {t("otpSentTo")}{" "}
+                    {loginIdentifier?.contactNumber
+                      ? sentChannel === "WHATSAPP"
+                        ? t("otpSentViaWhatsapp")
+                        : t("otpSentViaSms")
+                      : t("otpSentTo")}{" "}
                     {loginIdentifier?.email ?? loginIdentifier?.contactNumber}
                   </p>
+                </div>
+              ) : null}
+
+              {/* Social sign-in. Credentials step only — once a code has been
+                  requested the user is mid-flow, and offering two more ways to
+                  start over is noise. Shown on both tabs, because neither
+                  provider has anything to do with which identifier was typed. */}
+              {step === "credentials" ? (
+                /* Capped at 400px because that is Google's hard maximum for a
+                   button it renders — pass more and it silently clamps, leaving
+                   Google ~100px narrower than Facebook on desktop, where this
+                   column is nearer 500px. Capping the whole group instead of
+                   just the buttons keeps the divider aligned with them, so the
+                   inset reads as a deliberate grouping rather than a mistake.
+                   Below 400px everything is full width and this does nothing. */
+                <div className="mx-auto w-full max-w-[400px] pt-2">
+                  <div className="flex items-center gap-4">
+                    <span className="h-px flex-1 bg-[#e3e3e3] dark:bg-neutral-800" />
+                    <span className="text-sm font-medium text-[#8b8b8b] dark:text-neutral-400">
+                      {t("orWith")}
+                    </span>
+                    <span className="h-px flex-1 bg-[#e3e3e3] dark:bg-neutral-800" />
+                  </div>
+                  <div className="mt-5 space-y-3">
+                    {/* Google draws its own button — see GoogleSignInButton for
+                        why a custom one cannot obtain an ID token. */}
+                    <GoogleSignInButton
+                      clientId={googleOAuthClientId}
+                      locale={lang}
+                      theme={theme === "dark" ? "dark" : "light"}
+                      label={t("continueWithGoogle")}
+                      onCredential={handleGoogleCredential}
+                      onUnavailable={reportSocialUnavailable}
+                    />
+                    <SocialButton
+                      onClick={startFacebookLogin}
+                      label={t("continueWithFacebook")}
+                      icon={<FacebookMark size={18} />}
+                      busy={socialProviderInFlight === "FACEBOOK"}
+                    />
+                  </div>
                 </div>
               ) : null}
 

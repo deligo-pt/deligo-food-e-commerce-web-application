@@ -129,7 +129,7 @@ export default function DeleteAccountPage() {
             disabled={isSubmitting}
             className="w-full rounded-xl bg-[#f9186b] py-3 font-bold text-white transition-all hover:bg-[#8a0038] disabled:opacity-60 cursor-pointer"
           >
-            {isSubmitting ? t("submitting") || "Submitting..." : t("requestDeletion")}
+            {isSubmitting ? t("submitting") : t("requestDeletion")}
           </button>
         </form>
 
