@@ -70,6 +70,11 @@ export default function GoogleSignInButton({
   // every keystroke in the form) would tear the button down and rebuild it.
   const onCredentialRef = useRef(onCredential);
   const onUnavailableRef = useRef(onUnavailable);
+  // `initialize` configures GIS globally and warns if called more than once.
+  // The effect below re-runs on width, theme and locale changes, but only
+  // `renderButton` needs repeating for those — so remember what has already
+  // been initialised and skip it when nothing relevant changed.
+  const initialisedFor = useRef<string | null>(null);
   useEffect(() => {
     onCredentialRef.current = onCredential;
     onUnavailableRef.current = onUnavailable;
@@ -100,16 +105,24 @@ export default function GoogleSignInButton({
     loadGoogleIdentity(locale)
       .then((api) => {
         if (cancelled || !targetRef.current) return;
-        api.initialize({
-          client_id: clientId,
-          callback: (response) => {
-            if (response.credential) onCredentialRef.current(response.credential);
-            else onUnavailableRef.current();
-          },
-          // One Tap is not used here; signing in is always an explicit press.
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
+
+        // A locale change reloads the SDK, which discards its configuration —
+        // so the key includes it, and re-initialising after that reload is
+        // correct rather than redundant.
+        const initKey = `${clientId}|${locale}`;
+        if (initialisedFor.current !== initKey) {
+          api.initialize({
+            client_id: clientId,
+            callback: (response) => {
+              if (response.credential) onCredentialRef.current(response.credential);
+              else onUnavailableRef.current();
+            },
+            // One Tap is not used here; signing in is always an explicit press.
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+          initialisedFor.current = initKey;
+        }
         // Clear first: re-rendering into a populated node stacks two buttons.
         targetRef.current.innerHTML = "";
         api.renderButton(targetRef.current, {
