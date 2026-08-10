@@ -151,7 +151,7 @@ export default function Footer() {
             </span>
           </Link>
 
-          <p className="max-w-md text-base leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-base">
+          <p className="max-w-md text-base font-bold leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-base">
             {t("footerDescription")}
           </p>
 
