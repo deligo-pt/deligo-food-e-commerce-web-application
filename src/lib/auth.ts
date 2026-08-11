@@ -7,15 +7,6 @@ export type LoginIdentifier = {
   referralCode?: string;
 };
 
-/**
- * OTP delivery channel, mirroring the backend's `otpChannel` enum.
- *
- * Deliberately NOT part of `LoginIdentifier`: the caller spreads that object
- * into the `/verify-otp` body as well, and the channel has no business there —
- * the code is verified the same way whichever channel delivered it.
- */
-export type OtpChannel = "SMS" | "WHATSAPP";
-
 /** Social providers the backend accepts on `/auth/social-login`. */
 export type SocialProvider = "GOOGLE" | "FACEBOOK";
 
@@ -159,24 +150,15 @@ async function requestJson<T>(url: string, body: unknown): Promise<T> {
 }
 
 /**
- * Requests a login OTP.
+ * Requests a login OTP, delivered by SMS.
  *
- * `otpChannel` is only sent when it is `"WHATSAPP"`. Omitting it is identical to
- * sending `"SMS"` as far as the backend is concerned, and keeping the default
- * request shape byte-for-byte what it has always been means the SMS path cannot
- * regress on the back of this feature.
- *
- * The channel is ignored by the backend for email identifiers, so callers
- * should not pass one in that mode.
+ * The backend also accepts an `otpChannel` of `"WHATSAPP"`, but its provider is
+ * unconfigured (every WhatsApp send answers `BULKGATE_CONFIGURATION_MISSING`),
+ * so the option is not offered and nothing is sent here. Omitting the field is
+ * identical to sending `"SMS"`.
  */
-export async function sendLoginOtp(
-  payload: LoginIdentifier,
-  otpChannel?: OtpChannel,
-): Promise<LoginResponse> {
-  return requestJson<LoginResponse>("/auth/login-customer", {
-    ...payload,
-    ...(otpChannel === "WHATSAPP" ? { otpChannel } : {}),
-  });
+export async function sendLoginOtp(payload: LoginIdentifier): Promise<LoginResponse> {
+  return requestJson<LoginResponse>("/auth/login-customer", payload);
 }
 /**
  * Exchanges a provider token for a DeliGo session.

@@ -11,6 +11,8 @@ const en = {
   account: "Account",
   profile: "Profile",
   logout: "Logout",
+  // Replaces the button's own label while the sign-out is in flight.
+  loggingOut: "Logging out...",
 
   notifications: "Notifications",
   cart: "Cart",
@@ -793,19 +795,9 @@ const en = {
 
   otpSentTo: "OTP sent to",
 
-  // OTP delivery channel picker — mobile tab only. The backend ignores
-  // `otpChannel` on email requests, so the control is not shown there.
-  sendCodeVia: "Send code via",
-  channelSms: "SMS",
-  channelWhatsapp: "WhatsApp",
-  // Replaces the generic `otpSentTo` caption once a channel has been chosen, so
-  // the user knows which app to go look in.
+  // Replaces the generic `otpSentTo` caption on phone sends, which name their
+  // channel; email sends have none.
   otpSentViaSms: "Code sent by SMS to",
-  otpSentViaWhatsapp: "Code sent on WhatsApp to",
-  // WhatsApp send failed at the provider. Named separately from the generic
-  // error because the backend's own message says "SMS service is temporarily
-  // unavailable", which points at the wrong channel and confuses people.
-  whatsappUnavailable: "WhatsApp is temporarily unavailable. Please use SMS.",
 
   // Social login. `orWith` labels the rule separating the OTP form from the
   // provider buttons.

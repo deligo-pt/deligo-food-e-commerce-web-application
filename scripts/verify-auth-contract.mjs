@@ -13,14 +13,6 @@
  * Plain Node, no dependencies, no test runner. Safe to run against the test
  * environment at any time: every request is designed to fail *before* the
  * backend sends anything to a real person.
- *
- * The one exception is the WhatsApp delivery check, which does reach the send
- * path. It is skipped unless you opt in:
- *
- *   VERIFY_WHATSAPP_SEND=1 node scripts/verify-auth-contract.mjs
- *
- * Do not opt in once BULKGATE_WHATSAPP_SENDER_ID is configured, unless
- * VERIFY_PHONE is a number you own — it would message a stranger.
  */
 
 import { readFileSync } from "node:fs";
@@ -49,8 +41,6 @@ if (!BASE) {
 // A number that fails Portugal's format check, so validation rejects the
 // request before any message is generated. Used for every schema-only probe.
 const UNSENDABLE = "+3510000";
-// Only used by the opt-in delivery check. Override with a number you own.
-const VERIFY_PHONE = process.env.VERIFY_PHONE ?? "+351912345678";
 
 let passed = 0;
 let failed = 0;
@@ -154,31 +144,17 @@ console.log("POST /auth/social-login");
   );
 }
 
-// ── otpChannel ─────────────────────────────────────────────────────────────
-console.log("\nPOST /auth/login-customer + /auth/resend-otp");
+// ── OTP request shape ──────────────────────────────────────────────────────
+console.log("\nPOST /auth/login-customer");
 {
-  for (const path of ["/auth/login-customer", "/auth/resend-otp"]) {
-    const body =
-      path === "/auth/resend-otp"
-        ? { role: "CUSTOMER", contactNumber: UNSENDABLE, otpChannel: "TELEGRAM" }
-        : { contactNumber: UNSENDABLE, otpChannel: "TELEGRAM" };
-    const res = await post(path, body);
-    check(
-      `${path} otpChannel enum is still exactly SMS | WHATSAPP`,
-      JSON.stringify(res.body).includes("'SMS' | 'WHATSAPP'"),
-      res.body.errorSources,
-    );
-  }
-
-  // sendLoginOtp() sends otpChannel alongside referralCode. If the backend ever
-  // made them mutually exclusive, the referral would be silently lost.
+  // sendLoginOtp() sends referralCode alongside the identifier. If the backend
+  // ever made them mutually exclusive, the referral would be silently lost.
   const combined = await post("/auth/login-customer", {
     contactNumber: UNSENDABLE,
     referralCode: "FRIEND123",
-    otpChannel: "WHATSAPP",
   });
   check(
-    "otpChannel and referralCode are accepted together",
+    "referralCode is accepted alongside contactNumber",
     onlyComplainsAbout(combined.body, "contactNumber"),
     combined.body.errorSources,
   );
@@ -191,30 +167,6 @@ console.log("\nPOST /auth/login-customer + /auth/resend-otp");
     onlyComplainsAbout(ptOnly.body, "contactNumber"),
     ptOnly.body.errorSources,
   );
-}
-
-// ── WhatsApp delivery (opt-in) ─────────────────────────────────────────────
-console.log("\nWhatsApp delivery");
-if (process.env.VERIFY_WHATSAPP_SEND === "1") {
-  const res = await post("/auth/login-customer", {
-    contactNumber: VERIFY_PHONE,
-    otpChannel: "WHATSAPP",
-  });
-  const key = errorKeyOf(res.body);
-  if (key === "BULKGATE_CONFIGURATION_MISSING") {
-    check(
-      "pre-B4: the errorKey reportOtpError() maps to whatsappUnavailable",
-      true,
-    );
-  } else {
-    check(
-      "post-B4: WhatsApp send accepted — reportOtpError()'s mapping is now dead code, review it",
-      res.status === 200,
-      res.body,
-    );
-  }
-} else {
-  console.log("  SKIP  delivery check (set VERIFY_WHATSAPP_SEND=1 — messages a real number)");
 }
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

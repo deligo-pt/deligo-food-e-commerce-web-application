@@ -11,6 +11,8 @@ const pt = {
   account: "Conta",
   profile: "Perfil",
   logout: "Sair",
+  // Substitui o texto do próprio botão enquanto a sessão está a ser terminada.
+  loggingOut: "A terminar sessão...",
 
   notifications: "Notificações",
   cart: "Carrinho",
@@ -812,20 +814,9 @@ const pt = {
 
   otpSentTo: "OTP enviado para",
 
-  // Seletor do canal de envio do OTP — apenas no separador Telemóvel. O backend
-  // ignora `otpChannel` nos pedidos por email, por isso o controlo não aparece lá.
-  sendCodeVia: "Enviar código por",
-  channelSms: "SMS",
-  channelWhatsapp: "WhatsApp",
-  // Substitui a legenda genérica `otpSentTo` depois de escolhido um canal, para
-  // o utilizador saber em que aplicação procurar.
+  // Substitui a legenda genérica `otpSentTo` nos envios por telemóvel, que
+  // nomeiam o canal; os envios por email não têm canal.
   otpSentViaSms: "Código enviado por SMS para",
-  otpSentViaWhatsapp: "Código enviado no WhatsApp para",
-  // Falha no envio por WhatsApp. Separado do erro genérico porque a mensagem do
-  // backend diz "SMS service is temporarily unavailable", que aponta para o
-  // canal errado.
-  whatsappUnavailable:
-    "O WhatsApp está temporariamente indisponível. Por favor, use SMS.",
 
   // Autenticação social. `orWith` identifica a linha que separa o formulário de
   // OTP dos botões dos fornecedores.

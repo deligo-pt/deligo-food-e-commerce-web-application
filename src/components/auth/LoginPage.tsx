@@ -11,14 +11,13 @@ import {
   KeyRound,
   LoaderCircle,
   Mail,
-  MessageSquare,
   MonitorSmartphone,
   Phone,
 } from "lucide-react";
 import Image from "next/image";
 import Logo from "@/components/shared/Logo";
 import { COUNTRY_OPTIONS, type CountryOption } from "../../data/countryCodes";
-import { FacebookMark, WhatsappMark } from "./BrandIcons";
+import { FacebookMark } from "./BrandIcons";
 import GoogleSignInButton from "./GoogleSignInButton";
 import SocialButton from "./SocialButton";
 import { useTheme } from "@/hooks/useTheme";
@@ -45,43 +44,6 @@ function CountryFlag({
       height={20}
       className="h-5 w-5 object-contain "
     />
-  );
-}
-
-/**
- * One segment of the SMS / WhatsApp picker.
- *
- * `role="radio"` rather than a plain button: this is a choice between two
- * delivery channels, not two actions. Nothing is sent until the user presses
- * the CTA below, so a screen reader has to hear it as a selection.
- */
-function ChannelOption({
-  selected,
-  onSelect,
-  label,
-  icon,
-}: {
-  selected: boolean;
-  onSelect: () => void;
-  label: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      onClick={onSelect}
-      className={[
-        "flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border text-base font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d7357c] focus-visible:ring-offset-1",
-        selected
-          ? "border-[#d7357c] bg-[#fff4f8] text-[#d7357c] dark:bg-pink-950/20 dark:text-pink-400"
-          : "border-transparent text-[#707070] hover:bg-[#fafafa] dark:text-neutral-400 dark:hover:bg-neutral-900",
-      ].join(" ")}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }
 
@@ -162,10 +124,7 @@ export default function LoginPage() {
     successMessage,
     loginHint,
     loginIdentifier,
-    otpChannel,
-    sentChannel,
     socialProviderInFlight,
-    setOtpChannel,
     handleGoogleCredential,
     startFacebookLogin,
     reportSocialUnavailable,
@@ -448,40 +407,6 @@ export default function LoginPage() {
                 </div>
               ) : null}
 
-              {/* OTP delivery channel. Mobile only — the backend ignores
-                  `otpChannel` on email requests, so offering it there would be
-                  a control that does nothing. It is a selector, not two send
-                  buttons: the CTA below still performs the send, which keeps
-                  one loading state and one error surface, and lets a mistaken
-                  tap be undone before anything is triggered. */}
-              {step === "credentials" && mode === "mobile" ? (
-                <div>
-                  <p className="mb-2 px-1 text-sm font-medium text-[#6e6e6e] dark:text-neutral-400">
-                    {t("sendCodeVia")}
-                  </p>
-                  <div
-                    role="radiogroup"
-                    aria-label={t("sendCodeVia")}
-                    className="grid grid-cols-2 gap-2 rounded-2xl border border-[#dcdcdc] bg-white p-1.5 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:border-neutral-800 dark:bg-neutral-950 dark:shadow-none"
-                  >
-                    <ChannelOption
-                      selected={otpChannel === "SMS"}
-                      onSelect={() => setOtpChannel("SMS")}
-                      label={t("channelSms")}
-                      icon={<MessageSquare size={17} />}
-                    />
-                    {/* The WhatsApp glyph keeps its brand green in both states;
-                        the SMS glyph inherits the segment's text colour. */}
-                    <ChannelOption
-                      selected={otpChannel === "WHATSAPP"}
-                      onSelect={() => setOtpChannel("WHATSAPP")}
-                      label={t("channelWhatsapp")}
-                      icon={<WhatsappMark size={18} />}
-                    />
-                  </div>
-                </div>
-              ) : null}
-
               {step === "credentials" ? (
                 <button
                   type="button"
@@ -545,13 +470,11 @@ export default function LoginPage() {
                   </button>
                   {/* Composed in JSX rather than interpolated: t() takes a
                       single key and has no placeholder support. Phone sends
-                      name the channel that delivered the code so the user
-                      knows where to look; email has no channel. */}
+                      name SMS so the user knows where to look; email has no
+                      channel. */}
                   <p className="text-sm text-[#7a7a7a] dark:text-neutral-400">
                     {loginIdentifier?.contactNumber
-                      ? sentChannel === "WHATSAPP"
-                        ? t("otpSentViaWhatsapp")
-                        : t("otpSentViaSms")
+                      ? t("otpSentViaSms")
                       : t("otpSentTo")}{" "}
                     {loginIdentifier?.email ?? loginIdentifier?.contactNumber}
                   </p>
