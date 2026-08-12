@@ -33,6 +33,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { useCart } from "@/hooks/queries/useCart";
 import { useVendorsCustomer } from "@/hooks/queries/useVendors";
+import { activateOrder } from "@/lib/cartActivation";
 import PickupTimePicker from "./PickupTimePicker";
 import {
   formatTimeOfDay,
@@ -282,6 +283,47 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       ) || []
     );
   }, [cart, vendorId]);
+
+  /** This store's lines that exist but are switched off. */
+  const inactiveVendorItems = useMemo(() => {
+    return (
+      cart?.items.filter(
+        (item) => getCartVendorId(item.vendorId) === vendorId && item.isActive !== true,
+      ) || []
+    );
+  }, [cart, vendorId]);
+
+  /**
+   * Last line of defence against a half-selected order reaching this page.
+   *
+   * The list above only prices *active* lines, which is the same rule the
+   * backend applies to `useCart: true` — so a store whose group is half on and
+   * half off silently loses the switched-off products between the cart page and
+   * the order summary. Adding a product repairs the group at the source now,
+   * but nothing stops the cart arriving in that state from somewhere this app
+   * does not control: the mobile app, another tab, a second device.
+   *
+   * So the page repairs it once and re-reads. Guarded by a ref rather than
+   * state: this must never become a loop, and one attempt per mount is enough —
+   * if it fails, the page still renders and the cart page's Activate button is
+   * one step back.
+   */
+  const hasRepairedGroupRef = useRef(false);
+  useEffect(() => {
+    if (hasRepairedGroupRef.current) return;
+    if (!vendorId || vendorItems.length === 0 || inactiveVendorItems.length === 0) return;
+
+    hasRepairedGroupRef.current = true;
+    void (async () => {
+      try {
+        await activateOrder(vendorId);
+        await refetchCart();
+      } catch {
+        // Nobody asked for this, so it fails quietly. The summary still shows
+        // the active lines, which is what checkout would have charged anyway.
+      }
+    })();
+  }, [vendorId, vendorItems.length, inactiveVendorItems.length, refetchCart]);
 
   const summary = useMemo(() => {
     return vendorItems.reduce(
