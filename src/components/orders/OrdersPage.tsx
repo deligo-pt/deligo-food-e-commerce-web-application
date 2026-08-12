@@ -15,7 +15,12 @@ import {
 import { Star, X } from "lucide-react";
 import { toast } from "sonner";
 import { canCancelOrder, getRefundState, isTerminatedStatus } from "@/lib/refund";
-import { isOngoingStatus, normalizeOrderStatus } from "@/lib/orderStatus";
+import { isPickupOrder } from "@/lib/orderTimeline";
+import {
+  isCompletedStatus,
+  isOngoingStatus,
+  normalizeOrderStatus,
+} from "@/lib/orderStatus";
 
 // An order with no total is a data problem, not something to render as
 // "€undefined" — fall back to a dash.
@@ -205,9 +210,13 @@ export default function OrdersPage() {
     // compare against did not, so the two halves of the split disagreed about
     // casing and about the API's one-L `CANCELED`.
     const ongoing = orders.filter((order) => isOngoingStatus(order.orderStatus));
+    // `isCompletedStatus` covers both endings — delivered, and collected by the
+    // customer. Testing `=== "DELIVERED"` here dropped every completed pickup
+    // order out of both tabs: not ongoing, not terminated, not delivered, so it
+    // appeared nowhere at all.
     const history = orders.filter(
       (order) =>
-        normalizeOrderStatus(order.orderStatus) === "DELIVERED" ||
+        isCompletedStatus(order.orderStatus) ||
         isTerminatedStatus(order.orderStatus),
     );
     return { ongoingOrders: ongoing, historyOrders: history };
@@ -217,7 +226,11 @@ export default function OrdersPage() {
     return <OrdersPageSkeleton />;
   }
 
-  const getOrderProgress = (status: string) => {
+  // `isPickup` only affects wording and how far along the bar sits. A pickup
+  // order's journey ends two steps earlier than a delivery's — there is no
+  // rider leg — so `READY_FOR_PICKUP` is nearly done for one and merely
+  // three-quarters done for the other.
+  const getOrderProgress = (status: string, isPickup: boolean) => {
     switch (status) {
       case "PENDING":
         return {
@@ -240,8 +253,11 @@ export default function OrdersPage() {
         };
       case "READY_FOR_PICKUP":
         return {
-          progress: 75,
-          text: t("readyForPickup"),
+          // The last thing that happens before the customer walks in, so the
+          // bar is nearly full — not the 75% of a delivery order that still has
+          // a rider leg to run.
+          progress: isPickup ? 95 : 75,
+          text: isPickup ? t("readyForPickupSelf") : t("readyForPickup"),
           status: "accepted" as const,
         };
       case "PICKED_UP":
@@ -307,13 +323,16 @@ export default function OrdersPage() {
               </div>
             ) : (
               ongoingOrders.map((order) => {
+                const isPickup = isPickupOrder(order);
                 const { progress, text, status } = getOrderProgress(
                   order.orderStatus,
+                  isPickup,
                 );
                 return (
                   <OrderCard
                     key={order._id}
                     dbId={order._id}
+                    isPickup={isPickup}
                     image={order.items?.[0]?.image}
                     restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
                       order.vendorId?.name?.lastName ?? ""
@@ -350,16 +369,21 @@ export default function OrdersPage() {
                 // disagreed: a REJECTED order was chipped "Cancelled" while the
                 // label right below it read "Rejected".
                 const normalized = normalizeOrderStatus(order.orderStatus);
-                const cardStatus =
-                  normalized === "DELIVERED"
-                    ? "delivered"
-                    : normalized === "REJECTED"
-                      ? "rejected"
-                      : "cancelled";
+                // A collected pickup order is a completed order, so it shares
+                // the "delivered" chip rather than falling through to the
+                // catch-all "cancelled" — which is what it did while this read
+                // `=== "DELIVERED"`, labelling a successfully collected order
+                // as cancelled.
+                const cardStatus = isCompletedStatus(normalized)
+                  ? "delivered"
+                  : normalized === "REJECTED"
+                    ? "rejected"
+                    : "cancelled";
                 return (
                   <OrderCard
                     key={order._id}
                     dbId={order._id}
+                    isPickup={isPickupOrder(order)}
                     image={order.items?.[0]?.image}
                     restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
                       order.vendorId?.name?.lastName ?? ""

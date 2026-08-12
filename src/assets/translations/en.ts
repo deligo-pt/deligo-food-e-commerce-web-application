@@ -213,6 +213,33 @@ const en = {
   deliveryInstructions: "Delivery Instructions",
   deliveryInstructionsPlaceholder: "Enter your delivery instructions",
 
+  // Self-pickup. The backend's own pickup-time rejections arrive already
+  // translated, so there are deliberately no keys for those messages here —
+  // see the PICKUP_TIME_* keys in the checkout error handling.
+  selfPickup: "Self Pickup",
+  selectPickupTime: "Select pickup time",
+  estimatedPickupTime: "Estimated Pickup Time",
+  confirmPickupTime: "Confirm Pickup Time",
+  pickupAvailableToday: "Available today between",
+  pickupHour: "Hour",
+  pickupMinute: "Minute",
+  pickupTimeRequired: "Choose a pickup time to continue",
+  storeClosedForPickup: "This store is closed for pickup today",
+  today: "Today",
+  pickupDetails: "Pickup Details",
+  collectFrom: "Collect from",
+  pickupTime: "Pickup Time",
+  collectAtCounter: "Collect your order at the counter",
+  yourPickupCode: "Your Pickup Code",
+  showCodeAtCounter: "Show this code at the counter when your order is ready",
+  orderReadyShowCode: "Your order is ready — show this code at the counter",
+  readyForPickupSelf: "Your order is ready at the counter",
+  copyCode: "Copy code",
+  copyFailed: "Could not copy to clipboard",
+  getDirections: "Get directions",
+  orderCollected: "Collected",
+  orderCollectedDescription: "You collected your order from the store",
+
   processing: "Processing...",
   proceedToCheckout: "Proceed to Checkout",
 

@@ -7,6 +7,7 @@ import {
   CheckCheck,
   CheckCircle,
   CheckSquare,
+  Clock,
   Download,
   Headphones,
   Loader2,
@@ -35,10 +36,17 @@ import {
   getTerminalReason,
   getTimelineStepIndex,
   getTimelineStepKeys,
+  isPickupOrder,
 } from "@/lib/orderTimeline";
 import { getPaymentStatusDisplay } from "@/lib/paymentStatus";
+import { isCompletedStatus } from "@/lib/orderStatus";
 import { useInvalidateOrders } from "@/hooks/queries/useOrders";
+import { useVendorsCustomer } from "@/hooks/queries/useVendors";
+import { formatAddressFull } from "@/lib/addressFormat";
+import { formatPickupLabel } from "@/lib/pickupTime";
 import OrderMap from "./OrderMap/OrderMap";
+import PickupCodeCard from "./PickupCodeCard";
+import PickupLocationCard from "./PickupLocationCard";
 import RefundBanner from "./RefundBanner";
 import CancelOrderDialog from "../CancelOrderDialog";
 
@@ -91,6 +99,14 @@ const STEP_PRESENTATION: Record<
     descriptionKey: "orderDelivered",
     icon: CheckCheck,
   },
+  // The self-pickup ending, set when the vendor verifies the code at the
+  // counter. Distinct from `PICKED_UP` above, which is a rider leaving the
+  // restaurant.
+  PICKED_UP_BY_CUSTOMER: {
+    labelKey: "orderCollected",
+    descriptionKey: "orderCollectedDescription",
+    icon: CheckCheck,
+  },
   REJECTED: {
     labelKey: "rejected",
     descriptionKey: "orderWasRejected",
@@ -103,6 +119,28 @@ const STEP_PRESENTATION: Record<
   },
 };
 
+/**
+ * Last-resort label for a status this build has no copy for.
+ *
+ * `getTimelineStepKeys` appends a pickup order's own status when it falls
+ * outside the known progression, because the status a collected order reaches
+ * has not been confirmed yet. Without this, `STEP_PRESENTATION[key]` would be
+ * undefined and the page would crash on the customer whose order just
+ * completed — the worst possible moment.
+ *
+ * Turning `NOT_COLLECTED` into "Not Collected" is presentation of a value the
+ * backend sent, not copy invented here. It is deliberately plain, and it should
+ * stop appearing the moment the real status is known and given proper keys.
+ */
+function humanizeStatus(status: string): string {
+  return status
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 // `terminalNote` is the vendor's own reason for a rejection/cancellation, which
 // the API requires them to give — it replaces the generic description on the
 // terminal step, the way the app shows it.
@@ -110,23 +148,59 @@ function getOrderStep(
   order: any,
   t: (key: string) => string,
   terminalNote: string | null,
+  isPickup: boolean,
 ) {
   return getTimelineStepKeys(order).map((key) => {
     const presentation = STEP_PRESENTATION[key];
     const isTerminal = isTerminatedStatus(key);
+
+    if (!presentation) {
+      return {
+        key,
+        label: humanizeStatus(key),
+        description: isTerminal && terminalNote ? terminalNote : "",
+        icon: Check,
+      };
+    }
+
+    // `READY_FOR_PICKUP` means two different things depending on who is
+    // collecting. For a delivery order it is about the rider; for a pickup
+    // order it is the customer's cue to walk in, so it gets its own line.
+    const descriptionKey =
+      isPickup && key === "READY_FOR_PICKUP"
+        ? "readyForPickupSelf"
+        : presentation.descriptionKey;
+
     return {
       key,
       label: t(presentation.labelKey),
-      description:
-        isTerminal && terminalNote ? terminalNote : t(presentation.descriptionKey),
+      description: isTerminal && terminalNote ? terminalNote : t(descriptionKey),
       icon: presentation.icon,
     };
   });
 }
 
 export default function TrackOrder() {
-  const { t, langVersion } = useTranslation();
+  const { t, i18n, langVersion } = useTranslation();
+  const lang = i18n.language;
   const { orderId } = useParams<{ orderId: string }>();
+
+  /**
+   * The vendor list, read here only for a pickup order's store address.
+   *
+   * It has to come from this list rather than the order: a pickup order carries
+   * no `deliveryAddress`, no `pickupAddress`, and its embedded `vendorId` has
+   * `businessDetails` but no `businessLocation`. Without this lookup every
+   * coordinate on the page is undefined — which is how the map ended up
+   * centring pickup orders on a hardcoded point in rural Bangladesh.
+   *
+   * Called unconditionally and up here with the other hooks, not beside the
+   * pickup branch further down: this component returns early while the order is
+   * loading, and a hook after that return would change hook order between
+   * renders. It is the same cached query the cart and checkout already use, so
+   * for a delivery order it costs a cache read and nothing else.
+   */
+  const { data: vendorList = [] } = useVendorsCustomer<any>();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -299,6 +373,16 @@ export default function TrackOrder() {
   const vendorName =
     `${order.vendorId?.name?.firstName || ""} ${order.vendorId?.name?.lastName || ""}`.trim();
 
+  const isPickup = isPickupOrder(order);
+
+  const storeVendor = isPickup
+    ? vendorList.find(
+        (v: any) =>
+          v._id === order.vendorId?._id || v.userId === order.vendorId?.userId,
+      ) ?? null
+    : null;
+  const storeLocation = storeVendor?.businessLocation ?? null;
+
   // Delivery address
   const deliveryAddress = order.deliveryAddress;
   const addressString = [
@@ -353,7 +437,7 @@ export default function TrackOrder() {
   // matching the app, rather than as a standalone line.
   const subtotalTax = calc.totalTaxAmount || 0;
 
-  const steps = getOrderStep(order, t, getTerminalReason(order));
+  const steps = getOrderStep(order, t, getTerminalReason(order), isPickup);
 
   // Derived from the payment fields, not `orderStatus` — a refund moves
   // `paymentStatus`/`isPaid` while the order stays REJECTED/CANCELED.
@@ -372,19 +456,44 @@ export default function TrackOrder() {
                 actually owed. */}
             <RefundBanner state={refundState} />
 
-            <OrderMap
-              orderStatus={order.orderStatus}
-              pickupLatitude={order.pickupAddress?.latitude}
-              pickupLongitude={order.pickupAddress?.longitude}
-              pickupAddress={restaurantAddress}
-              deliveryLatitude={deliveryAddress?.latitude}
-              deliveryLongitude={deliveryAddress?.longitude}
-              deliveryAddress={addressString}
-              riderLatitude={order.deliveryPartnerId?.currentSessionLocation?.coordinates?.[1]}
-              riderLongitude={order.deliveryPartnerId?.currentSessionLocation?.coordinates?.[0]}
-              riderName={order.deliveryPartnerId ? `${order.deliveryPartnerId.name?.firstName || ""} ${order.deliveryPartnerId.name?.lastName || ""}` : ""}
-              etaMinutes={order.delivery?.estimatedTime}
-            />
+            {/* The map draws a restaurant→customer route and follows a rider
+                along it — neither of which a self-pickup order has. Fed the
+                undefined coordinates such an order carries, it silently fell
+                back to a hardcoded default and centred the view on the wrong
+                continent. Pickup gets the code and the shop's location
+                instead: the two things a collecting customer needs. */}
+            {isPickup ? (
+              <>
+                {order.pickup?.code && (
+                  <PickupCodeCard
+                    code={order.pickup.code}
+                    isReady={order.orderStatus === "READY_FOR_PICKUP"}
+                  />
+                )}
+                <PickupLocationCard
+                  storeName={
+                    order.vendorId?.businessDetails?.businessName ||
+                    vendorName ||
+                    t("restaurant")
+                  }
+                  location={storeLocation}
+                />
+              </>
+            ) : (
+              <OrderMap
+                orderStatus={order.orderStatus}
+                pickupLatitude={order.pickupAddress?.latitude}
+                pickupLongitude={order.pickupAddress?.longitude}
+                pickupAddress={restaurantAddress}
+                deliveryLatitude={deliveryAddress?.latitude}
+                deliveryLongitude={deliveryAddress?.longitude}
+                deliveryAddress={addressString}
+                riderLatitude={order.deliveryPartnerId?.currentSessionLocation?.coordinates?.[1]}
+                riderLongitude={order.deliveryPartnerId?.currentSessionLocation?.coordinates?.[0]}
+                riderName={order.deliveryPartnerId ? `${order.deliveryPartnerId.name?.firstName || ""} ${order.deliveryPartnerId.name?.lastName || ""}` : ""}
+                etaMinutes={order.delivery?.estimatedTime}
+              />
+            )}
 
             {/* Rider Details Card (Dynamic Live view) */}
             {order.deliveryPartnerId && (
@@ -446,24 +555,44 @@ export default function TrackOrder() {
                   <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50">
                     {vendorName || t("restaurant")}
                   </h3>
-                  <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 leading-relaxed">
-                    {restaurantAddress}
+                  {/* `restaurantAddress` resolves to "address pending" when the
+                      order carries no `pickupAddress` — which is always, on a
+                      pickup order. The store's real address is the one thing
+                      the customer has to have, so it comes from the vendor
+                      lookup instead. */}
+                  <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 leading-relaxed break-words">
+                    {isPickup && storeLocation
+                      ? formatAddressFull(storeLocation)
+                      : restaurantAddress}
                   </p>
                 </div>
               </div>
+
+              {/* Where the order ends up: an address for delivery, a time and a
+                  counter for pickup. */}
               <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-l-[#f9186b] dark:border-l-[#f9186b]">
                 <div className="h-12 w-12 rounded-full bg-[#ffd9df] dark:bg-pink-950/30 flex items-center justify-center shrink-0">
-                  <MapPin className="w-6 h-6 text-[#f9186b] dark:text-pink-400" />
+                  {isPickup ? (
+                    <Clock className="w-6 h-6 text-[#f9186b] dark:text-pink-400" />
+                  ) : (
+                    <MapPin className="w-6 h-6 text-[#f9186b] dark:text-pink-400" />
+                  )}
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0">
                   <p className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400">
-                    {t("deliveryTo")}
+                    {isPickup ? t("pickupTime") : t("deliveryTo")}
                   </p>
-                  <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50">
-                    {deliveryAddress?.city || t("location")}
+                  <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50 break-words">
+                    {isPickup
+                      ? order.pickup?.pickupTime
+                        ? formatPickupLabel(order.pickup.pickupTime, lang)
+                        : "—"
+                      : deliveryAddress?.city || t("location")}
                   </h3>
-                  <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400">
-                    {addressString || t("addressNotProvided")}
+                  <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 break-words">
+                    {isPickup
+                      ? t("collectAtCounter")
+                      : addressString || t("addressNotProvided")}
                   </p>
                 </div>
               </div>
@@ -535,17 +664,23 @@ export default function TrackOrder() {
                     </span>
                     <span className="shrink-0 whitespace-nowrap">€{subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
-                    <span className="min-w-0">
-                      {t("deliveryFee")}
-                      {deliveryFee > 0 && (
-                        <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
-                          ({t("inclTax")}&nbsp;€{deliveryTax.toFixed(2)})
-                        </span>
-                      )}
-                    </span>
-                    <span className="shrink-0 whitespace-nowrap">€{deliveryFee.toFixed(2)}</span>
-                  </div>
+                  {/* Dropped on pickup rather than shown as €0.00: there was no
+                      delivery to charge for, which is a different statement
+                      from a delivery that happened to be free. Matches the
+                      payment page. */}
+                  {!isPickup && (
+                    <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                      <span className="min-w-0">
+                        {t("deliveryFee")}
+                        {deliveryFee > 0 && (
+                          <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
+                            ({t("inclTax")}&nbsp;€{deliveryTax.toFixed(2)})
+                          </span>
+                        )}
+                      </span>
+                      <span className="shrink-0 whitespace-nowrap">€{deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
                   {serviceCharge > 0 && (
                     <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
                       <span className="min-w-0">
@@ -682,7 +817,12 @@ export default function TrackOrder() {
                       >
                         {step.description}
                       </p>
-                      {isCurrent && step.key !== "DELIVERED" && !isTerminatedStatus(step.key) && (
+                      {/* The pulsing "in progress" chip belongs only on a step
+                          the order is still working through. It used to test
+                          `!== "DELIVERED"`, which left it pulsing on a
+                          collected pickup order — telling a customer holding
+                          their food that something was still happening. */}
+                      {isCurrent && !isCompletedStatus(step.key) && !isTerminatedStatus(step.key) && (
                         <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] dark:bg-pink-950/40 text-[#f9186b] dark:text-pink-400 rounded-full text-xs font-bold">
                           <span className="w-1.5 h-1.5 bg-[#f9186b] dark:bg-pink-500 rounded-full animate-pulse" />
                           {t("inProgress")}

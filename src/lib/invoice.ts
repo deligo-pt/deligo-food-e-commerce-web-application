@@ -44,6 +44,9 @@ interface InvoiceOrder {
   createdAt?: string;
   paymentMethod?: string;
   deliveryAddress?: InvoiceAddress;
+  /** `"PICKUP"` on a self-collected order; absent on orders predating the field. */
+  fulfillmentType?: string | null;
+  vendorId?: { businessDetails?: { businessName?: string } };
   items?: InvoiceItem[];
   orderCalculation?: {
     totalOriginalPrice?: number;
@@ -241,9 +244,20 @@ export async function downloadInvoice(
   const metaL = M + PX;
   const metaR = M + PX + 86;
 
+  // A self-pickup order has no `deliveryAddress` at all, so "Shipped to" would
+  // print as a labelled heading with nothing under it. The store the customer
+  // collected from is the honest equivalent, and its name is the only part of
+  // it the order document carries — the full store address lives on the vendor
+  // record, which this function does not fetch.
+  const isPickup = order.fulfillmentType === "PICKUP";
+
   // The panel is a filled box drawn *behind* its text, so its height has to be
   // known first — which means wrapping the address before anything is drawn.
-  const addrLines = formatAddress(order.deliveryAddress);
+  const addrLines = isPickup
+    ? [order.vendorId?.businessDetails?.businessName].filter(
+        (line): line is string => Boolean(line),
+      )
+    : formatAddress(order.deliveryAddress);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   const wrapped = addrLines.flatMap(
@@ -277,7 +291,7 @@ export async function downloadInvoice(
   metaValue(formatDate(order.createdAt, lang) || "—", metaR, my);
   my += 9.5;
 
-  metaLabel(t("invoiceShippedTo"), metaL, my);
+  metaLabel(isPickup ? t("collectFrom") : t("invoiceShippedTo"), metaL, my);
   metaLabel(t("invoicePayment"), metaR, my);
   my += 5.2;
 
@@ -485,7 +499,13 @@ export async function downloadInvoice(
     });
   }
   totalRow(t("invoiceServiceFee"), serviceCharge);
-  totalRow(t("invoiceDeliveryFee"), deliveryFee);
+  // Omitted on a collected order rather than printed as €0.00, matching the
+  // payment and tracking pages: there was no delivery to charge for. The grand
+  // total below is the backend's own figure either way, so the rows still add
+  // up to it.
+  if (!isPickup) {
+    totalRow(t("invoiceDeliveryFee"), deliveryFee);
+  }
 
   // The amount actually charged is the one number a reader scans for, so it
   // gets the emphasis — but from a rule and 15pt type rather than a filled

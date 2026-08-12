@@ -221,6 +221,33 @@ const pt = {
   deliveryInstructions: "Instruções de entrega",
   deliveryInstructionsPlaceholder: "Indique as instruções de entrega",
 
+  // Recolha na loja. As rejeições de horário vindas do backend já chegam
+  // traduzidas, por isso não existem chaves para essas mensagens aqui.
+  selfPickup: "Recolha na Loja",
+  selectPickupTime: "Selecionar hora de recolha",
+  estimatedPickupTime: "Hora Prevista de Recolha",
+  confirmPickupTime: "Confirmar Hora de Recolha",
+  pickupAvailableToday: "Disponível hoje entre",
+  pickupHour: "Hora",
+  pickupMinute: "Minuto",
+  pickupTimeRequired: "Escolha uma hora de recolha para continuar",
+  storeClosedForPickup: "Esta loja está fechada para recolhas hoje",
+  today: "Hoje",
+  pickupDetails: "Detalhes da Recolha",
+  collectFrom: "Recolher em",
+  pickupTime: "Hora de Recolha",
+  collectAtCounter: "Levante o seu pedido no balcão",
+  yourPickupCode: "O Seu Código de Recolha",
+  showCodeAtCounter:
+    "Mostre este código no balcão quando o seu pedido estiver pronto",
+  orderReadyShowCode: "O seu pedido está pronto — mostre este código no balcão",
+  readyForPickupSelf: "O seu pedido está pronto no balcão",
+  copyCode: "Copiar código",
+  copyFailed: "Não foi possível copiar",
+  getDirections: "Obter direções",
+  orderCollected: "Recolhido",
+  orderCollectedDescription: "Recolheu o seu pedido na loja",
+
   processing: "Processando...",
   proceedToCheckout: "Prosseguir para o Checkout",
 
