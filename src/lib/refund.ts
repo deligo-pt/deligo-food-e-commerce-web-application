@@ -14,7 +14,7 @@
  * `refundStatus`, which this module prefers — see `getRefundState`.
  */
 
-import { normalizeOrderStatus } from "./orderStatus";
+import { isCompletedStatus, normalizeOrderStatus } from "./orderStatus";
 
 export type RefundState = "none" | "not_eligible" | "in_progress" | "completed";
 
@@ -96,18 +96,31 @@ export function getRefundState(order: RefundableOrder | null | undefined): Refun
  */
 export function isOrderFinished(order: RefundableOrder | null | undefined): boolean {
   if (!order) return false;
-  if (normalizeOrderStatus(order.orderStatus) === "DELIVERED") return true;
+  // Covers both endings — delivered, and collected by the customer. Reading
+  // only `DELIVERED` here left a collected pickup order polling at the live
+  // cadence indefinitely, because its status is settled but does not match.
+  if (isCompletedStatus(order.orderStatus)) return true;
   return (
     isTerminatedStatus(order.orderStatus) && getRefundState(order) !== "in_progress"
   );
 }
 
 /**
- * Statuses past the point of no return. `DELIVERED` is self-evident; the other
- * two mean the order is already dead, and the API answers a second cancel with
+ * Statuses past the point of no return. `DELIVERED` and
+ * `PICKED_UP_BY_CUSTOMER` are the two ways an order completes — the customer
+ * has the food either way — and the other two mean the order is already dead.
+ * The API answers a cancel at any of these with
  * `ORDER_CANNOT_BE_CANCELED_OR_REJECTED_AT_STAGE`.
+ *
+ * `PICKED_UP_BY_CUSTOMER` was missing here, which offered a Cancel button on an
+ * order the customer had already walked out with.
  */
-const UNCANCELLABLE_STATUSES = new Set(["DELIVERED", "CANCELLED", "REJECTED"]);
+const UNCANCELLABLE_STATUSES = new Set([
+  "DELIVERED",
+  "PICKED_UP_BY_CUSTOMER",
+  "CANCELLED",
+  "REJECTED",
+]);
 
 /** The subset of an order `canCancelOrder` reads. */
 export interface CancellableOrder {

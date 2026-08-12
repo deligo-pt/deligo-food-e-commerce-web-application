@@ -11,6 +11,8 @@ const en = {
   account: "Account",
   profile: "Profile",
   logout: "Logout",
+  // Replaces the button's own label while the sign-out is in flight.
+  loggingOut: "Logging out...",
 
   notifications: "Notifications",
   cart: "Cart",
@@ -210,6 +212,33 @@ const en = {
 
   deliveryInstructions: "Delivery Instructions",
   deliveryInstructionsPlaceholder: "Enter your delivery instructions",
+
+  // Self-pickup. The backend's own pickup-time rejections arrive already
+  // translated, so there are deliberately no keys for those messages here —
+  // see the PICKUP_TIME_* keys in the checkout error handling.
+  selfPickup: "Self Pickup",
+  selectPickupTime: "Select pickup time",
+  estimatedPickupTime: "Estimated Pickup Time",
+  confirmPickupTime: "Confirm Pickup Time",
+  pickupAvailableToday: "Available today between",
+  pickupHour: "Hour",
+  pickupMinute: "Minute",
+  pickupTimeRequired: "Choose a pickup time to continue",
+  storeClosedForPickup: "This store is closed for pickup today",
+  today: "Today",
+  pickupDetails: "Pickup Details",
+  collectFrom: "Collect from",
+  pickupTime: "Pickup Time",
+  collectAtCounter: "Collect your order at the counter",
+  yourPickupCode: "Your Pickup Code",
+  showCodeAtCounter: "Show this code at the counter when your order is ready",
+  orderReadyShowCode: "Your order is ready — show this code at the counter",
+  readyForPickupSelf: "Your order is ready at the counter",
+  copyCode: "Copy code",
+  copyFailed: "Could not copy to clipboard",
+  getDirections: "Get directions",
+  orderCollected: "Collected",
+  orderCollectedDescription: "You collected your order from the store",
 
   processing: "Processing...",
   proceedToCheckout: "Proceed to Checkout",
@@ -793,19 +822,9 @@ const en = {
 
   otpSentTo: "OTP sent to",
 
-  // OTP delivery channel picker — mobile tab only. The backend ignores
-  // `otpChannel` on email requests, so the control is not shown there.
-  sendCodeVia: "Send code via",
-  channelSms: "SMS",
-  channelWhatsapp: "WhatsApp",
-  // Replaces the generic `otpSentTo` caption once a channel has been chosen, so
-  // the user knows which app to go look in.
+  // Replaces the generic `otpSentTo` caption on phone sends, which name their
+  // channel; email sends have none.
   otpSentViaSms: "Code sent by SMS to",
-  otpSentViaWhatsapp: "Code sent on WhatsApp to",
-  // WhatsApp send failed at the provider. Named separately from the generic
-  // error because the backend's own message says "SMS service is temporarily
-  // unavailable", which points at the wrong channel and confuses people.
-  whatsappUnavailable: "WhatsApp is temporarily unavailable. Please use SMS.",
 
   // Social login. `orWith` labels the rule separating the OTP form from the
   // provider buttons.

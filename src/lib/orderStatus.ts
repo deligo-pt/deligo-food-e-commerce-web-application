@@ -36,6 +36,28 @@ export function isOngoingStatus(status: string | null | undefined): boolean {
   return ONGOING_STATUSES.has(normalizeOrderStatus(status));
 }
 
+/**
+ * The two happy endings: the courier handed the food over, or the customer
+ * collected it themselves.
+ *
+ * `PICKED_UP_BY_CUSTOMER` is the status a self-pickup order reaches once the
+ * vendor types the pickup code into their app. Note how close its name is to
+ * `PICKED_UP`, which means something entirely different — a *rider* has taken
+ * the order from the restaurant and is on the way to the customer. One is an
+ * ending, the other is a middle. They must never be conflated.
+ *
+ * This exists because "finished successfully" was previously spelled
+ * `=== "DELIVERED"` in several places, and every one of those reads false for a
+ * collected order — leaving the tracking page polling forever, offering a
+ * Cancel button for food the customer is already holding, and never asking for
+ * a rating.
+ */
+const COMPLETED_STATUSES = new Set(["DELIVERED", "PICKED_UP_BY_CUSTOMER"]);
+
+export function isCompletedStatus(status: string | null | undefined): boolean {
+  return COMPLETED_STATUSES.has(normalizeOrderStatus(status));
+}
+
 export interface StatusHistoryEntry {
   status?: string | null;
   note?: string | null;

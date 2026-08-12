@@ -8,7 +8,6 @@ import {
   sendLoginOtp,
   socialLogin,
   type LoginIdentifier,
-  type OtpChannel,
   type SocialProvider,
   type VerifyOtpResponse,
   verifyLoginOtp,
@@ -31,9 +30,9 @@ type LoginMode = "mobile" | "email";
 type LoginStep = "credentials" | "otp";
 /** What to repeat with `forceLogin` after the user clears a device session. */
 type PendingAction = "verify" | "social" | null;
-// Both types are defined next to the requests that carry them, in lib/auth.ts.
-// Re-exported here because the login UI imports its types from this hook.
-export type { OtpChannel, SocialProvider };
+// Defined next to the request that carries it, in lib/auth.ts. Re-exported here
+// because the login UI imports its types from this hook.
+export type { SocialProvider };
 
 export function useLoginFlow() {
   const router = useRouter();
@@ -62,14 +61,6 @@ export function useLoginFlow() {
   const [loginIdentifier, setLoginIdentifier] = useState<LoginIdentifier | null>(null);
   const [showDeviceLimitModal, setShowDeviceLimitModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
-
-  // Which channel the user picked, and which one actually delivered the code
-  // being entered. They are separate because the picker stays editable while
-  // the OTP caption must keep naming the channel used for the send it
-  // describes — and because a resend has to repeat the original channel, not
-  // whatever the picker happens to read now.
-  const [otpChannel, setOtpChannel] = useState<OtpChannel>("SMS");
-  const [sentChannel, setSentChannel] = useState<OtpChannel>("SMS");
 
   // Which provider is mid-exchange, so only that button shows a spinner.
   const [socialProviderInFlight, setSocialProviderInFlight] =
@@ -124,21 +115,8 @@ export function useLoginFlow() {
     };
   }
 
-  /**
-   * Reports an OTP request failure.
-   *
-   * A failed WhatsApp send gets our own wording. The backend answers a missing
-   * BulkGate configuration with "SMS service is temporarily unavailable" no
-   * matter which channel was asked for, so showing its message verbatim would
-   * name the wrong channel — and tell someone whose SMS works fine that SMS is
-   * down. Everything else keeps the backend's already-localized text.
-   */
-  function reportOtpError(error: unknown, channel: OtpChannel) {
-    const errorKey = error instanceof AuthError ? error.errorKey : undefined;
-    if (channel === "WHATSAPP" && errorKey === "BULKGATE_CONFIGURATION_MISSING") {
-      setErrorMessageKey("whatsappUnavailable");
-      return;
-    }
+  /** Reports an OTP request failure, keeping the backend's localized text. */
+  function reportOtpError(error: unknown) {
     setErrorMessage(
       error instanceof Error ? error.message : "Unable to request OTP.",
     );
@@ -148,23 +126,16 @@ export function useLoginFlow() {
     clearMessages();
     setShowDeviceLimitModal(false);
 
-    // Email OTPs have no channel — the backend ignores `otpChannel` for them,
-    // and the picker is not rendered in that mode.
-    const channel: OtpChannel = mode === "mobile" ? otpChannel : "SMS";
-
     try {
       const identifier = buildIdentifier();
       setIsSendingOtp(true);
-      const response = await sendLoginOtp(identifier, channel);
+      const response = await sendLoginOtp(identifier);
       setLoginIdentifier(identifier);
-      // Freeze the channel this code was sent on, so the caption names it and a
-      // resend repeats it.
-      setSentChannel(channel);
       setStep("otp");
       setOtp("");
       setSuccessMessage(response.message);
     } catch (error) {
-      reportOtpError(error, channel);
+      reportOtpError(error);
     } finally {
       setIsSendingOtp(false);
     }
@@ -294,13 +265,10 @@ export function useLoginFlow() {
     }
     try {
       setIsResendingOtp(true);
-      // `sentChannel`, not `otpChannel` — a resend must repeat the channel the
-      // original code went out on. The picker is not even on screen at this
-      // step, so reading it here would switch channels behind the user's back.
-      const response = await sendLoginOtp(loginIdentifier, sentChannel);
+      const response = await sendLoginOtp(loginIdentifier);
       setSuccessMessage(response.message);
     } catch (error) {
-      reportOtpError(error, sentChannel);
+      reportOtpError(error);
     } finally {
       setIsResendingOtp(false);
     }
@@ -491,8 +459,6 @@ export function useLoginFlow() {
     languageLabel,
     loginHint,
     loginIdentifier,
-    otpChannel,
-    sentChannel,
     socialProviderInFlight,
     showDeviceLimitModal,
     setShowLanguageModal,
@@ -503,7 +469,6 @@ export function useLoginFlow() {
     setMobileNumber,
     setReferralCode,
     setOtp,
-    setOtpChannel,
     changeMode,
     handleGoogleCredential,
     startFacebookLogin,

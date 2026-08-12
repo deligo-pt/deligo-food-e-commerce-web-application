@@ -13,11 +13,14 @@ import {
   Loader2,
   Store,
   UtensilsCrossed,
+  Check,
+  ChevronRight,
+  Clock,
 } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
 import Loader from "@/components/shared/Loader";
 import { toast } from "sonner";
-import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { apiClient, getApiErrorKey, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
 import {
   getCartVendorId,
@@ -30,6 +33,14 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { useCart } from "@/hooks/queries/useCart";
 import { useVendorsCustomer } from "@/hooks/queries/useVendors";
+import PickupTimePicker from "./PickupTimePicker";
+import {
+  formatTimeOfDay,
+  getPickupWindow,
+  isWithinWindow,
+  toPickupIso,
+  type TimeOfDay,
+} from "@/lib/pickupTime";
 
 interface CheckoutPageProps {
   vendorId: string;
@@ -83,6 +94,16 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const [instructions, setInstructions] = useState("");
   const [isProceeding, setIsProceeding] = useState(false);
 
+  // Self-pickup. `pickupTime` is held as a store-local wall-clock time rather
+  // than an ISO string so that reopening the picker resumes on the time the
+  // customer actually chose; the ISO is derived at submit, against the offset
+  // in force then.
+  const [isSelfPickup, setIsSelfPickup] = useState(false);
+  // What the customer last confirmed. Read through `pickupTime` below, which
+  // discards it once the window has moved past it.
+  const [selectedPickupTime, setPickupTime] = useState<TimeOfDay | null>(null);
+  const [showPickupPicker, setShowPickupPicker] = useState(false);
+
   // Shared, cached cart + vendor list — deduped with CartPage, Navbar, etc.
   const {
     data: cartData,
@@ -102,6 +123,62 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       null,
     [vendorList, vendorId],
   );
+
+  /**
+   * A coarse clock, so anything derived from "now" stays true on a page that is
+   * left open.
+   *
+   * Thirty seconds is fine-grained enough that the earliest offered slot is
+   * never more than half a minute stale, and coarse enough to be invisible.
+   */
+  const [clockTick, setClockTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setClockTick((tick) => tick + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  /**
+   * The times this store can be collected from today, or null when there are
+   * none left.
+   *
+   * Recomputed as the clock moves, not once per vendor. It was originally
+   * memoised on the vendor alone, on the reasoning that a moving window would
+   * shift under a customer mid-choice — but that traded a real correctness
+   * problem for a cosmetic one. A checkout page open for twenty minutes would
+   * still offer the slot it computed on load, which by then is in the past, and
+   * the customer only finds out when the backend rejects it.
+   *
+   * The window can only ever move forward, so the cost is that a slot the
+   * customer was looking at occasionally disappears — which is exactly what has
+   * happened to it.
+   */
+  const pickupWindow = useMemo(
+    () =>
+      getPickupWindow(
+        vendor?.businessDetails?.openingHours,
+        vendor?.businessDetails?.closingHours,
+      ),
+    // `clockTick` is the dependency that matters; `getPickupWindow` reads the
+    // current time internally.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [vendor, clockTick],
+  );
+
+  /**
+   * The chosen pickup time, or null once the advancing window has left it
+   * behind.
+   *
+   * Derived rather than cleared by an effect. The picker normalises its own
+   * draft while it is open, but this value outlives the sheet: a customer can
+   * choose 14:20, switch tabs, and come back at 14:30 to a Proceed button that
+   * looks ready and is not. Treating a stale time as no selection sends the row
+   * back to "Select pickup time" so the choice is made again deliberately —
+   * rather than silently rebooking them for a slot they never picked.
+   */
+  const pickupTime =
+    selectedPickupTime && pickupWindow && isWithinWindow(selectedPickupTime, pickupWindow)
+      ? selectedPickupTime
+      : null;
 
   const loading = cartLoading || vendorsLoading;
   const error =
@@ -478,21 +555,81 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       toast.error(t("vendorInfoMissing"));
       return;
     }
+
+    // The store closed while the page sat open. Opening the picker would be a
+    // dead end — it has no valid rows to offer — so say what happened and drop
+    // back to delivery rather than leaving the customer stuck on a button that
+    // cannot succeed.
+    if (isSelfPickup && !pickupWindow) {
+      toast.error(t("storeClosedForPickup"));
+      setIsSelfPickup(false);
+      return;
+    }
+
+    // Catch the missing time here rather than letting the backend answer with
+    // its generic Zod wrapper ("Validation failed. Please check the highlighted
+    // fields"), which names no field and gives the customer nothing to act on.
+    if (isSelfPickup && !pickupTime) {
+      toast.error(t("pickupTimeRequired"));
+      setShowPickupPicker(true);
+      return;
+    }
+
     try {
       setIsProceeding(true);
-      const response = await apiClient.post("/checkout", { useCart: true });
+
+      // Delivery sends exactly what it always sent — both pickup keys are
+      // omitted, not sent as null, so the existing path is provably untouched.
+      const response = await apiClient.post("/checkout", {
+        useCart: true,
+        ...(isSelfPickup && pickupTime
+          ? { fulfillmentType: "PICKUP", pickupTime: toPickupIso(pickupTime) }
+          : {}),
+      });
       const checkoutId = response.data.data._id;
       // Redirect to payment page under the same vendor route
       router.push(
         `/cart/checkout/${vendorId}/payment?checkoutId=${checkoutId}`,
       );
     } catch (error) {
+      // These two mean the chosen time has become invalid — the slot passed
+      // while the page sat open, or the store closed. Clearing it and
+      // reopening the picker is the only useful next step; leaving the stale
+      // value in place would let the customer press the button again and get
+      // the same rejection. Branching on errorKey, never on message text.
+      const errorKey = getApiErrorKey(error);
+      if (
+        errorKey === "PICKUP_TIME_MUST_BE_IN_FUTURE" ||
+        errorKey === "PICKUP_TIME_OUTSIDE_STORE_HOURS" ||
+        errorKey === "PICKUP_TIME_MUST_BE_TODAY" ||
+        errorKey === "INVALID_PICKUP_TIME"
+      ) {
+        setPickupTime(null);
+        setShowPickupPicker(true);
+      }
+
+      // The pickup rejections arrive already translated, so the server's own
+      // wording is the right thing to show — `PICKUP_TIME_OUTSIDE_STORE_HOURS`
+      // even names the store's hours.
       toast.error(
         getApiErrorMessage(error, "Failed to create checkout session"),
       );
     } finally {
       setIsProceeding(false);
     }
+  };
+
+  const handleToggleSelfPickup = () => {
+    setIsSelfPickup((wasSelected) => {
+      const isNowSelected = !wasSelected;
+      // Drop any chosen time when switching back to delivery, so re-ticking
+      // the box never silently reuses a slot that has since passed.
+      if (!isNowSelected) setPickupTime(null);
+      // Going straight into the picker saves a second click: choosing pickup
+      // without a time is not a state the customer can check out from.
+      if (isNowSelected && !pickupTime) setShowPickupPicker(true);
+      return isNowSelected;
+    });
   };
 
   if (loading) {
@@ -740,18 +877,100 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               </div>
             </div>
 
+            {/* Self-pickup sits between the summary and the instructions, the
+                same slot the mobile app puts it in. */}
             <div className="border-t border-gray-100 dark:border-neutral-800 p-6">
-              <label className="mb-2 block font-semibold text-gray-900 dark:text-neutral-50">
-                {t("deliveryInstructions")}
-              </label>
-              <textarea
-                rows={4}
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                placeholder={t("deliveryInstructionsPlaceholder")}
-                className="w-full rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 outline-none transition focus:border-pink-500 dark:focus:border-pink-400 text-gray-900 dark:text-neutral-50 placeholder:text-gray-400 dark:placeholder:text-neutral-600"
-              />
+              <button
+                type="button"
+                onClick={handleToggleSelfPickup}
+                disabled={!pickupWindow}
+                aria-pressed={isSelfPickup}
+                className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  isSelfPickup
+                    ? "border-[#f9186b] bg-pink-50/50 dark:border-pink-400 dark:bg-pink-950/20"
+                    : "border-gray-200 dark:border-neutral-800"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${
+                    isSelfPickup
+                      ? "border-[#f9186b] bg-[#f9186b] dark:border-pink-400 dark:bg-pink-500"
+                      : "border-gray-300 dark:border-neutral-600"
+                  }`}
+                >
+                  {isSelfPickup && <Check size={14} strokeWidth={3} className="text-white" />}
+                </span>
+
+                <span className="min-w-0 flex-1 font-semibold text-gray-900 dark:text-neutral-50">
+                  {t("selfPickup")}
+                </span>
+
+                <Store
+                  size={20}
+                  className={`shrink-0 ${
+                    isSelfPickup
+                      ? "text-[#f9186b] dark:text-pink-400"
+                      : "text-gray-400 dark:text-neutral-500"
+                  }`}
+                />
+              </button>
+
+              {/* No window means the store has already closed for today, so the
+                  option is offered but not actionable. Saying why beats a
+                  disabled control with no explanation. */}
+              {!pickupWindow && (
+                <p className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
+                  {t("storeClosedForPickup")}
+                </p>
+              )}
+
+              {isSelfPickup && pickupWindow && (
+                <button
+                  type="button"
+                  onClick={() => setShowPickupPicker(true)}
+                  className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-[#f9186b] p-4 text-left transition hover:bg-pink-50/50 dark:border-pink-400 dark:hover:bg-pink-950/20"
+                >
+                  <Clock size={18} className="shrink-0 text-[#f9186b] dark:text-pink-400" />
+                  <span
+                    className={`min-w-0 flex-1 text-sm ${
+                      pickupTime
+                        ? "font-semibold text-gray-900 dark:text-neutral-50"
+                        : "text-gray-500 dark:text-neutral-400"
+                    }`}
+                  >
+                    {/* Composed in JSX, not interpolated: t() takes a single
+                        key and has no placeholder support. */}
+                    {pickupTime
+                      ? `${t("today")}  ${formatTimeOfDay(pickupTime)}`
+                      : t("selectPickupTime")}
+                  </span>
+                  <ChevronRight
+                    size={18}
+                    className="shrink-0 text-gray-400 dark:text-neutral-500"
+                  />
+                </button>
+              )}
             </div>
+
+            {/* Hidden for pickup: the placeholder reads "Leave at door, ring
+                bell twice", which describes a courier who does not exist on a
+                collected order. `instructions` is local-only state and is not
+                sent to /checkout, so nothing is lost by dropping it here. */}
+            {!isSelfPickup && (
+              <div className="border-t border-gray-100 dark:border-neutral-800 p-6">
+                <label className="mb-2 block font-semibold text-gray-900 dark:text-neutral-50">
+                  {t("deliveryInstructions")}
+                </label>
+                <textarea
+                  rows={4}
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder={t("deliveryInstructionsPlaceholder")}
+                  className="w-full rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 outline-none transition focus:border-pink-500 dark:focus:border-pink-400 text-gray-900 dark:text-neutral-50 placeholder:text-gray-400 dark:placeholder:text-neutral-600"
+                />
+              </div>
+            )}
 
             <div className="border-t border-gray-100 dark:border-neutral-800 p-6">
               <button
@@ -775,6 +994,18 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
           </div>
         </div>
       </div>
+
+      {showPickupPicker && pickupWindow && (
+        <PickupTimePicker
+          window={pickupWindow}
+          value={pickupTime}
+          onConfirm={(time) => {
+            setPickupTime(time);
+            setShowPickupPicker(false);
+          }}
+          onClose={() => setShowPickupPicker(false)}
+        />
+      )}
     </div>
   );
 }

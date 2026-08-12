@@ -2,7 +2,14 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  useTransition,
+} from "react";
 import Image from "next/image";
 import Logo from "@/components/shared/Logo";
 import Link from "next/link";
@@ -15,6 +22,7 @@ import {
   Bell,
   User,
   LogOut,
+  LoaderCircle,
   Plus,
   Check,
 } from "lucide-react";
@@ -87,6 +95,8 @@ export default function Navbar() {
     if (typeof window === "undefined") return false;
     return !!getAccessToken();
   });
+  // Pending while the post-logout navigation is in flight — see `handleLogout`.
+  const [isLoggingOut, startLogout] = useTransition();
 
   // Badge count: cached query that polls at 60s and pauses on hidden tabs.
   const { data: unreadCount = 0 } = useUnreadNotificationCount({
@@ -449,17 +459,36 @@ export default function Navbar() {
   // window focus and reconnect, and every cart mutation invalidates it, so this
   // observer stays current on its own.
 
+  /**
+   * Signs the user out and sends them home.
+   *
+   * Nothing here talks to the server — clearing cookies and caches is instant.
+   * The wait the customer actually experiences is `router.push("/")`: Next has
+   * to navigate and the home page has to load. On a slow connection that is
+   * long enough for a plain button to look broken, which is what the pending
+   * state below is for.
+   *
+   * The teardown of the local session state runs *inside* the transition on
+   * purpose. Committing it immediately would flip the navbar to its logged-out
+   * form and unmount this dropdown — taking the spinner with it before anyone
+   * saw it. As a transition update React holds it back until the navigation is
+   * ready, so the dropdown stays on screen showing "Logging out…" for exactly
+   * as long as the wait lasts.
+   */
   const handleLogout = () => {
+    if (isLoggingOut) return;
     clearCachedFCMToken();
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
     useLocationStore.getState().setHasAutoSavedAddress(false);
     clearCartCache();
-    setIsLoggedIn(false);
-    setFirstName(null);
-    setProfilePhoto(null);
-    setShowAccountDropdown(false);
-    router.push("/");
+    startLogout(() => {
+      router.push("/");
+      setIsLoggedIn(false);
+      setFirstName(null);
+      setProfilePhoto(null);
+      setShowAccountDropdown(false);
+    });
   };
 
   const handleAccountClick = () => {
@@ -736,10 +765,16 @@ export default function Navbar() {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-neutral-700/50 transition-colors"
+                  disabled={isLoggingOut}
+                  aria-busy={isLoggingOut}
+                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-neutral-700/50 transition-colors disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
                 >
-                  <LogOut size={16} />
-                  {t("logout")}
+                  {isLoggingOut ? (
+                    <LoaderCircle size={16} className="animate-spin" />
+                  ) : (
+                    <LogOut size={16} />
+                  )}
+                  {isLoggingOut ? t("loggingOut") : t("logout")}
                 </button>
               </div>
             )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -19,6 +19,7 @@ import {
   Globe,
   ChevronRight,
   LogOut,
+  LoaderCircle,
   Star,
 } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/apiClient";
@@ -28,6 +29,9 @@ import {
   REFRESH_TOKEN_COOKIE,
 } from "@/lib/authCookies";
 import Cookies from "js-cookie";
+import { useCartCache } from "@/hooks/queries/useCart";
+import { useLocationStore } from "@/stores/locationStore";
+import { clearCachedFCMToken } from "@/lib/fcmToken";
 import Image from "next/image";
 import Link from "next/link";
 import ProfilePageSkeleton from "./profilePageSkeleton";
@@ -73,6 +77,9 @@ interface ProfileData {
 export default function AccountPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { clear: clearCartCache } = useCartCache();
+  // Pending while the post-logout navigation is in flight — see `handleLogout`.
+  const [isLoggingOut, startLogout] = useTransition();
   const [showProModal, setShowProModal] = useState(false);
 
   // Resolve auth after mount so SSR and the first client render agree (both
@@ -154,10 +161,28 @@ export default function AccountPage() {
     },
   ];
 
+  /**
+   * Signs the user out and sends them home.
+   *
+   * This used to remove the two cookies and nothing else, while the navbar's
+   * logout also dropped the cart cache, the FCM token and the saved-address
+   * flag. Signing out here therefore left the previous account's basket in the
+   * query cache for whoever signed in next on the same browser. Both buttons
+   * now do the same work.
+   *
+   * Nothing here talks to the server; the wait is `router.push("/")` loading
+   * the home page, which is what the pending state covers.
+   */
   const handleLogout = () => {
+    if (isLoggingOut) return;
+    clearCachedFCMToken();
     Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
-    router.push("/");
+    useLocationStore.getState().setHasAutoSavedAddress(false);
+    clearCartCache();
+    startLogout(() => {
+      router.push("/");
+    });
   };
 
   if (loading) {
@@ -202,11 +227,26 @@ export default function AccountPage() {
                   </div>
                 </div>
 
-                <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-neutral-50">{fullName}</h2>
+                {/* `items-center` on the column centres this element's box, not
+                    the text inside it. A name short enough to fit on one line
+                    looks centred by accident; one that wraps — "Md. Samin Israk
+                    2021362642" — fills the width and its lines go hard left,
+                    out of line with the avatar, the email and the button.
+                    `text-center` is what actually centres it. `break-words`
+                    keeps a long unbroken name inside the card instead of
+                    spilling past its edge. */}
+                <h2 className="mt-4 text-center text-xl font-bold break-words text-gray-900 dark:text-neutral-50">
+                  {fullName}
+                </h2>
 
-                <div className="mt-2 flex items-center gap-2 rounded-full bg-gray-100 dark:bg-neutral-800 px-3 py-1 text-sm text-gray-650 dark:text-neutral-300">
-                  <Mail size={14} />
-                  {profile.email}
+                {/* Same failure mode as the name: at the 320px sidebar width a
+                    long address would push the pill past the card. `max-w-full`
+                    holds it in, `min-w-0` + `break-all` let the text wrap inside
+                    it — an email has no spaces to break on. `shrink-0` keeps the
+                    icon from being squashed as it does. */}
+                <div className="mt-2 flex max-w-full items-center gap-2 rounded-full bg-gray-100 dark:bg-neutral-800 px-3 py-1 text-sm text-gray-650 dark:text-neutral-300">
+                  <Mail size={14} className="shrink-0" />
+                  <span className="min-w-0 break-all">{profile.email}</span>
                 </div>
 
                 <Link href="/edit-profile" className="w-full">
@@ -338,10 +378,16 @@ export default function AccountPage() {
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-950/30 bg-white dark:bg-neutral-900 px-6 py-3 font-medium text-red-500 dark:text-red-400 shadow-sm hover:bg-red-50 dark:hover:bg-red-950/10 transition"
+              disabled={isLoggingOut}
+              aria-busy={isLoggingOut}
+              className="flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-950/30 bg-white dark:bg-neutral-900 px-6 py-3 font-medium text-red-500 dark:text-red-400 shadow-sm hover:bg-red-50 dark:hover:bg-red-950/10 transition disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-white dark:disabled:hover:bg-neutral-900"
             >
-              <LogOut size={18} />
-              {t("logout")}
+              {isLoggingOut ? (
+                <LoaderCircle size={18} className="animate-spin" />
+              ) : (
+                <LogOut size={18} />
+              )}
+              {isLoggingOut ? t("loggingOut") : t("logout")}
             </button>
 
             <p className="text-xs text-gray-400 dark:text-neutral-500">{t("version")} 1.0.0</p>

@@ -17,7 +17,7 @@ import {
   type OrderWithStatusHistory,
 } from "./orderStatus";
 
-/** The customer-facing happy path, in order. */
+/** The customer-facing happy path for a delivered order, in order. */
 export const PROGRESS_STATUSES = [
   "PENDING",
   "ACCEPTED",
@@ -26,6 +26,54 @@ export const PROGRESS_STATUSES = [
   "PICKED_UP",
   "ON_THE_WAY",
 ] as const;
+
+/**
+ * The happy path for an order the customer collects themselves.
+ *
+ * `PICKED_UP` and `ON_THE_WAY` are dropped: both describe a courier, and a
+ * self-pickup order never has one. Showing them would promise a rider who is
+ * never coming, and `READY_FOR_PICKUP` — which for delivery means "a rider is
+ * about to collect this" — for pickup means "it is on the counter waiting for
+ * you", which is the last thing that happens before the customer walks in.
+ *
+ * Confirmed against the real order `ORD-4TN7D8381H`, whose `statusHistory` ran
+ * PENDING → ACCEPTED → PREPARING → READY_FOR_PICKUP.
+ *
+ * The list stops before the ending. `PICKED_UP_BY_CUSTOMER` — the status the
+ * order reaches when the vendor types the pickup code in — is appended by
+ * `getTimelineStepKeys` rather than living here, for the same reason
+ * `DELIVERED` is appended to the delivery path: it is the destination, not a
+ * step the order is currently working through.
+ */
+export const PICKUP_PROGRESS_STATUSES = [
+  "PENDING",
+  "ACCEPTED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+] as const;
+
+/**
+ * Where a self-pickup order ends up once the vendor verifies the code.
+ *
+ * Confirmed on the real order `ORD-4TN7D8381H`, whose history records
+ * `PICKED_UP_BY_CUSTOMER` with the note "Pickup code verified at counter." at
+ * the same instant `pickup.verifiedAt` was stamped.
+ *
+ * Not to be confused with `PICKED_UP`, which is a *rider* collecting from the
+ * restaurant — a mid-journey delivery status, not an ending.
+ */
+export const PICKUP_COMPLETED_STATUS = "PICKED_UP_BY_CUSTOMER";
+
+/**
+ * Whether this order is collected by the customer.
+ *
+ * Tests for `PICKUP` rather than "not DELIVERY" on purpose: orders created
+ * before the fulfilment field existed carry `fulfillmentType: null` (17 of 19
+ * on the test account), and every one of those is a delivery.
+ */
+export function isPickupOrder(order: { fulfillmentType?: string | null } | null | undefined): boolean {
+  return order?.fulfillmentType === "PICKUP";
+}
 
 /**
  * Fold statuses that are not steps of their own onto the step they belong to.
@@ -39,6 +87,7 @@ export function toTimelineStatus(status: string | null | undefined): string {
 
 export interface TimelineOrder extends OrderWithStatusHistory {
   rejectReason?: string | null;
+  fulfillmentType?: string | null;
 }
 
 /**
@@ -48,8 +97,28 @@ export interface TimelineOrder extends OrderWithStatusHistory {
 export function getTimelineStepKeys(
   order: TimelineOrder | null | undefined,
 ): string[] {
+  const isPickup = isPickupOrder(order);
+  // Widened to `readonly string[]`: the two tuples have different literal
+  // unions, and the code below compares against a status string the backend
+  // may not have told us about yet.
+  const progress: readonly string[] = isPickup
+    ? PICKUP_PROGRESS_STATUSES
+    : PROGRESS_STATUSES;
+
   if (!isTerminatedStatus(order?.orderStatus)) {
-    return [...PROGRESS_STATUSES, "DELIVERED"];
+    if (!isPickup) return [...progress, "DELIVERED"];
+
+    // Normally the pickup path ends at its completed status, the same way the
+    // delivery path ends at DELIVERED. The extra branch is a safety net: should
+    // the backend ever move an order into a pickup status this build has never
+    // heard of, that status is appended rather than dropped, so the timeline
+    // shows the customer's real position instead of collapsing to step one
+    // (which is what `getTimelineStepIndex`'s -1 fallback would otherwise do).
+    const current = normalizeOrderStatus(order?.orderStatus);
+    if (progress.includes(current) || current === PICKUP_COMPLETED_STATUS) {
+      return [...progress, PICKUP_COMPLETED_STATUS];
+    }
+    return [...progress, current];
   }
 
   // `PENDING` is not read from the history — an order that exists was created
@@ -62,7 +131,7 @@ export function getTimelineStepKeys(
   }
 
   return [
-    ...PROGRESS_STATUSES.filter((status) => reached.has(status)),
+    ...progress.filter((status) => reached.has(status)),
     normalizeOrderStatus(order?.orderStatus),
   ];
 }

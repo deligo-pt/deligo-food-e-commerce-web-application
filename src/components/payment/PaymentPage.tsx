@@ -26,6 +26,7 @@ import {
   Plus,
   Navigation,
   Zap,
+  Clock,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -38,7 +39,12 @@ import { resolveAddonName } from "@/lib/cart";
 import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
 import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
 import { addressTypeLabel, normalizeAddressType } from "@/lib/addressType";
-import { formatAddressLine1, formatAddressLine2 } from "@/lib/addressFormat";
+import {
+  formatAddressFull,
+  formatAddressLine1,
+  formatAddressLine2,
+} from "@/lib/addressFormat";
+import { formatPickupLabel } from "@/lib/pickupTime";
 import type { CartAddon } from "@/types/cart";
 import { useSavedCards } from "@/hooks/queries/usePaymentTokens";
 import { payWithSavedCard } from "@/services/paymentTokenApi";
@@ -126,7 +132,17 @@ interface CheckoutSummary {
   orderCalculation: OrderCalculation;
   delivery: Delivery;
   payoutSummary: PayoutSummary;
-  deliveryAddress: DeliveryAddress;
+  /**
+   * Absent on self-pickup — the backend omits the key entirely rather than
+   * sending an empty object, so this must stay optional. It was previously
+   * declared required, and the address formatters below read `.street` off it
+   * with no guard: the first pickup checkout would have thrown here.
+   */
+  deliveryAddress?: DeliveryAddress;
+  /** Omitted by the backend on delivery orders; only ever `"PICKUP"` when set. */
+  fulfillmentType?: "DELIVERY" | "PICKUP";
+  /** ISO instant, present only on pickup. */
+  pickupTime?: string;
   paymentStatus: string;
   offer: {
     isApplied: boolean;
@@ -565,13 +581,27 @@ export default function PaymentPage() {
   const subtotalTax = orderCalculation.totalTaxAmount;
   const deliveryTax = getDeliveryTax(delivery);
 
+  /**
+   * Whether this order is collected by the customer rather than delivered.
+   *
+   * Read from the summary the backend returned, not from anything carried
+   * through the URL: this page can be reached by reload, back-navigation or a
+   * shared link, and the checkout document is the only thing that knows what
+   * was actually booked.
+   */
+  const isPickup = summary.fulfillmentType === "PICKUP";
+
   // Guarded rather than assumed: these are typed as required, but an order the
   // backend has not priced a route for would report 0, and "0 km • 0 min" is
   // worse than saying nothing. Each half is shown only if it has a value.
+  // Pickup reports 0 for both by construction, so the guard already hides them;
+  // `!isPickup` states the intent rather than relying on that coincidence.
   const hasDeliveryDistance =
-    typeof delivery.distance === "number" && delivery.distance > 0;
+    !isPickup && typeof delivery.distance === "number" && delivery.distance > 0;
   const hasDeliveryEta =
-    typeof delivery.estimatedTime === "number" && delivery.estimatedTime > 0;
+    !isPickup &&
+    typeof delivery.estimatedTime === "number" &&
+    delivery.estimatedTime > 0;
 
   const vendorRating = vendor?.rating.average ?? 0;
   const vendorReviewCount = vendor?.rating.totalReviews ?? 0;
@@ -586,17 +616,24 @@ export default function PaymentPage() {
         <div className="flex flex-col gap-6 lg:flex-row">
           <div className="flex-1 space-y-6">
             <div className="rounded-lg border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm">
-              <div className="mb-6 flex items-center justify-between">
+              <div className="mb-6 flex items-center justify-between gap-3">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-neutral-50">
-                  {t("deliveryDetails")}
+                  {isPickup ? t("pickupDetails") : t("deliveryDetails")}
                 </h2>
+                {isPickup && (
+                  <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-[#f9186b] dark:bg-pink-950/40 dark:text-pink-400">
+                    <Store className="h-3.5 w-3.5" />
+                    {t("selfPickup")}
+                  </span>
+                )}
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Delivery From */}
+                {/* Delivery From — the collection point on a pickup order, so
+                    it keeps its place and only its label changes. */}
                 <div>
                   <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-400">
-                    {t("deliveryFrom")}
+                    {isPickup ? t("collectFrom") : t("deliveryFrom")}
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-pink-100 dark:bg-pink-950/40">
@@ -636,10 +673,14 @@ export default function PaymentPage() {
                               </div>
                             )}
                           </div>
+                          {/* On pickup this is the address the customer has to
+                              travel to, so it shows in full rather than the
+                              street-and-city summary a delivery order needs. */}
                           {vendor.businessLocation && (
-                            <p className="mt-1 text-sm text-gray-550 dark:text-neutral-400">
-                              {vendor.businessLocation.street},{" "}
-                              {vendor.businessLocation.city}
+                            <p className="mt-1 text-sm break-words text-gray-550 dark:text-neutral-400">
+                              {isPickup
+                                ? formatAddressFull(vendor.businessLocation)
+                                : `${vendor.businessLocation.street}, ${vendor.businessLocation.city}`}
                             </p>
                           )}
                         </>
@@ -648,41 +689,67 @@ export default function PaymentPage() {
                   </div>
                 </div>
 
-                {/* Delivery To */}
-                <div>
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-455">
-                      {t("deliveryTo")}
+                {/* Where the order is going — an address for delivery, a time
+                    for pickup. A pickup summary carries no `deliveryAddress`
+                    at all, so this is a branch and not a relabel: the address
+                    formatters read `.street` unguarded and would throw. */}
+                {isPickup ? (
+                  <div>
+                    <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-455">
+                      {t("pickupTime")}
                     </p>
-                    {addresses.length > 0 && (
-                      <button
-                        onClick={() => {
-                          setAddressError("");
-                          setShowAddressModal(true);
-                        }}
-                        className="text-xs font-semibold text-[#f9186b] dark:text-pink-400 underline transition hover:text-[#d4145b] dark:hover:text-pink-300"
-                      >
-                        {t("change")}
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
-                      <Home className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
-                    </div>
-                    {/* The address the order is actually going to, so it shows
-                        in full. It used to headline the city and drop the
-                        apartment and country entirely. */}
-                    <div className="min-w-0">
-                      <p className="font-semibold break-words text-gray-900 dark:text-neutral-50">
-                        {formatAddressLine1(deliveryAddress)}
-                      </p>
-                      <p className="text-sm break-words text-gray-500 dark:text-neutral-400">
-                        {formatAddressLine2(deliveryAddress)}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
+                        <Clock className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold break-words text-gray-900 dark:text-neutral-50">
+                          {summary.pickupTime
+                            ? formatPickupLabel(summary.pickupTime, lang)
+                            : "—"}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-neutral-400">
+                          {t("collectAtCounter")}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-neutral-455">
+                        {t("deliveryTo")}
+                      </p>
+                      {addresses.length > 0 && (
+                        <button
+                          onClick={() => {
+                            setAddressError("");
+                            setShowAddressModal(true);
+                          }}
+                          className="text-xs font-semibold text-[#f9186b] dark:text-pink-400 underline transition hover:text-[#d4145b] dark:hover:text-pink-300"
+                        >
+                          {t("change")}
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
+                        <Home className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                      </div>
+                      {/* The address the order is actually going to, so it shows
+                          in full. It used to headline the city and drop the
+                          apartment and country entirely. */}
+                      <div className="min-w-0">
+                        <p className="font-semibold break-words text-gray-900 dark:text-neutral-50">
+                          {deliveryAddress ? formatAddressLine1(deliveryAddress) : ""}
+                        </p>
+                        <p className="text-sm break-words text-gray-500 dark:text-neutral-400">
+                          {deliveryAddress ? formatAddressLine2(deliveryAddress) : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Distance and ETA come straight from `delivery` — the same
@@ -821,21 +888,28 @@ export default function PaymentPage() {
                     </span>
                   </div>
                 )}
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 text-gray-500 dark:text-neutral-400">
-                    {t("deliveryFee")}
-                    {delivery.totalDeliveryCharge > 0 && (
-                      <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
-                        ({t("inclTax")} -&nbsp;€{deliveryTax.toFixed(2)})
-                      </span>
-                    )}
-                  </span>
-                  <span className="shrink-0 whitespace-nowrap font-semibold text-green-600 dark:text-green-400">
-                    {delivery.totalDeliveryCharge > 0
-                      ? `€${delivery.totalDeliveryCharge.toFixed(2)}`
-                      : t("free")}
-                  </span>
-                </div>
+                {/* Dropped entirely on pickup rather than shown as "Free".
+                    The backend does send 0, so the row would render — but
+                    "Delivery fee: Free" claims there is a delivery that was not
+                    charged for, which is a different statement from there being
+                    no delivery at all. */}
+                {!isPickup && (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 text-gray-500 dark:text-neutral-400">
+                      {t("deliveryFee")}
+                      {delivery.totalDeliveryCharge > 0 && (
+                        <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
+                          ({t("inclTax")} -&nbsp;€{deliveryTax.toFixed(2)})
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap font-semibold text-green-600 dark:text-green-400">
+                      {delivery.totalDeliveryCharge > 0
+                        ? `€${delivery.totalDeliveryCharge.toFixed(2)}`
+                        : t("free")}
+                    </span>
+                  </div>
+                )}
 
                 {/* Offer discount row – only shown when an offer is applied */}
                 {offerDiscount > 0 && (

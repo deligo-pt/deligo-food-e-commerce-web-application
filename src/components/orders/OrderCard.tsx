@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Clock3, Download, HandCoins, Info, Loader2, RotateCcw, UtensilsCrossed, Star, XCircle } from "lucide-react";
+import { CheckCircle, Clock3, Download, HandCoins, Info, Loader2, RotateCcw, Store, UtensilsCrossed, Star, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -65,6 +65,18 @@ interface OrderCardProps {
    */
   canCancel?: boolean;
   onCancelOrder?: (orderId: string) => void;
+  /**
+   * Whether the customer collects this order themselves.
+   *
+   * Passed in rather than derived here so the card never has to know about
+   * `fulfillmentType` and its legacy `null` — the list already makes that call
+   * once, with `isPickupOrder`.
+   *
+   * It changes wording, not layout: a self-pickup order that reached its happy
+   * ending was "collected", not "delivered", and `READY_FOR_PICKUP` means the
+   * customer should set off rather than that a rider is on their way.
+   */
+  isPickup?: boolean;
 }
 
 export default function OrderCard({
@@ -83,6 +95,7 @@ export default function OrderCard({
   onRateOrder,
   canCancel = false,
   onCancelOrder,
+  isPickup = false,
 }: OrderCardProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -140,12 +153,21 @@ export default function OrderCard({
           <div>
             <h3 className="font-semibold text-[#191c1d] dark:text-neutral-50">{restaurant}</h3>
 
-            <div className="mt-1 flex items-center gap-2 text-xs text-[#5a4044] dark:text-neutral-400">
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#5a4044] dark:text-neutral-400">
               <span>
                 {t("order")} #{orderId}
               </span>
               <span>•</span>
               <span>{date}</span>
+              {/* The one thing this card cannot otherwise convey: a pickup
+                  order has no rider and no address, so two cards that look
+                  alike can mean very different things to the customer. */}
+              {isPickup && (
+                <span className="flex items-center gap-1 rounded-full bg-pink-50 px-2 py-0.5 font-semibold text-[#f9186b] dark:bg-pink-950/30 dark:text-pink-400">
+                  <Store size={11} />
+                  {t("selfPickup")}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -161,7 +183,9 @@ export default function OrderCard({
           ) : status === "delivered" ? (
             <div className="flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-950/20 px-2 py-1 text-xs text-green-700 dark:text-green-400">
               <CheckCircle size={12} />
-              {t("delivered")}
+              {/* Same chip, honest wording: nobody delivered a self-pickup
+                  order — the customer went and got it. */}
+              {isPickup ? t("orderCollected") : t("delivered")}
             </div>
           ) : isTerminated ? (
             // Whichever of the two the backend actually reported — this used to
