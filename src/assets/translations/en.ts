@@ -160,6 +160,7 @@ const en = {
   activateToCheckout: "Press the Activate button to be able to checkout this order",
   storeSelectedToast: "\"{store}\" selected for checkout",
   couldNotChangeStoreSelection: "Could not change store selection",
+  orderNoLongerInCart: "This order is no longer in your cart.",
 
   // The store card's activate action. It only appears on an order that isn't
   // selected, so there is one caption and no deactivate wording to go with it.

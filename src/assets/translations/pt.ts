@@ -167,6 +167,7 @@ const pt = {
     "Clique no botão Ativar para poder fazer checkout deste pedido",
   storeSelectedToast: "\"{store}\" selecionado para finalizar a compra",
   couldNotChangeStoreSelection: "Não foi possível alterar a seleção da loja",
+  orderNoLongerInCart: "Este pedido já não está no seu carrinho.",
 
   // Ação de ativar no cartão da loja. Só aparece num pedido que não está
   // selecionado, por isso há uma única legenda e nenhuma de desativar.

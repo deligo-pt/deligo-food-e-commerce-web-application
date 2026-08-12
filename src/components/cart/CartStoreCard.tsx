@@ -16,7 +16,7 @@ import CartProductRow from "./CartProductRow";
 import { useTranslation } from "@/hooks/useTranslation";
 import SafeImage from "@/components/shared/SafeImage";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
-import { activateOrder } from "@/lib/cartActivation";
+import { activateOrder, VendorNotInCartError } from "@/lib/cartActivation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -119,9 +119,16 @@ export default function CartStoreCard({
       await activateOrder(vendorId);
       toast.success(t("storeSelectedToast").replace("{store}", businessName));
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, t("couldNotChangeStoreSelection")),
-      );
+      // The store is on screen but no longer in the cart — deleted from another
+      // tab or device, or emptied while this page sat open. Saying so beats the
+      // backend's "No items found for this restaurant in your cart", which reads
+      // as a contradiction next to the order the customer is looking at. The
+      // refresh below then takes the stale card away.
+      if (error instanceof VendorNotInCartError) {
+        toast.error(t("orderNoLongerInCart"));
+      } else {
+        toast.error(getApiErrorMessage(error, t("couldNotChangeStoreSelection")));
+      }
     } finally {
       // Both paths, not just the successful one: a rejected toggle is often the
       // server saying this cart no longer looks the way the page thinks it does.

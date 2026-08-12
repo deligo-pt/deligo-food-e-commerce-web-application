@@ -120,6 +120,15 @@ const ERROR_KEY_MESSAGES: Record<string, LocalizedField> = {
     en: "This order can no longer be cancelled.",
     pt: "Este pedido já não pode ser cancelado.",
   },
+  // The server's own wording — "No items found for this restaurant in your
+  // cart" — is a contradiction from where the customer is sitting: the order is
+  // on screen in front of them. It means the cart moved on (emptied in another
+  // tab, or on another device). `cartActivation` catches the common case before
+  // the request goes out; this covers the race where it does not.
+  NO_ITEMS_FOUND_FOR_THIS_VENDOR: {
+    en: "This order is no longer in your cart.",
+    pt: "Este pedido já não está no seu carrinho.",
+  },
 };
 
 export function getApiErrorMessage(error: unknown, fallbackMessage = "Request failed") {
