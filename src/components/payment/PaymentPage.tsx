@@ -44,7 +44,7 @@ import {
   formatAddressLine1,
   formatAddressLine2,
 } from "@/lib/addressFormat";
-import { formatPickupLabel } from "@/lib/pickupTime";
+import { formatPickupMoment } from "@/lib/pickupTime";
 import type { CartAddon } from "@/types/cart";
 import { useSavedCards } from "@/hooks/queries/usePaymentTokens";
 import { payWithSavedCard } from "@/services/paymentTokenApi";
@@ -705,7 +705,10 @@ export default function PaymentPage() {
                       <div className="min-w-0">
                         <p className="font-semibold break-words text-gray-900 dark:text-neutral-50">
                           {summary.pickupTime
-                            ? formatPickupLabel(summary.pickupTime, lang)
+                            ? formatPickupMoment(summary.pickupTime, lang, {
+                                today: t("today"),
+                                tomorrow: t("tomorrow"),
+                              })
                             : "—"}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-neutral-400">

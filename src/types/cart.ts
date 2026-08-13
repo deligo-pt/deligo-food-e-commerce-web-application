@@ -30,6 +30,31 @@ export interface CartItem {
           firstName: string;
           lastName: string;
         };
+        /**
+         * The store's own terms, as the cart reports them.
+         *
+         * Only the four fields observed on `/carts/view-cart` are declared. The
+         * vendor list returns a great deal more on the same key —
+         * `closingDays`, `isStoreOpen`, `businessLocation`, `restaurantCuisineType`
+         * — and **none of it arrives here**. Declaring those would invite a
+         * `?.` that silently reads `undefined` forever.
+         *
+         * `businessType` is typed loosely on purpose. It is `"RESTAURANT"` or
+         * `"STORE"` today, and the pickup model decides how many days ahead a
+         * vendor can be booked from it — but `fulfillmentType: null` on legacy
+         * orders is the standing lesson that backend enums are not closed sets.
+         * Everything unrecognised falls back to the most restrictive rule.
+         */
+        businessDetails?: {
+          businessName?: string;
+          openingHours?: string;
+          closingHours?: string;
+          businessType?: string;
+        };
+        /** The storefront photos, same key the vendor list uses. */
+        documents?: {
+          storePhoto?: string[];
+        };
       };
 
   productPricing: {

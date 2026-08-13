@@ -23,7 +23,9 @@ import { toast } from "sonner";
 import { apiClient, getApiErrorKey, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
 import {
+  getCartVendorDetails,
   getCartVendorId,
+  getCartVendorPhoto,
   getLineOriginalPrice,
   getLineTaxForQuantity,
   getLineTotalForQuantity,
@@ -36,11 +38,15 @@ import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { activateOrder } from "@/lib/cartActivation";
 import PickupTimePicker from "./PickupTimePicker";
 import {
-  formatTimeOfDay,
-  getPickupWindow,
-  isWithinWindow,
-  toPickupIso,
-  type TimeOfDay,
+  formatDayShort,
+  formatSlotRange,
+  getPickupDays,
+  hasAnySlots,
+  isSameDate,
+  isSlotStillValid,
+  slotToIso,
+  type PickupSlot,
+  type PickupVendorHours,
 } from "@/lib/pickupTime";
 
 interface CheckoutPageProps {
@@ -95,14 +101,16 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const [instructions, setInstructions] = useState("");
   const [isProceeding, setIsProceeding] = useState(false);
 
-  // Self-pickup. `pickupTime` is held as a store-local wall-clock time rather
-  // than an ISO string so that reopening the picker resumes on the time the
-  // customer actually chose; the ISO is derived at submit, against the offset
-  // in force then.
+  // Self-pickup. The slot is held as a store-local date + wall-clock start
+  // rather than an ISO string, so that reopening the picker resumes on the slot
+  // the customer actually chose; the ISO is derived at submit, against the
+  // offset in force then.
   const [isSelfPickup, setIsSelfPickup] = useState(false);
-  // What the customer last confirmed. Read through `pickupTime` below, which
-  // discards it once the window has moved past it.
-  const [selectedPickupTime, setPickupTime] = useState<TimeOfDay | null>(null);
+  // What the customer last confirmed — a **date and a start**, since a store
+  // can be booked two days ahead and a time alone would not say which day.
+  // Read through `pickupSlot` below, which discards it once it stops being
+  // offered.
+  const [selectedPickupSlot, setPickupSlot] = useState<PickupSlot | null>(null);
   const [showPickupPicker, setShowPickupPicker] = useState(false);
 
   // Shared, cached cart + vendor list — deduped with CartPage, Navbar, etc.
@@ -126,6 +134,54 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   );
 
   /**
+   * This store's own terms, as the cart reports them.
+   *
+   * Read from `cartData` — the query result — rather than from the optimistic
+   * `cart` state below it. A store's hours do not change when the customer
+   * nudges a quantity, and the query answers a render earlier.
+   */
+  const cartVendor = useMemo(
+    () => getCartVendorDetails(cartData?.items, vendorId),
+    [cartData, vendorId],
+  );
+
+  /**
+   * Everything the pickup model needs, from whichever source actually has it.
+   *
+   * The hours and the business type come from the **cart**, which cannot
+   * disagree with itself: they are attached to the very lines being checked
+   * out. They used to come from `useVendorsCustomer()` matched on id, and a
+   * miss there was silent and total — `vendor` is `null`, the window is `null`,
+   * and the page tells the customer "this store is closed for pickup today"
+   * about a store that is open.
+   *
+   * `closingDays` has no such fallback: **the cart does not carry it**, only the
+   * vendor list does. So it is a genuine enhancement — present when the list
+   * happens to have loaded, absent otherwise, and the model treats absence as
+   * "no day is filtered" rather than as an error. Whether the backend even
+   * enforces closing days on a future pickup date is still unknown (Plan.md
+   * U10), so hiding those days is a courtesy either way.
+   */
+  const pickupVendor = useMemo<PickupVendorHours | null>(() => {
+    if (!cartVendor) return null;
+    return {
+      openingHours: cartVendor.openingHours,
+      closingHours: cartVendor.closingHours,
+      businessType: cartVendor.businessType,
+      closingDays: vendor?.businessDetails?.closingDays ?? null,
+    };
+  }, [cartVendor, vendor]);
+
+  /**
+   * The store's name, cart first for the same reason as its hours.
+   *
+   * The cart's populated vendor carries `businessDetails.businessName`, so the
+   * header no longer falls back to a bare "Store" when the vendor list misses.
+   */
+  const businessName =
+    cartVendor?.businessName || vendor?.businessDetails?.businessName || "";
+
+  /**
    * A coarse clock, so anything derived from "now" stays true on a page that is
    * left open.
    *
@@ -139,47 +195,52 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   }, []);
 
   /**
-   * The times this store can be collected from today, or null when there are
-   * none left.
+   * The days this store can be collected on, each with its bookable slots.
    *
-   * Recomputed as the clock moves, not once per vendor. It was originally
-   * memoised on the vendor alone, on the reasoning that a moving window would
-   * shift under a customer mid-choice — but that traded a real correctness
-   * problem for a cosmetic one. A checkout page open for twenty minutes would
-   * still offer the slot it computed on load, which by then is in the past, and
-   * the customer only finds out when the backend rejects it.
-   *
-   * The window can only ever move forward, so the cost is that a slot the
-   * customer was looking at occasionally disappears — which is exactly what has
-   * happened to it.
+   * Recomputed as the clock moves, not once per vendor — a page left open for
+   * twenty minutes would otherwise still offer a slot that has since passed,
+   * and the customer would only find out when the backend rejected it. The
+   * tick also rolls the window forward at midnight, so a sheet left open
+   * overnight stops claiming that yesterday is "today".
    */
-  const pickupWindow = useMemo(
-    () =>
-      getPickupWindow(
-        vendor?.businessDetails?.openingHours,
-        vendor?.businessDetails?.closingHours,
-      ),
-    // `clockTick` is the dependency that matters; `getPickupWindow` reads the
+  const pickupDays = useMemo(
+    () => getPickupDays(pickupVendor),
+    // `clockTick` is the dependency that matters; `getPickupDays` reads the
     // current time internally.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vendor, clockTick],
+    [pickupVendor, clockTick],
   );
 
+  /** Whether self-pickup can be offered at all: any day with any slot left. */
+  const canSelfPickup = hasAnySlots(pickupDays);
+
   /**
-   * The chosen pickup time, or null once the advancing window has left it
-   * behind.
+   * The chosen slot, or null once it stops being offered.
    *
    * Derived rather than cleared by an effect. The picker normalises its own
    * draft while it is open, but this value outlives the sheet: a customer can
-   * choose 14:20, switch tabs, and come back at 14:30 to a Proceed button that
-   * looks ready and is not. Treating a stale time as no selection sends the row
+   * choose 14:30, switch tabs, and come back at 14:40 to a Proceed button that
+   * looks ready and is not. Treating a stale slot as no selection sends the row
    * back to "Select pickup time" so the choice is made again deliberately —
-   * rather than silently rebooking them for a slot they never picked.
+   * rather than silently rebooking them for a time they never picked.
    */
-  const pickupTime =
-    selectedPickupTime && pickupWindow && isWithinWindow(selectedPickupTime, pickupWindow)
-      ? selectedPickupTime
-      : null;
+  const pickupSlot = isSlotStillValid(selectedPickupSlot, pickupDays)
+    ? selectedPickupSlot
+    : null;
+
+  /** The chosen slot as the summary row shows it: "Tomorrow  15:00 → 15:30". */
+  const pickupSlotLabel = useMemo(() => {
+    if (!pickupSlot) return "";
+    const day = pickupDays.find((candidate) => isSameDate(candidate.date, pickupSlot.date));
+    const dayName =
+      day?.offset === 0
+        ? t("today")
+        : day?.offset === 1
+          ? t("tomorrow")
+          : formatDayShort(pickupSlot.date, lang);
+
+    return `${dayName}  ${formatSlotRange(pickupSlot.time, pickupVendor?.closingHours)}`;
+  }, [pickupSlot, pickupDays, pickupVendor, t, lang]);
 
   const loading = cartLoading || vendorsLoading;
   const error =
@@ -602,7 +663,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     // dead end — it has no valid rows to offer — so say what happened and drop
     // back to delivery rather than leaving the customer stuck on a button that
     // cannot succeed.
-    if (isSelfPickup && !pickupWindow) {
+    if (isSelfPickup && !canSelfPickup) {
       toast.error(t("storeClosedForPickup"));
       setIsSelfPickup(false);
       return;
@@ -611,7 +672,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     // Catch the missing time here rather than letting the backend answer with
     // its generic Zod wrapper ("Validation failed. Please check the highlighted
     // fields"), which names no field and gives the customer nothing to act on.
-    if (isSelfPickup && !pickupTime) {
+    if (isSelfPickup && !pickupSlot) {
       toast.error(t("pickupTimeRequired"));
       setShowPickupPicker(true);
       return;
@@ -624,8 +685,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       // omitted, not sent as null, so the existing path is provably untouched.
       const response = await apiClient.post("/checkout", {
         useCart: true,
-        ...(isSelfPickup && pickupTime
-          ? { fulfillmentType: "PICKUP", pickupTime: toPickupIso(pickupTime) }
+        ...(isSelfPickup && pickupSlot
+          ? { fulfillmentType: "PICKUP", pickupTime: slotToIso(pickupSlot) }
           : {}),
       });
       const checkoutId = response.data.data._id;
@@ -634,19 +695,30 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         `/cart/checkout/${vendorId}/payment?checkoutId=${checkoutId}`,
       );
     } catch (error) {
-      // These two mean the chosen time has become invalid — the slot passed
-      // while the page sat open, or the store closed. Clearing it and
-      // reopening the picker is the only useful next step; leaving the stale
-      // value in place would let the customer press the button again and get
-      // the same rejection. Branching on errorKey, never on message text.
+      // Every one of these means the chosen slot is not bookable — it passed
+      // while the page sat open, the store closed, or the model and the backend
+      // disagree about what is offerable. Clearing it and reopening the picker
+      // is the only useful next step; leaving the stale value in place would
+      // let the customer press the button again and get the same rejection.
+      // Branching on errorKey, never on message text.
+      //
+      // The last two should be unreachable: `getPickupDays` only emits
+      // half-hour starts inside the vendor's advance window. That is exactly
+      // why they are listed. If a rule moves server-side — the window shrinks,
+      // the grid changes, or `closingDays` starts being enforced on a future
+      // date (Plan.md U10) — this is the difference between a customer who
+      // reopens the sheet and picks again, and one stuck pressing a button that
+      // fails identically every time.
       const errorKey = getApiErrorKey(error);
       if (
         errorKey === "PICKUP_TIME_MUST_BE_IN_FUTURE" ||
         errorKey === "PICKUP_TIME_OUTSIDE_STORE_HOURS" ||
         errorKey === "PICKUP_TIME_MUST_BE_TODAY" ||
-        errorKey === "INVALID_PICKUP_TIME"
+        errorKey === "INVALID_PICKUP_TIME" ||
+        errorKey === "PICKUP_TIME_NOT_HALF_HOUR_SLOT" ||
+        errorKey === "PICKUP_DATE_EXCEEDS_MAX_ADVANCE_WINDOW"
       ) {
-        setPickupTime(null);
+        setPickupSlot(null);
         setShowPickupPicker(true);
       }
 
@@ -666,10 +738,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       const isNowSelected = !wasSelected;
       // Drop any chosen time when switching back to delivery, so re-ticking
       // the box never silently reuses a slot that has since passed.
-      if (!isNowSelected) setPickupTime(null);
+      if (!isNowSelected) setPickupSlot(null);
       // Going straight into the picker saves a second click: choosing pickup
       // without a time is not a state the customer can check out from.
-      if (isNowSelected && !pickupTime) setShowPickupPicker(true);
+      if (isNowSelected && !pickupSlot) setShowPickupPicker(true);
       return isNowSelected;
     });
   };
@@ -688,7 +760,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     );
   }
 
+  // Cart first, for the same reason as the name above it: the vendor list is a
+  // separate query and a miss there used to put a placeholder box next to a
+  // real store.
   const vendorImage =
+    getCartVendorPhoto(cartData?.items, vendorId) ||
     vendor?.documents?.storePhoto?.[0] ||
     vendor?.storePhoto?.[0] ||
     "https://placehold.co/400x400?text=No+Image";
@@ -706,14 +782,14 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
             <div className="relative h-24 w-24 overflow-hidden rounded-2xl bg-gray-100 dark:bg-neutral-800">
               <SafeImage
                 src={vendorImage}
-                alt={vendor?.businessDetails?.businessName || "Store"}
+                alt={businessName || t("store")}
                 sizes="96px"
                 fallbackIcon={<Store className="h-8 w-8" />}
               />
             </div>
             <div className="flex-1">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-neutral-50">
-                {vendor?.businessDetails?.businessName || "Store"}
+                {businessName || t("store")}
               </h2>
               <div className="mt-3 flex flex-wrap gap-3">
                 <div className="flex items-center gap-2 rounded-xl bg-pink-50 dark:bg-pink-950/30 px-3 py-2 text-[#f9186b] dark:text-pink-400">
@@ -925,7 +1001,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               <button
                 type="button"
                 onClick={handleToggleSelfPickup}
-                disabled={!pickupWindow}
+                disabled={!canSelfPickup}
                 aria-pressed={isSelfPickup}
                 className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
                   isSelfPickup
@@ -961,13 +1037,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               {/* No window means the store has already closed for today, so the
                   option is offered but not actionable. Saying why beats a
                   disabled control with no explanation. */}
-              {!pickupWindow && (
+              {!canSelfPickup && (
                 <p className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
                   {t("storeClosedForPickup")}
                 </p>
               )}
 
-              {isSelfPickup && pickupWindow && (
+              {isSelfPickup && canSelfPickup && (
                 <button
                   type="button"
                   onClick={() => setShowPickupPicker(true)}
@@ -976,16 +1052,16 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                   <Clock size={18} className="shrink-0 text-[#f9186b] dark:text-pink-400" />
                   <span
                     className={`min-w-0 flex-1 text-sm ${
-                      pickupTime
+                      pickupSlot
                         ? "font-semibold text-gray-900 dark:text-neutral-50"
                         : "text-gray-500 dark:text-neutral-400"
                     }`}
                   >
-                    {/* Composed in JSX, not interpolated: t() takes a single
-                        key and has no placeholder support. */}
-                    {pickupTime
-                      ? `${t("today")}  ${formatTimeOfDay(pickupTime)}`
-                      : t("selectPickupTime")}
+                    {/* Composed in `pickupSlotLabel`, not interpolated here:
+                        t() takes a single key and has no placeholder support.
+                        It names the day as well as the time — "Today" was a
+                        safe assumption only while today was the only option. */}
+                    {pickupSlot ? pickupSlotLabel : t("selectPickupTime")}
                   </span>
                   <ChevronRight
                     size={18}
@@ -1037,12 +1113,19 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         </div>
       </div>
 
-      {showPickupPicker && pickupWindow && (
+      {/* Gated on the days existing, NOT on any of them having slots. The
+          toggle above is already disabled when pickup is unavailable, so the
+          only way to be here with nothing bookable is the store closing while
+          the sheet sits open — and a sheet that vanishes mid-choice explains
+          nothing. The picker renders its own "closed for the rest of today"
+          state instead, with Confirm disabled. */}
+      {showPickupPicker && pickupDays.length > 0 && (
         <PickupTimePicker
-          window={pickupWindow}
-          value={pickupTime}
-          onConfirm={(time) => {
-            setPickupTime(time);
+          days={pickupDays}
+          closingHours={pickupVendor?.closingHours}
+          value={pickupSlot}
+          onConfirm={(slot) => {
+            setPickupSlot(slot);
             setShowPickupPicker(false);
           }}
           onClose={() => setShowPickupPicker(false)}

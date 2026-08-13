@@ -43,7 +43,7 @@ import { isCompletedStatus } from "@/lib/orderStatus";
 import { useInvalidateOrders } from "@/hooks/queries/useOrders";
 import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { formatAddressFull } from "@/lib/addressFormat";
-import { formatPickupLabel } from "@/lib/pickupTime";
+import { formatPickupMoment } from "@/lib/pickupTime";
 import OrderMap from "./OrderMap/OrderMap";
 import PickupCodeCard from "./PickupCodeCard";
 import PickupLocationCard from "./PickupLocationCard";
@@ -585,7 +585,10 @@ export default function TrackOrder() {
                   <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50 break-words">
                     {isPickup
                       ? order.pickup?.pickupTime
-                        ? formatPickupLabel(order.pickup.pickupTime, lang)
+                        ? formatPickupMoment(order.pickup.pickupTime, lang, {
+                            today: t("today"),
+                            tomorrow: t("tomorrow"),
+                          })
                         : "—"
                       : deliveryAddress?.city || t("location")}
                   </h3>

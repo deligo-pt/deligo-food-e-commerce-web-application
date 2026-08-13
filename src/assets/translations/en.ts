@@ -219,14 +219,20 @@ const en = {
   // see the PICKUP_TIME_* keys in the checkout error handling.
   selfPickup: "Self Pickup",
   selectPickupTime: "Select pickup time",
-  estimatedPickupTime: "Estimated Pickup Time",
   confirmPickupTime: "Confirm Pickup Time",
-  pickupAvailableToday: "Available today between",
-  pickupHour: "Hour",
-  pickupMinute: "Minute",
   pickupTimeRequired: "Choose a pickup time to continue",
   storeClosedForPickup: "This store is closed for pickup today",
   today: "Today",
+  // Half-hour slot picker.
+  // Named for its role, not its wording: "pickupTime" already exists as the
+  // detail-row label, and two keys one capital letter apart with near-identical
+  // values is a swap nobody would ever notice — in pt they differ only in case.
+  pickupSheetTitle: "Pick-up time",
+  timeSlot: "Time slot",
+  tomorrow: "Tomorrow",
+  selectPickupDay: "Choose a day",
+  noSlotsToday: "Closed for the rest of today",
+  noSlotsThisDay: "No pickup slots on this day",
   pickupDetails: "Pickup Details",
   collectFrom: "Collect from",
   pickupTime: "Pickup Time",
