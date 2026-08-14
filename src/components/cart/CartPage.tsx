@@ -108,8 +108,8 @@ export default function CartPage() {
         );
 
         if (!acc[vendorId]) {
-          // The cart endpoint doesn't always populate vendorId.name, so fall back
-          // to a placeholder rather than crashing on a missing name.
+          // The cart endpoint doesn't always populate the vendor, so fall back
+          // to a placeholder rather than rendering a nameless row.
           const fallbackName = getCartVendorName(item.vendorId) ?? t("store");
 
           acc[vendorId] = {

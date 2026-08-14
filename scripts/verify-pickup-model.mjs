@@ -125,6 +125,22 @@ const RESTAURANT = {
 const at = (offset, hours, minutes) =>
   slotToIso({ date: addDays(getStoreToday(NOW), offset), time: { hours, minutes } }, NOW);
 
+/**
+ * The same fixture, anchored to the real clock instead of `NOW`.
+ *
+ * `formatPickupMoment` takes no clock — it asks `getDayOffsetFromToday`, which
+ * defaults to `new Date()`. Feeding it an `at()` fixture therefore only tests
+ * what it claims to on a day when `NOW` happens to equal the real date, and
+ * silently inverts on every other one: this suite went green on 13 Aug 2026 and
+ * red on the 14th for that reason alone, with nothing in the code changed.
+ *
+ * So the day-naming block below builds its fixtures from today, and asserts
+ * properties rather than hardcoded dates wherever the answer moves with the
+ * calendar.
+ */
+const realAt = (offset, hours, minutes) =>
+  slotToIso({ date: addDays(getStoreToday(new Date()), offset), time: { hours, minutes } });
+
 console.log("\nVerifying the self-pickup slot model (no network)\n");
 
 // ── Which slots exist ──────────────────────────────────────────────────────
@@ -265,23 +281,44 @@ console.log("\nDownstream day naming");
   const EN = { today: "Today", tomorrow: "Tomorrow" };
   const PT = { today: "Hoje", tomorrow: "Amanhã" };
 
-  check("today", formatPickupMoment(at(0, 15, 0), "en", EN) === "Today  15:00");
-  check("tomorrow", formatPickupMoment(at(1, 15, 0), "en", EN) === "Tomorrow  15:00");
-  check("further out keeps the real date", formatPickupMoment(at(2, 15, 0), "en", EN) === "Aug 15, 2026  15:00", formatPickupMoment(at(2, 15, 0), "en", EN));
-  check("a past order keeps its real date", formatPickupMoment(at(-5, 15, 0), "en", EN) === "Aug 8, 2026  15:00");
+  check("today", formatPickupMoment(realAt(0, 15, 0), "en", EN) === "Today  15:00", formatPickupMoment(realAt(0, 15, 0), "en", EN));
+  check("tomorrow", formatPickupMoment(realAt(1, 15, 0), "en", EN) === "Tomorrow  15:00", formatPickupMoment(realAt(1, 15, 0), "en", EN));
+
+  /* Beyond tomorrow the label is a real date, which moves daily — so these
+     assert what the rendering has to be true of rather than what it spells on
+     any one afternoon: the day number, the year, the time, and no "Today". */
+  {
+    const far = formatPickupMoment(realAt(2, 15, 0), "en", EN);
+    const farDate = addDays(getStoreToday(new Date()), 2);
+    check(
+      "further out keeps the real date",
+      far.includes(String(farDate.day)) &&
+        far.includes(String(farDate.year)) &&
+        far.endsWith("15:00") &&
+        !/Today|Tomorrow/.test(far),
+      far,
+    );
+    const past = formatPickupMoment(realAt(-5, 15, 0), "en", EN);
+    const pastDate = addDays(getStoreToday(new Date()), -5);
+    check(
+      "a past order keeps its real date",
+      past.includes(String(pastDate.day)) && past.endsWith("15:00") && !/Today|Tomorrow/.test(past),
+      past,
+    );
+  }
   check("unparseable renders empty, never 'Invalid Date'", formatPickupMoment("19:00", "en", EN) === "");
-  check("pt today", formatPickupMoment(at(0, 15, 0), "pt", PT) === "Hoje  15:00");
-  check("no English leaks into the pt path", !/Aug|Today|Tomorrow/.test(formatPickupMoment(at(2, 15, 0), "pt", PT)));
+  check("pt today", formatPickupMoment(realAt(0, 15, 0), "pt", PT) === "Hoje  15:00", formatPickupMoment(realAt(0, 15, 0), "pt", PT));
+  check("no English leaks into the pt path", !/Today|Tomorrow/.test(formatPickupMoment(realAt(2, 15, 0), "pt", PT)));
 
   // The headline: no surface may call a future or past pickup "today".
   let lied = false;
   for (const offset of [1, 2, 3, 10, -1, -30]) {
     const rendered =
-      formatPickupMoment(at(offset, 15, 0), "en", EN) + formatPickupMoment(at(offset, 15, 0), "pt", PT);
+      formatPickupMoment(realAt(offset, 15, 0), "en", EN) + formatPickupMoment(realAt(offset, 15, 0), "pt", PT);
     if (/Today|Hoje/.test(rendered)) lied = true;
   }
   check("🔴 nothing but today is ever labelled Today/Hoje", !lied);
-  check("…and today genuinely is", /Today/.test(formatPickupMoment(at(0, 15, 0), "en", EN)));
+  check("…and today genuinely is", /Today/.test(formatPickupMoment(realAt(0, 15, 0), "en", EN)));
 
   // Calendar days, not elapsed hours — the backend's own basis.
   check("23:30 tonight is today, not tomorrow-by-elapsed-hours", getDayOffsetFromToday(at(0, 23, 30), NOW) === 0);

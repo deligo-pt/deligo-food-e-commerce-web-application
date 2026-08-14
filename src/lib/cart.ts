@@ -1,5 +1,6 @@
 import type { CartItem, CartAddon } from "@/types/cart";
 import { resolveLocalized, type Lang } from "./localizedField";
+import { getVendorDisplayName } from "./vendorName";
 
 // Addon names arrive localized to a string, but tolerate the bilingual object
 // shape so a checkout response that returns { en, pt } never renders as
@@ -182,11 +183,13 @@ export function getCartVendorPhoto(
 
 // The vendor's display name is only available when `vendorId` is populated as an
 // object; returns null when it's a bare id (caller falls back to a placeholder).
+//
+// Delegates so the cart cannot drift from the orders pages on which of the two
+// names a vendor gets shown by. This used to read `name` — the account owner —
+// unconditionally, which was invisible only because CartPage prefers the vendor
+// list's `businessName` and reaches this fallback just when that lookup misses.
 export function getCartVendorName(
   vendorRef: CartItem["vendorId"],
 ): string | null {
-  if (!vendorRef || typeof vendorRef === "string") return null;
-  const name = vendorRef.name;
-  if (!name) return null;
-  return `${name.firstName} ${name.lastName}`.trim() || null;
+  return getVendorDisplayName(vendorRef);
 }
