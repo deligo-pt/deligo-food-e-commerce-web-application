@@ -1,5 +1,6 @@
 import type { CartItem, CartAddon } from "@/types/cart";
 import { resolveLocalized, type Lang } from "./localizedField";
+import { getVendorDisplayName } from "./vendorName";
 
 // Addon names arrive localized to a string, but tolerate the bilingual object
 // shape so a checkout response that returns { en, pt } never renders as
@@ -107,13 +108,88 @@ export function getCartVendorOrder(
     .map(([vendorId]) => vendorId);
 }
 
+/** What the cart knows about a store: hours, type, name. */
+export interface CartVendorDetails {
+  businessName?: string;
+  openingHours?: string;
+  closingHours?: string;
+  businessType?: string;
+}
+
+/**
+ * A store's own terms, read off the cart rather than fetched.
+ *
+ * `/carts/view-cart` populates every line's `vendorId` with the store's
+ * `openingHours`, `closingHours` and `businessType` — which is everything the
+ * self-pickup slot model needs, and `businessType` in particular is available
+ * nowhere else the checkout page already looks.
+ *
+ * ## Why not the vendor list
+ *
+ * `CheckoutPage` used to take the hours from `useVendorsCustomer()`, matching on
+ * id. That is a second query with its own filters, and a miss is silent: the
+ * lookup returns `undefined`, the pickup window comes back `null`, and the page
+ * tells the customer **"this store is closed for pickup today"** about a store
+ * that is open. Reading the terms off the cart line cannot miss, because the
+ * line is the thing being checked out.
+ *
+ * The vendor list is still needed for what the cart does not carry —
+ * `closingDays`, `businessLocation` — see `PickupVendorHours`.
+ *
+ * All of a vendor's lines carry the same details (verified across three vendors
+ * on the live cart), so the first match answers for the group. Returns `null`
+ * when the vendor has no lines, or when its `vendorId` came back as a bare id
+ * string rather than populated.
+ */
+export function getCartVendorDetails(
+  items: readonly CartItem[] | null | undefined,
+  vendorId: string,
+): CartVendorDetails | null {
+  if (!vendorId) return null;
+
+  for (const item of items ?? []) {
+    if (getCartVendorId(item.vendorId) !== vendorId) continue;
+    if (typeof item.vendorId === "string") continue;
+    const details = item.vendorId.businessDetails;
+    if (details) return details;
+  }
+
+  return null;
+}
+
+/**
+ * The store's photo, from the cart line, or `null`.
+ *
+ * Same reasoning as `getCartVendorDetails`: the checkout header used to take
+ * this from the vendor list, and a miss there put a `placehold.co` box beside
+ * the store's real name. The cart populates `documents.storePhoto` on every
+ * line.
+ */
+export function getCartVendorPhoto(
+  items: readonly CartItem[] | null | undefined,
+  vendorId: string,
+): string | null {
+  if (!vendorId) return null;
+
+  for (const item of items ?? []) {
+    if (getCartVendorId(item.vendorId) !== vendorId) continue;
+    if (typeof item.vendorId === "string") continue;
+    const photo = item.vendorId.documents?.storePhoto?.[0];
+    if (photo) return photo;
+  }
+
+  return null;
+}
+
 // The vendor's display name is only available when `vendorId` is populated as an
 // object; returns null when it's a bare id (caller falls back to a placeholder).
+//
+// Delegates so the cart cannot drift from the orders pages on which of the two
+// names a vendor gets shown by. This used to read `name` — the account owner —
+// unconditionally, which was invisible only because CartPage prefers the vendor
+// list's `businessName` and reaches this fallback just when that lookup misses.
 export function getCartVendorName(
   vendorRef: CartItem["vendorId"],
 ): string | null {
-  if (!vendorRef || typeof vendorRef === "string") return null;
-  const name = vendorRef.name;
-  if (!name) return null;
-  return `${name.firstName} ${name.lastName}`.trim() || null;
+  return getVendorDisplayName(vendorRef);
 }

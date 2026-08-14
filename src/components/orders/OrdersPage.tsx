@@ -16,6 +16,7 @@ import { Star, X } from "lucide-react";
 import { toast } from "sonner";
 import { canCancelOrder, getRefundState, isTerminatedStatus } from "@/lib/refund";
 import { isPickupOrder } from "@/lib/orderTimeline";
+import { getVendorDisplayName } from "@/lib/vendorName";
 import {
   isCompletedStatus,
   isOngoingStatus,
@@ -334,9 +335,9 @@ export default function OrdersPage() {
                     dbId={order._id}
                     isPickup={isPickup}
                     image={order.items?.[0]?.image}
-                    restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
-                      order.vendorId?.name?.lastName ?? ""
-                    }`}
+                    restaurant={
+                      getVendorDisplayName(order.vendorId) ?? t("restaurant")
+                    }
                     orderId={order.orderId}
                     date={new Date(order.createdAt).toLocaleString()}
                     price={formatOrderPrice(order.payoutSummary?.grandTotal)}
@@ -385,9 +386,9 @@ export default function OrdersPage() {
                     dbId={order._id}
                     isPickup={isPickupOrder(order)}
                     image={order.items?.[0]?.image}
-                    restaurant={`${order.vendorId?.name?.firstName ?? ""} ${
-                      order.vendorId?.name?.lastName ?? ""
-                    }`}
+                    restaurant={
+                      getVendorDisplayName(order.vendorId) ?? t("restaurant")
+                    }
                     orderId={order.orderId}
                     date={new Date(order.createdAt).toLocaleString()}
                     price={formatOrderPrice(order.payoutSummary?.grandTotal)}

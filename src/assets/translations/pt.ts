@@ -226,14 +226,18 @@ const pt = {
   // traduzidas, por isso não existem chaves para essas mensagens aqui.
   selfPickup: "Recolha na Loja",
   selectPickupTime: "Selecionar hora de recolha",
-  estimatedPickupTime: "Hora Prevista de Recolha",
   confirmPickupTime: "Confirmar Hora de Recolha",
-  pickupAvailableToday: "Disponível hoje entre",
-  pickupHour: "Hora",
-  pickupMinute: "Minuto",
   pickupTimeRequired: "Escolha uma hora de recolha para continuar",
   storeClosedForPickup: "Esta loja está fechada para recolhas hoje",
   today: "Hoje",
+  // Seletor de intervalos de 30 minutos.
+  // Ver a nota em en.ts: nome pela função, não pelo texto.
+  pickupSheetTitle: "Hora de recolha",
+  timeSlot: "Intervalo",
+  tomorrow: "Amanhã",
+  selectPickupDay: "Escolha um dia",
+  noSlotsToday: "Fechado para o resto do dia",
+  noSlotsThisDay: "Sem horários de recolha neste dia",
   pickupDetails: "Detalhes da Recolha",
   collectFrom: "Recolher em",
   pickupTime: "Hora de Recolha",

@@ -1,71 +1,66 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Clock } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Check } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import {
-  clampToWindow,
+  findFirstAvailableDay,
+  formatDayShort,
+  formatSlotRange,
   formatTimeOfDay,
-  getStoreToday,
-  STORE_TIME_ZONE,
-  toMinutes,
-  type PickupWindow,
+  isSameDate,
+  isSlotOnDay,
+  resolveActiveDay,
+  type PickupDay,
+  type PickupSlot,
   type TimeOfDay,
 } from "@/lib/pickupTime";
 
-/** Granularity of the minute wheel. */
-const MINUTE_STEP = 5;
-
-/** Row height in px. Mirrored in the wheel's inline sizing — keep them in step. */
-const ROW_H = 40;
-
-/** Rows visible at once. Odd, so exactly one sits on the centre line. */
-const VISIBLE_ROWS = 5;
-
 interface PickupTimePickerProps {
   /**
-   * The band of selectable times. The caller guarantees it is non-null, and
-   * recomputes it as the clock moves — so this prop changes underneath the
-   * sheet while it is open, and the draft is re-clamped when it does.
+   * The bookable days, in order, today first. Recomputed on the caller's clock,
+   * so the list changes underneath an open sheet — including going empty, if
+   * the store closes while the customer is choosing. That case renders a reason
+   * and a disabled Confirm rather than an empty box.
    */
-  window: PickupWindow;
-  /** Currently chosen time, so reopening the sheet resumes where it left off. */
-  value: TimeOfDay | null;
-  /**
-   * Reports the store-local wall-clock time, not an ISO string. Serialisation
-   * happens once, at submit, so there is a single place where a timezone is
-   * applied — see `toPickupIso`.
-   */
-  onConfirm: (time: TimeOfDay) => void;
+  days: PickupDay[];
+  /** The store's closing time, so the last slot's label can be clamped to it. */
+  closingHours?: string | null;
+  /** The current choice, so reopening resumes on it. */
+  value: PickupSlot | null;
+  onConfirm: (slot: PickupSlot) => void;
   onClose: () => void;
 }
 
 /**
- * The bottom sheet for choosing a self-pickup time.
+ * The bottom sheet for choosing a self-pickup slot.
  *
- * ## Why there is no calendar
+ * ## Why this is a list and not the wheels it replaces
  *
- * The mobile app shows a full month grid here. The backend does not support it:
- * any date other than the store's today is rejected with
- * `PICKUP_TIME_MUST_BE_TODAY`. Rendering thirty tappable days when twenty-nine
- * of them fail is worse than not offering them, so the date is shown as a fixed
- * row instead.
+ * The previous version was two scroll wheels reaching an exact minute, which is
+ * what the backend used to accept. It now takes only `:00` and `:30` — ten of
+ * the twelve minutes those wheels offered are rejected outright — so the wheels
+ * were not merely unfashionable, they were producing invalid times.
  *
- * If scheduled pickup ships later, this is where the grid goes; nothing else in
- * the flow assumes today.
+ * Replacing them with a list deletes the entire apparatus that made them work:
+ * the minute column rebuilt per hour, the programmatic-scroll suppression, the
+ * settle debounce, `setPointerCapture`, the drag-versus-click slop test, and the
+ * snap-disable dance — **including the mouse-drag bug this feature shipped once
+ * and had to fix**. A list of rows scrolls natively, with a mouse, a trackpad, a
+ * finger or a keyboard, and needs no handler at all.
  *
- * ## Why the wheels cannot reach an invalid time
+ * ## Nothing invalid is reachable
  *
- * The columns are not 0-23 and 0-59 with validation on top. They are built from
- * `window`, which has already intersected the store's opening hours with
- * now-plus-lead-time — so every row that exists is a time the backend accepts,
- * and there is nothing to reject. The minute column is rebuilt whenever the
- * hour changes, because the first and last hour of the window are partial: at
- * 22:30 closing, hour 22 offers only :00 through :30.
+ * The rows are not "all half hours, validated". They are `PickupDay.slots`,
+ * which `getPickupDays` built from the store's hours and the backend's rules —
+ * so every row that exists is a slot the API has been proven to accept, and
+ * there is nothing to reject. Days the vendor cannot be booked on are not
+ * generated at all: a restaurant produces one chip, a store three.
  */
 export default function PickupTimePicker({
-  window: pickupWindow,
+  days,
+  closingHours,
   value,
   onConfirm,
   onClose,
@@ -73,67 +68,49 @@ export default function PickupTimePicker({
   const { t } = useTranslation();
   const lang = useStore((state) => state.lang);
 
-  // What the wheels were last *told*. Never rendered directly — see below.
-  const [rawDraft, setRawDraft] = useState<TimeOfDay>(() => value ?? pickupWindow.earliest);
-
-  const confirmRef = useRef<HTMLButtonElement>(null);
-
-  const earliest = toMinutes(pickupWindow.earliest);
-  const latest = toMinutes(pickupWindow.latest);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const selectedRowRef = useRef<HTMLButtonElement>(null);
 
   /**
-   * The time actually shown, plus the rows each wheel offers.
-   *
-   * Derived in one pass rather than stored and corrected afterwards. Two things
-   * can invalidate a selection, and both are outside this component's control:
-   *
-   *  - `pickupWindow` advances on the caller's clock, so a sheet left open long
-   *    enough sees `earliest` move past whatever is selected;
-   *  - changing the hour rebuilds the minute column, and the minute that was
-   *    selected may not exist in the new one (22:45 is fine at 21:00, not at
-   *    22:30 closing).
-   *
-   * Correcting either in an effect would mean rendering the invalid value once
-   * and then re-rendering — a visible flicker on the wheel, and a cascade React
-   * rightly warns about. Normalising on the way out means the invalid state is
-   * never rendered at all.
+   * Which chip is open. Seeded once — from the existing choice if there is one,
+   * otherwise the first day that has anything to offer, which is how a store
+   * that has closed for today opens on tomorrow instead of on a dead list.
    */
-  const { draft, hourOptions, minuteOptions } = useMemo(() => {
-    const clamped = clampToWindow(rawDraft, pickupWindow);
+  const [openDayOffset, setOpenDayOffset] = useState<number>(() => {
+    const chosen = value && days.find((day) => isSameDate(day.date, value.date));
+    return chosen?.offset ?? findFirstAvailableDay(days)?.offset ?? days[0]?.offset ?? 0;
+  });
 
-    const firstHour = Math.floor(earliest / 60);
-    const lastHour = Math.floor(latest / 60);
-    const hours = Array.from({ length: lastHour - firstHour + 1 }, (_, i) => firstHour + i);
+  /**
+   * The chip actually rendered as open.
+   *
+   * Derived rather than corrected: the day list is rebuilt on the caller's
+   * clock, and a seeded offset can stop existing (midnight rolls the window
+   * forward). Falling back on the way out means the invalid state is never
+   * rendered — the lesson from the wheels, where correcting afterwards showed a
+   * visible flicker.
+   */
+  const activeDay = useMemo(
+    () => resolveActiveDay(days, openDayOffset),
+    [days, openDayOffset],
+  );
 
-    // Partial at both ends: the opening hour starts at the lead time rather
-    // than :00, and the closing hour stops at the store's closing minute.
-    const base = clamped.hours * 60;
-    const from = Math.max(earliest, base);
-    const to = Math.min(latest, base + 59);
-    const minutes: number[] = [];
-    for (
-      let m = Math.ceil((from - base) / MINUTE_STEP) * MINUTE_STEP;
-      base + m <= to;
-      m += MINUTE_STEP
-    ) {
-      minutes.push(m);
-    }
-    // A window narrower than one step leaves this empty (22:28–22:30, say).
-    // The exact boundary minute beats an empty column.
-    if (!minutes.length) minutes.push(to - base);
+  /** The pending choice. Confirm is what commits it to the page. */
+  const [draft, setDraft] = useState<PickupSlot | null>(value);
 
-    const minute = minutes.includes(clamped.minutes)
-      ? clamped.minutes
-      : minutes.reduce((best, m) =>
-          Math.abs(m - clamped.minutes) < Math.abs(best - clamped.minutes) ? m : best,
-        );
-
-    return {
-      draft: { hours: clamped.hours, minutes: minute },
-      hourOptions: hours,
-      minuteOptions: minutes,
-    };
-  }, [rawDraft, pickupWindow, earliest, latest]);
+  /**
+   * The draft, if it is still real *and* belongs to the day on screen.
+   *
+   * Two things can invalidate it, both from outside: the slot can pass while
+   * the sheet sits open, and the customer can switch chips. A time without its
+   * date is not a booking, so a draft made on Saturday is not shown as selected
+   * while Friday is open — but it is kept, so coming back to Saturday resumes
+   * rather than punishing the detour.
+   */
+  const selected = useMemo(
+    () => (isSlotOnDay(draft, activeDay) ? draft : null),
+    [draft, activeDay],
+  );
 
   // Escape closes without choosing — the sheet is a detour, not a trap.
   useEffect(() => {
@@ -144,30 +121,60 @@ export default function PickupTimePicker({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  // The confirm button is the sheet's purpose, so it takes focus on open. That
-  // also moves the keyboard out of the page behind the backdrop.
+  // Focus moves into the sheet on open, so the page behind it is out of the
+  // keyboard's reach. The sheet itself rather than Confirm, which starts
+  // disabled when nothing is chosen yet.
   useEffect(() => {
-    confirmRef.current?.focus();
+    sheetRef.current?.focus();
   }, []);
 
-  const todayLabel = useMemo(() => {
-    const today = getStoreToday();
-    return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "pt-PT", {
-      timeZone: STORE_TIME_ZONE,
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(new Date(Date.UTC(today.year, today.month - 1, today.day, 12)));
-  }, [lang]);
+  // Reopening on an existing choice should show it, not make the customer hunt
+  // down a list of twenty-four rows for the one they already picked.
+  useEffect(() => {
+    selectedRowRef.current?.scrollIntoView({ block: "center" });
+    // Mount only: re-running on every selection would yank the list while the
+    // customer is reading it.
+  }, []);
 
-  // Both write the raw value; the memo above decides what that means.
-  const setHours = useCallback((hours: number) => {
-    setRawDraft((current) => ({ ...current, hours }));
-  }, []);
-  const setMinutes = useCallback((minutes: number) => {
-    setRawDraft((current) => ({ ...current, minutes }));
-  }, []);
+  const dayLabel = (day: PickupDay) => {
+    if (day.offset === 0) return t("today");
+    if (day.offset === 1) return t("tomorrow");
+    return formatDayShort(day.date, lang);
+  };
+
+  const chipRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  /** Left/right move between chips, skipping the ones that cannot be opened. */
+  const handleChipKeyDown = (event: React.KeyboardEvent, index: number) => {
+    const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+
+    for (let i = index + step; i >= 0 && i < days.length; i += step) {
+      if (days[i].slots.length === 0) continue;
+      setOpenDayOffset(days[i].offset);
+      chipRefs.current[i]?.focus();
+      return;
+    }
+  };
+
+  const slotRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  /** Up/down move between slots, so the list is operable without a pointer. */
+  const handleSlotKeyDown = (event: React.KeyboardEvent, index: number) => {
+    const step = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
+    if (!step || !activeDay) return;
+    event.preventDefault();
+
+    const next = index + step;
+    if (next < 0 || next >= activeDay.slots.length) return;
+    slotRefs.current[next]?.focus();
+  };
+
+  const selectSlot = (time: TimeOfDay) => {
+    if (!activeDay) return;
+    setDraft({ date: activeDay.date, time });
+  };
 
   return (
     <div className="fixed inset-0 z-9999 flex items-end justify-center sm:items-center sm:p-4">
@@ -179,313 +186,158 @@ export default function PickupTimePicker({
       />
 
       <div
+        ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="pickup-time-heading"
-        className="relative w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl dark:bg-neutral-900 sm:rounded-3xl"
+        tabIndex={-1}
+        className="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-white shadow-2xl outline-none dark:bg-neutral-900 sm:max-h-[80vh] sm:rounded-3xl"
       >
         {/* Decorative on the web, but it is what makes the sheet read as the
             same component the mobile app shows. */}
         <div
           aria-hidden="true"
-          className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-gray-200 dark:bg-neutral-700"
+          className="mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full bg-gray-200 dark:bg-neutral-700"
         />
 
-        <h2
-          id="pickup-time-heading"
-          className="text-center text-lg font-bold text-gray-900 dark:text-neutral-50"
-        >
-          {t("estimatedPickupTime")}
-        </h2>
-
-        {/* The date, stated rather than chosen — see the component comment. */}
-        <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl bg-gray-50 px-4 py-3 dark:bg-neutral-800/60">
-          <Clock size={16} className="shrink-0 text-[#f9186b] dark:text-pink-400" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-neutral-50">
-            {t("today")} — {todayLabel}
-          </span>
-        </div>
-
-        <p className="mt-2 text-center text-xs text-gray-500 dark:text-neutral-400">
-          {t("pickupAvailableToday")} {formatTimeOfDay(pickupWindow.earliest)} –{" "}
-          {formatTimeOfDay(pickupWindow.latest)}
-        </p>
-
-        {/* Wheels. The centre band is a single absolutely-positioned element
-            behind both columns rather than a highlight per column, so the two
-            always agree on where "selected" is. */}
-        <div
-          className="relative mt-5 flex items-stretch justify-center gap-3"
-          style={{ height: ROW_H * VISIBLE_ROWS }}
-        >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-6 rounded-xl bg-pink-50 dark:bg-pink-950/25"
-            style={{ height: ROW_H, top: ROW_H * Math.floor(VISIBLE_ROWS / 2) }}
-          />
-
-          <Wheel
-            label={t("pickupHour")}
-            options={hourOptions}
-            selected={draft.hours}
-            onSelect={setHours}
-          />
-          <span className="z-10 self-center pb-1 text-2xl font-bold text-gray-300 dark:text-neutral-600">
-            :
-          </span>
-          <Wheel
-            label={t("pickupMinute")}
-            options={minuteOptions}
-            selected={draft.minutes}
-            onSelect={setMinutes}
-          />
-
-          {/* Fades top and bottom, so rows read as leaving the wheel rather
-              than being clipped. `to-transparent` on both ends keeps the
-              middle untouched. */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 bg-linear-to-b from-white to-transparent dark:from-neutral-900"
-            style={{ height: ROW_H * 1.6 }}
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-white to-transparent dark:from-neutral-900"
-            style={{ height: ROW_H * 1.6 }}
-          />
-        </div>
-
-        {/* The chosen time in full, because the wheels show two numbers in
-            isolation and this is what the customer is agreeing to. */}
-        <p
-          aria-live="polite"
-          className="mt-4 text-center text-sm font-semibold text-gray-900 dark:text-neutral-50"
-        >
-          {formatTimeOfDay(draft)}
-        </p>
-
-        <div className="mt-5 flex flex-col gap-3">
-          <button
-            ref={confirmRef}
-            type="button"
-            onClick={() => onConfirm(draft)}
-            className="w-full rounded-2xl bg-[#f9186b] py-4 text-base font-semibold text-white transition hover:bg-[#d4145b]"
-          >
-            {t("confirmPickupTime")}
-          </button>
+        <div className="flex shrink-0 items-center gap-3 px-6 pt-4">
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-2xl py-2 text-sm font-medium text-gray-500 transition hover:text-gray-900 dark:text-neutral-400 dark:hover:text-neutral-50"
+            aria-label={t("close")}
+            className="-ml-2 rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-50"
           >
-            {t("cancel")}
+            <ArrowLeft size={20} />
+          </button>
+          <h2
+            id="pickup-time-heading"
+            className="text-xl font-bold text-gray-900 dark:text-neutral-50"
+          >
+            {t("pickupSheetTitle")}
+          </h2>
+        </div>
+
+        {/* Day chips. Horizontally scrollable because three of them plus a
+            weekday name does not fit a 320px screen. */}
+        <div
+          role="tablist"
+          aria-label={t("selectPickupDay")}
+          className="flex shrink-0 gap-2 overflow-x-auto px-6 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {days.map((day, index) => {
+            const isOpen = activeDay?.offset === day.offset;
+            const isEmpty = day.slots.length === 0;
+
+            return (
+              <button
+                key={day.offset}
+                ref={(node) => {
+                  chipRefs.current[index] = node;
+                }}
+                type="button"
+                role="tab"
+                aria-selected={isOpen}
+                // A day the store cannot be booked on stays visible and goes
+                // quiet. Dropping the chip would read as "that day is not
+                // supported"; a disabled one reads as "not that day".
+                disabled={isEmpty}
+                tabIndex={isOpen ? 0 : -1}
+                onClick={() => setOpenDayOffset(day.offset)}
+                onKeyDown={(event) => handleChipKeyDown(event, index)}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition ${
+                  isOpen
+                    ? "bg-[#f9186b] text-white"
+                    : isEmpty
+                      ? "bg-gray-50 text-gray-300 line-through dark:bg-neutral-800/40 dark:text-neutral-600"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                }`}
+              >
+                {dayLabel(day)}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Why a chip is struck through, said once rather than per chip. */}
+        {days.some((day) => day.slots.length === 0) && (
+          <p className="shrink-0 px-6 pb-3 text-xs text-gray-500 dark:text-neutral-400">
+            {days[0]?.slots.length === 0 ? t("noSlotsToday") : t("noSlotsThisDay")}
+          </p>
+        )}
+
+        <p className="shrink-0 px-6 text-xs font-semibold tracking-wider text-gray-400 uppercase dark:text-neutral-500">
+          {t("timeSlot")}
+        </p>
+
+        {/* The only scrolling region: the day row and the confirm button stay
+            put, so the customer never scrolls past the thing they came to
+            press. */}
+        <div
+          role="listbox"
+          aria-label={t("timeSlot")}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-3"
+        >
+          {activeDay && activeDay.slots.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {activeDay.slots.map((time, index) => {
+                const isSelected =
+                  !!selected &&
+                  selected.time.hours === time.hours &&
+                  selected.time.minutes === time.minutes;
+
+                return (
+                  <button
+                    key={formatTimeOfDay(time)}
+                    ref={(node) => {
+                      slotRefs.current[index] = node;
+                      if (isSelected) selectedRowRef.current = node;
+                    }}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => selectSlot(time)}
+                    onKeyDown={(event) => handleSlotKeyDown(event, index)}
+                    className={`flex items-center justify-between rounded-2xl px-4 py-4 text-left text-sm font-medium transition ${
+                      isSelected
+                        ? "bg-pink-50 text-gray-900 ring-1 ring-[#f9186b] dark:bg-pink-950/25 dark:text-neutral-50 dark:ring-pink-400"
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-neutral-800/60 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                    }`}
+                  >
+                    <span className="tabular-nums">
+                      {formatSlotRange(time, closingHours)}
+                    </span>
+                    {isSelected && (
+                      <span
+                        aria-hidden="true"
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-[#f9186b] dark:bg-pink-500"
+                      >
+                        <Check size={13} strokeWidth={3} className="text-white" />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="py-8 text-center text-sm text-gray-500 dark:text-neutral-400">
+              {activeDay?.offset === 0 ? t("noSlotsToday") : t("noSlotsThisDay")}
+            </p>
+          )}
+        </div>
+
+        <div className="shrink-0 border-t border-gray-100 p-6 dark:border-neutral-800">
+          <button
+            type="button"
+            // Nothing is preselected on a first visit: a slot the customer
+            // never read is not a choice they made.
+            disabled={!selected}
+            onClick={() => selected && onConfirm(selected)}
+            className="w-full rounded-2xl bg-[#f9186b] py-4 text-base font-semibold text-white transition hover:bg-[#d4145b] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {t("confirmPickupTime")}
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-
-interface WheelProps {
-  label: string;
-  options: number[];
-  selected: number;
-  onSelect: (value: number) => void;
-}
-
-/**
- * One column of the time wheel.
- *
- * ## Why this is not just an overflow container
- *
- * The first version relied purely on native scrolling. That works with a
- * trackpad, a mouse wheel and a touchscreen — but a plain mouse has none of
- * those gestures, and dragging a scroll container with the cursor is not
- * something browsers do. On a desktop with a mouse the wheel simply did not
- * move, which is the one input a checkout page cannot afford to miss.
- *
- * So the column keeps native scrolling *and* adds a pointer drag on top of it.
- * `setPointerCapture` means the drag survives the cursor leaving the column;
- * `touch-action: pan-y` leaves touch to the browser, which already does it
- * better than any handler could — momentum included.
- *
- * ## Snapping
- *
- * CSS snap is disabled for the duration of a drag. Left on, it fights every
- * pixel of the movement, and the column feels like it is stuck to a grid rather
- * than being pulled. It comes back on release, which is also when the final
- * position is animated to the nearest row and the selection is reported.
- */
-function Wheel({ label, options, selected, onSelect }: WheelProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /**
-   * Suppresses the scroll handler while the column is being positioned in code.
-   * Without it, scrolling to reflect a prop change fires the handler, which
-   * reports a selection, which moves the column — a loop that fights the user.
-   */
-  const programmaticRef = useRef(false);
-  const dragRef = useRef<{ startY: number; startTop: number; moved: boolean } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const index = Math.max(0, options.indexOf(selected));
-
-  /** Reports whichever row is nearest the centre line. */
-  const commitNearest = useCallback(
-    (smooth: boolean) => {
-      const el = ref.current;
-      if (!el) return;
-      const nearest = Math.min(
-        options.length - 1,
-        Math.max(0, Math.round(el.scrollTop / ROW_H)),
-      );
-      const next = options[nearest];
-      if (next === undefined) return;
-
-      if (next === selected) {
-        // Same row, but the column may be resting between two of them: settle
-        // it without a state change, which would not re-run the sync effect.
-        programmaticRef.current = true;
-        el.scrollTo({ top: nearest * ROW_H, behavior: smooth ? "smooth" : "auto" });
-        setTimeout(() => {
-          programmaticRef.current = false;
-        }, 260);
-        return;
-      }
-      onSelect(next);
-    },
-    [options, selected, onSelect],
-  );
-
-  // Keep the column aligned with the value it is showing. Runs on mount
-  // (jumping straight to the seeded time) and whenever the value or the option
-  // list changes from outside — a window that has moved on, or an hour change
-  // that rebuilt the minutes.
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || dragRef.current) return;
-    const target = index * ROW_H;
-    if (Math.abs(el.scrollTop - target) < 1) return;
-
-    programmaticRef.current = true;
-    el.scrollTo({ top: target, behavior: "smooth" });
-    const id = setTimeout(() => {
-      programmaticRef.current = false;
-    }, 260);
-    return () => clearTimeout(id);
-  }, [index, options.length]);
-
-  useEffect(
-    () => () => {
-      if (settleRef.current) clearTimeout(settleRef.current);
-    },
-    [],
-  );
-
-  /**
-   * Native scrolling — wheel, trackpad, touch, keyboard.
-   *
-   * `scrollend` would be the exact signal for "motion has stopped" but is not
-   * available everywhere, so a short debounce stands in. 110ms rides out
-   * trackpad momentum without the value feeling like it lags the gesture.
-   */
-  const handleScroll = () => {
-    if (programmaticRef.current || dragRef.current) return;
-    if (settleRef.current) clearTimeout(settleRef.current);
-    settleRef.current = setTimeout(() => commitNearest(true), 110);
-  };
-
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    // Touch is left to the browser: it already scrolls this container with
-    // momentum, and hijacking it would be a downgrade.
-    if (event.pointerType === "touch") return;
-    const el = ref.current;
-    if (!el) return;
-
-    dragRef.current = { startY: event.clientY, startTop: el.scrollTop, moved: false };
-    setIsDragging(true);
-    el.setPointerCapture(event.pointerId);
-    if (settleRef.current) clearTimeout(settleRef.current);
-  };
-
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    const el = ref.current;
-    if (!drag || !el) return;
-
-    const delta = event.clientY - drag.startY;
-    // A few pixels of slop, so a click that wobbles is still a click.
-    if (Math.abs(delta) > 3) drag.moved = true;
-    el.scrollTop = drag.startTop - delta;
-  };
-
-  const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    const el = ref.current;
-    el?.releasePointerCapture?.(event.pointerId);
-    dragRef.current = null;
-    setIsDragging(false);
-    if (drag.moved) commitNearest(true);
-  };
-
-  /** Arrow keys move one row, so the column is operable without a pointer. */
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const step = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
-    if (!step) return;
-    event.preventDefault();
-    const next = options[Math.min(options.length - 1, Math.max(0, index + step))];
-    if (next !== undefined && next !== selected) onSelect(next);
-  };
-
-  const pad = ROW_H * Math.floor(VISIBLE_ROWS / 2);
-
-  return (
-    <div
-      ref={ref}
-      role="listbox"
-      aria-label={label}
-      tabIndex={0}
-      onScroll={handleScroll}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
-      onKeyDown={handleKeyDown}
-      className={`z-10 w-20 overflow-y-auto overscroll-contain rounded-xl outline-none select-none [touch-action:pan-y] focus-visible:ring-2 focus-visible:ring-[#f9186b] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-        isDragging ? "cursor-grabbing snap-none" : "cursor-grab snap-y snap-mandatory"
-      }`}
-    >
-      {/* Spacers let the first and last option reach the centre band. */}
-      <div style={{ height: pad }} aria-hidden="true" />
-      {options.map((option) => {
-        const isSelected = option === selected;
-        return (
-          <button
-            key={option}
-            type="button"
-            role="option"
-            aria-selected={isSelected}
-            tabIndex={-1}
-            // A drag that ends over a row must not also select that row — the
-            // gesture was a scroll, and the centre line decides the value.
-            onClick={() => {
-              if (dragRef.current?.moved) return;
-              onSelect(option);
-            }}
-            style={{ height: ROW_H }}
-            className={`flex w-full snap-center items-center justify-center text-2xl font-bold tabular-nums transition-colors ${
-              isSelected
-                ? "text-[#f9186b] dark:text-pink-400"
-                : "text-gray-400 dark:text-neutral-600"
-            }`}
-          >
-            {String(option).padStart(2, "0")}
-          </button>
-        );
-      })}
-      <div style={{ height: pad }} aria-hidden="true" />
     </div>
   );
 }

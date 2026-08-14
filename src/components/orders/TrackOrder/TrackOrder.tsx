@@ -41,9 +41,11 @@ import {
 import { getPaymentStatusDisplay } from "@/lib/paymentStatus";
 import { isCompletedStatus } from "@/lib/orderStatus";
 import { useInvalidateOrders } from "@/hooks/queries/useOrders";
-import { useVendorsCustomer } from "@/hooks/queries/useVendors";
+import { useVendor, useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { formatAddressFull } from "@/lib/addressFormat";
-import { formatPickupLabel } from "@/lib/pickupTime";
+import { toTelHref } from "@/lib/phone";
+import { getVendorDisplayName } from "@/lib/vendorName";
+import { formatPickupMoment } from "@/lib/pickupTime";
 import OrderMap from "./OrderMap/OrderMap";
 import PickupCodeCard from "./PickupCodeCard";
 import PickupLocationCard from "./PickupLocationCard";
@@ -56,6 +58,12 @@ import CancelOrderDialog from "../CancelOrderDialog";
 // requests to catch one field flip, so it drops to a background cadence.
 const LIVE_POLL_MS = 5000;
 const REFUND_POLL_MS = 30000;
+
+// Caption above a single field inside a card — smaller and fainter than the
+// card's own heading caption, so the two read as a hierarchy rather than
+// competing for the same line.
+const FIELD_LABEL_CLASS =
+  "text-[11px] font-bold uppercase tracking-wider text-[#8e6f74] dark:text-neutral-500";
 
 // Copy and icon for every step the timeline can show. Which of these actually
 // appear — and in what order — is `getTimelineStepKeys`'s call, so that a
@@ -209,6 +217,24 @@ export default function TrackOrder() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const invalidateOrders = useInvalidateOrders();
+
+  /**
+   * The vendor's own record, read for the one thing no other source carries:
+   * their phone number.
+   *
+   * `GET /orders/:id` populates `vendorId` with the name and `businessDetails`
+   * and stops there — no `contactNumber`. The vendor *list* above has the
+   * store's location but omits the number too; only the per-vendor detail route
+   * returns it. So a customer who needed to reach the shop about their own
+   * order had nothing to call, while the rider's number has been one tap away
+   * further down this page all along.
+   *
+   * Keyed on `userId` ("V-…"), NOT the Mongo `_id` — the detail route 404s on
+   * the latter. Undefined until the order lands, which leaves the query
+   * disabled, and React Query caches the result, so this costs one request per
+   * order viewed.
+   */
+  const { data: vendorDetail } = useVendor<any>(order?.vendorId?.userId);
 
   const handleDownloadInvoice = async () => {
     if (downloadingInvoice || !order?.orderId) return;
@@ -369,9 +395,11 @@ export default function TrackOrder() {
     );
   }
 
-  // Format vendor name
-  const vendorName =
-    `${order.vendorId?.name?.firstName || ""} ${order.vendorId?.name?.lastName || ""}`.trim();
+  // The shop's name, falling back to the owner's only if it has none — see
+  // `getVendorDisplayName`. This read `name` directly, which is the *owner*, so
+  // the Restaurant card below headed a Leopold order with the person who runs
+  // it. The pickup card a few lines down already had the priority right.
+  const vendorName = getVendorDisplayName(order.vendorId);
 
   const isPickup = isPickupOrder(order);
 
@@ -381,7 +409,28 @@ export default function TrackOrder() {
           v._id === order.vendorId?._id || v.userId === order.vendorId?.userId,
       ) ?? null
     : null;
-  const storeLocation = storeVendor?.businessLocation ?? null;
+  /* `useVendor` holds the previous vendor's record while a new one loads, so it
+     is trusted only once it is demonstrably about THIS order's vendor. Without
+     the check, moving between two orders could print one shop's phone number
+     under another shop's name for a frame — and a customer calls the wrong
+     restaurant about their order. */
+  const orderVendor =
+    vendorDetail && vendorDetail.userId === order.vendorId?.userId
+      ? vendorDetail
+      : null;
+
+  /* The list is the preferred source for the address because it is already
+     cached — it paints with the rest of the page rather than after a second
+     round trip. The detail record backs it up: the list is capped at 100
+     vendors, and one falling off the end left a collecting customer with no
+     address at all. */
+  const storeLocation =
+    storeVendor?.businessLocation ?? orderVendor?.businessLocation ?? null;
+
+  // Shown beneath the store's address, below. Trimmed because the field is free
+  // text; `toTelHref` decides separately whether it can actually be dialled.
+  const vendorPhone: string | null = orderVendor?.contactNumber?.trim() || null;
+  const vendorPhoneHref = toTelHref(vendorPhone);
 
   // Delivery address
   const deliveryAddress = order.deliveryAddress;
@@ -471,11 +520,7 @@ export default function TrackOrder() {
                   />
                 )}
                 <PickupLocationCard
-                  storeName={
-                    order.vendorId?.businessDetails?.businessName ||
-                    vendorName ||
-                    t("restaurant")
-                  }
+                  storeName={vendorName || t("restaurant")}
                   location={storeLocation}
                 />
               </>
@@ -548,23 +593,58 @@ export default function TrackOrder() {
                 <div className="h-12 w-12 rounded-full bg-[#ffd9de] dark:bg-pink-950/30 flex items-center justify-center shrink-0">
                   <Utensils className="w-6 h-6 text-[#f9186b] dark:text-pink-400" />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0">
                   <p className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400 tracking-wide">
                     {t("restaurant")}
                   </p>
-                  <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50">
+                  <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50 break-words">
                     {vendorName || t("restaurant")}
                   </h3>
-                  {/* `restaurantAddress` resolves to "address pending" when the
-                      order carries no `pickupAddress` — which is always, on a
-                      pickup order. The store's real address is the one thing
-                      the customer has to have, so it comes from the vendor
-                      lookup instead. */}
-                  <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 leading-relaxed break-words">
-                    {isPickup && storeLocation
-                      ? formatAddressFull(storeLocation)
-                      : restaurantAddress}
-                  </p>
+                  {/* Two facts about the same shop, so each is captioned rather
+                      than left as a run of grey lines the customer has to tell
+                      apart by shape. `FIELD_LABEL_CLASS` is quieter than
+                      the card's own "Restaurant" caption — these sit a level
+                      below it. */}
+                  <div className="pt-2 space-y-2.5">
+                    <div>
+                      <p className={FIELD_LABEL_CLASS}>{t("address")}</p>
+                      {/* `restaurantAddress` resolves to "address pending" when
+                          the order carries no `pickupAddress` — which is always,
+                          on a pickup order. The store's real address is the one
+                          thing the customer has to have, so it comes from the
+                          vendor lookup instead. */}
+                      <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 leading-relaxed break-words">
+                        {isPickup && storeLocation
+                          ? formatAddressFull(storeLocation)
+                          : restaurantAddress}
+                      </p>
+                    </div>
+                    {/* Beneath the address, because the two answer the same
+                        question — how do I reach this shop — and a customer
+                        standing outside one that looks shut needs the second
+                        answer as much as the first. Rendered as `tel:` so it
+                        dials on the device most of them are holding, and left
+                        as plain text when the stored value has nothing
+                        dialable in it. */}
+                    {vendorPhone && (
+                      <div>
+                        <p className={FIELD_LABEL_CLASS}>{t("phone")}</p>
+                        {vendorPhoneHref ? (
+                          <a
+                            href={vendorPhoneHref}
+                            aria-label={`${t("phone")}: ${vendorPhone}`}
+                            className="text-sm font-semibold break-all text-[#f9186b] dark:text-pink-400 hover:underline"
+                          >
+                            {vendorPhone}
+                          </a>
+                        ) : (
+                          <p className="text-sm font-semibold break-all text-[#5a4044] dark:text-neutral-400">
+                            {vendorPhone}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -585,7 +665,10 @@ export default function TrackOrder() {
                   <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50 break-words">
                     {isPickup
                       ? order.pickup?.pickupTime
-                        ? formatPickupLabel(order.pickup.pickupTime, lang)
+                        ? formatPickupMoment(order.pickup.pickupTime, lang, {
+                            today: t("today"),
+                            tomorrow: t("tomorrow"),
+                          })
                         : "—"
                       : deliveryAddress?.city || t("location")}
                   </h3>
