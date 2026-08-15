@@ -619,6 +619,14 @@ const en = {
     "If the restaurant has not accepted your order yet, you will be refunded. Once they have accepted it, no refund is due.",
   cancelReason: "Reason",
   cancelReasonPlaceholder: "Tell us why you are cancelling",
+  cancelReasonQuestion: "Why do you want to cancel this order?",
+  // These four are the reason *sent to the API*, not just labels — the string
+  // is stored on the order and shown back to both the customer and the vendor.
+  // See `lib/cancelReason`.
+  cancelReasonChangedMind: "Changed my mind",
+  cancelReasonMistake: "Ordered by mistake",
+  cancelReasonTooLong: "Taking too long",
+  cancelReasonOther: "Other",
   keepOrder: "Keep Order",
   confirmCancelOrder: "Cancel Order",
   orderCanceled: "Your order has been cancelled",

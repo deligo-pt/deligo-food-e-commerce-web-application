@@ -88,6 +88,25 @@ type FilterType = "all" | "unread" | "orders" | "promos";
 
 const PAGE_LIMIT = 10;
 
+/**
+ * The project's primary, and the surfaces built from it.
+ *
+ * Spelled out once here because this page used to run on `#c1005b` with
+ * `#a0004c` for hover and `#ffe9ef`/`#fff0f5` for tints — a pink that appears
+ * in **no other file in the app**, which uses `#f9186b` in 347 places. The
+ * greys had drifted the same way (`#1f1f1f`, `#222`, `#666`, `#777`, `#888`,
+ * `#444`, `#ededed`, `#e4d3d8`), so the page read as a different product.
+ *
+ * Constants rather than repetition: the four call sites below are what let the
+ * drift go unnoticed in the first place.
+ */
+const PRIMARY_ACTION_CLASS =
+  "mt-4 rounded-lg bg-[#f9186b] dark:bg-pink-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#d4145b] dark:hover:bg-pink-700 cursor-pointer";
+
+/** Circular control — the pagination arrows and the mark-all-read button. */
+const ICON_BUTTON_CLASS =
+  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#f9186b] dark:text-pink-400 transition hover:bg-pink-50 dark:hover:bg-pink-950/30 disabled:opacity-40 disabled:hover:bg-white dark:disabled:hover:bg-neutral-900 cursor-pointer";
+
 const formatRelativeTime = (
   isoDate: string,
   t: (key: string) => string,
@@ -343,14 +362,14 @@ export default function NotificationsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f6f6f7] dark:bg-neutral-950 flex items-center justify-center transition-colors duration-200">
-        <div className="text-red-500 dark:text-red-400 text-center">
-          <p>
+      <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 flex items-center justify-center px-6 transition-colors duration-200">
+        <div className="text-center">
+          <p className="text-red-500 dark:text-red-400">
             {t("error")}: {error}
           </p>
           <button
             onClick={() => fetchNotifications(currentPage, "initial")}
-            className="mt-4 rounded-md bg-[#c1005b] dark:bg-pink-600 px-4 py-2 text-white hover:bg-[#a0004c] dark:hover:bg-pink-700 transition cursor-pointer"
+            className={PRIMARY_ACTION_CLASS}
           >
             {t("retry")}
           </button>
@@ -360,15 +379,18 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f7] dark:bg-neutral-950 transition-colors duration-200">
-      <div className="mx-auto max-w-230 px-6 py-8">
-        {/* Header */}
-        <div className="mb-6 flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-none text-[#1f1f1f] dark:text-neutral-100">
+    <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-8 transition-colors duration-200">
+      {/* Same container as the orders page — its sibling in the account area,
+          which was 100px wider and inset differently. */}
+      <div className="mx-auto max-w-5xl px-4 md:px-8">
+        {/* `items-start` with `gap-4` and a `shrink-0` button: the heading is
+            allowed to wrap without ever squeezing the control beside it. */}
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
               {t("notifications")}
             </h1>
-            <p className="mt-2 text-sm text-[#777] dark:text-neutral-400">
+            <p className="mt-1 text-sm text-[#5a4044] dark:text-neutral-400">
               {t("notificationsSubtitle")}
             </p>
           </div>
@@ -377,14 +399,17 @@ export default function NotificationsPage() {
             onClick={handleMarkAllAsRead}
             disabled={unreadCount === 0 || markingAll}
             title={t("markAllAsRead")}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffe9ef] dark:bg-pink-950/40 text-[#c1005b] dark:text-pink-400 disabled:opacity-40 dark:disabled:opacity-20 transition cursor-pointer"
+            aria-label={t("markAllAsRead")}
+            // `mt-1` drops the 40px circle onto the heading's cap height —
+            // top-aligning it against a 40px h1 left it visibly high.
+            className={`${ICON_BUTTON_CLASS} mt-1`}
           >
             <CheckCheck size={18} />
           </button>
         </div>
 
         {/* Filters */}
-        <div className="mb-6 flex flex-wrap gap-3">
+        <div className="mb-6 flex flex-wrap gap-2.5">
           {(
             [
               { key: "all", label: t("all"), count: notifications.length },
@@ -392,24 +417,34 @@ export default function NotificationsPage() {
               { key: "orders", label: t("orders"), count: ordersCount },
               { key: "promos", label: t("promos"), count: promosCount },
             ] as { key: FilterType; label: string; count: number }[]
-          ).map(({ key, label, count }) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs transition cursor-pointer ${filter === key
-                ? "border-[#c1005b] bg-[#c1005b] text-white"
-                : "border-[#e4d3d8] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#666] dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+          ).map(({ key, label, count }) => {
+            const isActive = filter === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                aria-pressed={isActive}
+                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+                  isActive
+                    ? "border-[#f9186b] bg-[#f9186b] text-white dark:border-pink-600 dark:bg-pink-600"
+                    : "border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#5a4044] dark:text-neutral-300 hover:bg-pink-50 hover:border-pink-200 dark:hover:bg-neutral-800 dark:hover:border-neutral-700"
                 }`}
-            >
-              {label}
-              <span
-                className={`rounded-full px-2 py-px ${filter === key ? "bg-white/20 text-white" : "bg-[#f2f2f2] dark:bg-neutral-800 dark:text-neutral-300"
-                  }`}
               >
-                {count}
-              </span>
-            </button>
-          ))}
+                {label}
+                {/* Fixed min-width so the chips do not resize as counts change
+                    from one to two digits, which shifted the whole row. */}
+                <span
+                  className={`min-w-5 rounded-full px-1.5 py-px text-center ${
+                    isActive
+                      ? "bg-white/25 text-white"
+                      : "bg-gray-100 dark:bg-neutral-800 text-[#5a4044] dark:text-neutral-300"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Notification List */}
@@ -417,7 +452,7 @@ export default function NotificationsPage() {
           className={`space-y-4 transition-opacity ${pageLoading ? "opacity-50 pointer-events-none" : ""}`}
         >
           {filteredNotifications.length === 0 ? (
-            <div className="rounded-xl border border-[#ededed] dark:border-neutral-800 bg-white dark:bg-neutral-900 p-8 text-center text-[#666] dark:text-neutral-400">
+            <div className="flex h-75 items-center justify-center rounded-xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-center text-[#5a4044] dark:text-neutral-400 shadow-sm">
               {t("noNotifications")}
             </div>
           ) : (
@@ -444,32 +479,50 @@ export default function NotificationsPage() {
               return (
                 <div
                   key={notification._id}
-                  className={`relative flex gap-4 rounded-xl border border-[#ededed] dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 transition-shadow hover:shadow-md ${isUnread ? "cursor-pointer" : ""
-                    } ${isMarkingThis ? "opacity-60 pointer-events-none" : ""}`}
+                  // `overflow-hidden` lets the unread bar below sit flush
+                  // inside the rounded corner instead of needing its own
+                  // radius, and `pl-6` keeps the content clear of it — read and
+                  // unread rows still start their text on the same x.
+                  className={`relative flex gap-4 overflow-hidden rounded-xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 pl-6 shadow-sm transition-shadow hover:shadow-md ${
+                    isUnread ? "cursor-pointer" : ""
+                  } ${isMarkingThis ? "opacity-60 pointer-events-none" : ""}`}
                   onClick={() => {
                     if (isUnread) handleMarkAsRead(notification._id);
                   }}
                 >
-                  {/* Left border for unread */}
                   {isUnread && (
-                    <div className="absolute left-0 top-0 h-full w-0.75 rounded-l-xl bg-[#c1005b]" />
+                    <span
+                      aria-hidden
+                      className="absolute inset-y-0 left-0 w-1 bg-[#f9186b] dark:bg-pink-500"
+                    />
                   )}
 
                   {/* Icon */}
                   <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${isUnread ? "bg-[#fff0f5] dark:bg-pink-950/20" : "bg-[#f3f3f3] dark:bg-neutral-800"
-                      }`}
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
+                      isUnread
+                        ? "bg-pink-50 dark:bg-pink-950/30"
+                        : "bg-gray-100 dark:bg-neutral-800"
+                    }`}
                   >
                     <Icon
                       size={20}
-                      className={isUnread ? "text-[#c1005b] dark:text-pink-400" : "text-[#666] dark:text-neutral-400"}
+                      className={
+                        isUnread
+                          ? "text-[#f9186b] dark:text-pink-400"
+                          : "text-[#5a4044] dark:text-neutral-400"
+                      }
                     />
                   </div>
 
-                  {/* Content */}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <h3 className="text-xl font-semibold text-[#222] dark:text-neutral-100 min-w-0 break-words">
+                  {/* `min-w-0` so a long header wraps inside this column rather
+                      than stretching the row and pushing the timestamp out. */}
+                  <div className="min-w-0 flex-1">
+                    {/* `items-baseline` sits the 12px timestamp on the same
+                        baseline as the 18px heading — `items-start` floated it
+                        against the heading's ascender. */}
+                    <div className="flex items-baseline justify-between gap-3">
+                      <h3 className="min-w-0 break-words text-lg font-semibold text-[#191c1d] dark:text-neutral-50">
                         {orderId ? (
                           <>
                             {/* Composed in JSX, not interpolated: t() takes a
@@ -478,7 +531,7 @@ export default function NotificationsPage() {
                             <Link
                               href={`/orders/track-order/${orderId}`}
                               onClick={(event) => event.stopPropagation()}
-                              className="text-[#c1005b] dark:text-pink-400 hover:underline"
+                              className="text-[#f9186b] dark:text-pink-400 hover:underline"
                             >
                               #{orderId}
                             </Link>
@@ -488,23 +541,30 @@ export default function NotificationsPage() {
                           notification.title
                         )}
                       </h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-[#888] dark:text-neutral-400">
+                      {/* `shrink-0`: the date is short and fixed, the heading
+                          is not — without this a long header truncated the
+                          wrong one of the two. */}
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-xs text-[#5a4044] dark:text-neutral-400">
                           {formatRelativeTime(notification.createdAt, t)}
                         </span>
                         {isUnread && (
-                          <span className="h-2 w-2 rounded-full bg-[#c1005b]" />
+                          <span
+                            aria-hidden
+                            className="h-2 w-2 rounded-full bg-[#f9186b] dark:bg-pink-500"
+                          />
                         )}
                       </div>
                     </div>
 
-                    <p className="mt-1 text-sm leading-6 text-[#666] dark:text-neutral-300">
+                    <p className="mt-1.5 text-sm leading-6 text-[#5a4044] dark:text-neutral-300">
                       {notification.message}
                     </p>
 
-                    {/* Type badge */}
+                    {/* Type badge. `rounded-full` to match the pill language
+                        the order cards and filter chips already use. */}
                     <div className="mt-3">
-                      <span className="rounded bg-[#fff0f5] dark:bg-pink-950/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#c1005b] dark:text-pink-400">
+                      <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#f9186b] dark:text-pink-400">
                         {getTypeLabel(notification.type, t)}
                       </span>
                     </div>
@@ -516,7 +576,7 @@ export default function NotificationsPage() {
                           href={`/orders/track-order/${notification.data.orderId}`}
                         >
                           <button
-                            className="mt-4 rounded-md bg-[#c1005b] dark:bg-pink-600 px-5 py-2 text-sm font-medium text-white hover:bg-[#a0004c] dark:hover:bg-pink-700 transition cursor-pointer"
+                            className={PRIMARY_ACTION_CLASS}
                             onClick={(e) => e.stopPropagation()}
                           >
                             {t("trackOrder")}
@@ -538,7 +598,7 @@ export default function NotificationsPage() {
                     {isCartExpiryNotification(notification) && (
                       <Link href="/cart">
                         <button
-                          className="mt-4 rounded-md bg-[#c1005b] dark:bg-pink-600 px-5 py-2 text-sm font-medium text-white hover:bg-[#a0004c] dark:hover:bg-pink-700 transition cursor-pointer"
+                          className={PRIMARY_ACTION_CLASS}
                           onClick={(e) => e.stopPropagation()}
                         >
                           {t("viewCart")}
@@ -549,13 +609,13 @@ export default function NotificationsPage() {
                     {notification.type === "DELIVERED" && (
                       <div className="mt-4 flex gap-6">
                         <button
-                          className="text-sm font-medium text-[#c1005b] dark:text-pink-400 hover:underline cursor-pointer"
+                          className="text-sm font-semibold text-[#f9186b] dark:text-pink-400 hover:underline cursor-pointer"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {t("rateOrder")}
                         </button>
                         <button
-                          className="text-sm font-medium text-[#c1005b] dark:text-pink-400 hover:underline cursor-pointer"
+                          className="text-sm font-semibold text-[#f9186b] dark:text-pink-400 hover:underline cursor-pointer"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {t("orderAgain")}
@@ -564,21 +624,32 @@ export default function NotificationsPage() {
                     )}
                   </div>
 
-                  {/* Chevron for unread */}
-                  {isUnread && (
-                    <div className="flex items-center">
-                      <ChevronRight size={18} className="text-[#b5b5b5] dark:text-neutral-500" />
-                    </div>
-                  )}
+                  {/* The chevron column is reserved whether or not it holds a
+                      chevron. Rendering it only for unread rows made every read
+                      row's content 18px wider than its neighbour's, so the list
+                      never lined up down its right edge. */}
+                  <div
+                    aria-hidden
+                    className="flex w-4.5 shrink-0 items-center justify-end"
+                  >
+                    {isUnread && (
+                      <ChevronRight
+                        size={18}
+                        className="text-gray-400 dark:text-neutral-500"
+                      />
+                    )}
+                  </div>
                 </div>
               );
             })
           )}
         </div>
+        {/* `flex-wrap` + `gap-4` on the row below: at narrow widths the summary
+            and the controls stack instead of crushing each other. */}
         {meta.totalPage > 1 && (
-          <div className="mt-8 flex items-center justify-between">
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
             {/* Info */}
-            <p className="text-sm text-[#888] dark:text-neutral-400">
+            <p className="text-sm text-[#5a4044] dark:text-neutral-400">
               {t("page")} {meta.page} {t("of")} {meta.totalPage} &mdash;{" "}
               {meta.total} {t("totalNotifications")}
             </p>
@@ -589,7 +660,8 @@ export default function NotificationsPage() {
               <button
                 onClick={() => goToPage(currentPage - 1)}
                 disabled={currentPage === 1 || pageLoading}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e4d3d8] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#c1005b] dark:text-pink-400 disabled:opacity-40 transition hover:bg-[#fff0f5] dark:hover:bg-pink-950/20 cursor-pointer"
+                aria-label={t("previous")}
+                className={ICON_BUTTON_CLASS}
               >
                 <ChevronLeft size={16} />
               </button>
@@ -610,7 +682,10 @@ export default function NotificationsPage() {
                 }, [])
                 .map((item, idx) =>
                   item === "..." ? (
-                    <span key={`ellipsis-${idx}`} className="px-1 text-[#aaa] dark:text-neutral-600">
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="px-1 text-gray-400 dark:text-neutral-600"
+                    >
                       …
                     </span>
                   ) : (
@@ -618,10 +693,15 @@ export default function NotificationsPage() {
                       key={item}
                       onClick={() => goToPage(item as number)}
                       disabled={pageLoading}
-                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition cursor-pointer ${currentPage === item
-                        ? "bg-[#c1005b] text-white"
-                        : "border border-[#e4d3d8] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#444] dark:text-neutral-300 hover:bg-[#fff0f5] dark:hover:bg-pink-950/20"
-                        }`}
+                      aria-current={currentPage === item ? "page" : undefined}
+                      // h-10 w-10, matching the arrows either side of it —
+                      // these were h-9 next to h-9 arrows in a row whose other
+                      // circular control was h-10.
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition cursor-pointer ${
+                        currentPage === item
+                          ? "bg-[#f9186b] dark:bg-pink-600 text-white"
+                          : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#191c1d] dark:text-neutral-300 hover:bg-pink-50 dark:hover:bg-pink-950/30"
+                      }`}
                     >
                       {item}
                     </button>
@@ -632,7 +712,8 @@ export default function NotificationsPage() {
               <button
                 onClick={() => goToPage(currentPage + 1)}
                 disabled={currentPage === meta.totalPage || pageLoading}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e4d3d8] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[#c1005b] dark:text-pink-400 disabled:opacity-40 transition hover:bg-[#fff0f5] dark:hover:bg-pink-950/20 cursor-pointer"
+                aria-label={t("next")}
+                className={ICON_BUTTON_CLASS}
               >
                 <ChevronRight size={16} />
               </button>

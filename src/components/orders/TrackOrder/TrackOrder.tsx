@@ -205,22 +205,50 @@ export default function TrackOrder() {
   const invalidateOrders = useInvalidateOrders();
 
   /**
-   * The vendor's own record, read for the one thing no other source carries:
-   * their phone number.
+   * The store's record in the cached vendor list — a pickup order's address.
    *
-   * `GET /orders/:id` populates `vendorId` with the name and `businessDetails`
-   * and stops there — no `contactNumber`. The vendor *list* above has the
-   * store's location but omits the number too; only the per-vendor detail route
-   * returns it. So a customer who needed to reach the shop about their own
-   * order had nothing to call, while the rider's number has been one tap away
-   * further down this page all along.
-   *
-   * Keyed on `userId` ("V-…"), NOT the Mongo `_id` — the detail route 404s on
-   * the latter. Undefined until the order lands, which leaves the query
-   * disabled, and React Query caches the result, so this costs one request per
-   * order viewed.
+   * Derived up here with the hooks rather than beside its use further down,
+   * because the query below is gated on the result and this component returns
+   * early while the order loads. Safe against a null `order`: `isPickupOrder`
+   * answers false for one, which short-circuits the lookup — without that the
+   * `_id === undefined` half of the match would find the first vendor in the
+   * list and claim it as this order's store.
    */
-  const { data: vendorDetail } = useVendor<any>(order?.vendorId?.userId);
+  const isPickup = isPickupOrder(order);
+  const storeVendor = isPickup
+    ? vendorList.find(
+        (v: any) =>
+          v._id === order?.vendorId?._id ||
+          v.userId === order?.vendorId?.userId,
+      ) ?? null
+    : null;
+
+  /**
+   * The vendor's own record — now a fallback, and usually not fetched at all.
+   *
+   * This used to be unconditional, because it was the only source of the shop's
+   * `contactNumber`: `GET /orders/:id` populated `vendorId` with the name and
+   * `businessDetails` and stopped there. **The backend has since added
+   * `contactNumber` to that populate** (verified on both `/orders` and
+   * `/orders/:orderId`, present on all 39 orders on the test account), so the
+   * phone now comes off the order and this request is no longer needed for it.
+   *
+   * What it still answers is `businessLocation`, which the order populate does
+   * *not* carry — but the vendor list does, for every vendor, and that list is
+   * already cached and shared with the cart and checkout. So this is reduced to
+   * what it was always meant to be: the backstop for when the list (capped at
+   * 100 vendors) doesn't have the store, which would otherwise leave a
+   * collecting customer with no address at all.
+   *
+   * Net effect: a delivery order makes **zero** requests here, and so does a
+   * pickup order whose store is in the list — which is every one of them today.
+   *
+   * Keyed on `userId` ("V-…"), NOT the Mongo `_id`; the detail route 404s on
+   * the latter.
+   */
+  const { data: vendorDetail } = useVendor<any>(order?.vendorId?.userId, {
+    enabled: isPickup && !storeVendor?.businessLocation,
+  });
 
   const handleDownloadInvoice = async () => {
     if (downloadingInvoice || !order?.orderId) return;
@@ -387,19 +415,10 @@ export default function TrackOrder() {
   // it. The pickup card a few lines down already had the priority right.
   const vendorName = getVendorDisplayName(order.vendorId);
 
-  const isPickup = isPickupOrder(order);
-
-  const storeVendor = isPickup
-    ? vendorList.find(
-        (v: any) =>
-          v._id === order.vendorId?._id || v.userId === order.vendorId?.userId,
-      ) ?? null
-    : null;
   /* `useVendor` holds the previous vendor's record while a new one loads, so it
      is trusted only once it is demonstrably about THIS order's vendor. Without
-     the check, moving between two orders could print one shop's phone number
-     under another shop's name for a frame — and a customer calls the wrong
-     restaurant about their order. */
+     the check, moving between two orders could print one shop's address under
+     another shop's name for a frame. */
   const orderVendor =
     vendorDetail && vendorDetail.userId === order.vendorId?.userId
       ? vendorDetail
@@ -413,9 +432,12 @@ export default function TrackOrder() {
   const storeLocation =
     storeVendor?.businessLocation ?? orderVendor?.businessLocation ?? null;
 
-  // Shown beneath the store's address, below. Trimmed because the field is free
-  // text; `toTelHref` decides separately whether it can actually be dialled.
-  const vendorPhone: string | null = orderVendor?.contactNumber?.trim() || null;
+  /* Straight off the order — the populate carries `contactNumber` as of
+     2026-08-15, which is what retired the extra vendor request above. Trimmed
+     because the field is free text; `toTelHref` decides separately whether it
+     can actually be dialled. */
+  const vendorPhone: string | null =
+    order.vendorId?.contactNumber?.trim() || null;
   const vendorPhoneHref = toTelHref(vendorPhone);
 
   // Delivery address
