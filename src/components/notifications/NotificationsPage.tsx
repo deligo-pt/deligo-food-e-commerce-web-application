@@ -21,6 +21,24 @@ interface NotificationData {
   orderId?: string;
 }
 
+/**
+ * The notification kinds this page has copy and behaviour for, plus an open
+ * `string` so the union stays honest.
+ *
+ * It was written as a closed four-value union, and it wasn't true: the backend
+ * also sends `OTHER` (cart-expiry warnings arrive that way). Because TypeScript
+ * believed the union, nothing flagged the badge's ternary chain for having no
+ * default — so an `OTHER` notification fell off the end of it and was labelled
+ * DELIVERED. `(string & {})` keeps autocomplete on the four known values while
+ * admitting that the server decides this field, not us.
+ */
+type NotificationType =
+  | "ORDER"
+  | "PROMO"
+  | "SECURITY"
+  | "DELIVERED"
+  | (string & {});
+
 interface Notification {
   _id: string;
   receiverId: string;
@@ -28,7 +46,7 @@ interface Notification {
   title: string;
   message: string;
   data: NotificationData;
-  type: "ORDER" | "PROMO" | "SECURITY" | "DELIVERED";
+  type: NotificationType;
   isRead: boolean;
   isDeleted: boolean;
   createdAt: string;
@@ -70,6 +88,40 @@ const formatRelativeTime = (
   if (diffDays === 1) return t("yesterday");
   if (diffDays < 7) return `${diffDays} ${t("daysAgo")}`;
   return date.toLocaleDateString();
+};
+
+/**
+ * Translation keys for the badge, for the types we have copy for.
+ *
+ * Deliberately a lookup rather than a ternary chain: a chain needs a final
+ * `else`, and whatever sits there becomes the label for every value the backend
+ * invents next. A map has no such branch — an unrecognized type simply isn't in
+ * it, and `getTypeLabel` shows what the server actually said instead of
+ * asserting something it didn't.
+ */
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  ORDER: "order",
+  PROMO: "promo",
+  SECURITY: "security",
+  DELIVERED: "delivered",
+};
+
+/**
+ * The badge's text: translated when we know the type, the backend's own string
+ * when we don't.
+ *
+ * Falling back to the raw value keeps the badge truthful without needing a
+ * frontend release every time a type is added — `OTHER` renders as "OTHER",
+ * which the badge's `uppercase` styling already makes look native. It stays
+ * untranslated on purpose: inventing PT copy for a value we've never seen would
+ * be guessing at its meaning.
+ */
+const getTypeLabel = (
+  type: Notification["type"],
+  t: (key: string) => string,
+): string => {
+  const key = TYPE_LABEL_KEYS[type];
+  return key ? t(key) : type;
 };
 
 const getIconByType = (type: Notification["type"]) => {
@@ -376,13 +428,7 @@ export default function NotificationsPage() {
                     {/* Type badge */}
                     <div className="mt-3">
                       <span className="rounded bg-[#fff0f5] dark:bg-pink-950/30 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#c1005b] dark:text-pink-400">
-                        {notification.type === "ORDER"
-                          ? t("order")
-                          : notification.type === "PROMO"
-                            ? t("promo")
-                            : notification.type === "SECURITY"
-                              ? t("security")
-                              : t("delivered")}
+                        {getTypeLabel(notification.type, t)}
                       </span>
                     </div>
 
