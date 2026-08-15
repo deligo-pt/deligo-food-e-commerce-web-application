@@ -482,17 +482,16 @@ export default function LoginPage() {
               ) : null}
 
               {/* Social sign-in. Credentials step only — once a code has been
-                  requested the user is mid-flow, and offering two more ways to
-                  start over is noise. Shown on both tabs, because neither
-                  provider has anything to do with which identifier was typed. */}
+                  requested the user is mid-flow, and offering another way to
+                  start over is noise. Shown on both tabs, because the provider
+                  has nothing to do with which identifier was typed. */}
               {step === "credentials" ? (
                 /* Capped at 400px because that is Google's hard maximum for a
-                   button it renders — pass more and it silently clamps, leaving
-                   Google ~100px narrower than Facebook on desktop, where this
-                   column is nearer 500px. Capping the whole group instead of
-                   just the buttons keeps the divider aligned with them, so the
-                   inset reads as a deliberate grouping rather than a mistake.
-                   Below 400px everything is full width and this does nothing. */
+                   button it renders — pass more and it silently clamps. Capping
+                   the whole group instead of just the button keeps the divider
+                   aligned with it, so the inset reads as a deliberate grouping
+                   rather than a mistake. Below 400px everything is full width
+                   and this does nothing. */
                 <div className="mx-auto w-full max-w-[400px] pt-2">
                   <div className="flex items-center gap-4">
                     <span className="h-px flex-1 bg-[#e3e3e3] dark:bg-neutral-800" />
@@ -512,12 +511,19 @@ export default function LoginPage() {
                       onCredential={handleGoogleCredential}
                       onUnavailable={reportSocialUnavailable}
                     />
+                    {/* Facebook sign-in — TEMPORARILY DISABLED on request.
+                        Nothing was deleted: `SocialButton`, `FacebookMark`, and
+                        the `startFacebookLogin` / `socialProviderInFlight`
+                        bindings from `useLoginFlow` are all still imported, so
+                        restoring is just removing these two markers.
+
                     <SocialButton
                       onClick={startFacebookLogin}
                       label={t("continueWithFacebook")}
                       icon={<FacebookMark size={18} />}
                       busy={socialProviderInFlight === "FACEBOOK"}
                     />
+                    */}
                   </div>
                 </div>
               ) : null}
