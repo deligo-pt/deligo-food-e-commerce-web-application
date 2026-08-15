@@ -14,11 +14,28 @@ import {
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useVisiblePolling } from "@/hooks/useVisiblePolling";
+import {
+  useOrderStatusIndex,
+  useInvalidateOrderStatusIndex,
+} from "@/hooks/queries/useOrders";
+import { getOrderStatusLabel } from "@/lib/orderStatusLabel";
+import {
+  getNotificationOrderId,
+  isCartExpiryNotification,
+  resolveNotificationStatus,
+} from "@/lib/notificationHeader";
 import Link from "next/link";
 import NotificationsSkeleton from "./NotificationsSkeleton";
 
 interface NotificationData {
   orderId?: string;
+  /**
+   * The status this notification announced. Present on only some of them —
+   * `resolveNotificationStatus` explains what happens when it isn't.
+   */
+  status?: string;
+  /** Subtype for notifications that aren't about an order, e.g. cart expiry. */
+  type?: string;
 }
 
 /**
@@ -157,6 +174,8 @@ export default function NotificationsPage() {
   const [markingId, setMarkingId] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
 
+  const invalidateOrderStatusIndex = useInvalidateOrderStatusIndex();
+
   const fetchNotifications = useCallback(
     async (page: number, loadingType: "none" | "initial" | "page" = "page") => {
       try {
@@ -174,6 +193,10 @@ export default function NotificationsPage() {
         if (response.data.success) {
           setNotifications(response.data.data);
           setMeta(response.data.meta);
+          // The headers are drawn from a second query, and a list that moved on
+          // while that query sat frozen is what made this page look like it
+          // needed a reload. They refresh together or not at all.
+          invalidateOrderStatusIndex();
         } else {
           throw new Error(
             response.data.message || "Failed to fetch notifications",
@@ -186,7 +209,7 @@ export default function NotificationsPage() {
         setPageLoading(false);
       }
     },
-    [],
+    [invalidateOrderStatusIndex],
   );
 
   useEffect(() => {
@@ -293,6 +316,29 @@ export default function NotificationsPage() {
     return notifications;
   }, [notifications, filter]);
 
+  /**
+   * Does this page have to fetch orders to caption its headers?
+   *
+   * Only when something on it names an order but not the status of that order.
+   * A page whose notifications all declare `data.status` — and a page with no
+   * order notifications at all — issues no request. That also means the query
+   * retires itself the day the backend fills `data.status` in everywhere,
+   * without anyone having to notice.
+   */
+  const needsOrderLookup = useMemo(
+    () =>
+      notifications.some(
+        (notification) =>
+          Boolean(getNotificationOrderId(notification)) &&
+          !notification.data?.status,
+      ),
+    [notifications],
+  );
+
+  const { data: orderIndex } = useOrderStatusIndex({
+    enabled: needsOrderLookup,
+  });
+
   if (loading) return <NotificationsSkeleton />;
 
   if (error) {
@@ -380,6 +426,21 @@ export default function NotificationsPage() {
               const isUnread = !notification.isRead;
               const isMarkingThis = markingId === notification._id;
 
+              // The header is composed here rather than taken from `title`,
+              // which the backend stores pre-rendered in English — see
+              // `lib/notificationHeader`. `orderId` null is a real answer: the
+              // cart-expiry warning has no order, and keeps its own title.
+              const orderId = getNotificationOrderId(notification);
+              const statusLabel = orderId
+                ? getOrderStatusLabel(
+                    resolveNotificationStatus(
+                      notification,
+                      orderIndex?.get(orderId),
+                    ),
+                    t,
+                  )
+                : null;
+
               return (
                 <div
                   key={notification._id}
@@ -408,8 +469,24 @@ export default function NotificationsPage() {
                   {/* Content */}
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
-                      <h3 className="text-xl font-semibold text-[#222] dark:text-neutral-100">
-                        {notification.title}
+                      <h3 className="text-xl font-semibold text-[#222] dark:text-neutral-100 min-w-0 break-words">
+                        {orderId ? (
+                          <>
+                            {/* Composed in JSX, not interpolated: t() takes a
+                                single key and has no placeholder support. */}
+                            {t("order")}{" "}
+                            <Link
+                              href={`/orders/track-order/${orderId}`}
+                              onClick={(event) => event.stopPropagation()}
+                              className="text-[#c1005b] dark:text-pink-400 hover:underline"
+                            >
+                              #{orderId}
+                            </Link>
+                            {statusLabel ? ` — ${statusLabel}` : null}
+                          </>
+                        ) : (
+                          notification.title
+                        )}
                       </h3>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-[#888] dark:text-neutral-400">
@@ -446,6 +523,28 @@ export default function NotificationsPage() {
                           </button>
                         </Link>
                       )}
+
+                    {/* Cart expiry is the one notification with no order
+                        behind it, so it gets the one action that makes sense:
+                        the cart itself. No id travels in the notification and
+                        none is needed — `/carts/view-cart` takes none, there is
+                        exactly one cart per customer.
+
+                        Shown unconditionally. These notifications outlive the
+                        cart they warned about, so the button may well land on
+                        an empty one — but a button that vanishes based on state
+                        the customer cannot see is worse than one that lands
+                        somewhere self-explanatory. */}
+                    {isCartExpiryNotification(notification) && (
+                      <Link href="/cart">
+                        <button
+                          className="mt-4 rounded-md bg-[#c1005b] dark:bg-pink-600 px-5 py-2 text-sm font-medium text-white hover:bg-[#a0004c] dark:hover:bg-pink-700 transition cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {t("viewCart")}
+                        </button>
+                      </Link>
+                    )}
 
                     {notification.type === "DELIVERED" && (
                       <div className="mt-4 flex gap-6">

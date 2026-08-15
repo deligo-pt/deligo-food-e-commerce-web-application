@@ -10,6 +10,7 @@
     "lint": "eslint",
     "verify:auth": "node scripts/verify-auth-contract.mjs",
     "verify:model": "node --no-warnings scripts/verify-pickup-model.mjs",
+    "verify:notifications": "node --no-warnings scripts/verify-notification-header.mjs",
     "verify:pickup": "node scripts/verify-pickup-contract.mjs"
   },
   "dependencies": {

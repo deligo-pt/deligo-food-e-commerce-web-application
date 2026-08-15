@@ -143,6 +143,8 @@ const pt = {
 
   myShoppingCart: "Meu Carrinho de Compras",
 
+  viewCart: "Ver Carrinho",
+
   itemsInCart: "item(ns) no seu carrinho",
 
   yourCartIsEmpty: "Seu carrinho está vazio",
@@ -587,6 +589,7 @@ const pt = {
   recenterMap: "Centrar Mapa",
   cancelled: "Cancelado",
   rejected: "Rejeitado",
+  notCollected: "Não Recolhido",
   location: "Localização",
   orderWasCancelled: "O pedido foi cancelado",
   orderWasRejected: "O pedido foi rejeitado pelo restaurante",

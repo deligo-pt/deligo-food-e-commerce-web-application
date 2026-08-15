@@ -137,6 +137,10 @@ const en = {
 
   myShoppingCart: "My Shopping Cart",
 
+  // Button on the cart-expiry notification. Not `myShoppingCart`, which is a
+  // page heading — a button says what pressing it does.
+  viewCart: "View Cart",
+
   itemsInCart: "item(s) in your cart",
 
   yourCartIsEmpty: "Your cart is empty",
@@ -568,6 +572,9 @@ const en = {
   recenterMap: "Recenter Map",
   cancelled: "Cancelled",
   rejected: "Rejected",
+  // The API calls this ending `NO_SHOW`, which describes the customer. The
+  // label describes the order, which is what the customer is looking at.
+  notCollected: "Not Collected",
   // Heading fallback on the Track Order delivery card when the address has no
   // city. Without this key it rendered the literal lowercase word "location".
   location: "Location",

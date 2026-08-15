@@ -40,6 +40,7 @@ import {
 } from "@/lib/orderTimeline";
 import { getPaymentStatusDisplay } from "@/lib/paymentStatus";
 import { isCompletedStatus } from "@/lib/orderStatus";
+import { humanizeStatus } from "@/lib/orderStatusLabel";
 import { useInvalidateOrders } from "@/hooks/queries/useOrders";
 import { useVendor, useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { formatAddressFull } from "@/lib/addressFormat";
@@ -127,27 +128,12 @@ const STEP_PRESENTATION: Record<
   },
 };
 
-/**
- * Last-resort label for a status this build has no copy for.
- *
- * `getTimelineStepKeys` appends a pickup order's own status when it falls
- * outside the known progression, because the status a collected order reaches
- * has not been confirmed yet. Without this, `STEP_PRESENTATION[key]` would be
- * undefined and the page would crash on the customer whose order just
- * completed — the worst possible moment.
- *
- * Turning `NOT_COLLECTED` into "Not Collected" is presentation of a value the
- * backend sent, not copy invented here. It is deliberately plain, and it should
- * stop appearing the moment the real status is known and given proper keys.
- */
-function humanizeStatus(status: string): string {
-  return status
-    .toLowerCase()
-    .split("_")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
+// `humanizeStatus` is the last-resort label for a status this build has no copy
+// for. `getTimelineStepKeys` appends a pickup order's own status when it falls
+// outside the known progression, so without it `STEP_PRESENTATION[key]` would be
+// undefined and this page would crash on the customer whose order just
+// completed — the worst possible moment. It moved to `lib/orderStatusLabel` when
+// the notification header needed the same fallback.
 
 // `terminalNote` is the vendor's own reason for a rejection/cancellation, which
 // the API requires them to give — it replaces the generic description on the
