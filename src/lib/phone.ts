@@ -25,3 +25,54 @@ export function toTelHref(raw?: string | null): string | null {
   if (!digits) return null;
   return `tel:${trimmed.startsWith("+") ? "+" : ""}${digits}`;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Portuguese numbers, for the profile's OTP flow
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** The only country `PATCH /profile/send-otp` accepts. */
+export const PORTUGAL_DIAL_CODE = "+351";
+
+/**
+ * A contact number in the one shape `PATCH /profile/send-otp` accepts, or
+ * `null` if it cannot be made into one.
+ *
+ * The endpoint takes Portuguese numbers only — `+351` plus nine digits — and
+ * rejects anything else with *"Only valid Portugal contact numbers are allowed
+ * (+351xxxxxxxxx)."*
+ *
+ * ## What it actually accepts, measured
+ *
+ * Looser than that message in one direction and stricter in another:
+ *
+ * | sent | result |
+ * |---|---|
+ * | `+351920136680` | accepted |
+ * | `351920136680` (no `+`) | accepted |
+ * | `920136680` (bare nine digits) | accepted |
+ * | `+351 920 136 680` | **rejected** |
+ * | eight or ten digits | rejected |
+ *
+ * The spaces are the trap. A customer writing their own number the way it is
+ * written in Portugal — `920 136 680` — is refused for the spacing alone, by an
+ * error that names a format they appear to have used. So this normalizes rather
+ * than merely validating: separators go, a missing country code is added, and
+ * what leaves is always the canonical `+351XXXXXXXXX`.
+ */
+export function normalizePortugueseNumber(raw?: string | null): string | null {
+  if (!raw) return null;
+
+  const digits = raw.replace(/\D/g, "");
+
+  // `00351…` is how the country code is dialled from abroad, and how plenty of
+  // people store it.
+  const national = digits.startsWith("00351")
+    ? digits.slice(5)
+    : digits.startsWith("351")
+      ? digits.slice(3)
+      : digits;
+
+  if (!/^\d{9}$/.test(national)) return null;
+
+  return `${PORTUGAL_DIAL_CODE}${national}`;
+}

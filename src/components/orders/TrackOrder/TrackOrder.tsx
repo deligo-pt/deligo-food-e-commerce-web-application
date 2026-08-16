@@ -25,7 +25,11 @@ import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getServiceChargeGross, getDeliveryTax } from "@/lib/tax";
+import {
+  getDeliveryTax,
+  getServiceChargeGross,
+  getServiceChargeTax,
+} from "@/lib/tax";
 import {
   canCancelOrder,
   getRefundState,
@@ -486,7 +490,11 @@ export default function TrackOrder() {
   // `serviceCharge` arrives net; the total charges it with VAT, which the
   // backend reports as `serviceChargeVatAmount`.
   const serviceCharge = getServiceChargeGross(calc);
-  const serviceChargeTax = calc.serviceChargeVatAmount || 0;
+  // Through the shared helper rather than reading `serviceChargeVatAmount`
+  // directly: `getServiceChargeGross` falls back to the standard rate when that
+  // field is absent, and a caption without the same fallback would print "incl.
+  // tax €0.00" beside a gross figure that plainly contains some.
+  const serviceChargeTax = getServiceChargeTax(calc);
   const offerDiscount = calc.totalOfferDiscount || 0;
   const deliveryFee = order.delivery?.totalDeliveryCharge || 0;
   const deliveryTax = getDeliveryTax(order.delivery || {});
@@ -697,7 +705,7 @@ export default function TrackOrder() {
                     <ShoppingBag className="w-5 h-5 text-[#f9186b] dark:text-pink-400" />
                   </div>
                   <h4 className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400">
-                    {t("items")} ({totalItems})
+                    {t("orderItems")} ({totalItems})
                   </h4>
                 </div>
                 <div className="space-y-2">

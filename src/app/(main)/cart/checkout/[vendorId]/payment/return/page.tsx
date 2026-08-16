@@ -6,6 +6,7 @@ import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useInvalidateSavedCards } from "@/hooks/queries/usePaymentTokens";
 import Loader from "@/components/shared/Loader";
+import { openSupportChat } from "@/stores/supportChatStore";
 
 export default function PaymentReturnPage() {
   const { t } = useTranslation();
@@ -93,9 +94,14 @@ export default function PaymentReturnPage() {
             >
               {t("returnToCart")}
             </button>
+            {/* Was `router.push("/contact")` — a route that does not exist
+                (`Project_Reference.md` §4.9). The button says Contact Support,
+                so it now does that: the chat opens over this page, filed under
+                PAYMENT, without navigating away from a payment that has just
+                failed. The customer is necessarily signed in to have got here. */}
             <button
-              onClick={() => router.push("/contact")}
-              className="rounded-lg bg-pink-600 px-4 py-2 text-white"
+              onClick={() => openSupportChat({ category: "PAYMENT" })}
+              className="rounded-lg bg-pink-600 px-4 py-2 text-white cursor-pointer"
             >
               {t("contactSupport")}
             </button>

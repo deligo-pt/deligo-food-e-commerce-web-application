@@ -17,16 +17,12 @@ import { toast } from "sonner";
 import { canCancelOrder, getRefundState, isTerminatedStatus } from "@/lib/refund";
 import { isPickupOrder } from "@/lib/orderTimeline";
 import { getVendorDisplayName } from "@/lib/vendorName";
+import { formatOrderPrice } from "@/lib/currency";
 import {
   isCompletedStatus,
   isOngoingStatus,
   normalizeOrderStatus,
 } from "@/lib/orderStatus";
-
-// An order with no total is a data problem, not something to render as
-// "€undefined" — fall back to a dash.
-const formatOrderPrice = (amount?: number) =>
-  typeof amount === "number" ? `€${amount.toFixed(2)}` : "—";
 
 interface StarRatingProps {
   value: number;
