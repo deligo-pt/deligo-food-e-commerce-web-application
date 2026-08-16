@@ -30,6 +30,8 @@ import {
 } from "@/lib/authCookies";
 import Cookies from "js-cookie";
 import { useCartCache } from "@/hooks/queries/useCart";
+import { useInvalidateSupport } from "@/hooks/queries/useSupport";
+import { closeSupportChat } from "@/stores/supportChatStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { clearCachedFCMToken } from "@/lib/fcmToken";
 import Image from "next/image";
@@ -78,6 +80,7 @@ export default function AccountPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const { clear: clearCartCache } = useCartCache();
+  const { clear: clearSupportCache } = useInvalidateSupport();
   // Pending while the post-logout navigation is in flight — see `handleLogout`.
   const [isLoggingOut, startLogout] = useTransition();
   const [showProModal, setShowProModal] = useState(false);
@@ -180,6 +183,9 @@ export default function AccountPage() {
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
     useLocationStore.getState().setHasAutoSavedAddress(false);
     clearCartCache();
+    // Dropped, not invalidated — see the same call in `Navbar`'s `handleLogout`.
+    clearSupportCache();
+    closeSupportChat();
     startLogout(() => {
       router.push("/");
     });

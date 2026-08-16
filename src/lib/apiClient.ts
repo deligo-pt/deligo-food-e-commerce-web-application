@@ -1,5 +1,6 @@
 import axios from "axios";
 import { clearAuthTokens } from "./authCookies";
+import { isSessionEndedResponse } from "./authError";
 import { resolveLocalized, type LocalizedField } from "./localizedField";
 import { useStore } from "@/stores/translationStore";
 
@@ -70,8 +71,14 @@ let isRedirecting = false;
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Not every 401 is a dead session: a wrong OTP digit answers
+    // `401 INVALID_OTP_CODE`, and clearing the cookies for that logs out a
+    // customer whose session was never in question. `isSessionEndedResponse`
+    // reads the errorKey to tell the two apart.
+    const payload = error.response?.data as ApiErrorResponse | undefined;
+
     if (
-      error.response?.status === 401 &&
+      isSessionEndedResponse(error.response?.status, payload?.err?.errorKey) &&
       typeof window !== "undefined" &&
       !isRedirecting
     ) {

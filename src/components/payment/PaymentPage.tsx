@@ -37,7 +37,11 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { resolveAddonName } from "@/lib/cart";
 import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
-import { getDeliveryTax, getServiceChargeGross } from "@/lib/tax";
+import {
+  getDeliveryTax,
+  getServiceChargeGross,
+  getServiceChargeTax,
+} from "@/lib/tax";
 import { addressTypeLabel, normalizeAddressType } from "@/lib/addressType";
 import {
   formatAddressFull,
@@ -574,6 +578,9 @@ export default function PaymentPage() {
   // `serviceCharge` arrives NET while the grand total charges it with VAT, so
   // the row has to show net + the reported VAT or it falls short by the tax.
   const serviceCharge = getServiceChargeGross(orderCalculation);
+  // Captioned like the subtotal and delivery rows — the fee is charged with VAT,
+  // so the breakdown should say how much of it is tax.
+  const serviceChargeTax = getServiceChargeTax(orderCalculation);
   const orderTotal = payoutSummary.grandTotal;
 
   // Both taxes are the backend's own figures: `totalTaxAmount` for the items,
@@ -885,6 +892,11 @@ export default function PaymentPage() {
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="min-w-0 text-gray-500 dark:text-neutral-400">
                       {t("serviceCharge")}
+                      {serviceChargeTax > 0 && (
+                        <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
+                          ({t("inclTax")} -&nbsp;€{serviceChargeTax.toFixed(2)})
+                        </span>
+                      )}
                     </span>
                     <span className="shrink-0 whitespace-nowrap font-semibold text-gray-900 dark:text-neutral-50">
                       €{serviceCharge.toFixed(2)}

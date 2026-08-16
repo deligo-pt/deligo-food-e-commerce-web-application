@@ -2,12 +2,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronRight, Pencil, User, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, Pencil, User, X } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
 import EditProfileFormSkeleton from "./EditProfileFormSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
+import { normalizePortugueseNumber } from "@/lib/phone";
 import { toast } from "sonner";
 
 interface ProfileData {
@@ -150,9 +151,18 @@ export default function EditProfileFormPage() {
       toast.error(t("enterNewMobileToUpdate"));
       return;
     }
+    // The API takes Portuguese numbers only, and rejects the spacing they are
+    // normally written with — `920 136 680` fails for the spaces alone. Sending
+    // the canonical form means a customer's own way of writing their number is
+    // not a validation error.
+    const contactNumber = normalizePortugueseNumber(mobileNumber);
+    if (!contactNumber) {
+      toast.error(t("invalidPortugueseNumber"));
+      return;
+    }
     setSendingMobileOtp(true);
     try {
-      await apiClient.patch("/profile/send-otp", { contactNumber: mobileNumber });
+      await apiClient.patch("/profile/send-otp", { contactNumber });
       setMobileOtpSent(true);
       toast.success(t("otpSentToNewMobile"));
     } catch (err) {
@@ -174,7 +184,10 @@ export default function EditProfileFormPage() {
         otp: mobileOtp,
         type: "mobile",
       });
-      setOriginalMobile(mobileNumber);
+      // The canonical form, matching what was verified — so the "not saved yet"
+      // hint clears even though the customer typed it with spaces.
+      setMobileNumber(normalizePortugueseNumber(mobileNumber) ?? mobileNumber);
+      setOriginalMobile(normalizePortugueseNumber(mobileNumber) ?? mobileNumber);
       setMobileOtpSent(false);
       setMobileOtp("");
       toast.success(t("mobileUpdatedSuccessfully"));
@@ -184,6 +197,21 @@ export default function EditProfileFormPage() {
       setVerifyingMobile(false);
     }
   };
+
+  /**
+   * A typed-but-unverified change to the email or the phone.
+   *
+   * 🔴 Neither field is part of the save. `PATCH /customers/:userId` rejects
+   * both outright — "Unrecognized key(s) in object: 'contactNumber'" — because
+   * they can only change through the OTP flow beside them. So a customer who
+   * types a new number and presses Save used to get "Profile updated
+   * successfully!" while the number went nowhere. These drive an inline warning
+   * and an honest toast; they do not block the save, because the name, NIF and
+   * photo in the same form are perfectly saveable.
+   */
+  const emailUnverified = email.trim() !== "" && email !== originalEmail;
+  const mobileUnverified =
+    mobileNumber.trim() !== "" && mobileNumber !== originalMobile;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,7 +252,14 @@ export default function EditProfileFormPage() {
 
       await apiClient.patch(`/customers/${profileData.userId}`, payload);
 
-      toast.success(t("profileUpdatedSuccessfully"));
+      // Not a plain success when something on screen was not saved. The rest of
+      // the form did go; saying so and naming what did not is the difference
+      // between a confusing screen and an actionable one.
+      if (emailUnverified || mobileUnverified) {
+        toast.warning(t("profileSavedContactNotVerified"));
+      } else {
+        toast.success(t("profileUpdatedSuccessfully"));
+      }
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
@@ -376,6 +411,12 @@ export default function EditProfileFormPage() {
                       </div>
                     )}
                   </div>
+                  {emailUnverified && (
+                    <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                      <AlertTriangle aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      {t("changeNotSavedUntilVerified")}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
@@ -418,6 +459,12 @@ export default function EditProfileFormPage() {
                       </div>
                     )}
                   </div>
+                  {mobileUnverified && (
+                    <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                      <AlertTriangle aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      {t("changeNotSavedUntilVerified")}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="max-w-md">

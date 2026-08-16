@@ -52,6 +52,26 @@ export function getServiceChargeGross(calc: ServiceChargeFields): number {
   return net + (typeof vat === "number" ? vat : addTax(net) - net);
 }
 
+/**
+ * The VAT contained in the service fee **as displayed**.
+ *
+ * `getServiceChargeGross` needs this number to build the figure on screen and
+ * then has no use for it; the summary row needs the same number to caption that
+ * figure. Both read the API's own `serviceChargeVatAmount`, so the caption and
+ * the amount can never disagree — deriving one of them from a hardcoded rate is
+ * how a breakdown starts failing to add up.
+ *
+ * Note the asymmetry with delivery: `serviceCharge` is reported NET and shown
+ * GROSS, while `totalDeliveryCharge` is already gross. The VAT is "included" in
+ * what the customer reads either way, which is what the caption claims.
+ */
+export function getServiceChargeTax(calc: ServiceChargeFields): number {
+  const net = calc.serviceCharge ?? 0;
+  if (net <= 0) return 0;
+  const vat = calc.serviceChargeVatAmount;
+  return typeof vat === "number" ? vat : addTax(net) - net;
+}
+
 /** The VAT already contained in the (gross) delivery charge. */
 export function getDeliveryTax(delivery: DeliveryFields): number {
   if (typeof delivery.vatAmount === "number") return delivery.vatAmount;

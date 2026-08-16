@@ -36,6 +36,8 @@ import {
   REFRESH_TOKEN_COOKIE,
 } from "../../lib/authCookies";
 import { useCart, useCartCache } from "@/hooks/queries/useCart";
+import { useInvalidateSupport } from "@/hooks/queries/useSupport";
+import { closeSupportChat } from "@/stores/supportChatStore";
 import { getCartVendorId } from "@/lib/cart";
 import type { CartResponse } from "@/types/cart";
 import { useLocationStore } from "@/stores/locationStore";
@@ -110,6 +112,7 @@ export default function Navbar() {
   // server-side could stay on screen with a confident count above it.
   const { data: cart } = useCart<CartResponse | null>({ enabled: isLoggedIn });
   const { clear: clearCartCache } = useCartCache();
+  const { clear: clearSupportCache } = useInvalidateSupport();
   const vendorCount = useMemo(() => {
     // Logged out, the query is disabled but its last data is still cached —
     // gate on the session so a signed-out navbar can't show the old basket.
@@ -482,6 +485,11 @@ export default function Navbar() {
     Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
     useLocationStore.getState().setHasAutoSavedAddress(false);
     clearCartCache();
+    // Dropped, not invalidated: the support queries are disabled the moment the
+    // token goes, so an invalidated entry would survive unfetched and the next
+    // account to sign in on this device would read the previous one's chat.
+    clearSupportCache();
+    closeSupportChat();
     startLogout(() => {
       router.push("/");
       setIsLoggedIn(false);

@@ -137,6 +137,10 @@ const en = {
 
   myShoppingCart: "My Shopping Cart",
 
+  // Button on the cart-expiry notification. Not `myShoppingCart`, which is a
+  // page heading — a button says what pressing it does.
+  viewCart: "View Cart",
+
   itemsInCart: "item(s) in your cart",
 
   yourCartIsEmpty: "Your cart is empty",
@@ -502,7 +506,15 @@ const en = {
   otp: "OTP",
   verify: "Verify",
   verifying: "Verifying...",
-  mobilePlaceholder: "+1234567890",
+  // Portugal-only, and the API rejects the spacing the number is normally
+  // written with — so the placeholder shows the shape that always works.
+  mobilePlaceholder: "+351 XXX XXX XXX",
+  invalidPortugueseNumber:
+    "Enter a Portuguese mobile number — 9 digits, with or without +351.",
+  changeNotSavedUntilVerified:
+    "Not saved yet — verify this change with the code to apply it.",
+  profileSavedContactNotVerified:
+    "Profile saved. Your new email or phone number was not applied — verify it with the code first.",
   myOrders: "My Orders",
 
   trackOrdersDescription:
@@ -533,7 +545,9 @@ const en = {
 
   restaurantAddressComingSoon: "Address coming soon",
 
-  items: "Items",
+  // Inline count ("3 items · €9.23"). The heading form is `orderItems`.
+  items: "items",
+  orderItems: "Order Items",
 
   billSummary: "Bill Summary",
 
@@ -568,6 +582,9 @@ const en = {
   recenterMap: "Recenter Map",
   cancelled: "Cancelled",
   rejected: "Rejected",
+  // The API calls this ending `NO_SHOW`, which describes the customer. The
+  // label describes the order, which is what the customer is looking at.
+  notCollected: "Not Collected",
   // Heading fallback on the Track Order delivery card when the address has no
   // city. Without this key it rendered the literal lowercase word "location".
   location: "Location",
@@ -612,6 +629,14 @@ const en = {
     "If the restaurant has not accepted your order yet, you will be refunded. Once they have accepted it, no refund is due.",
   cancelReason: "Reason",
   cancelReasonPlaceholder: "Tell us why you are cancelling",
+  cancelReasonQuestion: "Why do you want to cancel this order?",
+  // These four are the reason *sent to the API*, not just labels — the string
+  // is stored on the order and shown back to both the customer and the vendor.
+  // See `lib/cancelReason`.
+  cancelReasonChangedMind: "Changed my mind",
+  cancelReasonMistake: "Ordered by mistake",
+  cancelReasonTooLong: "Taking too long",
+  cancelReasonOther: "Other",
   keepOrder: "Keep Order",
   confirmCancelOrder: "Cancel Order",
   orderCanceled: "Your order has been cancelled",
@@ -673,54 +698,61 @@ const en = {
 
   upcoming: "Upcoming",
 
-  helpCenterDescription:
-    "How can we help you today? Search our help articles or get in touch with our support team.",
-
-  searchHelpPlaceholder: "Search for articles, topics, keywords...",
-
-  needImmediateHelp: "Need immediate help?",
-
-  needImmediateHelpDescription:
-    "Our dedicated support team is available 24/7 to assist with your active orders and deliveries. We are here whenever you need us.",
-
-  chatWithUsNow: "Chat with us now",
-
-  getInTouch: "Get in touch",
-
-  getInTouchDescription:
-    "Prefer reaching out directly? We are just a click away.",
-
   liveChat: "Live Chat",
-  realTimeSupport: "Real-time support",
-  startConversation: "Start conversation",
-
+  realTimeSupport: "Chat with support",
   emailUs: "Email Us",
-  sendEmail: "Send email",
-
   callUs: "Call Us",
-  callSupport: "Call support",
-
-  browseByCategory: "Browse by Category",
-
-  generalFaqs: "General FAQs",
-  generalFaqsDescription:
-    "Find answers to common questions about tracking, delivery times, and more.",
+  generalFaqs: "FAQs",
+  generalFaqsDescription: "Find answers, track orders, and more",
 
   orderIssues: "Order Issues",
-  orderIssuesDescription:
-    "Problems with your current order? Learn how to track, modify, or report errors.",
+  orderIssuesDescription: "Track, modify, or report problems",
 
   paymentsRefunds: "Payments & Refunds",
-  paymentsRefundsDescription:
-    "Billing queries, voucher issues, and everything regarding refund processing.",
+  paymentsRefundsDescription: "Billing questions and refund status",
 
   accountProfile: "Account & Profile",
-  accountProfileDescription:
-    "Update your details, manage preferences, and secure your account.",
+  accountProfileDescription: "Manage account settings",
 
   popularQuestions: "Popular Questions",
 
-  popularQuestionsDescription: "Quick answers to things you ask us the most.",
+  browseTopics: "Browse Topics",
+
+  reportAnIssue: "Report an Issue",
+  selectOrderToReport: "Select an order to report an issue",
+  noOrdersToReport: "No orders yet",
+  browseStores: "Browse stores",
+  // The left half of the prefilled sentence, e.g. "Order Issue: #ORD-XXXX".
+  supportPrefillOrderIssue: "Order Issue",
+
+  paymentsHelpSubtitle:
+    "Get help with your payments and refunds. Select a topic below to chat with our support team.",
+  refundStatus: "Refund Status",
+  unrecognizedCharge: "Unrecognized Charge",
+  requestInvoice: "Request Invoice",
+  supportPrefillPayment: "Payment Question",
+
+  accountHelpSubtitle: "Common questions about your account",
+  manageAccount: "Manage Account",
+  goToSettings: "Go to Settings",
+  goToSettingsDescription: "Manage security, notifications, and more",
+  editProfileDescription: "Update your name and phone number",
+  stillNeedHelp: "Still need help?",
+
+  // 🔴 Verbatim from the mobile app, by explicit request. Three of the four are
+  // false for this client — see the note at the top of `AccountHelpPage`.
+  faqPasswordQuestion: "How do I reset my password?",
+  faqPasswordAnswer:
+    "You can reset your password by going to the Login screen and clicking 'Forgot Password'.",
+  faqChangeEmailQuestion: "Can I change my email address?",
+  faqChangeEmailAnswer:
+    "Currently, you cannot change your registered email address directly in the app. Please contact support.",
+  faqDeleteAccountQuestion: "How do I delete my account?",
+  faqDeleteAccountAnswer:
+    "Go to Settings > Delete Account. Please note this action is irreversible.",
+  faqUpdateProfileQuestion: "How do I update my profile?",
+  faqUpdateProfileAnswer:
+    "You can update your name and phone number in the 'Edit Profile' section.",
 
   faqTrackOrderQuestion: "How can I track my order?",
   faqTrackOrderAnswer:
@@ -733,6 +765,28 @@ const en = {
   faqVoucherQuestion: "How do I apply a voucher?",
   faqVoucherAnswer:
     "Enter your voucher code during checkout and the discount will be automatically applied if the voucher is valid.",
+
+  // Support chat. The three age suffixes are the compact form inside a message
+  // bubble ("5m", "3h") — deliberately not `minutesAgo`/`hoursAgo`, which are
+  // the long form the notifications list uses and has room for.
+  aiAgent: "AI Agent",
+  supportTeam: "Support Team",
+  activeNow: "Active now",
+  noMessagesYet: "No messages yet",
+  supportEmptyHint: "Send us a message and our team will get back to you.",
+  loadOlderMessages: "Load older messages",
+  typeAMessage: "Type a message...",
+  send: "Send",
+  attachFile: "Attach a photo",
+  removeAttachment: "Remove attachment",
+  attachment: "Attachment",
+  attachmentTypeNotSupported: "Only PNG, JPEG and WEBP images can be attached.",
+  attachmentTooLarge: "That file is larger than 5 MB. Please attach a smaller one.",
+  attachmentUploadFailed: "Could not upload that file. Please try again.",
+  messageSendFailed: "Message not sent. Please try again.",
+  supportAgeMinute: "m",
+  supportAgeHour: "h",
+  supportAgeDay: "d",
 
   settingsDescription:
     "Manage your app experience, account details, and preferences.",

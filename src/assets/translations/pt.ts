@@ -143,6 +143,8 @@ const pt = {
 
   myShoppingCart: "Meu Carrinho de Compras",
 
+  viewCart: "Ver Carrinho",
+
   itemsInCart: "item(ns) no seu carrinho",
 
   yourCartIsEmpty: "Seu carrinho está vazio",
@@ -521,7 +523,15 @@ const pt = {
   otp: "OTP",
   verify: "Verificar",
   verifying: "A verificar...",
-  mobilePlaceholder: "+1234567890",
+  // Apenas Portugal, e a API rejeita os espaços com que o número é
+  // normalmente escrito — daí o formato que funciona sempre.
+  mobilePlaceholder: "+351 XXX XXX XXX",
+  invalidPortugueseNumber:
+    "Introduza um número de telemóvel português — 9 dígitos, com ou sem +351.",
+  changeNotSavedUntilVerified:
+    "Ainda não guardado — confirme esta alteração com o código para a aplicar.",
+  profileSavedContactNotVerified:
+    "Perfil guardado. O novo email ou número de telefone não foi aplicado — confirme-o primeiro com o código.",
   myOrders: "Os Meus Pedidos",
 
   trackOrdersDescription:
@@ -552,7 +562,9 @@ const pt = {
 
   restaurantAddressComingSoon: "Morada disponível em breve",
 
-  items: "Itens",
+  // Contagem inline ("3 itens · €9,23"). A forma de cabeçalho é `orderItems`.
+  items: "itens",
+  orderItems: "Itens do Pedido",
 
   billSummary: "Resumo da Fatura",
 
@@ -587,6 +599,7 @@ const pt = {
   recenterMap: "Centrar Mapa",
   cancelled: "Cancelado",
   rejected: "Rejeitado",
+  notCollected: "Não Recolhido",
   location: "Localização",
   orderWasCancelled: "O pedido foi cancelado",
   orderWasRejected: "O pedido foi rejeitado pelo restaurante",
@@ -629,6 +642,11 @@ const pt = {
     "Se o restaurante ainda não tiver aceite o seu pedido, será reembolsado. Depois de aceite, não há direito a reembolso.",
   cancelReason: "Motivo",
   cancelReasonPlaceholder: "Diga-nos porque está a cancelar",
+  cancelReasonQuestion: "Porque quer cancelar este pedido?",
+  cancelReasonChangedMind: "Mudei de ideias",
+  cancelReasonMistake: "Encomendei por engano",
+  cancelReasonTooLong: "Está a demorar demasiado",
+  cancelReasonOther: "Outro",
   keepOrder: "Manter Pedido",
   confirmCancelOrder: "Cancelar Pedido",
   orderCanceled: "O seu pedido foi cancelado",
@@ -689,55 +707,61 @@ const pt = {
 
   upcoming: "Em Breve",
 
-  helpCenterDescription:
-    "Como podemos ajudá-lo hoje? Pesquise nos nossos artigos de ajuda ou entre em contacto com a nossa equipa de suporte.",
-
-  searchHelpPlaceholder: "Pesquisar artigos, tópicos, palavras-chave...",
-
-  needImmediateHelp: "Precisa de ajuda imediata?",
-
-  needImmediateHelpDescription:
-    "A nossa equipa de suporte dedicada está disponível 24 horas por dia, 7 dias por semana, para ajudar com os seus pedidos e entregas. Estamos aqui sempre que precisar.",
-
-  chatWithUsNow: "Fale connosco agora",
-
-  getInTouch: "Entre em contacto",
-
-  getInTouchDescription:
-    "Prefere falar diretamente connosco? Estamos apenas a um clique de distância.",
-
   liveChat: "Chat ao Vivo",
-  realTimeSupport: "Suporte em tempo real",
-  startConversation: "Iniciar conversa",
-
+  realTimeSupport: "Fale com o suporte",
   emailUs: "Envie-nos um email",
-  sendEmail: "Enviar email",
-
   callUs: "Ligue-nos",
-  callSupport: "Ligar para o suporte",
-
-  browseByCategory: "Navegar por Categoria",
-
   generalFaqs: "Perguntas Frequentes",
-  generalFaqsDescription:
-    "Encontre respostas para perguntas comuns sobre rastreamento, tempos de entrega e muito mais.",
+  generalFaqsDescription: "Respostas, seguimento de pedidos e mais",
 
   orderIssues: "Problemas com Pedidos",
-  orderIssuesDescription:
-    "Problemas com o seu pedido atual? Saiba como acompanhar, modificar ou reportar erros.",
+  orderIssuesDescription: "Acompanhe, altere ou reporte problemas",
 
   paymentsRefunds: "Pagamentos e Reembolsos",
-  paymentsRefundsDescription:
-    "Questões de faturação, vouchers e tudo relacionado com o processamento de reembolsos.",
+  paymentsRefundsDescription: "Questões de faturação e estado de reembolsos",
 
   accountProfile: "Conta e Perfil",
-  accountProfileDescription:
-    "Atualize os seus dados, gere preferências e mantenha a sua conta segura.",
+  accountProfileDescription: "Faça a gestão das definições da conta",
 
   popularQuestions: "Perguntas Populares",
 
-  popularQuestionsDescription:
-    "Respostas rápidas para as perguntas que mais recebemos.",
+  browseTopics: "Explorar Tópicos",
+
+  reportAnIssue: "Reportar um Problema",
+  selectOrderToReport: "Selecione um pedido para reportar um problema",
+  noOrdersToReport: "Ainda sem pedidos",
+  browseStores: "Explorar lojas",
+  // A metade esquerda da frase pré-preenchida, ex. "Problema com Pedido: #ORD-XXXX".
+  supportPrefillOrderIssue: "Problema com Pedido",
+
+  paymentsHelpSubtitle:
+    "Obtenha ajuda com os seus pagamentos e reembolsos. Selecione um tópico abaixo para falar com a nossa equipa de suporte.",
+  refundStatus: "Estado do Reembolso",
+  unrecognizedCharge: "Cobrança Não Reconhecida",
+  requestInvoice: "Pedir Fatura",
+  supportPrefillPayment: "Questão de Pagamento",
+
+  accountHelpSubtitle: "Perguntas comuns sobre a sua conta",
+  manageAccount: "Gerir Conta",
+  goToSettings: "Ir para Definições",
+  goToSettingsDescription: "Faça a gestão de segurança, notificações e mais",
+  editProfileDescription: "Atualize o seu nome e número de telefone",
+  stillNeedHelp: "Ainda precisa de ajuda?",
+
+  // 🔴 Copiadas da app móvel, por pedido explícito. Três das quatro não
+  // correspondem a este cliente — ver a nota no topo de `AccountHelpPage`.
+  faqPasswordQuestion: "Como reponho a minha palavra-passe?",
+  faqPasswordAnswer:
+    "Pode repor a sua palavra-passe indo ao ecrã de Início de Sessão e clicando em 'Esqueci-me da palavra-passe'.",
+  faqChangeEmailQuestion: "Posso alterar o meu endereço de email?",
+  faqChangeEmailAnswer:
+    "De momento, não pode alterar o endereço de email registado diretamente na aplicação. Contacte o suporte.",
+  faqDeleteAccountQuestion: "Como elimino a minha conta?",
+  faqDeleteAccountAnswer:
+    "Vá a Definições > Eliminar Conta. Note que esta ação é irreversível.",
+  faqUpdateProfileQuestion: "Como atualizo o meu perfil?",
+  faqUpdateProfileAnswer:
+    "Pode atualizar o seu nome e número de telefone na secção 'Editar Perfil'.",
 
   faqTrackOrderQuestion: "Como posso acompanhar o meu pedido?",
   faqTrackOrderAnswer:
@@ -750,6 +774,30 @@ const pt = {
   faqVoucherQuestion: "Como aplico um voucher?",
   faqVoucherAnswer:
     "Introduza o código do voucher durante o checkout e o desconto será aplicado automaticamente se o voucher for válido.",
+
+  // Chat de suporte. Os três sufixos são a forma compacta dentro de um balão
+  // ("5m", "3h") — não `minutesAgo`/`hoursAgo`, que são a forma longa usada na
+  // lista de notificações.
+  aiAgent: "Agente IA",
+  supportTeam: "Equipa de Suporte",
+  activeNow: "Ativo agora",
+  noMessagesYet: "Ainda sem mensagens",
+  supportEmptyHint:
+    "Envie-nos uma mensagem e a nossa equipa entrará em contacto consigo.",
+  loadOlderMessages: "Carregar mensagens anteriores",
+  typeAMessage: "Escreva uma mensagem...",
+  send: "Enviar",
+  attachFile: "Anexar uma foto",
+  removeAttachment: "Remover anexo",
+  attachment: "Anexo",
+  attachmentTypeNotSupported: "Só é possível anexar imagens PNG, JPEG e WEBP.",
+  attachmentTooLarge:
+    "Esse ficheiro é maior do que 5 MB. Anexe um ficheiro mais pequeno.",
+  attachmentUploadFailed: "Não foi possível carregar esse ficheiro. Tente novamente.",
+  messageSendFailed: "Mensagem não enviada. Tente novamente.",
+  supportAgeMinute: "m",
+  supportAgeHour: "h",
+  supportAgeDay: "d",
 
   settingsDescription:
     "Gerencie a experiência da aplicação, detalhes da conta e preferências.",

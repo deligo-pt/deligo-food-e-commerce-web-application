@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import {
   useQuery,
   useQueryClient,
@@ -19,6 +20,10 @@ export const orderKeys = {
   // switching language refetches while React Query keeps the old list on
   // screen (replacing the manual `langVersion` silent-refetch machinery).
   list: (lang: string) => ["orders", "list", lang] as const,
+  // Separate from `list` on purpose: the projected response below is NOT a
+  // full order list, and must never be served to the orders page from cache.
+  // Not language-keyed either — the projection contains no localized field.
+  statusIndex: ["orders", "status-index"] as const,
   ratings: ["ratings", "all"] as const,
 };
 
@@ -59,6 +64,96 @@ export function useOrders<T = unknown>(options?: { enabled?: boolean }) {
     // Keep the current list visible during a language-switch refetch.
     placeholderData: keepPreviousData,
   });
+}
+
+/** The slice of an order the notification header needs. */
+export interface OrderStatusEntry {
+  orderId: string;
+  orderStatus?: string | null;
+  statusHistory?:
+    | ({ status?: string | null; timestamp?: string | null } | null)[]
+    | null;
+}
+
+/**
+ * Orders indexed by `orderId`, carrying only status and status history.
+ *
+ * Exists for the notifications page, which has to name the status a
+ * notification announced and mostly cannot read it off the notification —
+ * `data.status` is present on 4 of 13 (see `resolveNotificationStatus`).
+ *
+ * ## Two things keep this cheap
+ *
+ * `?fields=` — an undocumented but live projection on `GET /orders` — takes the
+ * response from **123 KB to 29 KB** by dropping items, pricing, payout and
+ * delivery blocks that a header has no use for. Should the parameter ever stop
+ * working the result is a fatter payload, not a broken feature: the fields we
+ * read are a subset of the full order either way.
+ *
+ * And the caller passes `enabled: false` whenever the page it is drawing needs
+ * no lookup, so a page whose notifications all declare their own status makes
+ * **zero** requests. When the backend fills `data.status` in everywhere, this
+ * query stops firing on its own — before anyone gets round to deleting it.
+ *
+ * Returns a `Map` rather than an array: a page of ten notifications is then ten
+ * O(1) reads instead of ten linear scans of every order the customer has.
+ */
+export function useOrderStatusIndex(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: orderKeys.statusIndex,
+    queryFn: async ({ signal }) => {
+      const res = await apiClient.get("/orders", {
+        params: {
+          limit: 100,
+          fields: "orderId,orderStatus,statusHistory",
+        },
+        signal,
+      });
+      const list = (res.data?.data ?? []) as OrderStatusEntry[];
+      return new Map(
+        list
+          .filter((order) => order?.orderId)
+          .map((order) => [order.orderId, order] as const),
+      );
+    },
+    enabled: options?.enabled ?? true,
+    // A settled order's history never changes, and a live one's is only needed
+    // here to caption a notification that has already been written — so this
+    // tolerates being a minute stale in a way the orders page itself does not.
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Refresh the notification header's order lookup.
+ *
+ * Called by whoever refreshes the notification **list**, because the two must
+ * move together. Without this the index was fetched once when the page decided
+ * it needed one and then never again: the list kept polling and picking up new
+ * notifications, while the lookup behind their headers stayed frozen at
+ * whatever it read on mount.
+ *
+ * That went wrong two ways, and both looked to the customer like the page
+ * needing a reload. A notification for an order the index had never seen
+ * resolved to nothing, so its header lost its status entirely; and a
+ * notification for an order the index *had* seen resolved against a history
+ * with the new entry missing, so its header showed the previous status.
+ *
+ * Invalidating rather than refetching keeps it honest about cost: React Query
+ * leaves a disabled query alone, so a page whose notifications all declare
+ * their own status still issues nothing — which is the same condition that
+ * stopped the index being fetched in the first place.
+ *
+ * Memoized so it is safe in the dependency array of the caller's fetch
+ * callback; an unstable identity there would re-arm the mount effect on every
+ * render.
+ */
+export function useInvalidateOrderStatusIndex() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    () => queryClient.invalidateQueries({ queryKey: orderKeys.statusIndex }),
+    [queryClient],
+  );
 }
 
 export function useRatings<T = unknown>(options?: { enabled?: boolean }) {
