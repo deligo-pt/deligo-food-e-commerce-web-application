@@ -31,6 +31,7 @@ import { useVendor, useVendorProducts } from "@/hooks/queries/useVendors";
 import { useLocationStore } from "@/stores/locationStore";
 import { formatCuisine } from "@/lib/cuisine";
 import { currencySymbol } from "@/lib/currency";
+import { formatDiscountValue, hasProductDiscount } from "@/lib/productPricing";
 import SafeImage from "@/components/shared/SafeImage";
 
 function getDistanceKm(
@@ -128,6 +129,10 @@ interface Product {
   pricing: {
     price: number;
     discount: number;
+    // Decides whether `discount` is a percentage or an amount in `currency`.
+    // Reading it as a percentage either way is what showed "0.6% off" on a
+    // €0.60-off product — see `@/lib/productPricing`.
+    discountType?: string;
     finalPrice: number;
     currency: string;
   };
@@ -169,10 +174,12 @@ const MenuProductCard = memo(function MenuProductCard({
   // Guard against a product record with missing/partial pricing — an unguarded
   // access here throws during render and trips the route error boundary.
   const pricing = product.pricing;
-  const hasDiscount = (pricing?.discount ?? 0) > 0;
   const originalPrice = pricing?.price ?? 0;
   const finalPrice = pricing?.finalPrice ?? 0;
   const currency = currencySymbol(pricing?.currency);
+  const hasDiscount = hasProductDiscount(pricing);
+  // "10%" or "€0.60" — the badge's word comes from `t("off")` beside it.
+  const discountValue = formatDiscountValue(pricing, currency);
 
   return (
     <div
@@ -187,9 +194,9 @@ const MenuProductCard = memo(function MenuProductCard({
           sizes="128px"
           fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
         />
-        {hasDiscount && (
+        {discountValue && (
           <span className="absolute left-2 top-2 rounded-full bg-pink-600 px-2 py-1 text-[10px] font-bold text-white">
-            {pricing?.discount ?? 0}% {t("off")}
+            {discountValue} {t("off")}
           </span>
         )}
       </div>

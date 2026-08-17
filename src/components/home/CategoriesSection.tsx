@@ -229,6 +229,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import { isOptimizableImageHost } from "@/lib/imageHosts";
 import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
@@ -553,6 +554,7 @@ export default function CategoriesSection() {
                         height={128}
                         width={128}
                         src={cuisine.imageUrl}
+                        unoptimized={!isOptimizableImageHost(cuisine.imageUrl)}
                       />
                     ) : (
                       <Utensils
@@ -645,6 +647,7 @@ export default function CategoriesSection() {
                             height={48}
                             width={48}
                             src={cuisine.imageUrl}
+                            unoptimized={!isOptimizableImageHost(cuisine.imageUrl)}
                           />
                         ) : (
                           <Utensils
