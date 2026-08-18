@@ -1402,6 +1402,17 @@ const pt = {
   filter: "Filtro",
   clearAll: "Limpar tudo",
   clearSearch: "Limpar pesquisa",
+
+  // Pesquisa na página de pedidos (procura em Em Curso e Histórico ao mesmo tempo).
+  searchOrdersLabel: "Pesquisar os seus pedidos",
+  // "ID", not "nº": the dictionary already localizes it that way everywhere
+  // else (`ID de utilizador`, `ID de finalização`, `ID Fiscal`).
+  searchOrdersPlaceholder: "Pesquisar por ID do pedido, item ou restaurante",
+  noMatchingOrders: "Nenhum pedido correspondente aqui.",
+  // Compostas com um número no JSX — "3 no Histórico" — porque t() não
+  // interpola. São fragmentos por essa razão, não frases completas.
+  inHistory: "no Histórico",
+  inOngoing: "em Curso",
   noResultsFound: "Nenhum resultado encontrado.",
 
   faqTitle: "Perguntas Frequentes",
@@ -1665,8 +1676,6 @@ const pt = {
   // Fecha um painel que apenas informa — não há nada para cancelar.
   ok: "Ok",
   selectedLocation: "Localização Selecionada",
-  places: "Locais",
-  dishes: "Pratos",
   onThisPage: "Nesta página",
   priceDetailsOfCart: "Detalhes de preço do seu carrinho",
   grandTotal: "Total Geral",
@@ -1709,15 +1718,37 @@ const pt = {
   provideAtLeastOneRating: "Forneça pelo menos uma avaliação.",
   currentLocationLoadedOnMap: "Localização atual carregada no mapa.",
   addressNotFound: "Morada não encontrada",
-  pleaseLogInToSearch: "Inicie sessão para pesquisar.",
   failedToLoadSearchResults: "Falha ao carregar os resultados da pesquisa.",
   searchPromptTitle: "Pesquisar na Deligo",
   searchPromptHint:
     "Escreva o nome de um restaurante, loja ou prato para ver resultados.",
   sortRelevance: "Relevância",
-  sortDistance: "Distância",
-  sortRating: "Avaliação",
-  sortPrice: "Preço",
+  searchResultsFor: "Resultados da pesquisa para",
+  searchingFor: "A pesquisar por",
+  resultLabel: "resultado",
+  resultsLabel: "resultados",
+  loadMore: "Carregar mais",
+  noResultsHint: "Tente outra palavra ou verifique a ortografia.",
+  sortLabel: "Ordenar",
+  sortPriceLowToHigh: "Preço: do menor para o maior",
+  sortPriceHighToLow: "Preço: do maior para o menor",
+  sortRatingHighToLow: "Avaliação: da maior para a menor",
+  allCuisines: "Todas",
+  priceLabel: "Preço",
+  priceMin: "Mín.",
+  priceMax: "Máx.",
+  nearMe: "Perto de mim",
+  anyDistance: "Qualquer distância",
+  nearMeUnavailable:
+    "Defina uma morada de entrega ou permita o acesso à localização para filtrar por distância.",
+  inStockOnly: "Apenas disponíveis",
+  halalCertifiedRestaurants: "Restaurantes com certificação halal",
+  clearFilters: "Limpar filtros",
+  useMyLocation: "Usar a minha localização",
+  locationDenied: "O acesso à localização foi negado.",
+  failedToOpenItem: "Não foi possível abrir este item. Tente novamente.",
+  prefixMatchHint:
+    "A pesquisa corresponde ao início de uma palavra — “izza” não encontra “Pizza”.",
   noCheckoutIdProvided: "Nenhum ID de finalização fornecido",
   failedToCreateOrder: "Falha ao criar a encomenda.",
   failedToLoadProfile: "Falha ao carregar o perfil",

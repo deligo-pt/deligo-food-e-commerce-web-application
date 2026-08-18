@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { isOptimizableImageHost } from "@/lib/imageHosts";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Plus } from "lucide-react";
@@ -173,6 +174,7 @@ export default function CategoriesPage() {
                       height={112}
                       width={112}
                       src={category.icon}
+                      unoptimized={!isOptimizableImageHost(category.icon)}
                     />
                   ) : (
                     <Plus size={42} className="text-[#5a4044]" />

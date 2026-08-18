@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 import withBundleAnalyzer from "@next/bundle-analyzer";
+// Shared with the runtime guard in `SafeImage` so the two can't drift — a host
+// missing from this list throws mid-render in dev and 400s in prod. See the
+// file header for what that costs.
+import { REMOTE_IMAGE_HOSTS } from "./src/lib/imageHosts";
 
 // Run `ANALYZE=true pnpm build` to open the interactive bundle report
 // (Phase 0 baseline / Phase 4 code-splitting verification).
@@ -57,38 +61,7 @@ const nextConfig: NextConfig = {
     // Cache optimized images for a week (keyed by URL, so a changed source
     // image gets a new cache entry — no stale-asset risk).
     minimumCacheTTL: 60 * 60 * 24 * 7,
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "flagcdn.com",
-      },
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "source.unsplash.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "placehold.co",
-      },
-      {
-        // Static maps rendered in the vendor-details modal.
-        protocol: "https",
-        hostname: "maps.googleapis.com",
-      },
-    ],
+    remotePatterns: REMOTE_IMAGE_HOSTS,
   },
 };
 

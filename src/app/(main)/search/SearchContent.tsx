@@ -1,617 +1,511 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
-} from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { apiClient } from "@/lib/apiClient";
-import { getAccessToken } from "@/lib/authCookies";
-import {
-  Star,
-  Truck,
-  Check,
-  UtensilsCrossed,
-  Store,
-  Moon,
-  SlidersHorizontal,
-  ChevronDown,
-} from "lucide-react";
+import { useCallback, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { UtensilsCrossed, SearchX } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
-import type { Vendor } from "@/types/vendor";
-import { formatCuisine } from "@/lib/cuisine";
 import { currencySymbol } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useStore } from "@/stores/translationStore";
+import {
+  useSearch,
+  flattenSearchHits,
+  searchTotal,
+} from "@/hooks/queries/useSearch";
+import { useCuisines } from "@/hooks/queries/useCuisines";
 import { useActiveAddressCoords } from "@/hooks/queries/useProfile";
-import { useVendorsNearby } from "@/hooks/queries/useVendors";
+import SearchFilters, {
+  type FilterPatch,
+} from "@/components/search/SearchFilters";
+import { useProductDestination } from "@/hooks/queries/useProductDestination";
+import { toast } from "sonner";
+import {
+  formatCuisineLabel,
+  formatRestaurantLabel,
+  type SearchHit,
+  type SearchSortBy,
+  type SearchSortOrder,
+} from "@/lib/search";
 
-// A product's embedded vendor. The `/products` endpoint returns the full vendor
-// (location + rating), but `businessType` here is an object ({name:{en,pt},…}),
-// unlike the plain string on the vendor endpoints — hence the `unknown` + the
-// `businessTypeLabel` normalizer below.
-interface ProductVendorRef {
-  userId: string;
-  businessDetails: {
-    businessName: string;
-    businessType?: unknown;
-    restaurantCuisineType?: string[] | string;
-    isStoreOpen?: boolean;
-  };
-  businessLocation?: {
-    city?: string;
-    country?: string;
-    latitude?: number;
-    longitude?: number;
-  };
-  // The product endpoint nests the store photo here (not at a top-level
-  // `storePhoto` like the vendor endpoints do).
-  documents?: { storePhoto?: string[] };
-  rating?: { average: number; totalReviews: number };
+/**
+ * `/search` — results from the backend's Meilisearch index.
+ *
+ * See `Plan.md` → "Customer Search — Implementation Plan", Phase 3.
+ *
+ * ## What this page deliberately does not do
+ *
+ * It does not filter, sort, rank, or re-price anything. Every one of those is a
+ * query parameter that `useSearch` sends and the backend answers; this file
+ * turns `hits` into cards and nothing more. The page it replaces fetched 100
+ * products and did all four in the browser, which is why its result count, its
+ * ordering and its matching all disagreed with the mobile app.
+ *
+ * The one arithmetic here is `hits.length` for the skeleton — everything a user
+ * reads, including the result count, comes from the response.
+ *
+ * ## Dish results only
+ *
+ * The index is `food_items`; there are no restaurant documents to match, so the
+ * old "Places" section is gone (§1.1). Searching a restaurant by name returns
+ * its dishes — which is why every card names its restaurant.
+ *
+ * ## Not yet interactive
+ *
+ * Cards render as `<article>`, not links. A hit's `restaurantId` is a Mongo
+ * `_id` that our `/vendors/:userId` routes 404 on, so a destination has to be
+ * resolved from `productId` — that is Phase 5's job, along with the signed-out
+ * prompt. Shipping a link that 404s in the meantime would be worse than
+ * shipping none.
+ */
+
+/** How many skeleton cards to show before the first response arrives. */
+const SKELETON_COUNT = 8;
+
+/** Cuisine chips per card before the rest are summarised as "+N". */
+const CUISINE_CHIP_LIMIT = 3;
+
+/**
+ * Query length at which an empty result starts explaining prefix matching.
+ *
+ * Short queries come up empty for ordinary reasons and the hint would be noise;
+ * by four characters a user has typed enough that "we do not search inside
+ * words" is the likelier explanation than a typo.
+ */
+const PREFIX_HINT_MIN_LENGTH = 4;
+
+function isSortBy(value: string | null): value is SearchSortBy {
+  return value === "price" || value === "rating";
 }
 
-interface Product {
-  _id: string;
-  name: string;
-  pricing: { finalPrice: number; currency: string };
-  images: string[];
-  vendorId: ProductVendorRef;
-  category?: { name: string };
-  rating?: { average: number };
+function isSortOrder(value: string | null): value is SearchSortOrder {
+  return value === "asc" || value === "desc";
 }
 
-// Normalized card shape shared by both place sources (nearby vendors + the
-// vendors that own a matched dish), so sorting/rendering is uniform.
-interface PlaceVendor {
-  userId: string;
-  storePhoto: string[];
-  businessDetails: {
-    businessName: string;
-    businessType: string;
-    restaurantCuisineType?: string[] | string;
-    isStoreOpen?: boolean;
-  };
-  businessLocation: {
-    city: string;
-    country: string;
-    latitude?: number;
-    longitude?: number;
-  };
-  rating: { average: number };
-}
+function DishCard({
+  hit,
+  onOpen,
+  onPrefetch,
+  busy,
+}: {
+  hit: SearchHit;
+  onOpen: (hit: SearchHit) => void;
+  onPrefetch: (hit: SearchHit) => void;
+  busy: boolean;
+}) {
+  const cuisines = hit.cuisine?.map(formatCuisineLabel).filter(Boolean) ?? [];
 
-type SortKey = "relevance" | "distance" | "rating" | "price";
-
-function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// Distance (km) from the user to a vendor location, or Infinity when either
-// side lacks coordinates — used only to push unlocatable results to the end.
-function distanceFrom(
-  user: { lat: number; lng: number } | null,
-  loc: { latitude?: number; longitude?: number } | undefined,
-): number {
-  if (!user || !loc?.latitude || !loc?.longitude) return Infinity;
-  return getDistanceKm(user.lat, user.lng, loc.latitude, loc.longitude);
-}
-
-function formatTimeRange(totalMinutes: number): string {
-  if (totalMinutes < 60) {
-    return `${Math.floor(totalMinutes)} to ${Math.ceil(totalMinutes + 10)} mins`;
-  }
-  const hours = totalMinutes / 60;
-  if (hours < 24) {
-    const low = Math.floor(hours);
-    const high = Math.ceil(hours + 10 / 60);
-    return low === high ? `${low} hour${low !== 1 ? 's' : ''}` : `${low} to ${high} hours`;
-  }
-  const days = totalMinutes / (60 * 24);
-  if (days < 7) {
-    const low = Math.floor(days);
-    const high = Math.ceil(days + 10 / (60 * 24));
-    return low === high ? `${low} day${low !== 1 ? 's' : ''}` : `${low} to ${high} days`;
-  }
-  const weeks = totalMinutes / (60 * 24 * 7);
-  if (weeks < 4) {
-    const low = Math.floor(weeks);
-    const high = Math.ceil(weeks + 10 / (60 * 24 * 7));
-    return low === high ? `${low} week${low !== 1 ? 's' : ''}` : `${low} to ${high} weeks`;
-  }
-  const months = totalMinutes / (60 * 24 * 30);
-  if (months < 12) {
-    const low = Math.floor(months);
-    const high = Math.ceil(months + 10 / (60 * 24 * 30));
-    return low === high ? `${low} month${low !== 1 ? 's' : ''}` : `${low} to ${high} months`;
-  }
-  const years = totalMinutes / (60 * 24 * 365);
-  const low = Math.floor(years);
-  const high = Math.ceil(years + 10 / (60 * 24 * 365));
-  return low === high ? `${low} year${low !== 1 ? 's' : ''}` : `${low} to ${high} years`;
-}
-
-// Whether a nearby vendor's text fields match the query (name / cuisine / type /
-// city / country) — the same fields the old client-side filter used.
-function vendorTextMatch(v: Vendor, term: string): boolean {
-  if (!term) return true;
-  const name = v.businessDetails.businessName.toLowerCase();
-  const cuisine = formatCuisine(v.businessDetails.restaurantCuisineType).toLowerCase();
-  const type = String(v.businessDetails.businessType ?? "").toLowerCase();
-  const city = v.businessLocation.city.toLowerCase();
-  const country = v.businessLocation.country.toLowerCase();
   return (
-    name.includes(term) ||
-    cuisine.includes(term) ||
-    type.includes(term) ||
-    city.includes(term) ||
-    country.includes(term)
+    <article
+      role="button"
+      tabIndex={0}
+      aria-busy={busy}
+      // A hit carries no usable destination — `restaurantId` 404s against our
+      // routes — so where this card leads has to be looked up from `productId`.
+      // Hovering or tab-focusing starts that lookup, which means the click
+      // usually resolves from cache and navigates immediately.
+      onMouseEnter={() => onPrefetch(hit)}
+      onFocus={() => onPrefetch(hit)}
+      onClick={() => onOpen(hit)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen(hit);
+        }
+      }}
+      className={`flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-[#ffd9de] hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f9186b] dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${
+        busy ? "opacity-60" : ""
+      }`}
+    >
+      <div className="relative aspect-4/3 shrink-0 overflow-hidden bg-gray-50 dark:bg-neutral-800">
+        <SafeImage
+          src={hit.thumbnail}
+          alt={hit.name}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
+        />
+      </div>
+
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="line-clamp-2 font-semibold text-[#191c1d] dark:text-neutral-50">
+          {hit.name}
+        </h3>
+        <p className="mt-1 line-clamp-1 text-sm text-[#5a4044] dark:text-neutral-400">
+          {formatRestaurantLabel(hit)}
+        </p>
+
+        {/* Capped for layout, not filtered — one restaurant carries seven
+            cuisines, which would push the price off the card. The overflow is
+            counted rather than dropped silently, and the full list is the
+            element's title. */}
+        {cuisines.length > 0 && (
+          <ul
+            className="mt-2 flex flex-wrap gap-1.5"
+            title={cuisines.join(", ")}
+          >
+            {cuisines.slice(0, CUISINE_CHIP_LIMIT).map((cuisine) => (
+              <li
+                key={cuisine}
+                className="rounded-full bg-[#fff1f4] px-2 py-0.5 text-[11px] font-medium text-[#f9186b] dark:bg-neutral-800 dark:text-pink-400"
+              >
+                {cuisine}
+              </li>
+            ))}
+            {cuisines.length > CUISINE_CHIP_LIMIT && (
+              <li className="px-1 py-0.5 text-[11px] font-medium text-[#5a4044] dark:text-neutral-400">
+                +{cuisines.length - CUISINE_CHIP_LIMIT}
+              </li>
+            )}
+          </ul>
+        )}
+
+        {/* Rendered exactly as the API sent it — the backend owns the money. */}
+        <div className="mt-auto pt-3 font-bold text-[#f9186b] dark:text-pink-500">
+          {currencySymbol(hit.currency)} {hit.price?.toFixed(2) ?? "0.00"}
+        </div>
+      </div>
+    </article>
   );
 }
 
-function vendorToPlace(v: Vendor, fallbackImg?: string): PlaceVendor {
-  const photos = v.storePhoto?.length ? v.storePhoto : fallbackImg ? [fallbackImg] : [];
-  return {
-    userId: v.userId,
-    storePhoto: photos,
-    businessDetails: {
-      businessName: v.businessDetails.businessName,
-      businessType: String(v.businessDetails.businessType ?? ""),
-      restaurantCuisineType: v.businessDetails.restaurantCuisineType,
-      isStoreOpen: v.businessDetails.isStoreOpen,
-    },
-    businessLocation: {
-      city: v.businessLocation.city,
-      country: v.businessLocation.country,
-      latitude: v.businessLocation.latitude,
-      longitude: v.businessLocation.longitude,
-    },
-    rating: { average: v.rating?.average ?? 0 },
-  };
+function ResultsGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {children}
+    </div>
+  );
 }
-
-const SORT_OPTIONS: { key: SortKey; labelKey: "sortRelevance" | "sortDistance" | "sortRating" | "sortPrice" }[] = [
-  { key: "relevance", labelKey: "sortRelevance" },
-  { key: "distance", labelKey: "sortDistance" },
-  { key: "rating", labelKey: "sortRating" },
-  { key: "price", labelKey: "sortPrice" },
-];
 
 export default function SearchContent() {
   const { t } = useTranslation();
-  const lang = useStore((s) => s.lang);
   const searchParams = useSearchParams();
-  const query = searchParams.get("q") || "";
-  const term = query.toLowerCase().trim();
-  const [deliveryTimes, setDeliveryTimes] = useState<Record<string, string>>({});
-  const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
-  const [sortBy, setSortBy] = useState<SortKey>("relevance");
-  const [sortOpen, setSortOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // Auth is read from a cookie, which is unavailable during SSR — so the server
-  // and the first client paint would disagree (hydration mismatch). `mounted`
-  // is false on the server + first client render (getServerSnapshot), true
-  // afterwards, via useSyncExternalStore (no setState-in-effect). Until mounted
-  // we render the neutral skeleton, so server + first client render match.
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+  const query = searchParams.get("q")?.trim() ?? "";
 
-  const authed = mounted && !!getAccessToken();
-  const searchEnabled = authed && !!term;
+  // Filter state lives in the URL, so a filtered search is shareable and
+  // back/forward works without a store to keep in step.
+  const cuisine = searchParams.get("cuisine")?.trim() ?? "";
+  const sortByParam = searchParams.get("sortBy");
+  const sortOrderParam = searchParams.get("sortOrder");
+  const sortBy = isSortBy(sortByParam) ? sortByParam : undefined;
+  const sortOrder = isSortOrder(sortOrderParam) ? sortOrderParam : undefined;
+  const minPrice = searchParams.get("minPrice")?.trim() ?? "";
+  const maxPrice = searchParams.get("maxPrice")?.trim() ?? "";
+  const radius = Number(searchParams.get("radius"));
+  const radiusInMeters = Number.isFinite(radius) && radius > 0 ? radius : null;
+  const isAvailable = searchParams.get("available") === "1";
+  const isHalal = searchParams.get("halal") === "1";
 
-  const userCoords = useActiveAddressCoords();
+  // Coordinates are resolved per viewer rather than read from the URL — see the
+  // note in `SearchFilters`. The saved delivery address is preferred because it
+  // needs no permission prompt and is where the food would actually go; the
+  // browser is the fallback for guests and for anyone without one.
+  const addressCoords = useActiveAddressCoords();
+  const [browserCoords, setBrowserCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [locationDenied, setLocationDenied] = useState(false);
+  const coords = addressCoords ?? browserCoords;
 
-  // Dishes: SERVER-side search (`searchTerm`) — the same search the mobile app
-  // uses. Replaces the old "fetch everything, filter in JS" approach, which
-  // missed matches and diverged from the app.
-  const {
-    data: dishes = [],
-    isLoading: dishesLoading,
-    error: dishesError,
-  } = useQuery({
-    queryKey: ["search", "products", lang, term],
-    queryFn: async ({ signal }) => {
-      const res = await apiClient.get("/products", {
-        params: { searchTerm: query.trim(), limit: 100 },
-        signal,
-      });
-      return (res.data?.data ?? []) as Product[];
-    },
-    enabled: searchEnabled,
-    placeholderData: keepPreviousData,
-  });
-
-  // Places: nearby OPEN vendors for the active address — location-aware, like
-  // the app. Disabled (returns nothing) when there's no active-address coords.
-  const {
-    data: nearby,
-    isLoading: nearbyLoading,
-    error: nearbyError,
-  } = useVendorsNearby<Vendor>(userCoords, {
-    limit: 100,
-    enabled: searchEnabled,
-  });
-  const nearbyVendors = useMemo(() => nearby?.data ?? [], [nearby]);
-
-  // Places are DELIVERABLE restaurants only: vendors near the active address
-  // (`nearby/open`) whose name/cuisine/etc. matches the query OR that own a
-  // matched dish. Far-away restaurants are intentionally NOT shown here — a
-  // delivery app shouldn't surface places you can't order from (that produced
-  // nonsensical "1–2 weeks" ETAs). Dishes below remain a global search.
-  const places = useMemo<PlaceVendor[]>(() => {
-    if (!term) return [];
-    // First dish image per vendor — used as the card photo when a nearby vendor
-    // has no `storePhoto`.
-    const dishImageByVendor = new Map<string, string>();
-    const dishOwnerIds = new Set<string>();
-    for (const p of dishes) {
-      const id = p.vendorId?.userId;
-      if (!id) continue;
-      dishOwnerIds.add(id);
-      const img = p.images?.[0];
-      if (img && !dishImageByVendor.has(id)) dishImageByVendor.set(id, img);
-    }
-
-    const byId = new Map<string, PlaceVendor>();
-    for (const v of nearbyVendors) {
-      if (!v.userId) continue;
-      if (vendorTextMatch(v, term) || dishOwnerIds.has(v.userId)) {
-        byId.set(v.userId, vendorToPlace(v, dishImageByVendor.get(v.userId)));
-      }
-    }
-    return [...byId.values()];
-  }, [nearbyVendors, dishes, term]);
-
-  // Client-side sort — only reorders results (Relevance keeps server order).
-  const sortedPlaces = useMemo(() => {
-    const list = [...places];
-    if (sortBy === "distance") {
-      list.sort(
-        (a, b) =>
-          distanceFrom(userCoords, a.businessLocation) -
-          distanceFrom(userCoords, b.businessLocation),
-      );
-    } else if (sortBy === "rating") {
-      list.sort((a, b) => b.rating.average - a.rating.average);
-    }
-    // "relevance" and "price" (no vendor price) keep the merge order.
-    return list;
-  }, [places, sortBy, userCoords]);
-
-  const sortedDishes = useMemo(() => {
-    const list = [...dishes];
-    if (sortBy === "distance") {
-      list.sort(
-        (a, b) =>
-          distanceFrom(userCoords, a.vendorId?.businessLocation) -
-          distanceFrom(userCoords, b.vendorId?.businessLocation),
-      );
-    } else if (sortBy === "rating") {
-      list.sort((a, b) => (b.rating?.average ?? 0) - (a.rating?.average ?? 0));
-    } else if (sortBy === "price") {
-      list.sort(
-        (a, b) => (a.pricing?.finalPrice ?? 0) - (b.pricing?.finalPrice ?? 0),
-      );
-    }
-    return list;
-  }, [dishes, sortBy, userCoords]);
-
-  const estimateDeliveryTime = useCallback(async (place: PlaceVendor) => {
-    const { latitude, longitude } = place.businessLocation;
-    if (!userCoords || !latitude || !longitude) {
-      setDeliveryTimes(prev => ({ ...prev, [place.userId]: t("under10Min") }));
-      setLoadingTimes(prev => ({ ...prev, [place.userId]: false }));
+  const requestLocation = useCallback(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setLocationDenied(true);
       return;
     }
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        setBrowserCoords({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }),
+      () => setLocationDenied(true),
+    );
+  }, []);
 
-    setLoadingTimes(prev => ({ ...prev, [place.userId]: true }));
-    try {
-      const url = `/api/distance-matrix?originLat=${latitude}&originLng=${longitude}&destLat=${userCoords.lat}&destLng=${userCoords.lng}`;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (data.status === "OK" && data.rows?.[0]?.elements?.[0]?.status === "OK") {
-        const minutes = Math.round(data.rows[0].elements[0].duration.value / 60);
-        setDeliveryTimes(prev => ({ ...prev, [place.userId]: formatTimeRange(minutes) }));
-        return;
+  /**
+   * Writes a patch of parameters to the URL. `null` removes a key.
+   *
+   * `replace`, not `push`: adjusting a filter is refining one search, not
+   * navigating to a new page, and pushing would bury the back button under
+   * every chip the user tried.
+   *
+   * Paging resets itself — `offset` is never in the URL, so a changed parameter
+   * changes the query key and `useInfiniteQuery` starts again from its
+   * `initialPageParam`. There is nothing to reset by hand.
+   */
+  const applyPatch = useCallback(
+    (patch: FilterPatch) => {
+      const next = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === null) next.delete(key);
+        else next.set(key, value);
       }
-      const distance = getDistanceKm(latitude, longitude, userCoords.lat, userCoords.lng);
-      const estimatedMinutes = Math.round((distance / 30) * 60);
-      const timeStr = estimatedMinutes < 10 ? t("under10Min") : formatTimeRange(estimatedMinutes);
-      setDeliveryTimes(prev => ({ ...prev, [place.userId]: timeStr }));
-    } catch (err) {
-      console.error("Time estimation error", err);
-      setDeliveryTimes(prev => ({ ...prev, [place.userId]: t("under10Min") }));
-    } finally {
-      setLoadingTimes(prev => ({ ...prev, [place.userId]: false }));
-    }
-  }, [userCoords, t]);
-
-  // Estimate each place's delivery time exactly once. Guarding with a ref (not
-  // just effect deps) is what prevents a re-render → re-estimate → setState →
-  // re-render loop when `places`/`estimateDeliveryTime` identity changes.
-  const estimatedRef = useRef<Set<string>>(new Set());
-  // Re-estimate everything if the active address (and thus distances) changes.
-  useEffect(() => {
-    estimatedRef.current.clear();
-  }, [userCoords]);
-  useEffect(() => {
-    for (const place of places) {
-      if (estimatedRef.current.has(place.userId)) continue;
-      estimatedRef.current.add(place.userId);
-      estimateDeliveryTime(place);
-    }
-  }, [places, estimateDeliveryTime]);
-
-  const loading =
-    searchEnabled && (dishesLoading || (!!userCoords && nearbyLoading));
-  const error =
-    !authed && term
-      ? t("pleaseLogInToSearch")
-      : dishesError || nearbyError
-        ? t("failedToLoadSearchResults")
-        : "";
-
-  // Show the skeleton until mounted (matches SSR) and while data loads.
-  if (!mounted || loading) {
-    return (
-      <main className="w-full px-4 py-8 lg:px-16">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Searching for &quot;{query}&quot;</h1>
-        </div>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="animate-pulse rounded-3xl bg-gray-200 h-80" />
-          ))}
-        </div>
-      </main>
-    );
-  }
-
-  if (error) {
-    return (
-      <main className="w-full px-4 py-8 lg:px-16">
-        <div className="text-red-500">{error}</div>
-      </main>
-    );
-  }
-
-  // No query — either the page was opened directly or the cross in the navbar
-  // wiped the search. Prompt instead of reporting no results for "".
-  if (!term) {
-    return (
-      <main className="w-full px-4 py-8 lg:px-16">
-        <div className="py-20 text-center">
-          <h1 className="text-2xl font-bold">{t("searchPromptTitle")}</h1>
-          <p className="mt-2 text-gray-600">{t("searchPromptHint")}</p>
-        </div>
-      </main>
-    );
-  }
-
-  const totalVendors = sortedPlaces.length;
-  const totalProducts = sortedDishes.length;
-  const activeSortLabel = t(
-    SORT_OPTIONS.find((o) => o.key === sortBy)!.labelKey,
+      const queryString = next.toString();
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
+        scroll: false,
+      });
+    },
+    [router, pathname, searchParams],
   );
+
+  /** Drops every filter but keeps the search term — clearing that is the navbar's job. */
+  const clearFilters = useCallback(() => {
+    const next = new URLSearchParams();
+    if (query) next.set("q", query);
+    const queryString = next.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
+      scroll: false,
+    });
+  }, [router, pathname, query]);
+
+  // A filter on its own is a legitimate search — "everything halal under €10"
+  // needs no words. Only a page with nothing asked for at all shows the prompt.
+  const hasCriteria =
+    query.length > 0 ||
+    cuisine.length > 0 ||
+    minPrice.length > 0 ||
+    maxPrice.length > 0 ||
+    isAvailable ||
+    isHalal ||
+    (radiusInMeters !== null && coords !== null);
+
+  const {
+    data,
+    isPending,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useSearch(
+    {
+      searchTerm: query || undefined,
+      cuisine: cuisine || undefined,
+      sortBy,
+      sortOrder,
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      // The triple is passed only when a radius is chosen *and* coordinates
+      // exist. `buildSearchParams` would drop a partial one anyway, but not
+      // building it is clearer than relying on that.
+      lat: radiusInMeters !== null ? coords?.lat : undefined,
+      lng: radiusInMeters !== null ? coords?.lng : undefined,
+      radiusInMeters: coords ? (radiusInMeters ?? undefined) : undefined,
+      isAvailable: isAvailable ? true : undefined,
+      isHalal: isHalal ? true : undefined,
+    },
+    { enabled: hasCriteria },
+  );
+
+  // Click-through. A hit has no usable destination of its own (§0.3), so the
+  // vendor is resolved from `productId` — warmed on hover, awaited on click.
+  const { resolve, prefetch } = useProductDestination();
+  const [openingProductId, setOpeningProductId] = useState<string | null>(null);
+
+  const openHit = useCallback(
+    async (hit: SearchHit) => {
+      setOpeningProductId(hit.productId);
+      try {
+        const destination = await resolve(hit.productId);
+        // `?product=` opens the menu with this dish's modal already up, so the
+        // click lands on the thing that was clicked rather than near it.
+        // A closed restaurant is navigated to, not blocked: the vendor page's
+        // existing "Currently Closed" treatment is the honest place to say so,
+        // and the menu stays browsable there (§0.5).
+        router.push(
+          `/vendors/${destination.vendorUserId}?product=${encodeURIComponent(hit.productId)}`,
+        );
+      } catch {
+        toast.error(t("failedToOpenItem"));
+        setOpeningProductId(null);
+      }
+    },
+    [resolve, router, t],
+  );
+
+  const filterBar = (
+    <SearchFilters
+      values={{
+        cuisine,
+        sortBy: sortBy ?? null,
+        sortOrder: sortOrder ?? null,
+        minPrice,
+        maxPrice,
+        radiusInMeters,
+        isAvailable,
+        isHalal,
+      }}
+      onChange={applyPatch}
+      onClear={clearFilters}
+      hasCoords={coords !== null}
+      onRequestLocation={requestLocation}
+      locationDenied={locationDenied}
+    />
+  );
+
+  const hits = flattenSearchHits(data);
+  const total = searchTotal(data);
+
+  // The slug's display name, looked up rather than derived. Un-hyphenating
+  // `indian-food` into "Indian Food" would be inventing a label the backend
+  // already publishes — and inventing it wrongly for `pt`, where the same slug
+  // reads "Comida Indiana". A slug we cannot resolve falls back to itself.
+  const { data: cuisines } = useCuisines({ enabled: cuisine.length > 0 });
+  const cuisineLabel = cuisine
+    ? formatCuisineLabel(
+        cuisines?.find((entry) => entry.slug === cuisine)?.name ?? cuisine,
+      )
+    : "";
+
+  // Nothing asked for — opening `/search` directly, or the navbar's clear
+  // button wiping the term. A prompt, not "0 results for ''".
+  if (!hasCriteria) {
+    return (
+      <main className="w-full px-4 py-8 lg:px-16">
+        {/* Shown even with nothing asked for, so browsing can start from a
+            filter rather than requiring a word to be typed first. */}
+        {filterBar}
+        <div className="py-20 text-center">
+          <h1 className="text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
+            {t("searchPromptTitle")}
+          </h1>
+          <p className="mt-2 text-[#5a4044] dark:text-neutral-400">
+            {t("searchPromptHint")}
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (isPending) {
+    return (
+      <main className="w-full px-4 py-8 lg:px-16">
+        {filterBar}
+        {/* A filter-only search has no term to echo, and "Searching for ''" is
+            worse than no subtitle at all. */}
+        <h1 className="mb-6 text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
+          {query ? (
+            <>
+              {t("searchingFor")} &ldquo;{query}&rdquo;
+            </>
+          ) : (
+            t("loadingSearch")
+          )}
+        </h1>
+        <ResultsGrid>
+          {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <div
+              key={i}
+              className="h-72 animate-pulse rounded-2xl bg-gray-200 dark:bg-neutral-800"
+            />
+          ))}
+        </ResultsGrid>
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="w-full px-4 py-8 lg:px-16">
+        {filterBar}
+        <div className="py-20 text-center">
+          <p className="text-[#5a4044] dark:text-neutral-400">
+            {t("failedToLoadSearchResults")}
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mt-4 rounded-2xl bg-[#f9186b] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#d4145b]"
+          >
+            {t("tryAgain")}
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="w-full px-4 py-8 lg:px-16">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Search results for &quot;{query}&quot;</h1>
-          <p className="text-gray-600 mt-1">
-            {totalVendors} place{totalVendors !== 1 ? "s" : ""} &nbsp;
-            {totalProducts} dish{totalProducts !== 1 ? "es" : ""}
-          </p>
-        </div>
-
-        {/* Client-side sort — reorders results only (Relevance / Distance / Rating / Price) */}
-        {(totalVendors > 0 || totalProducts > 0) && (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setSortOpen((o) => !o)}
-              aria-haspopup="listbox"
-              aria-expanded={sortOpen}
-              className="flex items-center gap-2 rounded-2xl border border-[#edeeef] bg-white px-4 py-2.5 text-sm font-semibold text-[#191c1d] shadow-sm transition hover:border-[#ffd9de]"
-            >
-              <SlidersHorizontal size={16} className="text-[#f9186b]" />
-              {activeSortLabel}
-              <ChevronDown
-                size={16}
-                className={`text-gray-400 transition-transform ${sortOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {sortOpen && (
-              <>
-                {/* click-away layer */}
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setSortOpen(false)}
-                  aria-hidden="true"
-                />
-                <ul
-                  role="listbox"
-                  className="absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-2xl border border-[#edeeef] bg-white py-1 shadow-xl"
-                >
-                  {SORT_OPTIONS.map((opt) => {
-                    const selected = opt.key === sortBy;
-                    return (
-                      <li key={opt.key} role="option" aria-selected={selected}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSortBy(opt.key);
-                            setSortOpen(false);
-                          }}
-                          className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition hover:bg-[#fff1f4] ${
-                            selected ? "font-bold text-[#f9186b]" : "text-[#191c1d]"
-                          }`}
-                        >
-                          {t(opt.labelKey)}
-                          {selected && <Check size={16} className="text-[#f9186b]" />}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </>
-            )}
-          </div>
-        )}
+      {filterBar}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
+          {query ? (
+            <>
+              {t("searchResultsFor")} &ldquo;{query}&rdquo;
+            </>
+          ) : (
+            t("searchPromptTitle")
+          )}
+        </h1>
+        {/* The server's total, not `hits.length` — that is only what has been
+            paged in so far, and reporting it was the old page's counting bug. */}
+        <p className="mt-1 text-[#5a4044] dark:text-neutral-400">
+          {total} {total === 1 ? t("resultLabel") : t("resultsLabel")}
+        </p>
       </div>
 
-      {totalVendors > 0 && (
-        <section className="mb-12">
-          <h2 className="text-xl font-bold mb-4">{t("places")}</h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {sortedPlaces.map((vendor) => {
-              const deliveryTime = deliveryTimes[vendor.userId];
-              const isTimeLoading = loadingTimes[vendor.userId];
-              const displayTime = isTimeLoading ? "Calculating..." : (deliveryTime || t("under10Min"));
-              // Closed stores are dimmed with a "Currently Closed" badge but
-              // stay openable — the menu is browsable, only ordering is
-              // withdrawn. Only an explicit `false` counts as closed.
-              const isClosed = vendor.businessDetails?.isStoreOpen === false;
-
-              const cardBody = (
-                <article
-                  className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-3xl border-2 border-transparent bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:border-[#ffd9de] hover:shadow-2xl"
-                >
-                  <div className="relative aspect-16/10 shrink-0 overflow-hidden">
-                    <SafeImage
-                      src={vendor.storePhoto?.[0]}
-                      alt={vendor.businessDetails.businessName}
-                      sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
-                      className={`object-cover transition-transform duration-700 ${
-                        isClosed ? "grayscale" : "group-hover:scale-110"
-                      }`}
-                      fallbackIcon={<Store className="h-12 w-12" />}
-                    />
-                    <div className="absolute left-4 top-4">
-                      <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 px-3 py-1.5 text-sm font-bold text-[#191c1d] shadow-lg backdrop-blur-md">
-                        <Star size={16} className="text-[#f6c344]" />
-                        {vendor.rating?.average ?? 0}
-                      </span>
-                    </div>
-                    {!isClosed && (
-                      <div className="absolute bottom-4 right-4">
-                        <span className="flex items-center gap-2 rounded-2xl bg-black/70 px-3 py-1.5 text-sm text-white backdrop-blur-md">
-                          <Truck size={16} />
-                          {displayTime}
-                        </span>
-                      </div>
-                    )}
-                    {isClosed && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/45">
-                        <span className="flex items-center gap-2 rounded-full bg-black/70 px-5 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
-                          <Moon size={18} />
-                          {t("currentlyClosed")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-1 flex-col p-5">
-                    <h3
-                      className={`line-clamp-1 text-lg font-bold ${
-                        isClosed ? "text-[#9aa0a6]" : "text-[#191c1d]"
-                      }`}
-                    >
-                      {vendor.businessDetails.businessName}
-                    </h3>
-                    <p
-                      className={`mt-1 line-clamp-2 min-h-[2.75rem] text-sm ${
-                        isClosed ? "text-[#9aa0a6]" : "text-[#5a4044]"
-                      }`}
-                    >
-                      {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
-                        vendor.businessDetails.businessType}
-                    </p>
-                    <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[#edeeef] pt-4 text-sm font-medium">
-                      <span
-                        className={`flex items-center gap-1.5 ${
-                          isClosed ? "text-[#9aa0a6]" : "text-[#f9186b]"
-                        }`}
-                      >
-                        <Truck size={16} />
-                        {vendor.businessDetails.isStoreOpen ? "Open Now" : "Closed"}
-                      </span>
-                      <span
-                        className={`flex min-w-0 items-center gap-1.5 ${
-                          isClosed ? "text-[#9aa0a6]" : "text-[#f9186b]"
-                        }`}
-                      >
-                        <Check size={16} className="shrink-0" />
-                        <span className="truncate">
-                          {vendor.businessLocation.city}
-                          {vendor.businessLocation.city && vendor.businessLocation.country ? ", " : ""}
-                          {vendor.businessLocation.country}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              );
-
-              return (
-                <Link key={vendor.userId} href={`/vendors/${vendor.userId}`} className="block h-full">
-                  {cardBody}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {totalProducts > 0 && (
-        <section>
-          <h2 className="text-xl font-bold mb-4">{t("dishes")}</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {sortedDishes.map((product) => (
-              <Link key={product._id} href={`/vendors/${product.vendorId.userId}`} className="block h-full">
-                <div className="group flex h-full items-center gap-4 rounded-2xl border border-[#edeeef] bg-white p-3 shadow-sm transition hover:border-[#ffd9de] hover:shadow-md cursor-pointer">
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-50">
-                    <SafeImage
-                      src={product.images?.[0]}
-                      alt={product.name}
-                      sizes="80px"
-                      fallbackIcon={<UtensilsCrossed className="h-7 w-7" />}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-gray-800 line-clamp-1">{product.name}</h3>
-                    <p className="text-xs text-gray-500 line-clamp-1">{product.vendorId?.businessDetails?.businessName || "Vendor"}</p>
-                    <div className="mt-1 text-[#f9186b] font-bold text-sm">
-                      {currencySymbol(product.pricing?.currency)} {product.pricing?.finalPrice?.toFixed(2) || "0.00"}
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {totalVendors === 0 && totalProducts === 0 && !loading && (
-        <div className="text-center py-12 text-gray-500">
-          No results found for &quot;{query}&quot;.
+      {hits.length === 0 ? (
+        <div className="py-20 text-center">
+          <SearchX
+            className="mx-auto h-10 w-10 text-gray-300 dark:text-neutral-600"
+            aria-hidden="true"
+          />
+          <p className="mt-4 font-semibold text-[#191c1d] dark:text-neutral-50">
+            {t("noResultsFound")}
+          </p>
+          {/* Says which criteria produced the emptiness. With single-select
+              cuisine (§1.2) an over-narrow filter is the likelier cause than a
+              genuinely missing dish, so both are named. */}
+          <p className="mt-1 text-sm text-[#5a4044] dark:text-neutral-400">
+            {query && <>&ldquo;{query}&rdquo;</>}
+            {query && cuisineLabel && " · "}
+            {cuisineLabel}
+          </p>
+          <p className="mt-3 text-sm text-[#5a4044] dark:text-neutral-400">
+            {t("noResultsHint")}
+          </p>
+          {/* Meilisearch matches word *prefixes*: "izza" finds nothing, though
+              "Pizza" is right there. A user who types into the middle of a word
+              otherwise concludes the catalogue is empty rather than that the
+              search works differently than they assumed. Held back until the
+              query is long enough that a typo is the less likely explanation. */}
+          {query.length >= PREFIX_HINT_MIN_LENGTH && (
+            <p className="mx-auto mt-2 max-w-md text-sm text-[#5a4044] dark:text-neutral-400">
+              {t("prefixMatchHint")}
+            </p>
+          )}
         </div>
+      ) : (
+        <>
+          <ResultsGrid>
+            {hits.map((hit) => (
+              <DishCard
+                key={hit.id}
+                hit={hit}
+                onOpen={openHit}
+                onPrefetch={(target) => prefetch(target.productId)}
+                busy={openingProductId === hit.productId}
+              />
+            ))}
+          </ResultsGrid>
+
+          {/* Explicit, not an intersection observer: with a real total on hand
+              a button is honest about there being more, and it never spends a
+              request the user did not ask for against the 100/60s budget. */}
+          {hasNextPage && (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="rounded-2xl border border-[#edeeef] bg-white px-6 py-2.5 text-sm font-semibold text-[#191c1d] shadow-sm transition hover:border-[#ffd9de] disabled:opacity-60 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:hover:border-neutral-700"
+              >
+                {isFetchingNextPage ? t("loading") : t("loadMore")}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </main>
   );

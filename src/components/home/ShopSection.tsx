@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { isOptimizableImageHost } from "@/lib/imageHosts";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import {
@@ -202,6 +203,7 @@ export default function ShopSection() {
                     height={160}
                     width={160}
                     src={category.icon}
+                    unoptimized={!isOptimizableImageHost(category.icon)}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-gray-400 dark:text-neutral-500">

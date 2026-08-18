@@ -6,7 +6,9 @@ import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import OrderCard from "./OrderCard";
 import CancelOrderDialog from "./CancelOrderDialog";
 import OrdersPageSkeleton from "./OrdersPageSkeleton";
+import OrderSearchBar from "./OrderSearchBar";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useOrderSearch } from "@/hooks/useOrderSearch";
 import {
   useOrders,
   useRatings,
@@ -64,6 +66,10 @@ function StarRating({ value, onChange, size = 28 }: StarRatingProps) {
 export default function OrdersPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"ongoing" | "history">("ongoing");
+  // Local, not synced to the URL. An order history is private and single-user,
+  // so a shareable `?search=` buys nothing — and reading search params here
+  // would opt this route out of static rendering for the privilege.
+  const [searchTerm, setSearchTerm] = useState("");
   // Cached + deduped. Keyed on language, so a switch refetches while React
   // Query keeps the current list on screen — no manual silent-refetch needed.
   const { data: orders = [], isLoading: loading } = useOrders<any>();
@@ -219,6 +225,79 @@ export default function OrdersPage() {
     return { ongoingOrders: ongoing, historyOrders: history };
   }, [orders]);
 
+  // Search runs over BOTH buckets, never just the visible one. The customer is
+  // searching their orders, not the tab they happen to be on — and on an
+  // account whose orders have all finished, Ongoing is empty, so a search
+  // confined to the active tab would return nothing for every term they could
+  // type on the page's default tab. See `useOrderSearch` for why one index
+  // serves both lists, and `lib/orderSearch.ts` for why none of this is a
+  // request.
+  const { filter, isSearching } = useOrderSearch(orders, searchTerm);
+  const visibleOngoing = useMemo(
+    () => filter(ongoingOrders),
+    [filter, ongoingOrders],
+  );
+  const visibleHistory = useMemo(
+    () => filter(historyOrders),
+    [filter, historyOrders],
+  );
+
+  /**
+   * What fills a tab that has nothing to show, in priority order:
+   *
+   *  1. not searching  → the page's normal copy, exactly as before;
+   *  2. searching, but the OTHER tab has matches → say so, and offer to go
+   *     there. Without this, searching for a delivered order from the Ongoing
+   *     tab is a dead end that reads as "no such order";
+   *  3. searching, nothing anywhere → no results.
+   *
+   * The tab is never switched automatically. Being moved to another tab
+   * mid-keystroke feels like a bug; a button the customer chooses does not.
+   */
+  const renderEmptyState = (tab: "ongoing" | "history") => {
+    if (!isSearching) {
+      return (
+        <p className="text-[#5a4044] dark:text-neutral-400">
+          {tab === "ongoing" ? t("noOngoingOrders") : t("previousOrdersMessage")}
+        </p>
+      );
+    }
+
+    const otherTab = tab === "ongoing" ? "history" : "ongoing";
+    const otherCount =
+      tab === "ongoing" ? visibleHistory.length : visibleOngoing.length;
+
+    if (otherCount === 0) {
+      return (
+        <>
+          <p className="text-[#5a4044] dark:text-neutral-400">
+            {t("noResultsFound")}
+          </p>
+          <p className="text-sm text-gray-400 dark:text-neutral-500">
+            {t("noResultsHint")}
+          </p>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <p className="text-[#5a4044] dark:text-neutral-400">
+          {t("noMatchingOrders")}
+        </p>
+        <button
+          type="button"
+          onClick={() => setActiveTab(otherTab)}
+          className="rounded-full bg-[#f9186b] dark:bg-pink-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#90003c]"
+        >
+          {/* Composed here rather than interpolated: `t()` takes one argument
+              and does not substitute. */}
+          {otherCount} {t(tab === "ongoing" ? "inHistory" : "inOngoing")}
+        </button>
+      </>
+    );
+  };
+
   if (loading) {
     return <OrdersPageSkeleton />;
   }
@@ -286,6 +365,15 @@ export default function OrdersPage() {
           </p>
         </div>
 
+        <OrderSearchBar
+          value={searchTerm}
+          onChange={setSearchTerm}
+          // Both tabs, so this never contradicts the per-tab counts below it.
+          resultCount={
+            isSearching ? visibleOngoing.length + visibleHistory.length : null
+          }
+        />
+
         <div className="mb-8 flex border-b border-neutral-200 dark:border-neutral-800">
           <button
             onClick={() => setActiveTab("ongoing")}
@@ -293,7 +381,12 @@ export default function OrdersPage() {
               activeTab === "ongoing" ? "text-[#f9186b] dark:text-pink-500" : "text-[#5a4044] dark:text-neutral-400"
             }`}
           >
+            {/* Counts appear only while searching, so an idle page looks
+                exactly as it always has. They are what makes searching both
+                tabs legible: the customer can see where their match landed
+                without opening the other tab to find out. */}
             {t("ongoing")}
+            {isSearching && ` (${visibleOngoing.length})`}
             {activeTab === "ongoing" && (
               <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#f9186b] dark:bg-pink-500" />
             )}
@@ -306,6 +399,7 @@ export default function OrdersPage() {
             }`}
           >
             {t("history")}
+            {isSearching && ` (${visibleHistory.length})`}
             {activeTab === "history" && (
               <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#f9186b] dark:bg-pink-500" />
             )}
@@ -314,12 +408,12 @@ export default function OrdersPage() {
 
         {activeTab === "ongoing" ? (
           <div className="space-y-6">
-            {ongoingOrders.length === 0 ? (
-              <div className="flex h-75 items-center justify-center rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-xs">
-                <p className="text-[#5a4044] dark:text-neutral-400">{t("noOngoingOrders")}</p>
+            {visibleOngoing.length === 0 ? (
+              <div className="flex h-75 flex-col items-center justify-center gap-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-xs px-4 text-center">
+                {renderEmptyState("ongoing")}
               </div>
             ) : (
-              ongoingOrders.map((order) => {
+              visibleOngoing.map((order) => {
                 const isPickup = isPickupOrder(order);
                 const { progress, text, status } = getOrderProgress(
                   order.orderStatus,
@@ -355,12 +449,12 @@ export default function OrdersPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {historyOrders.length === 0 ? (
-              <div className="flex h-75 items-center justify-center rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-xs">
-                <p className="text-[#5a4044] dark:text-neutral-400">{t("previousOrdersMessage")}</p>
+            {visibleHistory.length === 0 ? (
+              <div className="flex h-75 flex-col items-center justify-center gap-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-xs px-4 text-center">
+                {renderEmptyState("history")}
               </div>
             ) : (
-              historyOrders.map((order) => {
+              visibleHistory.map((order) => {
                 // One derivation, used for both the chip and the label under
                 // the progress bar. They used to be worked out separately and
                 // disagreed: a REJECTED order was chipped "Cancelled" while the

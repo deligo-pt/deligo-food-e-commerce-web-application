@@ -25,6 +25,11 @@ import { useCartCache } from "@/hooks/queries/useCart";
 import { activateAddedOrder } from "@/lib/cartActivation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { currencySymbol } from "@/lib/currency";
+import {
+  applyProductDiscount,
+  formatDiscountValue,
+  hasProductDiscount,
+} from "@/lib/productPricing";
 
 interface ProductDetailsModalProps {
   isOpen: boolean;
@@ -41,7 +46,9 @@ interface Product {
   images: string[];
   pricing: {
     price: number;
+    /** Percent when `discountType` is PERCENTAGE, an amount when it's FLAT. */
     discount: number;
+    discountType?: string;
     taxRate: number;
     currency: string;
     taxAmount: number;
@@ -274,11 +281,14 @@ export default function ProductDetailsModal({
     }
   }
 
-  const discountPercentage = product?.pricing?.discount ?? 0;
-  const hasDiscount = discountPercentage > 0;
+  const hasDiscount = hasProductDiscount(product?.pricing);
 
   const unitPrice = selectedOption
-    ? selectedOption.price * (1 - discountPercentage / 100)
+    // No `finalPrice` exists per option, so the discount is applied here — and
+    // it has to respect `discountType`. Reading `discount` as a percentage
+    // regardless priced Chocolate Salami's Large at €1.99 against a €1.40
+    // charge; `applyProductDiscount` is checked against the cart's own figures.
+    ? applyProductDiscount(selectedOption.price, product?.pricing)
     // The API exposes the post-discount unit price as `finalPrice` (there is no
     // `discountedBasePrice` field). Reading the missing field made this `0`,
     // which zeroed out the subtotal/tax/total shown in the modal.
@@ -527,8 +537,12 @@ export default function ProductDetailsModal({
                       {formatPrice(
                         currentOriginalUnitPrice - unitPrice,
                         currency,
-                      )}{" "}
-                      ({discountPercentage}% Off)
+                      )}
+                      {/* Only worth appending for a percentage — on a FLAT
+                          discount the rate *is* the saving already printed,
+                          so "(€0.60 Off)" would just say it twice. */}
+                      {product?.pricing?.discountType === "PERCENTAGE" &&
+                        ` (${formatDiscountValue(product.pricing, currency)} Off)`}
                     </span>
                   </div>
                 )}
@@ -573,7 +587,10 @@ export default function ProductDetailsModal({
                                   </span>
                                 )}
                                 <span className="font-medium text-pink-600 dark:text-pink-400">
-                                  {formatPrice(opt.price * (1 - discountPercentage / 100), currency)}
+                                  {formatPrice(
+                                    applyProductDiscount(opt.price, product?.pricing),
+                                    currency,
+                                  )}
                                 </span>
                               </div>
                             </div>

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, type ReactNode } from "react";
+import { isOptimizableImageHost } from "@/lib/imageHosts";
 
 // Sensible default for a responsive card image in a 1/2/3-column grid.
 const DEFAULT_SIZES = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw";
@@ -14,6 +15,11 @@ const DEFAULT_SIZES = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
  * Always pass `sizes` matching the rendered box (e.g. a fixed `"96px"` thumb or
  * a responsive grid cell); it defaults to a 1/2/3-column card so mobile never
  * downloads a desktop-width image.
+ *
+ * A host `next.config.ts` doesn't know about is served unoptimized rather than
+ * optimized: `next/image` *throws* on those during render, which the `onError`
+ * fallback below never sees because the component never mounts — the error
+ * boundary eats the whole route instead. See `@/lib/imageHosts`.
  */
 export default function SafeImage({
   src,
@@ -51,6 +57,7 @@ export default function SafeImage({
       fill
       priority={priority}
       sizes={sizes}
+      unoptimized={!isOptimizableImageHost(src)}
       onError={() => setErrored(true)}
       className={className}
     />

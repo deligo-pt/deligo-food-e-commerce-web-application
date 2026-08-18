@@ -35,6 +35,7 @@ import { closeSupportChat } from "@/stores/supportChatStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { clearCachedFCMToken } from "@/lib/fcmToken";
 import Image from "next/image";
+import { isOptimizableImageHost } from "@/lib/imageHosts";
 import Link from "next/link";
 import ProfilePageSkeleton from "./profilePageSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -222,6 +223,7 @@ export default function AccountPage() {
                     {profile.profilePhoto ? (
                       <Image
                         src={profile.profilePhoto}
+                        unoptimized={!isOptimizableImageHost(profile.profilePhoto)}
                         alt="Profile"
                         className="h-full w-full rounded-full object-cover"
                         width={96}
