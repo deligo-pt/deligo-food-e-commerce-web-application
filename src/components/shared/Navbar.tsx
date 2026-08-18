@@ -35,6 +35,7 @@ import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
 } from "../../lib/authCookies";
+import { MIN_SEARCH_TERM_LENGTH, SEARCH_DEBOUNCE_MS } from "@/lib/search";
 import { useCart, useCartCache } from "@/hooks/queries/useCart";
 import { useInvalidateSupport } from "@/hooks/queries/useSupport";
 import { closeSupportChat } from "@/stores/supportChatStore";
@@ -341,21 +342,68 @@ export default function Navbar() {
       window.removeEventListener("profilePhotoUpdated", handlePhotoUpdate);
   }, []);
 
+  /**
+   * The search URL for a term, keeping whatever filters are already applied.
+   *
+   * Read from `window.location` inside the handler rather than through
+   * `useSearchParams()`: this component lives in the shared layout, and that
+   * hook would opt every page under it into client-side rendering. Handlers
+   * only ever run on the client, so there is nothing to hydrate-match here.
+   *
+   * Preserving the existing parameters is the point — since filters live in the
+   * URL, building `/search?q=…` from scratch would silently drop the user's
+   * cuisine, sort and price the moment they refined their wording.
+   */
+  const buildSearchHref = useCallback((term: string) => {
+    const params =
+      typeof window !== "undefined" && window.location.pathname === "/search"
+        ? new URLSearchParams(window.location.search)
+        : new URLSearchParams();
+
+    if (term) params.set("q", term);
+    else params.delete("q");
+
+    const queryString = params.toString();
+    return queryString ? `/search?${queryString}` : "/search";
+  }, []);
+
+  /**
+   * `replace` while already on `/search`, `push` when arriving from elsewhere.
+   *
+   * Refining a search is one continuous act, not a dozen navigations — pushing
+   * per settled keystroke buried the back button under every intermediate
+   * spelling. Arriving at `/search` is a real navigation and stays a `push`, so
+   * Back still returns to wherever the user came from.
+   */
+  const goToSearch = useCallback(
+    (term: string) => {
+      const href = buildSearchHref(term);
+      if (typeof window !== "undefined" && window.location.pathname === "/search") {
+        router.replace(href);
+      } else {
+        router.push(href);
+      }
+    },
+    [buildSearchHref, router],
+  );
+
   const handleSearch = useCallback(() => {
-    if (localSearchTerm.trim()) {
-      router.push(`/search?q=${encodeURIComponent(localSearchTerm.trim())}`);
-    }
-  }, [localSearchTerm, router]);
+    const term = localSearchTerm.trim();
+    if (term.length >= MIN_SEARCH_TERM_LENGTH) goToSearch(term);
+  }, [localSearchTerm, goToSearch]);
 
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setLocalSearchTerm(value);
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(() => {
-      if (value.trim()) {
-        router.push(`/search?q=${encodeURIComponent(value.trim())}`);
-      }
-    }, 500);
+      const term = value.trim();
+      // A single character is not a query — "p" alone matches 15 of the 18
+      // items indexed. Below the minimum nothing is sent and nothing on screen
+      // changes: wiping the results at every keystroke of a word being typed is
+      // worse than leaving the previous ones up for one more character.
+      if (term.length >= MIN_SEARCH_TERM_LENGTH) goToSearch(term);
+    }, SEARCH_DEBOUNCE_MS);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -367,15 +415,16 @@ export default function Navbar() {
 
   // Emptying the box has to drop the results too, otherwise the page keeps
   // showing hits for a term that is no longer on screen. The pending debounce is
-  // killed first so it can't re-push the old term a moment later.
+  // killed first so it can't re-push the old term a moment later. Filters
+  // survive — clearing the words is not the same as clearing the search.
   const clearSearch = useCallback(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
     setLocalSearchTerm("");
-    if (pathname === "/search") router.replace("/search");
-  }, [pathname, router]);
+    if (pathname === "/search") router.replace(buildSearchHref(""));
+  }, [pathname, router, buildSearchHref]);
 
   useEffect(() => {
     if (pathname !== "/search") {

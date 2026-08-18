@@ -15,6 +15,7 @@
     "verify:support": "node --no-warnings scripts/verify-support.mjs",
     "verify:tax": "node --no-warnings scripts/verify-tax.mjs",
     "verify:product-pricing": "node --no-warnings scripts/verify-product-pricing.mjs",
+    "verify:search": "node --no-warnings scripts/verify-search.mjs",
     "verify:pickup": "node scripts/verify-pickup-contract.mjs"
   },
   "dependencies": {
