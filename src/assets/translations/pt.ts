@@ -1402,6 +1402,17 @@ const pt = {
   filter: "Filtro",
   clearAll: "Limpar tudo",
   clearSearch: "Limpar pesquisa",
+
+  // Pesquisa na página de pedidos (procura em Em Curso e Histórico ao mesmo tempo).
+  searchOrdersLabel: "Pesquisar os seus pedidos",
+  // "ID", not "nº": the dictionary already localizes it that way everywhere
+  // else (`ID de utilizador`, `ID de finalização`, `ID Fiscal`).
+  searchOrdersPlaceholder: "Pesquisar por ID do pedido, item ou restaurante",
+  noMatchingOrders: "Nenhum pedido correspondente aqui.",
+  // Compostas com um número no JSX — "3 no Histórico" — porque t() não
+  // interpola. São fragmentos por essa razão, não frases completas.
+  inHistory: "no Histórico",
+  inOngoing: "em Curso",
   noResultsFound: "Nenhum resultado encontrado.",
 
   faqTitle: "Perguntas Frequentes",

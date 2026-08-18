@@ -1409,6 +1409,15 @@ const en = {
   filter: "Filter",
   clearAll: "Clear all",
   clearSearch: "Clear search",
+
+  // Orders page search (searches Ongoing and History together).
+  searchOrdersLabel: "Search your orders",
+  searchOrdersPlaceholder: "Search by order ID, item, or restaurant",
+  noMatchingOrders: "No matching orders here.",
+  // Composed with a number in JSX — "3 in History" — because t() does not
+  // interpolate. Kept as fragments for that reason, not as full sentences.
+  inHistory: "in History",
+  inOngoing: "in Ongoing",
   noResultsFound: "No results found.",
 
   // en.ts

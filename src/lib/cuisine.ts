@@ -4,15 +4,23 @@
 // (homepage filter, search, vendor cards) must go through these helpers to stay
 // consistent and crash-safe. See Issue.md #11.
 
+import { foldText } from "./text";
+
 // Normalize a cuisine string for matching: decompose accents, strip the combining
 // marks, trim, lowercase. The defensive String(value ?? "") coercion means a
 // non-string / array / null value can never throw (e.g. value.toLowerCase()).
-export const normalizeCuisine = (value: unknown): string =>
-  String(value ?? "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim()
-    .toLowerCase();
+//
+// The implementation moved to `foldText` in `text.ts`, which order search needs
+// for exactly the same reasons (localized names, accents a customer will not
+// type). Kept under this name because "normalize a cuisine" is what the callers
+// below mean, and renaming it would say nothing new.
+//
+// `foldText` folds two things this did not: it drops `#` and collapses internal
+// whitespace runs. Neither can change a cuisine match, because `cuisineMatches`
+// folds *both* sides — the vendor's value and the customer's selection — so any
+// extra normalization applies symmetrically and can only make matching more
+// forgiving, never less.
+export const normalizeCuisine = foldText;
 
 // Coerce a vendor cuisine field (array | string | undefined) into a clean list of
 // non-empty strings.

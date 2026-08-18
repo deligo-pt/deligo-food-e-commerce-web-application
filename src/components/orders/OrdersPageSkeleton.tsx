@@ -8,6 +8,13 @@ export default function OrdersPageSkeleton() {
           <div className="mt-3 h-4 w-80 rounded bg-gray-200 dark:bg-neutral-800" />
         </div>
 
+        {/* Search bar — same rounded-full footprint and the same reserved line
+            for the result count, so nothing shifts when the orders land. */}
+        <div className="mb-6">
+          <div className="h-11 w-full rounded-full bg-gray-200 dark:bg-neutral-800" />
+          <div className="mt-2 min-h-5" />
+        </div>
+
         {/* Tabs */}
         <div className="mb-8 flex border-b border-neutral-200 dark:border-neutral-800">
           <div className="flex-1 py-4">
