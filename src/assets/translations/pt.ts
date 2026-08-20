@@ -523,11 +523,12 @@ const pt = {
   otp: "OTP",
   verify: "Verificar",
   verifying: "A verificar...",
-  // Apenas Portugal, e a API rejeita os espaços com que o número é
-  // normalmente escrito — daí o formato que funciona sempre.
+  // Apenas Portugal, o indicativo é obrigatório em vez de assumido, e a API
+  // rejeita os espaços com que o número é normalmente escrito — daí o formato
+  // que funciona sempre.
   mobilePlaceholder: "+351 XXX XXX XXX",
   invalidPortugueseNumber:
-    "Introduza um número de telemóvel português — 9 dígitos, com ou sem +351.",
+    "Comece com o indicativo — +351 seguido de 9 dígitos.",
   changeNotSavedUntilVerified:
     "Ainda não guardado — confirme esta alteração com o código para a aplicar.",
   profileSavedContactNotVerified:

@@ -346,24 +346,35 @@ section("Attachments — refused before the round trip");
   eq("no file → no error", getAttachmentError(null), null);
 }
 
-section("🔴 Contact numbers — the API rejects the spacing Portugal writes");
+section("🔴 Contact numbers — the country code is stated, not assumed");
 {
-  // Measured: `+351920136680`, `351920136680` and `920136680` are all accepted,
-  // but `+351 920 136 680` is refused — by an error naming a format the customer
-  // appears to have used.
+  // The API is looser than this: measured, it accepts `+351920136680`,
+  // `351920136680` and bare `920136680` alike, and refuses only the spacing —
+  // `+351 920 136 680` — by an error naming a format the customer appears to
+  // have used.
+  //
+  // 🔴 The frontend is deliberately stricter on the code and no stricter on the
+  // spacing. Inferring `+351` from nine bare digits meant a number typed with
+  // no country code went to the backend as Portuguese whether it was one or
+  // not, with the customer never shown the assumption. Repairing separators
+  // assumes nothing — the digits and the code are exactly what was typed.
   eq("already canonical", normalizePortugueseNumber("+351920136680"), "+351920136680");
-  eq("no plus", normalizePortugueseNumber("351920136680"), "+351920136680");
-  eq("bare nine digits", normalizePortugueseNumber("920136680"), "+351920136680");
-
   eq("Portuguese spacing repaired", normalizePortugueseNumber("+351 920 136 680"), "+351920136680");
-  eq("spacing without the code", normalizePortugueseNumber("920 136 680"), "+351920136680");
-  eq("dashes", normalizePortugueseNumber("920-136-680"), "+351920136680");
-  eq("00351 prefix", normalizePortugueseNumber("00351920136680"), "+351920136680");
+  eq("dashes", normalizePortugueseNumber("+351 920-136-680"), "+351920136680");
   eq("brackets and dots", normalizePortugueseNumber("(+351) 920.136.680"), "+351920136680");
+  eq("surrounding whitespace", normalizePortugueseNumber("  +351920136680 "), "+351920136680");
 
-  eq("eight digits", normalizePortugueseNumber("92013668"), null);
-  eq("ten digits", normalizePortugueseNumber("9201366800"), null);
+  // Nothing without an explicit `+351` reaches `PATCH /profile/send-otp`.
+  eq("bare nine digits", normalizePortugueseNumber("920136680"), null);
+  eq("spacing without the code", normalizePortugueseNumber("920 136 680"), null);
+  eq("no plus", normalizePortugueseNumber("351920136680"), null);
+  eq("00351 prefix", normalizePortugueseNumber("00351920136680"), null);
+
+  eq("eight digits", normalizePortugueseNumber("+35192013668"), null);
+  eq("ten digits", normalizePortugueseNumber("+3519201366800"), null);
   eq("a UK number", normalizePortugueseNumber("+447700900123"), null);
+  eq("the code alone", normalizePortugueseNumber("+351"), null);
+  eq("letters after the code", normalizePortugueseNumber("+351abcdefghi"), null);
   eq("letters", normalizePortugueseNumber("abcdefghi"), null);
   eq("empty", normalizePortugueseNumber(""), null);
   eq("undefined", normalizePortugueseNumber(undefined), null);
