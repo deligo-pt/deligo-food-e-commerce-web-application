@@ -1,11 +1,13 @@
 /**
- * Checks how a notification's header is derived — the rules, not the wire.
+ * Checks how a notification row is derived — the rules, not the wire.
  *
  *   pnpm verify:notifications
  *
  * No token, no network. Every assertion is about `src/lib/notificationHeader.ts`
  * and `src/lib/orderStatusLabel.ts` turning a stored notification into
- * `Order #ORD-XXXX — Accepted`.
+ * `Order #ORD-XXXX — Accepted`, plus `src/lib/notificationIcon.ts` choosing the
+ * glyph beside it and `src/lib/notificationAction.ts` choosing the one button
+ * below it.
  *
  * ## Why this script has to exist
  *
@@ -36,6 +38,7 @@
  * `ts-resolve-hook.mjs` is registered to retry those as `.ts`.
  */
 
+import { readFileSync } from "node:fs";
 import { register } from "node:module";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -44,10 +47,12 @@ register("./ts-resolve-hook.mjs", import.meta.url);
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-let H, L;
+let H, L, I, A;
 try {
   H = await import(join(here, "../src/lib/notificationHeader.ts"));
   L = await import(join(here, "../src/lib/orderStatusLabel.ts"));
+  I = await import(join(here, "../src/lib/notificationIcon.ts"));
+  A = await import(join(here, "../src/lib/notificationAction.ts"));
 } catch (error) {
   console.error(
     "Could not load the source modules. This needs Node 22.6+ for TypeScript\n" +
@@ -63,6 +68,8 @@ const {
   CART_EXPIRY_SUBTYPE,
 } = H;
 const { getOrderStatusLabel, humanizeStatus, STATUS_LABEL_KEYS } = L;
+const { getNotificationIconKind } = I;
+const { getNotificationAction } = A;
 
 let passed = 0;
 let failed = 0;
@@ -542,6 +549,205 @@ section("End to end — the header line for every captured notification");
 
   console.log("");
   for (const line of rendered) console.log(`        ${line}`);
+}
+
+// ---------------------------------------------------------------------------
+// The row icon. Captured 2026-08-20 from the same account: the three self-pickup
+// orders it has notifications for, and the notifications pointing at them.
+// Every one of these drew a bike before `lib/notificationIcon` existed.
+// ---------------------------------------------------------------------------
+
+const PICKUP_ORDERS = [
+  { orderId: "ORD-9HZ2HAGDZH", fulfillmentType: "PICKUP", orderStatus: "PICKED_UP_BY_CUSTOMER" },
+  { orderId: "ORD-O9KAVBL1T5", fulfillmentType: "PICKUP", orderStatus: "PICKED_UP_BY_CUSTOMER" },
+  { orderId: "ORD-B23CST4CQR", fulfillmentType: "PICKUP", orderStatus: "PICKED_UP_BY_CUSTOMER" },
+];
+
+const PICKUP_NOTIFICATIONS = [
+  { title: "Order is ready for pickup", type: "ORDER", data: { orderId: "ORD-9HZ2HAGDZH", status: "READY_FOR_PICKUP" } },
+  { title: "Order is being prepared", type: "ORDER", data: { orderId: "ORD-9HZ2HAGDZH", status: "PREPARING" } },
+  { title: "Order Accepted", type: "ORDER", data: { orderId: "ORD-9HZ2HAGDZH" } },
+  { title: "Order is ready for pickup", type: "ORDER", data: { orderId: "ORD-O9KAVBL1T5", status: "READY_FOR_PICKUP" } },
+  { title: "Order is being prepared", type: "ORDER", data: { orderId: "ORD-O9KAVBL1T5", status: "PREPARING" } },
+  { title: "Order Accepted", type: "ORDER", data: { orderId: "ORD-O9KAVBL1T5" } },
+  { title: "Order is ready for pickup", type: "ORDER", data: { orderId: "ORD-B23CST4CQR", status: "READY_FOR_PICKUP" } },
+  { title: "Order is being prepared", type: "ORDER", data: { orderId: "ORD-B23CST4CQR", status: "PREPARING" } },
+];
+
+/** A real delivery order and a real legacy one, same account. */
+const DELIVERY_ORDER = { orderId: "ORD-IWPZM3QLAX", fulfillmentType: "DELIVERY" };
+const LEGACY_ORDER = { orderId: "ORD-340NJOFDYI" };
+
+section("The row icon — a bike only when somebody rides");
+{
+  const pickupIndex = new Map(PICKUP_ORDERS.map((o) => [o.orderId, o]));
+
+  check("every captured self-pickup notification gets the storefront",
+    PICKUP_NOTIFICATIONS.every((n) =>
+      getNotificationIconKind(n.type, pickupIndex.get(n.data.orderId)) === "pickup"),
+    PICKUP_NOTIFICATIONS.map((n) =>
+      getNotificationIconKind(n.type, pickupIndex.get(n.data.orderId))).join(","));
+
+  check("all eight of them, not just the ones announcing READY_FOR_PICKUP",
+    PICKUP_NOTIFICATIONS.length === 8);
+
+  check("a delivery order keeps the bike",
+    getNotificationIconKind("ORDER", DELIVERY_ORDER) === "delivery");
+
+  check("an order from before fulfillmentType existed keeps the bike",
+    getNotificationIconKind("ORDER", LEGACY_ORDER) === "delivery");
+
+  check("fulfillmentType: null keeps the bike",
+    getNotificationIconKind("ORDER", { fulfillmentType: null }) === "delivery");
+
+  // The index is fetched separately and arrives after the first paint, so this
+  // is the state every order row is in for a moment on every load.
+  check("an unresolved order keeps the bike rather than guessing pickup",
+    getNotificationIconKind("ORDER", undefined) === "delivery" &&
+      getNotificationIconKind("ORDER", null) === "delivery");
+
+  check("the fulfilment split applies only to ORDER",
+    getNotificationIconKind("PROMO", PICKUP_ORDERS[0]) === "promo" &&
+      getNotificationIconKind("SECURITY", PICKUP_ORDERS[0]) === "security" &&
+      getNotificationIconKind("DELIVERED", PICKUP_ORDERS[0]) === "delivered");
+
+  check("OTHER — the cart-expiry type — falls to the generic bell",
+    getNotificationIconKind("OTHER", undefined) === "generic");
+
+  check("a type the backend has not invented yet falls to the generic bell",
+    getNotificationIconKind("REFUND_ISSUED", undefined) === "generic" &&
+      getNotificationIconKind(undefined, undefined) === "generic" &&
+      getNotificationIconKind(null, undefined) === "generic");
+
+  check("PICKUP is tested for by name, not as 'anything that isn't DELIVERY'",
+    getNotificationIconKind("ORDER", { fulfillmentType: "SCHEDULED" }) === "delivery");
+
+  check("the kind is never blank",
+    ["ORDER", "PROMO", "SECURITY", "DELIVERED", "OTHER", "", null, undefined]
+      .every((type) => typeof getNotificationIconKind(type, undefined) === "string" &&
+        getNotificationIconKind(type, undefined).length > 0));
+}
+
+section("The row action — Rate Order once the order is finished");
+{
+  const track = (n, o) => getNotificationAction(n, o);
+  const orderNote = (orderId, status) => ({
+    type: "ORDER",
+    data: status ? { orderId, status } : { orderId },
+  });
+
+  check("a delivered order offers the rating",
+    track(orderNote("ORD-IWPZM3QLAX"), { orderStatus: "DELIVERED" }).kind === "rate");
+
+  check("and labels it with the rateOrder key, not copy",
+    track(orderNote("ORD-IWPZM3QLAX"), { orderStatus: "DELIVERED" }).labelKey === "rateOrder");
+
+  // The rating modal lives on /orders; which order to open it for travels in
+  // stores/orderRatingStore, because /orders is statically rendered.
+  check("the rating button goes to /orders, not to a deep link",
+    track(orderNote("ORD-IWPZM3QLAX"), { orderStatus: "DELIVERED" }).href === "/orders");
+
+  check("a collected self-pickup order offers it too",
+    track(orderNote("ORD-9HZ2HAGDZH"), { orderStatus: "PICKED_UP_BY_CUSTOMER" }).kind === "rate",
+    "PICKED_UP_BY_CUSTOMER is a completed order, not a cancelled one");
+
+  check("a live order still offers tracking",
+    ["PENDING", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "ON_THE_WAY", "PICKED_UP"]
+      .every((orderStatus) => track(orderNote("ORD-X"), { orderStatus }).kind === "track"));
+
+  check("PICKED_UP — a rider collecting — is not PICKED_UP_BY_CUSTOMER",
+    track(orderNote("ORD-X"), { orderStatus: "PICKED_UP" }).kind === "track");
+
+  check("a rejected or cancelled order offers tracking, never a rating",
+    ["REJECTED", "CANCELED", "NO_SHOW"]
+      .every((orderStatus) => track(orderNote("ORD-X"), { orderStatus }).kind === "track"));
+
+  check("the tracking link carries the order id",
+    track(orderNote("ORD-IWPZM3QLAX"), { orderStatus: "ACCEPTED" }).href ===
+      "/orders/track-order/ORD-IWPZM3QLAX");
+
+  // The status announced by an early notification is not the order's status
+  // now — an "Order Accepted" row for an order since delivered can be rated.
+  check("the order's current status wins over the status the notification announced",
+    track(orderNote("ORD-X", "ACCEPTED"), { orderStatus: "DELIVERED" }).kind === "rate");
+
+  check("an order missing from the index falls back to the announced status",
+    track(orderNote("ORD-X", "DELIVERED"), undefined).kind === "rate" &&
+      track(orderNote("ORD-X", "PREPARING"), undefined).kind === "track");
+
+  check("an unknown order with nothing announced offers tracking",
+    track(orderNote("ORD-X"), undefined).kind === "track");
+
+  check("the cart-expiry warning keeps its own action",
+    (() => {
+      const a = track({ type: "OTHER", data: { type: CART_EXPIRY_SUBTYPE } }, undefined);
+      return a.kind === "cart" && a.href === "/cart" && a.labelKey === "viewCart";
+    })());
+
+  check("a notification with no order and no cart gets no button",
+    track({ type: "PROMO", data: {} }, undefined).kind === "none" &&
+      track(null, undefined).kind === "none" &&
+      track({ type: "ORDER", data: { orderId: "   " } }, undefined).kind === "none");
+
+  // Keyed on the order id, so the DELIVERED type gets a working button if the
+  // backend ever sends one — the branch it used to hit did nothing at all.
+  check("any type that names an order gets the action",
+    track({ type: "DELIVERED", data: { orderId: "ORD-X" } }, { orderStatus: "DELIVERED" })
+      .kind === "rate");
+
+  check("every kind that renders has both an href and a label",
+    [
+      track(orderNote("ORD-X"), { orderStatus: "DELIVERED" }),
+      track(orderNote("ORD-X"), { orderStatus: "ACCEPTED" }),
+      track({ type: "OTHER", data: { type: CART_EXPIRY_SUBTYPE } }, undefined),
+    ].every((a) => a.href.length > 0 && a.labelKey.length > 0));
+}
+
+section("The wiring the rule depends on");
+{
+  // 🔴 The icon rule is only as good as the data reaching it, and both of these
+  // fail *silently* — drop the projected field or narrow the gate back and
+  // every self-pickup row quietly returns to drawing a bike with nothing red
+  // anywhere. Source text, because neither is reachable from a pure function.
+  const read = (path) => readFileSync(join(here, path), "utf8");
+  const useOrders = read("../src/hooks/queries/useOrders.ts");
+  const page = read("../src/components/notifications/NotificationsPage.tsx");
+
+  check("the order index still projects fulfillmentType",
+    /fields:\s*"[^"]*\bfulfillmentType\b[^"]*"/.test(useOrders));
+
+  check("the notifications page asks for the order index on any order notification",
+    /needsOrderLookup[\s\S]{0,400}?Boolean\(getNotificationOrderId\(notification\)\)/.test(page) &&
+      !/needsOrderLookup[\s\S]{0,400}?!notification\.data\?\.status/.test(page),
+    "the gate must not be narrowed back to notifications missing data.status");
+
+  check("the page picks its icon through getNotificationIconKind",
+    /ICON_BY_KIND\[getNotificationIconKind\(/.test(page));
+
+  check("the page picks its action through getNotificationAction",
+    /getNotificationAction\(notification, order\)/.test(page) &&
+      /action\.kind !== "none"/.test(page));
+
+  check("the dead DELIVERED branch with its two handler-less buttons is gone",
+    !/notification\.type === "DELIVERED"/.test(page));
+
+  check("the rating request is handed to the store on click",
+    /requestOrderRating\(orderId\)/.test(page));
+
+  const ordersPage = read("../src/components/orders/OrdersPage.tsx");
+  check("the orders page consumes the pending rating request",
+    /pendingRatingOrderId/.test(ordersPage) && /clearOrderRatingRequest\(\)/.test(ordersPage));
+
+  check("and waits for both lists before acting on it",
+    /if \(loading \|\| ratingsLoading\) return;/.test(ordersPage),
+    "acting early would reopen the modal for an already-rated order");
+
+  check("every kind the rule can return has a glyph",
+    ["delivery", "pickup", "promo", "security", "delivered", "generic"]
+      .every((kind) => new RegExp(`\\n\\s*${kind}:\\s*\\w+,`).test(page)));
+
+  check("pickup draws the storefront the rest of the app uses",
+    /\n\s*pickup:\s*Store,/.test(page) && /\n\s*delivery:\s*Bike,/.test(page));
 }
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

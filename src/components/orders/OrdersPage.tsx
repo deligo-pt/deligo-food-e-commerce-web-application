@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import OrderCard from "./OrderCard";
 import CancelOrderDialog from "./CancelOrderDialog";
@@ -18,6 +18,7 @@ import { Star, X } from "lucide-react";
 import { toast } from "sonner";
 import { canCancelOrder, getRefundState, isTerminatedStatus } from "@/lib/refund";
 import { isPickupOrder } from "@/lib/orderTimeline";
+import { useOrderRatingStore } from "@/stores/orderRatingStore";
 import { getVendorDisplayName } from "@/lib/vendorName";
 import { formatOrderPrice } from "@/lib/currency";
 import {
@@ -73,7 +74,7 @@ export default function OrdersPage() {
   // Cached + deduped. Keyed on language, so a switch refetches while React
   // Query keeps the current list on screen — no manual silent-refetch needed.
   const { data: orders = [], isLoading: loading } = useOrders<any>();
-  const { data: ratings = [] } = useRatings<any>();
+  const { data: ratings = [], isPending: ratingsLoading } = useRatings<any>();
   const invalidateOrders = useInvalidateOrders();
   const [activeRatingOrder, setActiveRatingOrder] = useState<any | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
@@ -196,15 +197,84 @@ export default function OrdersPage() {
     }
   };
 
-  const isOrderRated = (orderId: string) => {
-    return ratings.some(
-      (r: any) =>
-        r.orderId === orderId ||
-        (r.orderId &&
-          typeof r.orderId === "object" &&
-          r.orderId._id === orderId),
+  const isOrderRated = useCallback(
+    (orderId: string) =>
+      ratings.some(
+        (r: any) =>
+          r.orderId === orderId ||
+          (r.orderId &&
+            typeof r.orderId === "object" &&
+            r.orderId._id === orderId),
+      ),
+    [ratings],
+  );
+
+  /**
+   * Opens the rating modal on a clean slate.
+   *
+   * Shared by the order card and the deep link below, because the six stars
+   * are page state: without the reset, rating a second order starts on the
+   * first one's scores.
+   */
+  const openRatingModal = useCallback((order: any) => {
+    setFoodRating(0);
+    setFoodQuality(0);
+    setPackaging(0);
+    setDeliveryRating(0);
+    setDeliverySpeed(0);
+    setRiderBehavior(0);
+    setActiveRatingOrder(order);
+  }, []);
+
+  // Somewhere else asked to rate a specific order — today the Rate Order button
+  // on a delivered notification. See `stores/orderRatingStore` for why the
+  // request travels in a store rather than in the URL.
+  const pendingRatingOrderId = useOrderRatingStore(
+    (state) => state.pendingRatingOrderId,
+  );
+  const clearOrderRatingRequest = useOrderRatingStore(
+    (state) => state.clearOrderRatingRequest,
+  );
+
+  useEffect(() => {
+    if (!pendingRatingOrderId) return;
+    // Both lists are needed before answering: the orders to find the one to
+    // rate, the ratings to know whether it has been rated already. Acting on a
+    // half-loaded page would reopen the modal for an order the customer has
+    // already reviewed.
+    if (loading || ratingsLoading) return;
+
+    const target = orders.find(
+      (order: any) => order.orderId === pendingRatingOrderId,
     );
-  };
+    // Consumed either way. A request that cannot be honoured — an order older
+    // than the hundred this page fetches — must not sit in the store waiting to
+    // fire the next time the list changes.
+    clearOrderRatingRequest();
+    if (!target) return;
+
+    // A finished order lives in History, and Ongoing is the default tab.
+    //
+    // Not derived state: this reacts to an external store written by another
+    // page, the case the rule's own docs carve out. Nor can it be a
+    // subscription — the request is usually made *before* this page mounts, so
+    // the value has to be read rather than awaited.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveTab("history");
+    // Already rated: no modal. The card carries the same answer in place —
+    // "Feedback Submitted", disabled — which is more honest than a dialog that
+    // would submit a second review.
+    if (isOrderRated(target._id)) return;
+    openRatingModal(target);
+  }, [
+    pendingRatingOrderId,
+    loading,
+    ratingsLoading,
+    orders,
+    isOrderRated,
+    openRatingModal,
+    clearOrderRatingRequest,
+  ]);
 
   // Split once per orders change — not on every rating-modal keystroke (this
   // page holds a lot of rating state that would otherwise re-filter each time).
@@ -495,15 +565,7 @@ export default function OrdersPage() {
                     // keys, so this cannot drift from the chip again.
                     progressText={t(cardStatus)}
                     isRated={isOrderRated(order._id)}
-                    onRateOrder={() => {
-                      setFoodRating(0);
-                      setFoodQuality(0);
-                      setPackaging(0);
-                      setDeliveryRating(0);
-                      setDeliverySpeed(0);
-                      setRiderBehavior(0);
-                      setActiveRatingOrder(order);
-                    }}
+                    onRateOrder={() => openRatingModal(order)}
                   />
                 );
               })

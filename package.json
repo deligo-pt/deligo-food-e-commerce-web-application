@@ -17,6 +17,7 @@
     "verify:product-pricing": "node --no-warnings scripts/verify-product-pricing.mjs",
     "verify:search": "node --no-warnings scripts/verify-search.mjs",
     "verify:order-search": "node --no-warnings scripts/verify-order-search.mjs",
+    "verify:profile-form": "node --no-warnings scripts/verify-profile-form.mjs",
     "verify:pickup": "node scripts/verify-pickup-contract.mjs"
   },
   "dependencies": {

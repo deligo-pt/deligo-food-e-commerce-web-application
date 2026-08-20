@@ -41,7 +41,7 @@ export const PORTUGAL_DIAL_CODE = "+351";
  * rejects anything else with *"Only valid Portugal contact numbers are allowed
  * (+351xxxxxxxxx)."*
  *
- * ## What it actually accepts, measured
+ * ## What the API actually accepts, measured
  *
  * Looser than that message in one direction and stricter in another:
  *
@@ -53,25 +53,40 @@ export const PORTUGAL_DIAL_CODE = "+351";
  * | `+351 920 136 680` | **rejected** |
  * | eight or ten digits | rejected |
  *
- * The spaces are the trap. A customer writing their own number the way it is
- * written in Portugal — `920 136 680` — is refused for the spacing alone, by an
- * error that names a format they appear to have used. So this normalizes rather
- * than merely validating: separators go, a missing country code is added, and
- * what leaves is always the canonical `+351XXXXXXXXX`.
+ * ## Why this is stricter than the API
+ *
+ * The country code is the customer's to state, not ours to assume. This used to
+ * infer it — nine bare digits became `+351` silently — which meant a number
+ * typed without a code was sent as Portuguese whether or not it was one, and
+ * the customer never saw the assumption being made. Now the `+351` has to be
+ * there, and its absence is a message rather than a guess. Nothing without a
+ * country code reaches the backend.
+ *
+ * Separators are still repaired, because that half was never an assumption: the
+ * API rejects `+351 920 136 680` for the spacing alone, which refuses a
+ * customer's own number in an error naming the format they appear to have used.
+ * So spaces, dashes, dots and brackets are dropped, and what leaves is always
+ * the canonical `+351XXXXXXXXX`.
+ *
+ * | typed | result |
+ * |---|---|
+ * | `+351920136680` | `+351920136680` |
+ * | `+351 920 136 680` | `+351920136680` |
+ * | `(+351) 920.136.680` | `+351920136680` |
+ * | `920136680` | `null` — no country code |
+ * | `351920136680` | `null` — no `+` |
+ * | `00351920136680` | `null` — not `+351` |
  */
 export function normalizePortugueseNumber(raw?: string | null): string | null {
   if (!raw) return null;
 
-  const digits = raw.replace(/\D/g, "");
+  // Everything a person writes a number with, and nothing that carries meaning:
+  // the `+` and the digits are left alone.
+  const compact = raw.replace(/[\s().\-‐-―]/g, "");
 
-  // `00351…` is how the country code is dialled from abroad, and how plenty of
-  // people store it.
-  const national = digits.startsWith("00351")
-    ? digits.slice(5)
-    : digits.startsWith("351")
-      ? digits.slice(3)
-      : digits;
+  if (!compact.startsWith(PORTUGAL_DIAL_CODE)) return null;
 
+  const national = compact.slice(PORTUGAL_DIAL_CODE.length);
   if (!/^\d{9}$/.test(national)) return null;
 
   return `${PORTUGAL_DIAL_CODE}${national}`;

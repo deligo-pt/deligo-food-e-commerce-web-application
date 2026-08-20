@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   CheckCheck,
   Bike,
+  Store,
   Gift,
   BellRing,
   CheckCircle2,
@@ -21,9 +22,14 @@ import {
 import { getOrderStatusLabel } from "@/lib/orderStatusLabel";
 import {
   getNotificationOrderId,
-  isCartExpiryNotification,
   resolveNotificationStatus,
 } from "@/lib/notificationHeader";
+import {
+  getNotificationIconKind,
+  type NotificationIconKind,
+} from "@/lib/notificationIcon";
+import { getNotificationAction } from "@/lib/notificationAction";
+import { useOrderRatingStore } from "@/stores/orderRatingStore";
 import Link from "next/link";
 import NotificationsSkeleton from "./NotificationsSkeleton";
 
@@ -100,8 +106,11 @@ const PAGE_LIMIT = 10;
  * Constants rather than repetition: the four call sites below are what let the
  * drift go unnoticed in the first place.
  */
+// `inline-block` because one of the call sites is a `Link`, and an anchor
+// would otherwise ignore the vertical margin and padding that make this a
+// button.
 const PRIMARY_ACTION_CLASS =
-  "mt-4 rounded-lg bg-[#f9186b] dark:bg-pink-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#d4145b] dark:hover:bg-pink-700 cursor-pointer";
+  "mt-4 inline-block rounded-lg bg-[#f9186b] dark:bg-pink-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#d4145b] dark:hover:bg-pink-700 cursor-pointer";
 
 /** Circular control — the pagination arrows and the mark-all-read button. */
 const ICON_BUTTON_CLASS =
@@ -160,19 +169,22 @@ const getTypeLabel = (
   return key ? t(key) : type;
 };
 
-const getIconByType = (type: Notification["type"]) => {
-  switch (type) {
-    case "ORDER":
-      return Bike;
-    case "PROMO":
-      return Gift;
-    case "SECURITY":
-      return BellRing;
-    case "DELIVERED":
-      return CheckCircle2;
-    default:
-      return BellRing;
-  }
+/**
+ * The glyph for each icon kind. Which kind applies is decided in
+ * `lib/notificationIcon`, not here — this map is only the drawing.
+ *
+ * `Store` for pickup rather than a cutlery or chef glyph: it is what the app
+ * already means by "collect it yourself" on the order card, the checkout
+ * pickup panel and the payment page chip, and a fourth symbol for the same
+ * idea would be a new thing for the customer to learn.
+ */
+const ICON_BY_KIND: Record<NotificationIconKind, typeof Bike> = {
+  delivery: Bike,
+  pickup: Store,
+  promo: Gift,
+  security: BellRing,
+  delivered: CheckCircle2,
+  generic: BellRing,
 };
 
 export default function NotificationsPage() {
@@ -194,6 +206,11 @@ export default function NotificationsPage() {
   const [markingAll, setMarkingAll] = useState(false);
 
   const invalidateOrderStatusIndex = useInvalidateOrderStatusIndex();
+  // Selected as a single action rather than the whole store, so this page does
+  // not re-render when the pending id changes underneath it.
+  const requestOrderRating = useOrderRatingStore(
+    (state) => state.requestOrderRating,
+  );
 
   const fetchNotifications = useCallback(
     async (page: number, loadingType: "none" | "initial" | "page" = "page") => {
@@ -336,21 +353,21 @@ export default function NotificationsPage() {
   }, [notifications, filter]);
 
   /**
-   * Does this page have to fetch orders to caption its headers?
+   * Does this page have to fetch orders?
    *
-   * Only when something on it names an order but not the status of that order.
-   * A page whose notifications all declare `data.status` — and a page with no
-   * order notifications at all — issues no request. That also means the query
-   * retires itself the day the backend fills `data.status` in everywhere,
-   * without anyone having to notice.
+   * Whenever anything on it names an order. A page of promos and cart-expiry
+   * warnings still issues no request.
+   *
+   * This used to be narrower — only notifications that named an order *and*
+   * omitted `data.status`, since the status was the only thing the lookup was
+   * for. The icon changed that: whether a row shows the bike or the storefront
+   * depends on the order's `fulfillmentType`, which the notification never
+   * carries, so the ones that do declare their status need the order too. The
+   * narrow gate would have left every self-pickup notification that announces
+   * its own status drawing a rider.
    */
   const needsOrderLookup = useMemo(
-    () =>
-      notifications.some(
-        (notification) =>
-          Boolean(getNotificationOrderId(notification)) &&
-          !notification.data?.status,
-      ),
+    () => notifications.some((notification) => Boolean(getNotificationOrderId(notification))),
     [notifications],
   );
 
@@ -457,7 +474,6 @@ export default function NotificationsPage() {
             </div>
           ) : (
             filteredNotifications.map((notification) => {
-              const Icon = getIconByType(notification.type);
               const isUnread = !notification.isRead;
               const isMarkingThis = markingId === notification._id;
 
@@ -466,12 +482,15 @@ export default function NotificationsPage() {
               // `lib/notificationHeader`. `orderId` null is a real answer: the
               // cart-expiry warning has no order, and keeps its own title.
               const orderId = getNotificationOrderId(notification);
+              // One lookup, two uses: the status in the header and the icon
+              // beside it. `undefined` while the index is still loading, which
+              // both callers already handle.
+              const order = orderId ? orderIndex?.get(orderId) : undefined;
+              const Icon = ICON_BY_KIND[getNotificationIconKind(notification.type, order)];
+              const action = getNotificationAction(notification, order);
               const statusLabel = orderId
                 ? getOrderStatusLabel(
-                    resolveNotificationStatus(
-                      notification,
-                      orderIndex?.get(orderId),
-                    ),
+                    resolveNotificationStatus(notification, order),
                     t,
                   )
                 : null;
@@ -569,58 +588,36 @@ export default function NotificationsPage() {
                       </span>
                     </div>
 
-                    {/* Conditional actions */}
-                    {notification.type === "ORDER" &&
-                      notification.data?.orderId && (
-                        <Link
-                          href={`/orders/track-order/${notification.data.orderId}`}
-                        >
-                          <button
-                            className={PRIMARY_ACTION_CLASS}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {t("trackOrder")}
-                          </button>
-                        </Link>
-                      )}
+                    {/* One action per row, chosen in `lib/notificationAction`:
+                        Rate Order once the order is finished, Track Order while
+                        it is live, View Cart for the expiry warning.
 
-                    {/* Cart expiry is the one notification with no order
-                        behind it, so it gets the one action that makes sense:
-                        the cart itself. No id travels in the notification and
-                        none is needed — `/carts/view-cart` takes none, there is
-                        exactly one cart per customer.
+                        The cart one is shown unconditionally. Those
+                        notifications outlive the cart they warned about, so the
+                        button may well land on an empty one — but a button that
+                        vanishes based on state the customer cannot see is worse
+                        than one that lands somewhere self-explanatory.
 
-                        Shown unconditionally. These notifications outlive the
-                        cart they warned about, so the button may well land on
-                        an empty one — but a button that vanishes based on state
-                        the customer cannot see is worse than one that lands
-                        somewhere self-explanatory. */}
-                    {isCartExpiryNotification(notification) && (
-                      <Link href="/cart">
-                        <button
-                          className={PRIMARY_ACTION_CLASS}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {t("viewCart")}
-                        </button>
+                        A `Link` styled as a button rather than a `button` inside
+                        a `Link`: one interactive element, one thing for the
+                        keyboard to land on. */}
+                    {action.kind !== "none" && (
+                      <Link
+                        href={action.href}
+                        className={PRIMARY_ACTION_CLASS}
+                        onClick={(event) => {
+                          // The row itself is clickable (it marks as read), and
+                          // this click is about the order, not the row.
+                          event.stopPropagation();
+                          // `/orders` owns the only rating modal in the app;
+                          // this is how it learns which order to open it for.
+                          if (action.kind === "rate" && orderId) {
+                            requestOrderRating(orderId);
+                          }
+                        }}
+                      >
+                        {t(action.labelKey)}
                       </Link>
-                    )}
-
-                    {notification.type === "DELIVERED" && (
-                      <div className="mt-4 flex gap-6">
-                        <button
-                          className="text-sm font-semibold text-[#f9186b] dark:text-pink-400 hover:underline cursor-pointer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {t("rateOrder")}
-                        </button>
-                        <button
-                          className="text-sm font-semibold text-[#f9186b] dark:text-pink-400 hover:underline cursor-pointer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {t("orderAgain")}
-                        </button>
-                      </div>
                     )}
                   </div>
 
