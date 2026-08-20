@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
@@ -131,7 +130,16 @@ interface OfferApplied {
 
 interface CheckoutSummary {
   _id: string;
-  vendorId: string;
+  /**
+   * A bare Mongo id on older checkouts, the populated vendor sub-document on
+   * current ones — the backend started populating it and the string-only
+   * assumption here silently blanked the whole "Delivery From" card. Resolve
+   * it through `getVendorLookupIds`, never by interpolating it into a URL.
+   *
+   * The populated shape is not a substitute for the vendor fetch below: its
+   * `businessLocation` carries **only** `latitude`/`longitude`, no street.
+   */
+  vendorId: VendorRef;
   items: CheckoutItem[];
   orderCalculation: OrderCalculation;
   delivery: Delivery;
@@ -177,6 +185,109 @@ interface Vendor {
   };
   storePhoto: string[];
   rating: { average: number; totalReviews: number };
+}
+
+/**
+ * A vendor as either vendor endpoint actually returns it.
+ *
+ * The two disagree about where the store photo lives: `/vendors/customer`
+ * (the list) sends `storePhoto`, `/vendors/customer/:userId` (the detail)
+ * sends `documents.storePhoto`. `normalizeVendor` reconciles them so the card
+ * shows the same picture whichever request answered.
+ */
+type VendorApiResponse = Omit<Vendor, "storePhoto"> & {
+  _id?: string;
+  storePhoto?: string[];
+  documents?: { storePhoto?: string[] };
+};
+
+/** What `checkout.vendorId` can be — see `CheckoutSummary.vendorId`. */
+type VendorRef =
+  | string
+  | { _id?: string; userId?: string; [key: string]: unknown }
+  | null;
+
+interface VendorLookupIds {
+  /** The `V-…`/`SV-…` id, the only one `/vendors/customer/:id` accepts. */
+  userId?: string;
+  /** The Mongo `_id`, which matches `id` in the customer-facing vendor list. */
+  mongoId?: string;
+}
+
+const MONGO_ID = /^[0-9a-f]{24}$/i;
+
+function normalizeVendor(raw: VendorApiResponse): Vendor {
+  return {
+    ...raw,
+    storePhoto: raw.storePhoto ?? raw.documents?.storePhoto ?? [],
+  };
+}
+
+/**
+ * Splits whatever the checkout summary called `vendorId` into the two ids the
+ * vendor endpoints key on, because they key on different ones.
+ *
+ * A bare string is classified by shape rather than assumed: 24 hex characters
+ * is a Mongo id, anything else is a userId. The populated document carries an
+ * `_id` and (today) no `userId` at all, which is why the direct-by-userId call
+ * cannot be the only path.
+ */
+function getVendorLookupIds(ref: VendorRef): VendorLookupIds {
+  if (typeof ref === "string") {
+    if (ref.length === 0) return {};
+    return MONGO_ID.test(ref) ? { mongoId: ref } : { userId: ref };
+  }
+  if (ref && typeof ref === "object") {
+    return {
+      userId: typeof ref.userId === "string" ? ref.userId : undefined,
+      mongoId: typeof ref._id === "string" ? ref._id : undefined,
+    };
+  }
+  return {};
+}
+
+/**
+ * Resolves the store shown in "Delivery From" / "Collect From".
+ *
+ * Deliberately two-step, and deliberately in this order:
+ *
+ * 1. `/vendors/customer/:userId` — only when a userId is actually in hand.
+ *    Called with a Mongo id it 404s every single time, which is what the old
+ *    code did on every page load.
+ * 2. the customer-facing list, whose `id` is the Mongo `_id` the checkout
+ *    summary hands us. It is the only route from that id to a street address.
+ *
+ * Returns `null` rather than throwing when the store cannot be found: a
+ * missing store name must not take down the payment page around it.
+ */
+async function resolveVendor({
+  userId,
+  mongoId,
+}: VendorLookupIds): Promise<Vendor | null> {
+  if (!userId && !mongoId) return null;
+
+  if (userId) {
+    try {
+      const res = await apiClient.get(`/vendors/customer/${userId}`);
+      if (res.data?.data) return normalizeVendor(res.data.data);
+    } catch (err) {
+      console.warn(
+        "Vendor lookup by userId failed, falling back to the list:",
+        err,
+      );
+    }
+  }
+
+  const res = await apiClient.get("/vendors/customer", {
+    params: { page: 1, limit: 100 },
+  });
+  const vendors: VendorApiResponse[] = res.data?.data ?? [];
+  const match = vendors.find(
+    (v) =>
+      (mongoId !== undefined && (v.id === mongoId || v._id === mongoId)) ||
+      (userId !== undefined && v.userId === userId),
+  );
+  return match ? normalizeVendor(match) : null;
 }
 
 interface AvailableOffer {
@@ -274,37 +385,22 @@ export default function PaymentPage() {
         console.log("Fetched checkout summary:", summaryData);
         setSummary(summaryData);
 
-        if (summaryData.vendorId) {
-          try {
-            // Try fetching the specific vendor directly
-            const response = await apiClient.get(
-              `/vendors/customer/${summaryData.vendorId}`,
-            );
-            if (response.data?.data) {
-              setVendor(response.data.data);
-            } else {
-              throw new Error("No vendor data in response");
-            }
-          } catch (directErr) {
+        // Isolated from the summary's own try/catch on purpose: an
+        // unresolvable store leaves the card empty, it does not turn the whole
+        // payment page into an error screen.
+        const lookupIds = getVendorLookupIds(summaryData.vendorId);
+        try {
+          const resolved = await resolveVendor(lookupIds);
+          if (resolved) {
+            setVendor(resolved);
+          } else {
             console.warn(
-              "Failed to fetch vendor directly, falling back to list lookup:",
-              directErr,
+              "Could not resolve the checkout vendor:",
+              summaryData.vendorId,
             );
-            // Fallback: Fetch vendor list with pagination limit and check id, _id, and userId
-            const vendorResponse = await apiClient.get(
-              "/vendors/customer?page=1&limit=100",
-            );
-            const vendors: any[] = vendorResponse.data?.data ?? [];
-            const matchedVendor = vendors.find(
-              (v) =>
-                v.id === summaryData.vendorId ||
-                v._id === summaryData.vendorId ||
-                v.userId === summaryData.vendorId,
-            );
-            if (matchedVendor) {
-              setVendor(matchedVendor);
-            }
           }
+        } catch (vendorErr) {
+          console.warn("Failed to load the checkout vendor:", vendorErr);
         }
       } catch (err) {
         setError(

@@ -515,6 +515,7 @@ const en = {
     "Not saved yet — verify this change with the code to apply it.",
   profileSavedContactNotVerified:
     "Profile saved. Your new email or phone number was not applied — verify it with the code first.",
+  firstNameRequired: "Please enter your first name.",
   myOrders: "My Orders",
 
   trackOrdersDescription:

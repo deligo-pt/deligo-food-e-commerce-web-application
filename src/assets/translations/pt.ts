@@ -532,6 +532,7 @@ const pt = {
     "Ainda não guardado — confirme esta alteração com o código para a aplicar.",
   profileSavedContactNotVerified:
     "Perfil guardado. O novo email ou número de telefone não foi aplicado — confirme-o primeiro com o código.",
+  firstNameRequired: "Introduza o seu primeiro nome.",
   myOrders: "Os Meus Pedidos",
 
   trackOrdersDescription:

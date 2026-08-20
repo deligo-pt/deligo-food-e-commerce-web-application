@@ -66,21 +66,31 @@ export function useOrders<T = unknown>(options?: { enabled?: boolean }) {
   });
 }
 
-/** The slice of an order the notification header needs. */
+/** The slice of an order a notification row needs. */
 export interface OrderStatusEntry {
   orderId: string;
   orderStatus?: string | null;
   statusHistory?:
     | ({ status?: string | null; timestamp?: string | null } | null)[]
     | null;
+  /**
+   * Delivery or self-pickup, which decides the row's icon — see
+   * `lib/notificationIcon`. Optional and nullable because it is: orders placed
+   * before self-pickup existed have no such field, and `isPickupOrder` reads
+   * that absence as a delivery.
+   */
+  fulfillmentType?: string | null;
 }
 
 /**
- * Orders indexed by `orderId`, carrying only status and status history.
+ * Orders indexed by `orderId`, carrying only status, status history and
+ * fulfilment type.
  *
- * Exists for the notifications page, which has to name the status a
- * notification announced and mostly cannot read it off the notification —
- * `data.status` is present on 4 of 13 (see `resolveNotificationStatus`).
+ * Exists for the notifications page, which has two questions a notification
+ * cannot answer about itself. Which status it announced — `data.status` is
+ * present on 4 of 13 (see `resolveNotificationStatus`). And whether its order
+ * is delivered or collected, which decides the row's icon and which `data`
+ * never carries at all (see `lib/notificationIcon`).
  *
  * ## Two things keep this cheap
  *
@@ -91,9 +101,10 @@ export interface OrderStatusEntry {
  * read are a subset of the full order either way.
  *
  * And the caller passes `enabled: false` whenever the page it is drawing needs
- * no lookup, so a page whose notifications all declare their own status makes
- * **zero** requests. When the backend fills `data.status` in everywhere, this
- * query stops firing on its own — before anyone gets round to deleting it.
+ * no lookup, so a page of nothing but promos and cart-expiry warnings makes
+ * **zero** requests. That gate used to be narrower — status-only — and could
+ * not stay that way: the icon question applies to every order notification,
+ * including the ones that do declare their own status.
  *
  * Returns a `Map` rather than an array: a page of ten notifications is then ten
  * O(1) reads instead of ten linear scans of every order the customer has.
@@ -105,7 +116,7 @@ export function useOrderStatusIndex(options?: { enabled?: boolean }) {
       const res = await apiClient.get("/orders", {
         params: {
           limit: 100,
-          fields: "orderId,orderStatus,statusHistory",
+          fields: "orderId,orderStatus,statusHistory,fulfillmentType",
         },
         signal,
       });

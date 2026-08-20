@@ -67,12 +67,52 @@ export default function EditProfileFormPage() {
     return response.data.data[0];
   };
 
-  // Populate the form whenever the profile arrives/refreshes from the cache.
+  /**
+   * Mirror of the server's copy. Drives no input — only `userId` for the save
+   * and `profilePhoto` for the "remove the picture I just picked" fallback — so
+   * it tracks the cache live and there is nothing here to clobber.
+   */
   useEffect(() => {
     if (!profile) return;
-    const d = profile;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setProfileData(d);
+    setProfileData(profile);
+  }, [profile]);
+
+  /**
+   * Seed the editable fields — **once**.
+   *
+   * 🔴 This used to run on every change to the cached profile, which made the
+   * form a live mirror of the server instead of something the customer owns:
+   * any refetch overwrote whatever was on screen. It bit hardest while
+   * verifying a phone number, because that is the one point where somebody sits
+   * on this form for minutes waiting for an SMS, and because the verification
+   * itself rewrites the profile — so the very next refetch handed back a new
+   * object and the effect fired.
+   *
+   * What vanished was usually the name, and usually for an email-login account:
+   * nothing in the sign-up flow collects a name (`LoginPage` asks for an email
+   * or a number, the code, and an optional referral code), so those accounts
+   * hold `name.firstName === ""` and the overwrite wrote an empty string over
+   * the name that had just been typed. Google accounts get a name from the
+   * provider, so the same overwrite wrote the same value back and nobody
+   * noticed. A typed-but-unverified number was discarded the same way.
+   *
+   * Refetches are not rare, either: the profile goes stale after a minute, the
+   * navbar's address picker invalidates it outright, and so does saving this
+   * very form.
+   *
+   * Seeding once instead means the server decides what the form starts with and
+   * the customer decides everything after that. Nothing needs to re-seed it —
+   * after a save the local state *is* what was just sent, and after a
+   * verification the handler below has already set the canonical value — so
+   * this deliberately has no re-hydration trigger. Unmounting resets the ref,
+   * so leaving and coming back seeds afresh.
+   */
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (!profile || hydratedRef.current) return;
+    hydratedRef.current = true;
+    const d = profile;
     setFirstName(d.name?.firstName || "");
     setLastName(d.name?.lastName || "");
     setEmail(d.email || "");
@@ -80,7 +120,7 @@ export default function EditProfileFormPage() {
     setMobileNumber(d.contactNumber || "");
     setOriginalMobile(d.contactNumber || "");
     setNif(d.NIF || "");
-    if (d.profilePhoto) setImagePreview(d.profilePhoto);
+    setImagePreview(d.profilePhoto || "");
   }, [profile]);
 
   // Surface a load failure once (mirrors the old fetch's catch).
@@ -138,6 +178,11 @@ export default function EditProfileFormPage() {
       setEmailOtpSent(false);
       setEmailOtp("");
       toast.success(t("emailUpdatedSuccessfully"));
+      // The address really did change on the server, so everything reading the
+      // shared profile — navbar, profile page — should stop showing the old
+      // one. Safe only because the seed above runs once: this refetch no longer
+      // reaches back into the form.
+      await invalidateProfile();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to verify OTP"));
     } finally {
@@ -191,12 +236,29 @@ export default function EditProfileFormPage() {
       setMobileOtpSent(false);
       setMobileOtp("");
       toast.success(t("mobileUpdatedSuccessfully"));
+      // Same as the email above — the navbar and profile page are showing a
+      // number that is no longer the customer's.
+      await invalidateProfile();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to verify OTP"));
     } finally {
       setVerifyingMobile(false);
     }
   };
+
+  /**
+   * Enter inside an OTP box verifies that code.
+   *
+   * Both boxes sit inside the form, which has a submit button, so Enter used to
+   * trigger implicit submission — Save Changes — at the exact moment the
+   * customer had just finished typing a code and meant the button beside it.
+   */
+  const handleOtpKeyDown =
+    (verify: () => void) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      verify();
+    };
 
   /**
    * A typed-but-unverified change to the email or the phone.
@@ -217,6 +279,14 @@ export default function EditProfileFormPage() {
     e.preventDefault();
     if (!profileData?.userId) {
       toast.error(t("userIdNotFound"));
+      return;
+    }
+    // The label has always said "First Name *" and nothing ever enforced it.
+    // Worth enforcing here in particular: sign-up never asks for a name, so
+    // these accounts arrive with an empty one and this is the screen where it
+    // gets filled in.
+    if (!firstName.trim()) {
+      toast.error(t("firstNameRequired"));
       return;
     }
 
@@ -241,13 +311,17 @@ export default function EditProfileFormPage() {
 
       const payload: any = {};
 
-      if (firstName || lastName) {
-        payload.name = {};
-        if (firstName) payload.name.firstName = firstName;
-        if (lastName) payload.name.lastName = lastName;
-      }
-
-      if (nif) payload.NIF = nif;
+      // Both halves of the name every time, and the NIF whatever its value.
+      // Omitting a field when it is empty made it unclearable: emptying the
+      // last name sent nothing at all, the save reported success, and the old
+      // surname was still there on reload. `PATCH /customers/:userId` merges
+      // what it is given and takes `""` happily, so sending the emptied field
+      // is what actually clears it.
+      payload.name = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      };
+      payload.NIF = nif.trim();
       if (uploadedPhotoUrl) payload.profilePhoto = uploadedPhotoUrl;
 
       await apiClient.patch(`/customers/${profileData.userId}`, payload);
@@ -262,10 +336,13 @@ export default function EditProfileFormPage() {
       }
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      // Swap the local blob preview for the stored URL. The seed effect no
+      // longer does this on the way back, and the blob dies with the page.
+      if (uploadedPhotoUrl) setImagePreview(uploadedPhotoUrl);
 
-      // Refresh the shared profile cache — the populate effect above then
-      // re-syncs this form, and every other consumer (Navbar, profile view)
-      // picks up the change automatically.
+      // Refresh the shared profile cache so every other consumer (Navbar,
+      // profile view) picks up the change. This form is not among them — it
+      // seeds once, and what is on screen is what was just sent.
       await invalidateProfile();
 
       // Notify Navbar's photo state instantly (it keeps a local copy).
@@ -398,6 +475,7 @@ export default function EditProfileFormPage() {
                           placeholder={t("otp")}
                           value={emailOtp}
                           onChange={(e) => setEmailOtp(e.target.value)}
+                          onKeyDown={handleOtpKeyDown(handleVerifyEmailOtp)}
                           className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
                         />
                         <button
@@ -446,6 +524,7 @@ export default function EditProfileFormPage() {
                           placeholder={t("otp")}
                           value={mobileOtp}
                           onChange={(e) => setMobileOtp(e.target.value)}
+                          onKeyDown={handleOtpKeyDown(handleVerifyMobileOtp)}
                           className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
                         />
                         <button
