@@ -19,6 +19,7 @@ import { apiClient } from "@/lib/apiClient";
 import { updateLiveLocation } from "@/services/addressApi";
 import { useLocationStore } from "@/stores/locationStore";
 import { useStore } from "@/stores/translationStore";
+import { useTranslation } from "@/hooks/useTranslation";
 import { getFacebookSdk, loadFacebookSdk } from "@/lib/facebookSdk";
 
 // Inlined by Next at build time. An empty value makes `loadFacebookSdk` reject,
@@ -37,6 +38,9 @@ export type { SocialProvider };
 export function useLoginFlow() {
   const router = useRouter();
   const lang = useStore((state) => state.lang);
+  // `t` keeps a stable identity across renders (see useTranslation), so the
+  // memo below does not recompute on every keystroke in the form.
+  const { t } = useTranslation();
 
   const [mode, setMode] = useState<LoginMode>("mobile");
   const [step, setStep] = useState<LoginStep>("credentials");
@@ -83,16 +87,16 @@ export function useLoginFlow() {
 
   const languageLabel = language === "english" ? "English" : "Português";
 
+  // Translated, not hardcoded: these four lines were the only English left in
+  // an otherwise Portuguese login page. The email OTP variant also warns about
+  // the spam folder — the success banner above it is the backend's own text and
+  // cannot say so, and this line sits directly beside it.
   const loginHint = useMemo(() => {
     if (step === "otp") {
-      return mode === "mobile"
-        ? "Enter the OTP sent to your phone."
-        : "Enter the OTP sent to your email.";
+      return mode === "mobile" ? t("loginHintOtpMobile") : t("loginHintOtpEmail");
     }
-    return mode === "mobile"
-      ? "Use your phone number to request a login OTP."
-      : "Use your email address to request a login OTP.";
-  }, [mode, step]);
+    return mode === "mobile" ? t("loginHintMobile") : t("loginHintEmail");
+  }, [mode, step, t]);
 
   function clearMessages() {
     setErrorMessage("");

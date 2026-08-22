@@ -885,6 +885,17 @@ const pt = {
 
   mobile: "Telemóvel",
 
+  // A linha por baixo de "Entrar ou criar uma conta", que muda com o separador
+  // e o passo. Estavam fixas em inglês em `useLoginFlow`, pelo que um cliente
+  // português lia todo o fluxo de login em inglês. A variante de e-mail é a que
+  // avisa sobre o spam: um e-mail de OTP vem de um remetente desconhecido e uma
+  // só vez, exatamente o que os filtros retêm.
+  loginHintMobile: "Use o seu número de telemóvel para receber um OTP.",
+  loginHintEmail: "Use o seu e-mail para receber um OTP.",
+  loginHintOtpMobile: "Introduza o OTP enviado para o seu telemóvel.",
+  loginHintOtpEmail:
+    "Introduza o OTP enviado para o seu e-mail. Se não o encontrar, verifique a pasta de spam.",
+
   enterOtp: "Introduza o OTP",
 
   selectCountryCode: "Selecionar código do país",
