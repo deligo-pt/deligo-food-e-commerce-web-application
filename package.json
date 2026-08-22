@@ -18,6 +18,7 @@
     "verify:search": "node --no-warnings scripts/verify-search.mjs",
     "verify:order-search": "node --no-warnings scripts/verify-order-search.mjs",
     "verify:profile-form": "node --no-warnings scripts/verify-profile-form.mjs",
+    "verify:delivery-code": "node --no-warnings scripts/verify-delivery-code.mjs",
     "verify:pickup": "node scripts/verify-pickup-contract.mjs"
   },
   "dependencies": {

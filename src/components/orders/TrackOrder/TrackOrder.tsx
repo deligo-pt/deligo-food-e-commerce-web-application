@@ -52,6 +52,7 @@ import { toTelHref } from "@/lib/phone";
 import { getVendorDisplayName } from "@/lib/vendorName";
 import { formatPickupMoment } from "@/lib/pickupTime";
 import OrderMap from "./OrderMap/OrderMap";
+import DeliveryCodeCard from "./DeliveryCodeCard";
 import PickupCodeCard from "./PickupCodeCard";
 import PickupLocationCard from "./PickupLocationCard";
 import RefundBanner from "./RefundBanner";
@@ -554,6 +555,24 @@ export default function TrackOrder() {
                 riderName={order.deliveryPartnerId ? `${order.deliveryPartnerId.name?.firstName || ""} ${order.deliveryPartnerId.name?.lastName || ""}` : ""}
                 etaMinutes={order.delivery?.estimatedTime}
               />
+            )}
+
+            {/* The code the rider types in to complete the delivery — the
+                delivery-side twin of the pickup code above.
+
+                Gated on the field, not on `orderStatus`, and both halves
+                matter. `deliveryOtp.generatedAt` is stamped at `PICKED_UP`,
+                one status before `ON_THE_WAY`, so a status check would hide
+                the code while the rider is leaving the restaurant. And
+                `verifiedAt` lands in the same response that carries
+                `DELIVERED`, so this clears itself on the same five-second poll
+                that completes the order — a spent code never lingers on a
+                delivered order for somebody to read out.
+
+                Inside the delivery branch's sibling rather than the ternary
+                itself: a pickup order has no rider and never reaches this. */}
+            {!isPickup && order.deliveryOtp?.code && !order.deliveryOtp?.verifiedAt && (
+              <DeliveryCodeCard code={order.deliveryOtp.code} />
             )}
 
             {/* Rider Details Card (Dynamic Live view) */}

@@ -249,6 +249,11 @@ const pt = {
     "Mostre este código no balcão quando o seu pedido estiver pronto",
   orderReadyShowCode: "O seu pedido está pronto — mostre este código no balcão",
   readyForPickupSelf: "O seu pedido está pronto no balcão",
+  // O par de `yourPickupCode` do lado da entrega. Sem variante "pronto" a
+  // acompanhar `orderReadyShowCode`: o código de recolha existe muito antes da
+  // comida, este só aparece quando um estafeta já leva o pedido.
+  yourDeliveryCode: "O Seu Código de Entrega",
+  giveCodeToRider: "Dê este código ao estafeta quando o seu pedido chegar",
   copyCode: "Copiar código",
   copyFailed: "Não foi possível copiar",
   getDirections: "Obter direções",
@@ -830,6 +835,9 @@ const pt = {
 
   termsOfService: "Termos de Serviço",
   privacyPolicy: "Política de Privacidade",
+  // O nome oficial, tal como aparece em livroreclamacoes.pt — não uma tradução
+  // de "Complaints Book".
+  complaintsBook: "Livro de Reclamações",
 
   about: "Sobre",
 

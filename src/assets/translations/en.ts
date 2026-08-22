@@ -245,6 +245,11 @@ const en = {
   showCodeAtCounter: "Show this code at the counter when your order is ready",
   orderReadyShowCode: "Your order is ready — show this code at the counter",
   readyForPickupSelf: "Your order is ready at the counter",
+  // The delivery-side twin of `yourPickupCode`. No "ready" variant to pair with
+  // `orderReadyShowCode`: a pickup code exists long before the food does, while
+  // this one only appears once a rider is already carrying the order.
+  yourDeliveryCode: "Your Delivery Code",
+  giveCodeToRider: "Give this code to your rider when your order arrives",
   copyCode: "Copy code",
   copyFailed: "Could not copy to clipboard",
   getDirections: "Get directions",
@@ -818,6 +823,11 @@ const en = {
 
   termsOfService: "Terms of Service",
   privacyPolicy: "Privacy Policy",
+  // Portugal's national complaints book, at livroreclamacoes.pt. Kept in
+  // English here rather than left as "Livro de Reclamações", since an English
+  // reader searching the footer for where to complain will not recognise the
+  // Portuguese name.
+  complaintsBook: "Complaints Book",
 
   about: "About",
 
