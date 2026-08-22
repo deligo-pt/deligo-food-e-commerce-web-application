@@ -276,6 +276,28 @@ export default function Footer() {
           >
             {t("termsOfService")}
           </Link>
+          {/* The Livro de Reclamações — the national complaints book every
+              business trading in Portugal has to put within a customer's reach.
+              It lives here, beside the other legal links, because that is where
+              Portuguese sites put it and where a customer looking for it will
+              go.
+
+              An external government site, so it opens in a new tab rather than
+              taking the customer out of a half-finished order. `rel` is not
+              decoration: `noopener` is what stops the opened page reaching back
+              through `window.opener`.
+
+              The URL is hardcoded and belongs to livroreclamacoes.pt — it is
+              not ours to make configurable, and there is no per-vendor variant.
+              `/Inicio/` is the entry point the official book publishes. */}
+          <a
+            href="https://www.livroreclamacoes.pt/Inicio/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-[#f9186b] dark:hover:text-pink-500"
+          >
+            {t("complaintsBook")}
+          </a>
         </div>
       </div>
     </footer>
