@@ -876,6 +876,19 @@ const en = {
 
   mobile: "Mobile",
 
+  // The line under "Login or create an account", which changes with the tab and
+  // the step. It used to be four hardcoded English strings in `useLoginFlow`,
+  // so a Portuguese customer read the whole login flow's instructions in
+  // English. The email variant is the one that carries the spam warning: an OTP
+  // mail is a one-off from an unfamiliar sender, which is exactly what filters
+  // hold back, and a customer who never thinks to look there just concludes the
+  // login is broken.
+  loginHintMobile: "Use your phone number to request a login OTP.",
+  loginHintEmail: "Use your email address to request a login OTP.",
+  loginHintOtpMobile: "Enter the OTP sent to your phone.",
+  loginHintOtpEmail:
+    "Enter the OTP sent to your email. If it isn't there, check your spam folder.",
+
   enterOtp: "Enter OTP",
 
   selectCountryCode: "Select country code",

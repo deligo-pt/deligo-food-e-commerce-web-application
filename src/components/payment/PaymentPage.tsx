@@ -361,6 +361,12 @@ export default function PaymentPage() {
   const [switchingAddressId, setSwitchingAddressId] = useState<string | null>(null);
   const [addressError, setAddressError] = useState("");
 
+  // Who the order is going to. Neither the checkout summary nor a saved
+  // address carries a recipient name — `deliveryAddress` is street/city/geo
+  // only — so the name comes from the profile, off the same `/profile`
+  // response the picker above already fetches. No extra request.
+  const [customerName, setCustomerName] = useState("");
+
   useEffect(() => {
     if (!checkoutId) {
       setError(t("noCheckoutIdProvided"));
@@ -421,9 +427,17 @@ export default function PaymentPage() {
       const res = await apiClient.get("/profile");
       const list = res.data?.data?.deliveryAddresses;
       setAddresses(Array.isArray(list) ? list : []);
+
+      // `lastName` is optional on the profile form, so filter before joining
+      // rather than trailing a space — same rule the profile header uses.
+      const name = res.data?.data?.name;
+      setCustomerName(
+        [name?.firstName, name?.lastName].filter(Boolean).join(" ").trim(),
+      );
     } catch {
       // Non-fatal: the page still works without the picker.
       setAddresses([]);
+      setCustomerName("");
     }
   };
 
@@ -846,7 +860,24 @@ export default function PaymentPage() {
                           in full. It used to headline the city and drop the
                           apartment and country entirely. */}
                       <div className="min-w-0">
-                        <p className="font-semibold break-words text-gray-900 dark:text-neutral-50">
+                        {/* The recipient headlines the block, the address sits
+                            under it — mirroring the "Delivery From" card
+                            opposite, where the store name leads and its address
+                            follows. With no name to show (fetch failed, or the
+                            profile has none), the address keeps the headline
+                            weight so the block never renders visibly empty. */}
+                        {customerName && (
+                          <p className="font-semibold break-words text-gray-900 dark:text-neutral-50">
+                            {customerName}
+                          </p>
+                        )}
+                        <p
+                          className={
+                            customerName
+                              ? "text-sm break-words text-gray-500 dark:text-neutral-400"
+                              : "font-semibold break-words text-gray-900 dark:text-neutral-50"
+                          }
+                        >
                           {deliveryAddress ? formatAddressLine1(deliveryAddress) : ""}
                         </p>
                         <p className="text-sm break-words text-gray-500 dark:text-neutral-400">
