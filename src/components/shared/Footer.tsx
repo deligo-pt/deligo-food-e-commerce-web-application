@@ -100,7 +100,7 @@ export default function Footer() {
     },
     {
       label: "YouTube",
-      href: "https://www.youtube.com/@DeliGoPT",
+      href: "https://www.youtube.com/@DeliGo-PT",
       Icon: YoutubeIcon,
     },
   ];
