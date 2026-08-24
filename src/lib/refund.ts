@@ -14,7 +14,11 @@
  * `refundStatus`, which this module prefers — see `getRefundState`.
  */
 
-import { isCompletedStatus, normalizeOrderStatus } from "./orderStatus";
+import {
+  isCompletedStatus,
+  isTerminatedStatus,
+  normalizeOrderStatus,
+} from "./orderStatus";
 
 export type RefundState = "none" | "not_eligible" | "in_progress" | "completed";
 
@@ -37,16 +41,12 @@ const REFUND_STATUS_STATES: Record<RefundStatus, RefundState> = {
 };
 
 /**
- * Statuses that end an order with the customer's money already taken.
- *
- * `normalizeOrderStatus` folds the API's `CANCELED` onto `CANCELLED`, so both
- * spellings match here without this module having to know about the split.
+ * Which statuses end an order with the customer's money already taken now lives
+ * in `lib/orderStatus`, alongside the rest of the vocabulary and — crucially —
+ * alongside `getOrderBucket`, which has to agree with it. Re-exported here so
+ * the callers that have always asked this module keep working.
  */
-const TERMINATED_STATUSES = new Set(["REJECTED", "CANCELLED"]);
-
-export function isTerminatedStatus(orderStatus: string | null | undefined): boolean {
-  return TERMINATED_STATUSES.has(normalizeOrderStatus(orderStatus));
-}
+export { isTerminatedStatus };
 
 /** The subset of an order this module reads. */
 export interface RefundableOrder {

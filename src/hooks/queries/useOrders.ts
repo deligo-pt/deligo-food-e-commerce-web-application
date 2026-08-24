@@ -9,10 +9,77 @@ import {
 import axios from "axios";
 import { apiClient } from "@/lib/apiClient";
 import { useStore } from "@/stores/translationStore";
-import { isOngoingStatus } from "@/lib/orderStatus";
+import { getOrderBucket } from "@/lib/orderStatus";
 import { useCartCache } from "@/hooks/queries/useCart";
 import { activateReorderedOrder } from "@/lib/cartActivation";
 import type { CartItem } from "@/types/cart";
+
+/**
+ * Where the fetch below starts, and where it gives up.
+ *
+ * 100 is what this always asked for and covers essentially every account in one
+ * request — so the common case makes exactly one call, as it always did. The
+ * ceiling exists so a data bug on the API side cannot turn one page view into
+ * an unbounded download.
+ */
+const ORDERS_FIRST_PAGE = 100;
+const ORDERS_MAX = 1000;
+
+/**
+ * Every order the customer has, not the first hundred.
+ *
+ * `GET /orders` has `limit` and nothing else this app has been able to confirm.
+ * `page` is not known to be supported, and an **unrecognised query parameter on
+ * this endpoint is applied as a strict equality filter** — it returns `200`
+ * with an empty list rather than erring (measured; see the header of
+ * `lib/orderSearch.ts`). So paginating with a guessed parameter name would not
+ * degrade to "the first page again". It would empty the customer's order
+ * history, silently, in production. Only `limit` is used here for that reason.
+ *
+ * Hence the shape: ask for a limit, and if the answer fills it exactly there
+ * may be more, so ask again for twice as many. Each response supersedes the
+ * last rather than being appended to, so no de-duplication and no ordering
+ * question. Every exit returns the longest list seen:
+ *
+ *  - fewer rows than asked for  → that is all of them;
+ *  - the same count as before   → the server has its own cap, take it and stop;
+ *  - a request fails            → keep what the previous one returned.
+ *
+ * The last two are why this can only ever match or beat the single fixed
+ * request it replaces: a server-side cap, a rejected large `limit`, or a
+ * network failure on the second call all land back on exactly the hundred
+ * orders the page used to show. Aborts are rethrown, never swallowed — React
+ * Query must see a cancellation as a cancellation, not as a short list.
+ */
+async function fetchAllOrders<T>(
+  params: Record<string, unknown>,
+  signal: AbortSignal | undefined,
+): Promise<T[]> {
+  let limit = ORDERS_FIRST_PAGE;
+  let longest: T[] = [];
+
+  for (;;) {
+    let batch: T[];
+    try {
+      const res = await apiClient.get("/orders", {
+        params: { ...params, limit },
+        signal,
+      });
+      batch = (res.data?.data ?? []) as T[];
+    } catch (error) {
+      if (longest.length === 0 || axios.isCancel(error)) throw error;
+      return longest;
+    }
+
+    // No growth: either the server capped the limit or that is genuinely
+    // everything. Either way there is nothing further to ask for.
+    if (batch.length <= longest.length) return longest.length ? longest : batch;
+
+    longest = batch;
+    if (batch.length < limit || limit >= ORDERS_MAX) return longest;
+    limit = Math.min(limit * 2, ORDERS_MAX);
+  }
+}
 
 export const orderKeys = {
   all: ["orders"] as const,
@@ -31,13 +98,7 @@ export function useOrders<T = unknown>(options?: { enabled?: boolean }) {
   const lang = useStore((s) => s.lang);
   return useQuery({
     queryKey: orderKeys.list(lang),
-    queryFn: async ({ signal }) => {
-      const res = await apiClient.get("/orders", {
-        params: { limit: 100 },
-        signal,
-      });
-      return (res.data?.data ?? []) as T[];
-    },
+    queryFn: ({ signal }) => fetchAllOrders<T>({}, signal),
     enabled: options?.enabled ?? true,
     // The global 60s staleTime is tuned for catalog and profile data, which does
     // not change on its own. Orders do — a vendor accepts, a rider picks up, and
@@ -57,7 +118,10 @@ export function useOrders<T = unknown>(options?: { enabled?: boolean }) {
       const list = query.state.data as
         | ({ orderStatus?: string | null } | null)[]
         | undefined;
-      return list?.some((order) => isOngoingStatus(order?.orderStatus))
+      // The same question the Ongoing tab asks, so the page cannot show a card
+      // in Ongoing that nothing is refreshing — which is what happened while
+      // this read a status *allowlist* and the tab read a bucket.
+      return list?.some((order) => getOrderBucket(order?.orderStatus) === "ongoing")
         ? 30_000
         : false;
     },
@@ -113,14 +177,14 @@ export function useOrderStatusIndex(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: orderKeys.statusIndex,
     queryFn: async ({ signal }) => {
-      const res = await apiClient.get("/orders", {
-        params: {
-          limit: 100,
-          fields: "orderId,orderStatus,statusHistory,fulfillmentType",
-        },
+      // Same whole-history fetch as the orders page. A notification about the
+      // customer's hundred-and-first order is exactly as likely to be on screen
+      // as one about their first, and a miss here silently costs that row its
+      // status and its icon.
+      const list = await fetchAllOrders<OrderStatusEntry>(
+        { fields: "orderId,orderStatus,statusHistory,fulfillmentType" },
         signal,
-      });
-      const list = (res.data?.data ?? []) as OrderStatusEntry[];
+      );
       return new Map(
         list
           .filter((order) => order?.orderId)

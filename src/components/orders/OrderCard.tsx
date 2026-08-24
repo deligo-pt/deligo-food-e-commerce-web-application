@@ -11,6 +11,7 @@ import { getApiErrorMessage } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import { useReorder } from "@/hooks/queries/useOrders";
 import { refundStateLabelKey, type RefundState } from "@/lib/refund";
+import { isFinishedCardStatus, type OrderCardStatus } from "@/lib/orderCardStatus";
 
 /**
  * How each refund state is chipped. `not_eligible` is amber and neutral on
@@ -45,8 +46,21 @@ interface OrderCardProps {
    * `rejected` and `cancelled` are kept apart because the backend keeps them
    * apart — a restaurant refusing the order and an order being called off are
    * different events, and the customer is told which one happened.
+   *
+   * Derived by `getOrderCardStatus`, which is total: any status this build has
+   * no copy for arrives as `unknown` and is drawn plainly rather than being
+   * dressed up as one of the others.
    */
-  status: "accepted" | "pending" | "delivered" | "cancelled" | "rejected";
+  status: OrderCardStatus;
+  /**
+   * The backend's own word for the status, already translated — what the chip
+   * says when `status` is `unknown`.
+   *
+   * Ignored for every other face, which have copy of their own. Passed in
+   * rather than derived here because the caller already computes it for the
+   * line under the progress bar, and the two must not be able to disagree.
+   */
+  statusLabel?: string;
   /**
    * Whether money is owed back on this order. Kept separate from `status`
    * rather than folded into it: `status` also decides which actions the card
@@ -86,6 +100,7 @@ export default function OrderCard({
   date,
   price,
   status,
+  statusLabel,
   refundState = "none",
   items,
   progress,
@@ -106,6 +121,12 @@ export default function OrderCard({
   // The two terminal statuses are labelled differently but behave identically:
   // no food is coming, so the same actions make sense for both.
   const isTerminated = status === "cancelled" || status === "rejected";
+  // An order that is over, however it ended. Wider than `isTerminated`, which
+  // means specifically "killed, money possibly owed back" and drives the red
+  // bar and the hidden invoice. This one only decides whether re-ordering makes
+  // sense — and it does for a delivered order, a rejected one, and one nobody
+  // came to collect alike.
+  const isFinished = isFinishedCardStatus(status);
 
   const handleReorder = async () => {
     if (reordering) return;
@@ -195,6 +216,25 @@ export default function OrderCard({
               <XCircle size={12} />
               {t(status)}
             </div>
+          ) : status === "notCollected" ? (
+            // Amber, not red: the food was made and paid for and nobody came
+            // for it. That is not the same event as an order being refused or
+            // called off, and it must not wear the same chip — for a while it
+            // wore no chip at all, because the order was in neither tab.
+            <div className="flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/20 px-2 py-1 text-xs text-amber-700 dark:text-amber-400">
+              <Info size={12} />
+              {t("notCollected")}
+            </div>
+          ) : status === "unknown" ? (
+            // A status this build has no copy for. Grey and unstyled on
+            // purpose: the one honest thing to do is repeat what the backend
+            // said and claim nothing else. `statusLabel` is the humanized
+            // status; the `t("pending")` fallback is for the impossible case of
+            // an order with no status at all.
+            <div className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-neutral-800 px-2 py-1 text-xs text-gray-600 dark:text-neutral-400">
+              <Info size={12} />
+              {statusLabel || t("pending")}
+            </div>
           ) : (
             <div className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-neutral-800 px-2 py-1 text-xs text-gray-600 dark:text-neutral-400">
               <Clock3 size={12} />
@@ -242,12 +282,18 @@ export default function OrderCard({
         <div className="h-1.5 rounded-full bg-gray-200 dark:bg-neutral-800">
           {/* A full brand-pink bar reads as "completed successfully". On an
               order that was rejected or cancelled it is the same claim the
-              track-order timeline used to make, so the terminal bar is red. */}
+              track-order timeline used to make, so the terminal bar is red —
+              amber for one nobody collected, and grey where the status is not
+              one this build can make any claim about. */}
           <div
             className={`h-full rounded-full ${
               isTerminated
                 ? "bg-red-600 dark:bg-red-500"
-                : "bg-[#f9186b] dark:bg-pink-600"
+                : status === "notCollected"
+                  ? "bg-amber-500 dark:bg-amber-500"
+                  : status === "unknown"
+                    ? "bg-gray-400 dark:bg-neutral-600"
+                    : "bg-[#f9186b] dark:bg-pink-600"
             }`}
             style={{
               width: `${progress}%`,
@@ -281,8 +327,9 @@ export default function OrderCard({
         )}
 
         {/* Re-order only makes sense once an order is finished — an in-flight
-            one is already on its way. */}
-        {(status === "delivered" || isTerminated) && (
+            one is already on its way, and an `unknown` status has not been
+            established to be finished at all. */}
+        {isFinished && (
           <button
             onClick={handleReorder}
             disabled={reordering}
