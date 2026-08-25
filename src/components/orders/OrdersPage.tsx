@@ -16,16 +16,14 @@ import {
 } from "@/hooks/queries/useOrders";
 import { Star, X } from "lucide-react";
 import { toast } from "sonner";
-import { canCancelOrder, getRefundState, isTerminatedStatus } from "@/lib/refund";
+import { canCancelOrder, getRefundState } from "@/lib/refund";
 import { isPickupOrder } from "@/lib/orderTimeline";
 import { useOrderRatingStore } from "@/stores/orderRatingStore";
 import { getVendorDisplayName } from "@/lib/vendorName";
 import { formatOrderPrice } from "@/lib/currency";
-import {
-  isCompletedStatus,
-  isOngoingStatus,
-  normalizeOrderStatus,
-} from "@/lib/orderStatus";
+import { getOrderBucket } from "@/lib/orderStatus";
+import { getOrderCardStatus } from "@/lib/orderCardStatus";
+import { getOrderStatusLabel } from "@/lib/orderStatusLabel";
 
 interface StarRatingProps {
   value: number;
@@ -279,19 +277,26 @@ export default function OrdersPage() {
   // Split once per orders change — not on every rating-modal keystroke (this
   // page holds a lot of rating state that would otherwise re-filter each time).
   const { ongoingOrders, historyOrders } = useMemo(() => {
-    // Both buckets go through the normalizer. The literal list this used to
-    // compare against did not, so the two halves of the split disagreed about
-    // casing and about the API's one-L `CANCELED`.
-    const ongoing = orders.filter((order) => isOngoingStatus(order.orderStatus));
-    // `isCompletedStatus` covers both endings — delivered, and collected by the
-    // customer. Testing `=== "DELIVERED"` here dropped every completed pickup
-    // order out of both tabs: not ongoing, not terminated, not delivered, so it
-    // appeared nowhere at all.
-    const history = orders.filter(
-      (order) =>
-        isCompletedStatus(order.orderStatus) ||
-        isTerminatedStatus(order.orderStatus),
-    );
+    // 🔴 ONE call, partitioning the list — never two independent filters.
+    //
+    // Two filters is what this was, and each carried its own allowlist of
+    // statuses. Anything in neither list was fetched, held in memory and
+    // rendered nowhere: first every collected self-pickup order, then every
+    // `NO_SHOW`. The failure is silent and total — the customer searches their
+    // own order id and the page says "no results found", which is
+    // indistinguishable from the order not existing.
+    //
+    // `getOrderBucket` is a total function over one input, so the two lists
+    // below are a partition by construction: nothing can be in both, and
+    // nothing can be in neither. See its doc for where an unrecognised status
+    // goes and why.
+    const ongoing: any[] = [];
+    const history: any[] = [];
+    for (const order of orders) {
+      (getOrderBucket(order.orderStatus) === "ongoing" ? ongoing : history).push(
+        order,
+      );
+    }
     return { ongoingOrders: ongoing, historyOrders: history };
   }, [orders]);
 
@@ -372,6 +377,11 @@ export default function OrdersPage() {
     return <OrdersPageSkeleton />;
   }
 
+  // How far along the bar sits, and the line of copy under it. Which *face* the
+  // card wears is `getOrderCardStatus`'s answer, not this one — this used to
+  // return that too, which meant a status it did not recognise was drawn as
+  // "Pending" while the tab it sat in said the order was over.
+  //
   // `isPickup` only affects wording and how far along the bar sits. A pickup
   // order's journey ends two steps earlier than a delivery's — there is no
   // rider leg — so `READY_FOR_PICKUP` is nearly done for one and merely
@@ -379,24 +389,12 @@ export default function OrdersPage() {
   const getOrderProgress = (status: string, isPickup: boolean) => {
     switch (status) {
       case "PENDING":
-        return {
-          progress: 15,
-          text: t("waitingRestaurantConfirmation"),
-          status: "pending" as const,
-        };
+        return { progress: 15, text: t("waitingRestaurantConfirmation") };
       case "ACCEPTED":
       case "ASSIGNED":
-        return {
-          progress: 40,
-          text: t("orderAccepted") || t("accepted"),
-          status: "accepted" as const,
-        };
+        return { progress: 40, text: t("orderAccepted") || t("accepted") };
       case "PREPARING":
-        return {
-          progress: 60,
-          text: t("chefPreparingMeal") || t("preparing"),
-          status: "accepted" as const,
-        };
+        return { progress: 60, text: t("chefPreparingMeal") || t("preparing") };
       case "READY_FOR_PICKUP":
         return {
           // The last thing that happens before the customer walks in, so the
@@ -404,20 +402,19 @@ export default function OrdersPage() {
           // a rider leg to run.
           progress: isPickup ? 95 : 75,
           text: isPickup ? t("readyForPickupSelf") : t("readyForPickup"),
-          status: "accepted" as const,
         };
       case "PICKED_UP":
       case "ON_THE_WAY":
-        return {
-          progress: 90,
-          text: t("onTheWay") || t("riderHeadingLocation"),
-          status: "accepted" as const,
-        };
+        return { progress: 90, text: t("onTheWay") || t("riderHeadingLocation") };
       default:
+        // Only reachable for a status this build has never seen — every known
+        // live one has a case above. Repeat the backend's own word for it
+        // rather than claiming the restaurant has not answered yet, and leave
+        // the bar near the start, where a claim about progress is cheapest.
         return {
           progress: 15,
-          text: t("waitingRestaurantConfirmation"),
-          status: "pending" as const,
+          text:
+            getOrderStatusLabel(status, t) ?? t("waitingRestaurantConfirmation"),
         };
     }
   };
@@ -485,7 +482,7 @@ export default function OrdersPage() {
             ) : (
               visibleOngoing.map((order) => {
                 const isPickup = isPickupOrder(order);
-                const { progress, text, status } = getOrderProgress(
+                const { progress, text } = getOrderProgress(
                   order.orderStatus,
                   isPickup,
                 );
@@ -501,7 +498,12 @@ export default function OrdersPage() {
                     orderId={order.orderId}
                     date={new Date(order.createdAt).toLocaleString()}
                     price={formatOrderPrice(order.payoutSummary?.grandTotal)}
-                    status={status}
+                    // Same mapper as the History tab below. One derivation for
+                    // both, so the two tabs cannot disagree about what a status
+                    // means, and neither can invent a face for a status the
+                    // backend added yesterday.
+                    status={getOrderCardStatus(order.orderStatus)}
+                    statusLabel={getOrderStatusLabel(order.orderStatus, t) ?? ""}
                     items={order.items
                       ?.map(
                         (item: any) =>
@@ -529,17 +531,15 @@ export default function OrdersPage() {
                 // the progress bar. They used to be worked out separately and
                 // disagreed: a REJECTED order was chipped "Cancelled" while the
                 // label right below it read "Rejected".
-                const normalized = normalizeOrderStatus(order.orderStatus);
-                // A collected pickup order is a completed order, so it shares
-                // the "delivered" chip rather than falling through to the
-                // catch-all "cancelled" — which is what it did while this read
-                // `=== "DELIVERED"`, labelling a successfully collected order
-                // as cancelled.
-                const cardStatus = isCompletedStatus(normalized)
-                  ? "delivered"
-                  : normalized === "REJECTED"
-                    ? "rejected"
-                    : "cancelled";
+                //
+                // And it used to end in `: "cancelled"` — a catch-all that told
+                // the customer their order was cancelled whenever it was
+                // anything the ternary had not been taught. `NO_SHOW` now has
+                // its own face; anything genuinely new gets `unknown` and the
+                // backend's own word for it, never someone else's ending.
+                const cardStatus = getOrderCardStatus(order.orderStatus);
+                const statusLabel =
+                  getOrderStatusLabel(order.orderStatus, t) ?? "";
                 return (
                   <OrderCard
                     key={order._id}
@@ -553,6 +553,7 @@ export default function OrdersPage() {
                     date={new Date(order.createdAt).toLocaleString()}
                     price={formatOrderPrice(order.payoutSummary?.grandTotal)}
                     status={cardStatus}
+                    statusLabel={statusLabel}
                     refundState={getRefundState(order)}
                     items={order.items
                       ?.map(
@@ -561,9 +562,11 @@ export default function OrdersPage() {
                       )
                       .join(", ")}
                     progress={100}
-                    // The three card statuses are also the three dictionary
-                    // keys, so this cannot drift from the chip again.
-                    progressText={t(cardStatus)}
+                    // The same string the chip shows, so the two cannot drift
+                    // again — and for a collected self-pickup order it now
+                    // reads "Collected" here too, rather than the "Delivered"
+                    // it used to print under a chip saying otherwise.
+                    progressText={statusLabel}
                     isRated={isOrderRated(order._id)}
                     onRateOrder={() => openRatingModal(order)}
                   />

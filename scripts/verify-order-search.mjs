@@ -100,9 +100,20 @@ const pageCode = stripComments(readFileSync(join(ROOT, "src/components/orders/Or
 ok("OrdersPage calls useOrders with no arguments", /useOrders<any>\(\)/.test(pageCode), true);
 ok("OrdersPage passes the term to useOrderSearch, not to a request", /useOrderSearch\(orders,\s*searchTerm\)/.test(pageCode), true);
 ok("OrdersPage builds no params object", /\bparams\s*:/.test(pageCode), false);
-// And the fetch itself is still the plain one, unchanged by this feature.
+// And the fetch itself carries no search term. It is no longer a single fixed
+// request — `fetchAllOrders` escalates `limit` until the list stops growing, so
+// an account with more than a hundred orders can search all of them — but the
+// rule it must obey is unchanged and is what is asserted here: `limit` (plus
+// the `fields` projection the notification index uses) and nothing else. A term
+// smuggled in as a parameter is the regression §1 exists to catch.
 const useOrdersCode = stripComments(readFileSync(join(ROOT, "src/hooks/queries/useOrders.ts"), "utf8"));
-ok("useOrders still sends only limit", /params:\s*\{\s*limit:\s*100,?\s*\}/.test(useOrdersCode), true);
+ok("useOrders sends limit", /\blimit\b/.test(useOrdersCode), true);
+for (const param of ["searchTerm", "\\bsearch:", "\\bq:", "\\bterm:"]) {
+  ok(`useOrders sends no "${param.replace(/\\b|:/g, "")}" parameter`, new RegExp(param).test(useOrdersCode), false);
+}
+// Every `params` object reaching /orders is built in exactly one place, so
+// there is one thing to audit rather than one per call site.
+ok("one fetch helper owns the request", (useOrdersCode.match(/apiClient\.get\("\/orders"/g) ?? []).length, 1);
 
 section("§2 the model is pure — no React, no browser, no I/O");
 const modelCode = stripComments(FEATURE_SOURCES["src/lib/orderSearch.ts"]);
