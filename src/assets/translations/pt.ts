@@ -392,7 +392,6 @@ const pt = {
   noItemsFoundInCategory: "Nenhum item encontrado nesta categoria.",
 
   // "secções" is pt-PT; the Brazilian "seções" is wrong for this market.
-  allItems: "Todos os itens",
   menuHasNoSections: "Este menu ainda não tem secções.",
   noItemsInSection: "Sem itens nesta secção.",
 
@@ -586,6 +585,7 @@ const pt = {
   restaurantAddressComingSoon: "Morada disponível em breve",
 
   // Contagem inline ("3 itens · €9,23"). A forma de cabeçalho é `orderItems`.
+  item: "item",
   items: "itens",
   orderItems: "Itens do Pedido",
 

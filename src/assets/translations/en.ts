@@ -384,7 +384,6 @@ const en = {
   // The vendor's own menus. `allItems` is the entry that is NOT a menu — it is
   // the vendor's whole catalogue, and it is what guarantees no product becomes
   // unreachable when a menu only covers part of it.
-  allItems: "All items",
   menuHasNoSections: "This menu has no sections yet.",
   noItemsInSection: "No items in this section.",
 
@@ -572,6 +571,7 @@ const en = {
   restaurantAddressComingSoon: "Address coming soon",
 
   // Inline count ("3 items · €9.23"). The heading form is `orderItems`.
+  item: "item",
   items: "items",
   orderItems: "Order Items",
 
