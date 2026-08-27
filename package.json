@@ -20,6 +20,7 @@
     "verify:profile-form": "node --no-warnings scripts/verify-profile-form.mjs",
     "verify:delivery-code": "node --no-warnings scripts/verify-delivery-code.mjs",
     "verify:orders-page": "node --no-warnings scripts/verify-orders-page.mjs",
+    "verify:menu": "node --no-warnings scripts/verify-menu.mjs",
     "verify:pickup": "node scripts/verify-pickup-contract.mjs"
   },
   "dependencies": {

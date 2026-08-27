@@ -391,6 +391,22 @@ const pt = {
 
   noItemsFoundInCategory: "Nenhum item encontrado nesta categoria.",
 
+  // "secções" is pt-PT; the Brazilian "seções" is wrong for this market.
+  allItems: "Todos os itens",
+  menuHasNoSections: "Este menu ainda não tem secções.",
+  noItemsInSection: "Sem itens nesta secção.",
+
+  // pt-PT weekday abbreviations: Seg Ter Qua Qui Sex Sáb Dom.
+  menuAvailable: "Disponível",
+  everyDay: "Todos os dias",
+  mon: "Seg",
+  tue: "Ter",
+  wed: "Qua",
+  thu: "Qui",
+  fri: "Sex",
+  sat: "Sáb",
+  sun: "Dom",
+
   off: "DESCONTO",
 
   deliciousMenuItem: "Item delicioso do nosso menu.",

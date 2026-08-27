@@ -29,6 +29,16 @@ import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
 import ClosingCountdown from "./ClosingCountdown";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useVendor, useVendorProducts } from "@/hooks/queries/useVendors";
+import {
+  useMenuSections,
+  useVendorMenus,
+} from "@/hooks/queries/useVendorMenus";
+import { buildMenuView, localizedText } from "@/lib/menuModel";
+import MenuSelector, { type VendorMenu } from "./MenuSelector";
+import MenuSectionNav from "./MenuSectionNav";
+import MenuSectionGroup from "./MenuSectionGroup";
+import MenuAvailability from "./MenuAvailability";
+import { useStore } from "@/stores/translationStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { formatCuisine } from "@/lib/cuisine";
 import { currencySymbol } from "@/lib/currency";
@@ -109,6 +119,13 @@ interface Vendor {
     preparationTimeMinutes: number;
     restaurantCuisineType?: string[] | string;
     isStoreOpen: boolean;
+    /**
+     * The vendor's IANA zone, e.g. `"Europe/Lisbon"`. The backend added this
+     * after `lib/storeHours.ts` hardcoded a single zone; a menu's availability
+     * times are wall-clock in *this* zone, so the caption names it. Optional
+     * because older vendor records may predate the field.
+     */
+    timezone?: string;
   };
   businessLocation?: {
     city: string;
@@ -123,6 +140,13 @@ interface Vendor {
 
 interface Product {
   id: string;
+  /**
+   * The Mongo id. Always present on `GET /products`, and it is the key the menu
+   * sections join on — `items[].productId._id` references this, never the
+   * business `productId` below. Optional here only because the rest of this
+   * interface was written against the fields the card renders.
+   */
+  _id?: string;
   productId: string;
   name: string;
   description: string;
@@ -267,6 +291,12 @@ export default function VendorDetailsPage({
   // LanguageBoundary, which re-inits this back to "all", so no stale (old
   // language) selection can survive and match nothing.
   const [selectedCategory, setSelectedCategory] = useState("all");
+  // Which of the vendor's menus is on screen. 🔴 `null` is "All items" — the
+  // flat catalogue this page has always shown — and it is the default. It is
+  // not one of the menus and cannot be removed by anything the API returns,
+  // which is what guarantees every product stays reachable however little of
+  // the catalogue the vendor has filed into a menu.
+  const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
   // `/vendors/<userId>?product=PROD-XXXXXX` opens straight onto that dish.
   // Search results arrive this way: a hit carries no usable vendor route of its
   // own, so `/search` resolves one from `productId` and hands the same id back
@@ -289,6 +319,121 @@ export default function VendorDetailsPage({
   const deferredCategory = useDeferredValue(selectedCategory);
   const handleSelectProduct = useCallback(
     (productId: string) => setSelectedProductId(productId),
+    [],
+  );
+
+  // ---------------------------------------------------------------------------
+  // The vendor's own menus.
+  //
+  // Both endpoints are public and keyed by the vendor's Mongo `_id`, which is
+  // what `vendor.id` already holds — the same value the products query uses, and
+  // the reason both wait on the vendor query. Sections are fetched for the
+  // selected menu only: there is no batched endpoint, so loading all of them up
+  // front would cost one request per menu for content behind a control the
+  // customer may never touch.
+  // ---------------------------------------------------------------------------
+  const lang = useStore((s) => s.lang);
+  const { data: menus = [] } = useVendorMenus<VendorMenu>(vendor?.id, {
+    enabled: !!vendor?.id,
+  });
+
+  // A menu the vendor deactivates while this page is open would otherwise leave
+  // the selection pointing at nothing. Falling back to All items is the safe
+  // direction: it always has content.
+  const activeMenu =
+    (selectedMenuId && menus.find((menu) => menu._id === selectedMenuId)) ||
+    null;
+  const activeMenuId = activeMenu?._id ?? null;
+  // `{en,pt}` on this endpoint like every other localized field — `t()` has no
+  // part in it, and `localizedText` handles the empty-`pt` case the API sends.
+  const activeMenuDescription = activeMenu
+    ? localizedText(activeMenu.description, lang)
+    : "";
+
+  const {
+    data: rawSections = [],
+    isLoading: sectionsLoading,
+    error: sectionsErrorObj,
+  } = useMenuSections<unknown>(activeMenuId);
+  const sectionsError = sectionsErrorObj
+    ? getApiErrorMessage(sectionsErrorObj, "Unable to load menu")
+    : "";
+
+  // Ordering and grouping come from the menu API; every field rendered comes
+  // from `products`. The section payload's own product stub carries no
+  // `finalPrice` and no business `productId`, so it is used for its ids alone.
+  const menuView = useMemo(
+    () => (activeMenuId ? buildMenuView(rawSections, products, lang) : []),
+    [activeMenuId, rawSections, products, lang],
+  );
+  const navSections = useMemo(
+    () => menuView.map((section) => ({ id: section.id, name: section.name })),
+    [menuView],
+  );
+
+  // Every item this menu listed that no product could be found for.
+  //
+  // Zero for every vendor in the catalogue today, and the one way it goes
+  // non-zero is silent: `useVendorProducts` asks for at most 100 products, so a
+  // vendor past that ceiling can file product #101 into a section and the join
+  // finds nothing. The section then renders as empty and nobody is told why.
+  const missingProductCount = useMemo(
+    () => menuView.reduce((total, section) => total + section.missingCount, 0),
+    [menuView],
+  );
+
+  // Surfaced in development only. Not a customer-facing error: they cannot act
+  // on it, and the menu around it is still correct and still orderable. It is a
+  // message for whoever is looking at this vendor wondering why a section they
+  // filled looks empty. (`removeConsole` strips this from production builds
+  // regardless; the guard states the intent rather than relying on that.)
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    if (missingProductCount === 0) return;
+    console.warn(
+      `[menu] ${missingProductCount} item(s) in menu ${activeMenuId} reference a product missing from this vendor's product list. ` +
+        `Most likely the vendor has more than the 100 products useVendorProducts fetches.`,
+    );
+  }, [missingProductCount, activeMenuId]);
+
+  // A menu whose sections all resolve to nothing. Distinct from "this menu has
+  // no sections": the vendor did fill it in, and what the customer sees is a
+  // stack of empty headings with no explanation. The sections stay on screen —
+  // they are what the vendor built — but the way back to the full catalogue is
+  // offered explicitly, because the through-line of this feature is that no
+  // failure in it may cost the customer the product grid.
+  const menuResolvedNothing =
+    menuView.length > 0 &&
+    menuView.every((section) => section.products.length === 0);
+
+  const handleSelectMenu = useCallback((menuId: string | null) => {
+    setSelectedMenuId(menuId);
+    // The two controls are alternatives, never stacked (§1.3): a category filter
+    // left over from All items must not survive into a menu and silently empty
+    // a section, nor the reverse on the way back.
+    setSelectedCategory("all");
+  }, []);
+
+  // Arriving at a different vendor must not inherit this one's selection.
+  useEffect(() => {
+    setSelectedMenuId(null);
+  }, [vendor?.id]);
+
+  // A menu section draws its products with the page's own card, passed down as
+  // a render prop. That is what keeps `MenuProductCard` — and with it every
+  // price, discount badge and add-to-cart path — untouched by this feature.
+  const renderMenuProduct = useCallback(
+    (product: Product) => (
+      <MenuProductCard
+        product={product}
+        onSelect={handleSelectProduct}
+        storeClosed={isStoreClosed}
+      />
+    ),
+    [handleSelectProduct, isStoreClosed],
+  );
+  const menuProductKey = useCallback(
+    (product: Product) => product.productId ?? product.id,
     [],
   );
 
@@ -514,22 +659,52 @@ export default function VendorDetailsPage({
           </div>
         </section>
 
-        <section className="mb-8 overflow-x-auto">
-          <div className="flex min-w-max gap-3">
-            {categoryTabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setSelectedCategory(tab.key)}
-                className={`rounded-lg px-5 py-2 text-sm font-semibold uppercase transition ${selectedCategory === tab.key
-                  ? "bg-pink-600 text-white"
-                  : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-gray-500 dark:text-neutral-400 hover:bg-gray-50 dark:hover:bg-neutral-800"
-                  }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </section>
+        {/* Renders nothing when this vendor has no menus, so a vendor who has
+            never opened the menu builder gets exactly today's page. */}
+        <MenuSelector
+          menus={menus}
+          selectedMenuId={activeMenuId}
+          onSelect={handleSelectMenu}
+          lang={lang}
+        />
+
+        {/* Annotates the selected pill, so it sits with the selector rather than
+            with the sections — and so it still appears for a menu that has no
+            sections to put a nav above. Renders nothing when the menu names no
+            window, which is most of them. It is a caption: it gates nothing. */}
+        {/* The vendor's own words about this menu. Every menu on the API carries
+            one and none of them reached the page until now — a section's
+            description rendered, a menu's did not. Same treatment as the section
+            description, one level up. */}
+        {activeMenuDescription && (
+          <p className="mb-3 text-sm text-gray-500 dark:text-neutral-400">
+            {activeMenuDescription}
+          </p>
+        )}
+
+        {activeMenu && <MenuAvailability availability={activeMenu.availability} />}
+
+        {/* One control row at a time: category tabs belong to All items, the
+            section nav belongs to a menu. Stacking both would give two filters
+            with overlapping meaning and no hierarchy between them. */}
+        {activeMenuId === null && (
+          <section className="mb-8 overflow-x-auto">
+            <div className="flex min-w-max gap-3">
+              {categoryTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setSelectedCategory(tab.key)}
+                  className={`rounded-lg px-5 py-2 text-sm font-semibold uppercase transition ${selectedCategory === tab.key
+                    ? "bg-pink-600 text-white"
+                    : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-gray-500 dark:text-neutral-400 hover:bg-gray-50 dark:hover:bg-neutral-800"
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {isVendorModalOpen && (
           <VendorDetailsModal
@@ -576,8 +751,86 @@ export default function VendorDetailsPage({
             </div>
           )}
 
+          {/* ---------------------------------------------------------------
+              A menu is selected: its sections, stacked, each under its own
+              heading, with the nav above jumping between them.
+
+              🔴 Every failure here falls back to a link to All items rather
+              than to a dead end. Menus are additive — when anything about them
+              is unavailable the customer must still be able to reach the
+              catalogue and order.
+              --------------------------------------------------------------- */}
+          {!productsLoading && !productsError && activeMenuId !== null && (
+            <>
+              {sectionsLoading && menuView.length === 0 && (
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-48 animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800"
+                    />
+                  ))}
+                </div>
+              )}
+
+              {sectionsError && (
+                <div className="rounded-2xl bg-red-50 dark:bg-red-950/20 border dark:border-red-900/30 p-6 text-center text-red-600 dark:text-red-400">
+                  {sectionsError}
+                </div>
+              )}
+
+              {!sectionsLoading && !sectionsError && menuView.length === 0 && (
+                <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
+                  <p>{t("menuHasNoSections")}</p>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectMenu(null)}
+                    className="mt-3 font-semibold text-pink-600 dark:text-pink-400"
+                  >
+                    {t("allItems")} →
+                  </button>
+                </div>
+              )}
+
+              {!sectionsError && menuView.length > 0 && (
+                <>
+                  {/* Keyed by menu so a switch remounts the nav rather than
+                      correcting its active tab in an effect afterwards. */}
+                  <MenuSectionNav key={activeMenuId} sections={navSections} />
+                  {menuView.map((section) => (
+                    <MenuSectionGroup
+                      key={section.id}
+                      section={section}
+                      renderProduct={renderMenuProduct}
+                      productKey={menuProductKey}
+                    />
+                  ))}
+
+                  {/* Sections exist but none of them resolved to a product.
+                      The headings above are left standing — they are what the
+                      vendor built — and the catalogue is offered explicitly
+                      rather than left to be rediscovered in the pill row. */}
+                  {menuResolvedNothing && (
+                    <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectMenu(null)}
+                        className="font-semibold text-pink-600 dark:text-pink-400"
+                      >
+                        {t("allItems")} →
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {/* All items — the flat catalogue, exactly as this page has always
+              rendered it. Unchanged, and reachable at all times. */}
           {!productsLoading &&
             !productsError &&
+            activeMenuId === null &&
             filteredProducts.length === 0 && (
               <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
                 {t("noItemsFoundInCategory")}
@@ -586,6 +839,7 @@ export default function VendorDetailsPage({
 
           {!productsLoading &&
             !productsError &&
+            activeMenuId === null &&
             filteredProducts.length > 0 && (
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {filteredProducts.map((product) => (
