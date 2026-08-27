@@ -19,42 +19,42 @@ export interface VendorMenu {
 
 interface MenuSelectorProps {
   menus: VendorMenu[];
-  /** `null` means "All items" — the vendor's whole catalogue, not a menu. */
+  /** The menu on screen. `null` only while the list is still empty. */
   selectedMenuId: string | null;
-  onSelect: (menuId: string | null) => void;
+  onSelect: (menuId: string) => void;
   lang: MenuLang;
 }
 
 /**
  * The row of pills that chooses which of the vendor's menus is on screen.
  *
- * ## 🔴 "All items" is not a menu, and it is always first
+ * ## Menus only
  *
- * The vendor's menus routinely do not cover the vendor's catalogue. Measured on
- * the live test data: two of seven vendors have no menus at all, four menus
- * across two more have no sections, and **17 of 22 products sit in no section**.
- * A selector offering only menus would therefore hide most of the catalogue and
- * show four of seven restaurants an empty page.
+ * This used to lead with an "All items" pill backed by the flat product list,
+ * because menus did not cover the catalogue — 17 of 22 live products sat in no
+ * section at all. That entry was retired once the vendor side committed to every
+ * product belonging to a menu, at which point "All items" was just every menu
+ * concatenated, sitting above a second pill row that filtered by the platform's
+ * product categories. Two controls, three meanings, one screen.
  *
- * So the first entry is the flat product list the page already renders, it is
- * the default selection, and it is not derived from the menus response — it
- * cannot go missing no matter what the API says. Whatever a vendor has or has
- * not filed into a menu, every product they sell is one click away.
+ * What replaced the guarantee: a vendor with **no menus** never reaches this
+ * component at all — the page renders its flat product grid instead, with no
+ * selector. See the `menus.length === 0` branch in `VendorDetailsPage`. That is
+ * a migration fallback, not a control, and it disappears on its own once every
+ * vendor has a menu.
  *
- * ## 🔴 With no menus, this renders nothing at all
+ * ## 🔴 With no menus, this renders nothing
  *
- * Not a disabled row, not a lone "All items" pill with nothing to switch to —
- * `null`. A vendor who has never opened the menu builder gets exactly the page
- * they get today, with no dead control above it and no layout that shifts when
- * the menus request resolves.
+ * Not a disabled row, not an empty one — `null`. The page above is responsible
+ * for what shows instead, and a control with nothing to select would only
+ * shift the layout when the menus request resolves.
  *
  * ## Theme
  *
- * Deliberately the same pill the category tabs below already use — same radius,
- * padding, weight, uppercase, same `bg-pink-600` active state. The two rows are
- * told apart by position and by the section nav's different form (underline
- * tabs), which is how the reference lays them out. Inventing a third visual
- * language for a control that does the same kind of job would be noise.
+ * The pill the category tabs used to use — same radius, padding, weight,
+ * uppercase, same `bg-pink-600` active state. Those tabs are gone, so this is
+ * now the only pill row on the page, and the section nav below it is the
+ * underline-tab form the reference lays out.
  */
 const MenuSelector = memo(function MenuSelector({
   menus,
@@ -78,15 +78,6 @@ const MenuSelector = memo(function MenuSelector({
   return (
     <section className="mb-4 overflow-x-auto" aria-label={t("menu")}>
       <div className="flex min-w-max gap-3">
-        <button
-          type="button"
-          onClick={() => onSelect(null)}
-          aria-pressed={selectedMenuId === null}
-          className={pill(selectedMenuId === null)}
-        >
-          {t("allItems")}
-        </button>
-
         {menus.map((menu) => {
           // A menu whose name is blank in both languages still has to be
           // clickable — it is a real menu with real products behind it — so it

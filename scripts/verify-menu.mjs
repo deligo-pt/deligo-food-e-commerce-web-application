@@ -8,16 +8,19 @@
  * The Menu feature groups a vendor's catalogue by the menu card they built.
  * Two properties of the API make that dangerous in ways nothing else catches:
  *
- * 1. 🔴 **Menus do not cover the catalogue.** Measured 2026-08-27 across all
- *    seven live vendors: two have no menus at all, four menus across two more
- *    have no sections, and **17 of 22 products sit in no section**. A page that
- *    rendered menus *instead of* the flat list would show four of seven
- *    restaurants an empty menu. This is not bad seed data — menus are a new,
- *    optional vendor feature, so the sparse case is the permanent case.
+ * 1. 🔴 **Menus do not yet cover the catalogue.** Measured 2026-08-27 across all
+ *    seven live vendors: two have no menus at all, and two more have menus with
+ *    no sections. The vendor side has since committed to every product belonging
+ *    to a menu, and the page was rebuilt on that promise — menus are now the
+ *    only way to browse, and the "All items" entry that used to guarantee
+ *    reachability is gone (Phase 9).
  *
- *    The defence is that "All items" is not a menu: it is the flat product list,
- *    it is the default, and it cannot be removed by anything the API returns.
- *    §5 asserts the branch that renders it still exists.
+ *    What survives that promise is the fallback: **a vendor with no menus at all
+ *    renders their flat product grid**, no selector. It is not a control and
+ *    cannot be selected; it is the branch that runs for an unmigrated vendor,
+ *    and until every vendor has a menu it is the only thing standing between a
+ *    real restaurant and a blank page. §5 asserts it still exists. Delete it
+ *    when the migration is provably done, not before.
  *
  * 2. 🔴 **The section payload's product is a stub.** It carries no `finalPrice`
  *    and no business `productId`. Anyone rendering from it directly must invent
@@ -32,8 +35,8 @@
  *   §2  the join loses nothing, and recovers what the stub lacks
  *   §3  order is copied from the array, never computed from `sortOrder`
  *   §4  availability is a caption — no clock, no conversion, unordered days OK
- *   §5  source guards: the page still has an All-items branch, and nothing
- *       in the feature re-prices or reorders
+ *   §5  source guards: the no-menus fallback survives, and nothing in the
+ *       feature re-prices or reorders
  *   §6  every key the feature renders has copy in both dictionaries
  *
  * The fixture in §2 is a real `GET /menus/open/:menuId/sections` response
@@ -370,23 +373,39 @@ section("§5  source guards");
 const page = stripComments(read("src/components/vendors/VendorDetailsPage.tsx"));
 const selector = stripComments(read("src/components/vendors/MenuSelector.tsx"));
 const group = stripComments(read("src/components/vendors/MenuSectionGroup.tsx"));
-const nav = stripComments(read("src/components/vendors/MenuSectionNav.tsx"));
 const avail = stripComments(read("src/components/vendors/MenuAvailability.tsx"));
 const model = stripComments(read("src/lib/menuModel.ts"));
 const skeleton = stripComments(read("src/components/vendors/VendorDetailsSkeleton.tsx"));
 const provider = stripComments(read("src/providers/QueryProvider.tsx"));
-const feature = [selector, group, nav, avail, model];
+const feature = [selector, group, avail, model];
 
 check(
-  "🔴 the All-items branch still renders the flat product list",
-  /activeMenuId === null &&\s*\n?\s*filteredProducts\.length > 0/.test(page),
-  "This is the guarantee that no product becomes unreachable. If this fails, read §1.2 of the plan before 'fixing' it.",
+  "🔴 a vendor with NO menus still renders their product grid",
+  /menus\.length === 0 && \(/.test(page) && /products\.map\(\(product\) => \(/.test(page),
+  "The migration fallback. Vendors are being moved to menus vendor-side; until every one of them\n" +
+    "        has a menu this is the only thing between a real restaurant and a blank page. Do not tidy it\n" +
+    "        away before that is true — read Phase 9 of the plan.",
 );
 check(
   "🔴 the selector renders nothing when the vendor has no menus",
   /menus\.length === 0\) return null/.test(selector),
 );
-check("the category tabs belong to All items only", /activeMenuId === null && \(/.test(page));
+check(
+  "the selector offers menus only — no All-items entry",
+  !/allItems/.test(selector) && !/allItems/.test(page),
+);
+check(
+  "there is no menu-level heading — the selected pill already names the menu",
+  !/<h2/.test(page),
+);
+check(
+  "the first menu is the default, taken from backend order",
+  /menus\.find\(\(menu\) => menu\._id === selectedMenuId\)\) \|\|\s*\n?\s*menus\[0\]/.test(page),
+);
+check(
+  "the platform category filter is gone",
+  !/categoryTabs|selectedCategory|FEATURED_KEY/.test(page),
+);
 check(
   "🔴 nothing in the feature computes a price",
   !feature.some((s) => /finalPrice\s*=|price\s*\*\s*\(1\s*-|\.discount\s*\//.test(s)),
@@ -398,7 +417,22 @@ check(
 );
 check("…nor converts a time to another zone", !/Intl\.|toLocale/.test(avail));
 check("keys are section-scoped in the group", /menuItemKey\(section\.id/.test(group));
-check("the nav is remounted per menu rather than corrected in an effect", /key=\{activeMenuId\}/.test(page));
+check(
+  "the section nav is gone — the headings below it said the same thing",
+  !/MenuSectionNav/.test(page),
+);
+check(
+  "descriptions are gone; the section heading carries an item count instead",
+  !/section\.description/.test(group) &&
+    !/activeMenuDescription/.test(page) &&
+    /count === 1 \? t\("item"\) : t\("items"\)/.test(group),
+);
+check(
+  "the count is the number of resolved products, not the number of items listed",
+  /const count = section\.products\.length/.test(group),
+  "A section item whose product the join cannot find is not on screen; counting it would\n" +
+    "        promise the customer a dish that is not there.",
+);
 check("sections are fetched for the selected menu only", /useMenuSections<unknown>\(activeMenuId\)/.test(page));
 check(
   "a menus failure cannot reach an error boundary",
@@ -407,8 +441,8 @@ check(
 check("a menus failure shows no banner", !/menusError/.test(page));
 check("the skeleton has no selector placeholder", !/MenuSelector/.test(skeleton));
 check(
-  "every dead end offers the catalogue back",
-  (page.match(/handleSelectMenu\(null\)/g) ?? []).length >= 2,
+  "a menu with no sections says so plainly",
+  /menuHasNoSections/.test(page),
 );
 check("the missing-product warning is development-only", /NODE_ENV === "production"\) return;/.test(page));
 
@@ -422,7 +456,7 @@ section("§6  every rendered key has copy in both dictionaries");
  * `t("mon")` will ever find them. Listing them here is what covers them.
  */
 const RENDERED_KEYS = [
-  "allItems", "menu", "menuHasNoSections", "noItemsInSection", "noItemsFoundInCategory",
+  "menu", "menuHasNoSections", "noItemsInSection", "noItemsFoundInCategory", "item", "items",
   "menuAvailable", "everyDay", "mon", "tue", "wed", "thu", "fri", "sat", "sun",
 ];
 for (const key of RENDERED_KEYS) {
@@ -443,9 +477,13 @@ check(
 );
 check(
   "the new copy is translated, not copied from English",
-  ["allItems", "menuHasNoSections", "noItemsInSection", "menuAvailable", "everyDay"].every(
+  ["menuHasNoSections", "noItemsInSection", "menuAvailable", "everyDay", "items"].every(
     (k) => EN[k] !== PT[k],
   ),
+);
+check(
+  "the retired allItems key is gone from both dictionaries",
+  !("allItems" in EN) && !("allItems" in PT),
 );
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

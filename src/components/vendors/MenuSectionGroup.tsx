@@ -4,18 +4,6 @@ import type { ReactNode } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { menuItemKey, type MenuSectionView } from "@/lib/menuModel";
 
-/**
- * The DOM id of one section's heading.
- *
- * Lives here rather than in the nav because this is the component that renders
- * the anchor; the nav points at what this produces, not the other way round.
- * Namespaced so it cannot collide with a product id or a category name that
- * happens to be used as an id elsewhere on the page.
- */
-export function sectionDomId(sectionId: string): string {
-  return `menu-section-${sectionId}`;
-}
-
 interface MenuSectionGroupProps<P> {
   section: MenuSectionView<P>;
   /**
@@ -56,28 +44,34 @@ export default function MenuSectionGroup<P>({
   productKey,
 }: MenuSectionGroupProps<P>) {
   const { t } = useTranslation();
+  const count = section.products.length;
 
   return (
     <div className="mb-10 last:mb-0">
       {/*
-        `scroll-mt-24` is what makes the nav's `scrollIntoView` land correctly:
-        the app's header is `sticky top-0`, so without a scroll margin the
-        heading would come to rest underneath it.
+        Heading and count on one row, the count right-aligned — the arrangement
+        the mobile app uses. It replaces the section description, which said
+        less than the count did: "Nothing just checking" is what a vendor types
+        into a field they do not want, while "2 items" is a fact about what is
+        below.
+
+        `t()` takes one key and does no interpolation, so the count is composed
+        here rather than pulled from a template. Two keys, not one with an "(s)"
+        — Portuguese needs "item"/"itens" and the parenthesised form reads as
+        placeholder text in both languages.
       */}
-      <h3
-        id={sectionDomId(section.id)}
-        className="scroll-mt-24 text-lg font-bold text-gray-900 dark:text-white"
-      >
-        {section.name}
-      </h3>
+      <div className="flex items-baseline justify-between gap-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+          {section.name}
+        </h3>
+        {count > 0 && (
+          <span className="shrink-0 text-sm text-gray-500 dark:text-neutral-400">
+            {count} {count === 1 ? t("item") : t("items")}
+          </span>
+        )}
+      </div>
 
-      {section.description && (
-        <p className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
-          {section.description}
-        </p>
-      )}
-
-      {section.products.length === 0 ? (
+      {count === 0 ? (
         <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400">
           {t("noItemsInSection")}
         </div>

@@ -5,7 +5,6 @@
 import {
   memo,
   useCallback,
-  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -33,9 +32,8 @@ import {
   useMenuSections,
   useVendorMenus,
 } from "@/hooks/queries/useVendorMenus";
-import { buildMenuView, localizedText } from "@/lib/menuModel";
+import { buildMenuView } from "@/lib/menuModel";
 import MenuSelector, { type VendorMenu } from "./MenuSelector";
-import MenuSectionNav from "./MenuSectionNav";
 import MenuSectionGroup from "./MenuSectionGroup";
 import MenuAvailability from "./MenuAvailability";
 import { useStore } from "@/stores/translationStore";
@@ -168,10 +166,6 @@ interface Product {
   meta?: { isFeatured?: boolean };
 }
 
-// Sentinel for the Featured tab. Namespaced so it cannot be mistaken for a real
-// category — the other tabs are keyed by the category's own (localized) name,
-// and a vendor is perfectly entitled to call a category "Featured".
-const FEATURED_KEY = "__featured__";
 
 // Pure + module-scoped so it has a stable identity (safe as a memo dep).
 // Decimal point, matching the cart, checkout, payment and invoice surfaces.
@@ -285,17 +279,9 @@ export default function VendorDetailsPage({
   const productsError = productsErrorObj
     ? getApiErrorMessage(productsErrorObj, "Unable to load menu")
     : "";
-  // Category filter selection. Keyed by a stable value — the sentinels "all" /
-  // FEATURED_KEY, or a category's (localized) name for real categories — decoupled
-  // from the translated display label. A language switch remounts this page via
-  // LanguageBoundary, which re-inits this back to "all", so no stale (old
-  // language) selection can survive and match nothing.
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  // Which of the vendor's menus is on screen. 🔴 `null` is "All items" — the
-  // flat catalogue this page has always shown — and it is the default. It is
-  // not one of the menus and cannot be removed by anything the API returns,
-  // which is what guarantees every product stays reachable however little of
-  // the catalogue the vendor has filed into a menu.
+  // Which of the vendor's menus is on screen. `null` means "not chosen yet",
+  // never "no menu" — the first menu is the default, resolved below rather than
+  // stored, so it cannot point at a menu the next fetch no longer contains.
   const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
   // `/vendors/<userId>?product=PROD-XXXXXX` opens straight onto that dish.
   // Search results arrive this way: a hit carries no usable vendor route of its
@@ -314,9 +300,6 @@ export default function VendorDetailsPage({
   // this page is open. Only an explicit `false` counts as closed.
   const isStoreClosed = vendor?.businessDetails?.isStoreOpen === false;
 
-  // Defer the category filter so a tab click highlights instantly while the grid
-  // re-filters in the background — keeps the tab bar responsive on large menus.
-  const deferredCategory = useDeferredValue(selectedCategory);
   const handleSelectProduct = useCallback(
     (productId: string) => setSelectedProductId(productId),
     [],
@@ -340,15 +323,19 @@ export default function VendorDetailsPage({
   // A menu the vendor deactivates while this page is open would otherwise leave
   // the selection pointing at nothing. Falling back to All items is the safe
   // direction: it always has content.
+  // The first menu is the default. `menus` arrives in the backend's own
+  // `sortOrder` (renormalized to a gapless 0..n-1 on every vendor edit), so
+  // `menus[0]` *is* the vendor's first menu — no sorting happens here.
+  //
+  // Derived rather than stored: a menu the vendor deactivates while this page is
+  // open would otherwise leave the selection pointing at nothing, and there is
+  // no longer an All-items entry to fall back to. Falling forward to the first
+  // remaining menu keeps the page showing food.
   const activeMenu =
     (selectedMenuId && menus.find((menu) => menu._id === selectedMenuId)) ||
+    menus[0] ||
     null;
   const activeMenuId = activeMenu?._id ?? null;
-  // `{en,pt}` on this endpoint like every other localized field — `t()` has no
-  // part in it, and `localizedText` handles the empty-`pt` case the API sends.
-  const activeMenuDescription = activeMenu
-    ? localizedText(activeMenu.description, lang)
-    : "";
 
   const {
     data: rawSections = [],
@@ -365,10 +352,6 @@ export default function VendorDetailsPage({
   const menuView = useMemo(
     () => (activeMenuId ? buildMenuView(rawSections, products, lang) : []),
     [activeMenuId, rawSections, products, lang],
-  );
-  const navSections = useMemo(
-    () => menuView.map((section) => ({ id: section.id, name: section.name })),
-    [menuView],
   );
 
   // Every item this menu listed that no product could be found for.
@@ -396,22 +379,8 @@ export default function VendorDetailsPage({
     );
   }, [missingProductCount, activeMenuId]);
 
-  // A menu whose sections all resolve to nothing. Distinct from "this menu has
-  // no sections": the vendor did fill it in, and what the customer sees is a
-  // stack of empty headings with no explanation. The sections stay on screen —
-  // they are what the vendor built — but the way back to the full catalogue is
-  // offered explicitly, because the through-line of this feature is that no
-  // failure in it may cost the customer the product grid.
-  const menuResolvedNothing =
-    menuView.length > 0 &&
-    menuView.every((section) => section.products.length === 0);
-
-  const handleSelectMenu = useCallback((menuId: string | null) => {
+  const handleSelectMenu = useCallback((menuId: string) => {
     setSelectedMenuId(menuId);
-    // The two controls are alternatives, never stacked (§1.3): a category filter
-    // left over from All items must not survive into a menu and silently empty
-    // a section, nor the reverse on the way back.
-    setSelectedCategory("all");
   }, []);
 
   // Arriving at a different vendor must not inherit this one's selection.
@@ -436,46 +405,6 @@ export default function VendorDetailsPage({
     (product: Product) => product.productId ?? product.id,
     [],
   );
-
-  // Category tabs + filtered products, memoized on their real inputs so they
-  // don't recompute on every unrelated re-render (delivery-time estimate, etc.).
-  const categoryTabs = useMemo(() => {
-    const vendorCategoryNames =
-      vendor?.availableCategories?.map((cat) => cat.name) || [];
-    const productCategoryNames =
-      vendorCategoryNames.length === 0
-        ? [
-            ...new Set(
-              products
-                .map((p) => p.category?.name)
-                .filter((n): n is string => !!n),
-            ),
-          ]
-        : [];
-    // Only offer the Featured tab when this vendor has actually flagged
-    // something. Rendering it unconditionally is what made the old "Popular"
-    // tab a dead control: always present, never filtering.
-    const hasFeatured = products.some((p) => p.meta?.isFeatured);
-    return [
-      { key: "all", label: t("all") },
-      ...(hasFeatured ? [{ key: FEATURED_KEY, label: t("featured") }] : []),
-      ...(vendorCategoryNames.length > 0
-        ? vendorCategoryNames
-        : productCategoryNames
-      ).map((name) => ({ key: name, label: name })),
-    ];
-  }, [vendor, products, t]);
-
-  const filteredProducts = useMemo(() => {
-    if (deferredCategory === "all") return products;
-    if (deferredCategory === FEATURED_KEY)
-      return products.filter((product) => product.meta?.isFeatured);
-    return products.filter((product) => {
-      const productCategory = product.category?.name;
-      if (!productCategory) return false;
-      return productCategory.toLowerCase() === deferredCategory.toLowerCase();
-    });
-  }, [products, deferredCategory]);
 
   // Resolve delivery coords from the shared, cached profile (GPS fallback),
   // waiting on the profile query so we don't lock in a wrong estimate early.
@@ -672,39 +601,7 @@ export default function VendorDetailsPage({
             with the sections — and so it still appears for a menu that has no
             sections to put a nav above. Renders nothing when the menu names no
             window, which is most of them. It is a caption: it gates nothing. */}
-        {/* The vendor's own words about this menu. Every menu on the API carries
-            one and none of them reached the page until now — a section's
-            description rendered, a menu's did not. Same treatment as the section
-            description, one level up. */}
-        {activeMenuDescription && (
-          <p className="mb-3 text-sm text-gray-500 dark:text-neutral-400">
-            {activeMenuDescription}
-          </p>
-        )}
-
         {activeMenu && <MenuAvailability availability={activeMenu.availability} />}
-
-        {/* One control row at a time: category tabs belong to All items, the
-            section nav belongs to a menu. Stacking both would give two filters
-            with overlapping meaning and no hierarchy between them. */}
-        {activeMenuId === null && (
-          <section className="mb-8 overflow-x-auto">
-            <div className="flex min-w-max gap-3">
-              {categoryTabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setSelectedCategory(tab.key)}
-                  className={`rounded-lg px-5 py-2 text-sm font-semibold uppercase transition ${selectedCategory === tab.key
-                    ? "bg-pink-600 text-white"
-                    : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-gray-500 dark:text-neutral-400 hover:bg-gray-50 dark:hover:bg-neutral-800"
-                    }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
 
         {isVendorModalOpen && (
           <VendorDetailsModal
@@ -732,7 +629,10 @@ export default function VendorDetailsPage({
         )}
 
         <section>
-          <h2 className="mb-6 text-xl font-bold text-gray-900 dark:text-white">{t("menu")}</h2>
+          {/* No menu-level heading. It repeated the highlighted pill directly
+              above it — "HIGH QUALITY MENU" then "High quality Menu" — and the
+              mobile app goes straight from the pills to the first section. The
+              section headings below carry the structure on their own. */}
 
           {productsLoading && (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -781,22 +681,12 @@ export default function VendorDetailsPage({
 
               {!sectionsLoading && !sectionsError && menuView.length === 0 && (
                 <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
-                  <p>{t("menuHasNoSections")}</p>
-                  <button
-                    type="button"
-                    onClick={() => handleSelectMenu(null)}
-                    className="mt-3 font-semibold text-pink-600 dark:text-pink-400"
-                  >
-                    {t("allItems")} →
-                  </button>
+                  {t("menuHasNoSections")}
                 </div>
               )}
 
               {!sectionsError && menuView.length > 0 && (
                 <>
-                  {/* Keyed by menu so a switch remounts the nav rather than
-                      correcting its active tab in an effect afterwards. */}
-                  <MenuSectionNav key={activeMenuId} sections={navSections} />
                   {menuView.map((section) => (
                     <MenuSectionGroup
                       key={section.id}
@@ -806,43 +696,33 @@ export default function VendorDetailsPage({
                     />
                   ))}
 
-                  {/* Sections exist but none of them resolved to a product.
-                      The headings above are left standing — they are what the
-                      vendor built — and the catalogue is offered explicitly
-                      rather than left to be rediscovered in the pill row. */}
-                  {menuResolvedNothing && (
-                    <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
-                      <button
-                        type="button"
-                        onClick={() => handleSelectMenu(null)}
-                        className="font-semibold text-pink-600 dark:text-pink-400"
-                      >
-                        {t("allItems")} →
-                      </button>
-                    </div>
-                  )}
                 </>
               )}
             </>
           )}
 
-          {/* All items — the flat catalogue, exactly as this page has always
-              rendered it. Unchanged, and reachable at all times. */}
-          {!productsLoading &&
-            !productsError &&
-            activeMenuId === null &&
-            filteredProducts.length === 0 && (
+          {/* ---------------------------------------------------------------
+              🔴 The vendor has no menus at all: their whole catalogue, ungrouped.
+
+              Not a control and not "All items" — there is no pill and nothing to
+              select. It is the branch that runs for a vendor who has not been
+              migrated to menus yet, and it exists because the vendor-side rule
+              that every product belongs to a menu is a forward promise: four of
+              seven live vendors did not satisfy it on the day this shipped, and
+              the frontend has no way to know when they all do. A restaurant
+              with products to sell must never render a blank page.
+
+              Once every vendor has a menu this never executes, which is exactly
+              what a migration fallback should cost.
+              --------------------------------------------------------------- */}
+          {!productsLoading && !productsError && menus.length === 0 && (
+            products.length === 0 ? (
               <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
                 {t("noItemsFoundInCategory")}
               </div>
-            )}
-
-          {!productsLoading &&
-            !productsError &&
-            activeMenuId === null &&
-            filteredProducts.length > 0 && (
+            ) : (
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {filteredProducts.map((product) => (
+                {products.map((product) => (
                   <MenuProductCard
                     key={product.productId ?? product.id}
                     product={product}
@@ -851,7 +731,9 @@ export default function VendorDetailsPage({
                   />
                 ))}
               </div>
-            )}
+            )
+          )}
+
         </section>
 
         {selectedProductId && (
