@@ -463,3 +463,33 @@ body {
     @apply font-sans;
   }
 }
+/* ---------------------------------------------------------------------------
+   Vendor page — the grouped catalogue fading in over its skeleton.
+
+   Scoped to one class rather than applied as a blanket
+   `*, ::before, ::after { animation-duration: 0.01ms }` reduced-motion reset.
+   That reset is the usual advice, and it is wrong here: it would also freeze
+   `animate-spin` and `animate-pulse`, which are used 108 times across this app
+   to say "still loading". Stopping those does not reduce motion, it removes the
+   only signal that anything is happening.
+   --------------------------------------------------------------------------- */
+@keyframes category-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.category-enter {
+  animation: category-enter 300ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-enter {
+    animation: none;
+  }
+}

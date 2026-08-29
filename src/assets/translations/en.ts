@@ -358,6 +358,13 @@ const en = {
 
   allCategories: "All Categories",
   browseAllCategories: "Browse every category available in DeliGo.",
+  // Accessible name for the vendor page's sticky category bar. Never rendered
+  // as visible text — the bar shows the vendor's own category names.
+  productCategories: "Product categories",
+  // Heading for the trailing group: products that are not in any category
+  // their vendor owns. They are shown here rather than hidden or filed under
+  // a category that is not the vendor's.
+  otherCategory: "Other",
 
   backToHome: "Back to home",
   underTenMin: "Under 10 min",
@@ -377,27 +384,7 @@ const en = {
 
   moreInfo: "More Info",
 
-  menu: "Menu",
-
   noItemsFoundInCategory: "No items found in this category.",
-
-  // The vendor's own menus. `allItems` is the entry that is NOT a menu — it is
-  // the vendor's whole catalogue, and it is what guarantees no product becomes
-  // unreachable when a menu only covers part of it.
-  menuHasNoSections: "This menu has no sections yet.",
-  noItemsInSection: "No items in this section.",
-
-  // A menu's availability window. It is a caption, not a gate — the backend does
-  // not enforce it, so nothing on the page is hidden or disabled by it.
-  menuAvailable: "Available",
-  everyDay: "Every day",
-  mon: "Mon",
-  tue: "Tue",
-  wed: "Wed",
-  thu: "Thu",
-  fri: "Fri",
-  sat: "Sat",
-  sun: "Sun",
 
   off: "OFF",
 

@@ -23,6 +23,11 @@ export const vendorKeys = {
     ["vendors", "detail", lang, authed, vendorId] as const,
   products: (lang: string, authed: boolean, vendorId: string) =>
     ["vendors", "products", lang, authed, vendorId] as const,
+  // Category names are server-localized too, so this is keyed by language for
+  // the same reason the others are. Not keyed by auth: the `/open` endpoint is
+  // the only one used, for guests and signed-in customers alike.
+  productCategories: (lang: string, vendorId: string) =>
+    ["vendors", "product-categories", lang, vendorId] as const,
 };
 
 function isAuthed() {
@@ -147,6 +152,44 @@ export function useVendorProducts<T = unknown>(
       const total = countRes.data?.meta?.total || 10;
       const res = await apiClient.get(
         `/products/open?vendorId=${vendorId}&page=1&limit=${total}`,
+        { signal },
+      );
+      return (res.data?.data ?? []) as T[];
+    },
+    enabled: (options?.enabled ?? true) && !!vendorId,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * The categories a vendor owns and has active.
+ *
+ * 🔴 **This is the authority for what the vendor page shows.** Products filed
+ * under anything not in this list are not rendered — see
+ * `groupByVendorCategories`. That is a deliberate reversal of the earlier rule
+ * (`category` on the product decided everything, and every product was shown),
+ * made on instruction once the vendor side committed to requiring a category.
+ *
+ * `/product-categories/open` is public and needs no token, so unlike products
+ * there is no authed/guest branch. `vendorId` is **required** — the backend
+ * answers `400 VENDOR_ID_REQUIRED` without it, because vendor categories are
+ * not a global catalogue.
+ *
+ * `limit=100` mirrors `useVendorProducts`. The default page size is 10, and a
+ * vendor with more than ten categories would otherwise lose the rest of their
+ * catalogue rather than just the tail of a list — the same ceiling noted for
+ * products, with a sharper consequence now that this list gates rendering.
+ */
+export function useVendorProductCategories<T = unknown>(
+  vendorId: string | undefined,
+  options?: { enabled?: boolean },
+) {
+  const lang = useStore((s) => s.lang);
+  return useQuery({
+    queryKey: vendorKeys.productCategories(lang, vendorId ?? ""),
+    queryFn: async ({ signal }) => {
+      const res = await apiClient.get(
+        `/product-categories/open?vendorId=${vendorId}&page=1&limit=100`,
         { signal },
       );
       return (res.data?.data ?? []) as T[];

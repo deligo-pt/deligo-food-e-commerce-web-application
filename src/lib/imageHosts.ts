@@ -36,6 +36,53 @@ export type RemoteImageHost = {
   pathname?: string;
 };
 
+/**
+ * Allowlisted hosts that must still be rendered **unoptimized**.
+ *
+ * ## Why Deligo's own storage is on this list
+ *
+ * `storage-test.deligo.pt` is in `REMOTE_IMAGE_HOSTS` and passes every pattern
+ * check — `matchRemotePattern`, the compiled `images-manifest.json` regex and
+ * `hasRemoteMatch` all return `true` for it. The optimizer rejected it anyway,
+ * with `400 "url" parameter is not allowed`, which is the same message the
+ * allowlist failure produces and is why this looked like a config problem for
+ * as long as it did.
+ *
+ * The rejection comes from a different check. `fetchExternalImage` in
+ * `next/dist/server/image-optimizer.js` resolves the hostname and refuses the
+ * request if **any** returned address is private — an SSRF guard. On a network
+ * with a DNS64 resolver, `storage-test.deligo.pt` answers with two records:
+ *
+ * ```
+ * 64:ff9b::335c:c553   ← NAT64 synthesis of 51.92.197.83 (RFC 6052)
+ * 51.92.197.83         ← the real, public address
+ * ```
+ *
+ * Next classifies the `64:ff9b::/96` well-known prefix as private. It is a
+ * reserved range, so that is not unreasonable, but the address it encodes is
+ * the public one directly beneath it. One private-looking record is enough:
+ * every product photo and every sponsorship banner on Deligo's own storage
+ * fails, while Cloudinary and flagcdn — which return ordinary global IPv6 —
+ * keep working. That is exactly the split seen on the vendor page.
+ *
+ * ## Why bypass rather than `dangerouslyAllowLocalIP`
+ *
+ * That flag is the other way to make this work, and it disables the SSRF guard
+ * for **every** host the optimizer will ever fetch, to fix one. Rendering these
+ * particular images unoptimized costs AVIF/WebP conversion and resizing on
+ * Deligo's own uploads — which the backend already stores as `.webp`, 10–40KB —
+ * and costs nothing anywhere else.
+ *
+ * They stay in `REMOTE_IMAGE_HOSTS` deliberately. `next/image` *throws* during
+ * render for a host the config does not know, and not every `<Image>` in this
+ * app is guarded; keeping the entry means a component that forgets the guard
+ * renders a broken image instead of taking its route down.
+ *
+ * Remove this when Deligo's storage no longer resolves through NAT64, or when
+ * Next stops treating `64:ff9b::/96` as private.
+ */
+export const OPTIMIZER_BYPASS_HOSTS: string[] = ["**.deligo.pt"];
+
 export const REMOTE_IMAGE_HOSTS: RemoteImageHost[] = [
   // Google account avatars from social login.
   { protocol: "https", hostname: "lh3.googleusercontent.com" },
@@ -97,6 +144,12 @@ export function isOptimizableImageHost(src?: string | null): boolean {
   try {
     url = new URL(src);
   } catch {
+    return false;
+  }
+
+  // Allowlisted but deliberately not optimized — see `OPTIMIZER_BYPASS_HOSTS`.
+  // Checked before the allowlist so a host on both lists resolves to "bypass".
+  if (OPTIMIZER_BYPASS_HOSTS.some((pattern) => hostnameMatches(pattern, url.hostname))) {
     return false;
   }
 
