@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
+import { isOptimizableImageHost } from "@/lib/imageHosts";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -135,7 +136,11 @@ export default function HeroSection() {
                       fill
                       priority={selectedIndex === 0}
                       sizes="100vw"
-                      className="object-fit object-center"
+                      // Every live banner is on Deligo's own storage, which the
+                      // optimizer cannot fetch — see `OPTIMIZER_BYPASS_HOSTS`.
+                      // Without this the hero renders blank on every page load.
+                      unoptimized={!isOptimizableImageHost(slide.bannerImage)}
+                      className="object-cover object-center"
                     />
                   </div>
                 ))}

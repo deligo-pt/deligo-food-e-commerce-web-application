@@ -366,6 +366,8 @@ const pt = {
 
   allCategories: "Todas as Categorias",
   browseAllCategories: "Explore todas as categorias disponíveis na DeliGo.",
+  productCategories: "Categorias de produtos",
+  otherCategory: "Outros",
 
   backToHome: "Voltar para a página inicial",
 
@@ -387,24 +389,11 @@ const pt = {
     "Explore todas as lojas e restaurantes disponíveis na DeliGo.",
   moreInfo: "Mais Informações",
 
-  menu: "Menu",
-
   noItemsFoundInCategory: "Nenhum item encontrado nesta categoria.",
 
   // "secções" is pt-PT; the Brazilian "seções" is wrong for this market.
-  menuHasNoSections: "Este menu ainda não tem secções.",
-  noItemsInSection: "Sem itens nesta secção.",
 
   // pt-PT weekday abbreviations: Seg Ter Qua Qui Sex Sáb Dom.
-  menuAvailable: "Disponível",
-  everyDay: "Todos os dias",
-  mon: "Seg",
-  tue: "Ter",
-  wed: "Qua",
-  thu: "Qui",
-  fri: "Sex",
-  sat: "Sáb",
-  sun: "Dom",
 
   off: "DESCONTO",
 

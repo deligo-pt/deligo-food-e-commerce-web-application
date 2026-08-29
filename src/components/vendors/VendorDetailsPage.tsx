@@ -27,16 +27,16 @@ const VendorDetailsModal = dynamic(() => import("./VendorDetailsModal"), {
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
 import ClosingCountdown from "./ClosingCountdown";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useVendor, useVendorProducts } from "@/hooks/queries/useVendors";
 import {
-  useMenuSections,
-  useVendorMenus,
-} from "@/hooks/queries/useVendorMenus";
-import { buildMenuView } from "@/lib/menuModel";
-import MenuSelector, { type VendorMenu } from "./MenuSelector";
-import MenuSectionGroup from "./MenuSectionGroup";
-import MenuAvailability from "./MenuAvailability";
-import { useStore } from "@/stores/translationStore";
+  useVendor,
+  useVendorProducts,
+  useVendorProductCategories,
+} from "@/hooks/queries/useVendors";
+import { groupByVendorCategories, type VendorCategory } from "@/lib/categoryModel";
+import { useCategoryScrollSpy } from "@/hooks/useCategoryScrollSpy";
+import CategoryNav from "./CategoryNav";
+import CategorySidebar from "./CategorySidebar";
+import CategoryGroup from "./CategoryGroup";
 import { useLocationStore } from "@/stores/locationStore";
 import { formatCuisine } from "@/lib/cuisine";
 import { currencySymbol } from "@/lib/currency";
@@ -201,40 +201,53 @@ const MenuProductCard = memo(function MenuProductCard({
   const discountValue = formatDiscountValue(pricing, currency);
 
   return (
+    // Vertical: image on top, then name, description, price. The horizontal
+    // card this replaces gave its image a fixed 128px and let the text take the
+    // rest — which worked at full width and stops working once the sidebar
+    // takes ~260px off the grid, leaving the text column around 90px at `md`.
+    // Stacking gives both the full cell width instead of splitting it.
     <div
-      className={`group flex overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none transition ${
+      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-none ${
         storeClosed ? "" : "hover:shadow-lg dark:hover:bg-neutral-800/30"
       }`}
     >
-      <div className="relative h-36 w-32 shrink-0">
+      {/* 4:3 rather than a fixed height, so every card in a row shows the same
+          crop whatever the column width works out to. */}
+      <div className="relative aspect-4/3 w-full overflow-hidden">
         <SafeImage
           src={product.images?.[0]}
           alt={product.name}
-          sizes="128px"
-          fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
+          className={`object-cover transition-transform duration-300 ${
+            storeClosed ? "" : "group-hover:scale-[1.04]"
+          }`}
+          fallbackIcon={<UtensilsCrossed className="h-10 w-10" />}
         />
         {discountValue && (
-          <span className="absolute left-2 top-2 rounded-full bg-pink-600 px-2 py-1 text-[10px] font-bold text-white">
+          <span className="absolute left-3 top-3 rounded-full bg-pink-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
             {discountValue} {t("off")}
           </span>
         )}
       </div>
-      <div className="flex flex-1 flex-col justify-between p-4">
-        <div>
-          <h3 className="font-semibold text-gray-900 dark:text-white">
-            {product.name}
-          </h3>
-          <p className="mt-1 line-clamp-2 text-xs text-gray-500 dark:text-neutral-400">
-            {product.description || t("deliciousMenuItem")}
-          </p>
-        </div>
-        <div className="mt-4 flex items-end justify-between">
-          <div>
-            <p className="text-xl font-bold text-pink-600 dark:text-pink-400">
+
+      {/* `flex-1` + `h-full` on the card make every card in a row the same
+          height, with the price row pinned to the bottom — so a two-line name
+          next to a one-line name does not leave the prices misaligned. */}
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="line-clamp-2 font-semibold text-gray-900 dark:text-white">
+          {product.name}
+        </h3>
+        <p className="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-neutral-400">
+          {product.description || t("deliciousMenuItem")}
+        </p>
+
+        <div className="mt-4 flex items-end justify-between gap-3 pt-1">
+          <div className="min-w-0">
+            <p className="truncate text-xl font-bold text-pink-600 dark:text-pink-400">
               {formatPrice(finalPrice, currency)}
             </p>
             {hasDiscount && (
-              <p className="text-xs text-gray-400 dark:text-neutral-500 line-through">
+              <p className="truncate text-xs text-gray-400 line-through dark:text-neutral-500">
                 {formatPrice(originalPrice, currency)}
               </p>
             )}
@@ -243,7 +256,7 @@ const MenuProductCard = memo(function MenuProductCard({
             onClick={() => onSelect(product.productId)}
             disabled={storeClosed}
             aria-label={storeClosed ? t("storeClosedTitle") : t("addToCart")}
-            className="rounded-xl bg-pink-600 p-2 text-white transition hover:scale-105 disabled:cursor-not-allowed disabled:bg-gray-300 dark:disabled:bg-neutral-700 disabled:hover:scale-100"
+            className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-pink-600 text-white transition hover:scale-105 focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-gray-300 disabled:hover:scale-100 dark:focus-visible:ring-offset-neutral-900 dark:disabled:bg-neutral-700"
           >
             <Plus size={18} />
           </button>
@@ -279,10 +292,6 @@ export default function VendorDetailsPage({
   const productsError = productsErrorObj
     ? getApiErrorMessage(productsErrorObj, "Unable to load menu")
     : "";
-  // Which of the vendor's menus is on screen. `null` means "not chosen yet",
-  // never "no menu" — the first menu is the default, resolved below rather than
-  // stored, so it cannot point at a menu the next fetch no longer contains.
-  const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
   // `/vendors/<userId>?product=PROD-XXXXXX` opens straight onto that dish.
   // Search results arrive this way: a hit carries no usable vendor route of its
   // own, so `/search` resolves one from `productId` and hands the same id back
@@ -306,92 +315,87 @@ export default function VendorDetailsPage({
   );
 
   // ---------------------------------------------------------------------------
-  // The vendor's own menus.
+  // The vendor's catalogue, grouped by each product's own category.
   //
-  // Both endpoints are public and keyed by the vendor's Mongo `_id`, which is
-  // what `vendor.id` already holds — the same value the products query uses, and
-  // the reason both wait on the vendor query. Sections are fetched for the
-  // selected menu only: there is no batched endpoint, so loading all of them up
-  // front would cost one request per menu for content behind a control the
-  // customer may never touch.
+  // 🔴 One request, no join. This replaced a Menu → Section hierarchy whose
+  // endpoints the backend removed on 2026-08-29 (every `/menus` route now
+  // answers 404, authenticated or not, and the `category-guide` confirms the
+  // deletion is permanent). `category` arrives populated on every product beside
+  // `finalPrice` and `productId`, so grouping needs nothing the page has not
+  // already fetched — no second query, no id join, and no chance of a stub
+  // product forcing a price to be recomputed here.
+  //
+  // Order is the order `/products` returned; see `categoryModel.ts` for why the
+  // vendor's own category list is deliberately not consulted.
   // ---------------------------------------------------------------------------
-  const lang = useStore((s) => s.lang);
-  const { data: menus = [] } = useVendorMenus<VendorMenu>(vendor?.id, {
-    enabled: !!vendor?.id,
-  });
-
-  // A menu the vendor deactivates while this page is open would otherwise leave
-  // the selection pointing at nothing. Falling back to All items is the safe
-  // direction: it always has content.
-  // The first menu is the default. `menus` arrives in the backend's own
-  // `sortOrder` (renormalized to a gapless 0..n-1 on every vendor edit), so
-  // `menus[0]` *is* the vendor's first menu — no sorting happens here.
+  // 🔴 The vendor's own category list decides what this page shows.
   //
-  // Derived rather than stored: a menu the vendor deactivates while this page is
-  // open would otherwise leave the selection pointing at nothing, and there is
-  // no longer an All-items entry to fall back to. Falling forward to the first
-  // remaining menu keeps the page showing food.
-  const activeMenu =
-    (selectedMenuId && menus.find((menu) => menu._id === selectedMenuId)) ||
-    menus[0] ||
-    null;
-  const activeMenuId = activeMenu?._id ?? null;
+  // `/product-categories/open?vendorId=…` returns the categories the vendor owns
+  // and has active; a product filed under anything else is not rendered. That
+  // reverses the earlier rule — `category` on the product decided everything and
+  // every product was shown — on instruction, once the vendor side committed to
+  // requiring a category on every product.
+  //
+  // Public endpoint, no auth branch, and the only second request this page
+  // makes. Ordering comes from the response: the schema has no `sortOrder`, so
+  // the order it returns is the vendor's order.
+  const { data: vendorCategories = [], isLoading: categoriesLoading } =
+    useVendorProductCategories<VendorCategory>(vendor?.id, { enabled: !!vendor?.id });
 
-  const {
-    data: rawSections = [],
-    isLoading: sectionsLoading,
-    error: sectionsErrorObj,
-  } = useMenuSections<unknown>(activeMenuId);
-  const sectionsError = sectionsErrorObj
-    ? getApiErrorMessage(sectionsErrorObj, "Unable to load menu")
-    : "";
-
-  // Ordering and grouping come from the menu API; every field rendered comes
-  // from `products`. The section payload's own product stub carries no
-  // `finalPrice` and no business `productId`, so it is used for its ids alone.
-  const menuView = useMemo(
-    () => (activeMenuId ? buildMenuView(rawSections, products, lang) : []),
-    [activeMenuId, rawSections, products, lang],
+  const { groups: categoryGroups, uncategorizedCount } = useMemo(
+    () => groupByVendorCategories(products, vendorCategories, t("otherCategory")),
+    [products, vendorCategories, t],
   );
 
-  // Every item this menu listed that no product could be found for.
-  //
-  // Zero for every vendor in the catalogue today, and the one way it goes
-  // non-zero is silent: `useVendorProducts` asks for at most 100 products, so a
-  // vendor past that ceiling can file product #101 into a section and the join
-  // finds nothing. The section then renders as empty and nobody is told why.
-  const missingProductCount = useMemo(
-    () => menuView.reduce((total, section) => total + section.missingCount, 0),
-    [menuView],
-  );
-
-  // Surfaced in development only. Not a customer-facing error: they cannot act
-  // on it, and the menu around it is still correct and still orderable. It is a
-  // message for whoever is looking at this vendor wondering why a section they
-  // filled looks empty. (`removeConsole` strips this from production builds
-  // regardless; the guard states the intent rather than relying on that.)
+  // Development only. Nothing is broken for the customer — those products are
+  // on the page, under "Other" — so this is not an error and is never surfaced
+  // to them. It is the migration metric: the group working is not the same as
+  // the data being right. Zero once every product is re-filed, at which point
+  // the group stops being emitted. `removeConsole` strips this from production
+  // regardless; the guard states the intent rather than relying on that.
   useEffect(() => {
     if (process.env.NODE_ENV === "production") return;
-    if (missingProductCount === 0) return;
+    if (uncategorizedCount === 0) return;
     console.warn(
-      `[menu] ${missingProductCount} item(s) in menu ${activeMenuId} reference a product missing from this vendor's product list. ` +
-        `Most likely the vendor has more than the 100 products useVendorProducts fetches.`,
+      `[category] ${uncategorizedCount} of ${products.length} product(s) on vendor ${vendor?.id} ` +
+        `are not in any category it owns per /product-categories/open, so they render under "Other". ` +
+        `Re-file them vendor-side to give them a real heading.`,
     );
-  }, [missingProductCount, activeMenuId]);
+  }, [uncategorizedCount, products.length, vendor?.id]);
 
-  const handleSelectMenu = useCallback((menuId: string) => {
-    setSelectedMenuId(menuId);
-  }, []);
+  // Both requests gate the catalogue. The category list decides which products
+  // render, so showing the grid on products alone would flash an empty page —
+  // every product filtered out — and then fill it a moment later.
+  const catalogueLoading = productsLoading || categoriesLoading;
 
-  // Arriving at a different vendor must not inherit this one's selection.
-  useEffect(() => {
-    setSelectedMenuId(null);
-  }, [vendor?.id]);
+  // One scroll-spy, two views. The sidebar (lg+) and the pill row (below lg)
+  // read the same `activeId` and call the same `selectGroup`, so they cannot
+  // disagree about which category you are in. `navRef` is the pill row: it is
+  // `display: none` from lg up, so its height measures 0 and the same scroll
+  // arithmetic serves both breakpoints without a branch.
+  const navRef = useRef<HTMLElement>(null);
+  const { activeId, selectGroup, headerHeight } = useCategoryScrollSpy(
+    categoryGroups,
+    navRef,
+  );
 
-  // A menu section draws its products with the page's own card, passed down as
+  // The sidebar shows a count per category. It is `products.length` for that
+  // group — the same number `CategoryGroup` prints beside its heading, read
+  // from the same array, so the two can never drift.
+  const sidebarGroups = useMemo(
+    () =>
+      categoryGroups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        count: group.products.length,
+      })),
+    [categoryGroups],
+  );
+
+  // A category group draws its products with the page's own card, passed down as
   // a render prop. That is what keeps `MenuProductCard` — and with it every
   // price, discount badge and add-to-cart path — untouched by this feature.
-  const renderMenuProduct = useCallback(
+  const renderCategoryProduct = useCallback(
     (product: Product) => (
       <MenuProductCard
         product={product}
@@ -401,7 +405,7 @@ export default function VendorDetailsPage({
     ),
     [handleSelectProduct, isStoreClosed],
   );
-  const menuProductKey = useCallback(
+  const categoryProductKey = useCallback(
     (product: Product) => product.productId ?? product.id,
     [],
   );
@@ -588,21 +592,6 @@ export default function VendorDetailsPage({
           </div>
         </section>
 
-        {/* Renders nothing when this vendor has no menus, so a vendor who has
-            never opened the menu builder gets exactly today's page. */}
-        <MenuSelector
-          menus={menus}
-          selectedMenuId={activeMenuId}
-          onSelect={handleSelectMenu}
-          lang={lang}
-        />
-
-        {/* Annotates the selected pill, so it sits with the selector rather than
-            with the sections — and so it still appears for a menu that has no
-            sections to put a nav above. Renders nothing when the menu names no
-            window, which is most of them. It is a caption: it gates nothing. */}
-        {activeMenu && <MenuAvailability availability={activeMenu.availability} />}
-
         {isVendorModalOpen && (
           <VendorDetailsModal
             isOpen={isVendorModalOpen}
@@ -628,19 +617,55 @@ export default function VendorDetailsPage({
           </div>
         )}
 
-        <section>
-          {/* No menu-level heading. It repeated the highlighted pill directly
-              above it — "HIGH QUALITY MENU" then "High quality Menu" — and the
-              mobile app goes straight from the pills to the first section. The
-              section headings below carry the structure on their own. */}
+        {/* Two columns from `lg`: the category list beside the catalogue, the
+            way the reference lays it out. Below `lg` the sidebar is hidden and
+            the pill row inside the content column takes over, so the markup is
+            one flex container at every width rather than two layouts. */}
+        <div className="flex items-start gap-8">
+          <CategorySidebar
+            groups={sidebarGroups}
+            activeId={activeId}
+            onSelect={selectGroup}
+            headerHeight={headerHeight}
+          />
 
-          {productsLoading && (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-48 animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800"
-                />
+          {/* `min-w-0` so a long product name cannot push the grid wider than
+              its column and force the sidebar off the screen. */}
+          <section className="min-w-0 flex-1">
+            {/* Jumps between the category headings below. Narrow screens only —
+                hidden from `lg`, where the sidebar is the control. Never
+                filters, so no product is behind it. */}
+            <CategoryNav
+              ref={navRef}
+              groups={categoryGroups}
+              activeId={activeId}
+              onSelect={selectGroup}
+              headerHeight={headerHeight}
+            />
+
+          {/* The skeleton is shaped like what replaces it: two groups, each a
+              heading row over the same grid, using the *same* `mb-10`, `mt-4`,
+              `gap-5` and column classes as `CategoryGroup`. A skeleton that
+              only draws cards costs a jump the moment the headings arrive —
+              content shifting under a cursor that was already moving toward
+              it. Anything changed in one of these has to change in both. */}
+          {catalogueLoading && (
+            <div aria-hidden>
+              {Array.from({ length: 2 }).map((_, group) => (
+                <div key={group} className="mb-10 last:mb-0">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <div className="h-7 w-40 animate-pulse rounded-lg bg-gray-100 dark:bg-neutral-800" />
+                    <div className="h-5 w-16 animate-pulse rounded-lg bg-gray-100 dark:bg-neutral-800" />
+                  </div>
+                  <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    {Array.from({ length: 3 }).map((_, card) => (
+                      <div
+                        key={card}
+                        className="h-48 animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800"
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -652,89 +677,45 @@ export default function VendorDetailsPage({
           )}
 
           {/* ---------------------------------------------------------------
-              A menu is selected: its sections, stacked, each under its own
-              heading, with the nav above jumping between them.
+              🔴 The whole catalogue, grouped — never filtered.
 
-              🔴 Every failure here falls back to a link to All items rather
-              than to a dead end. Menus are additive — when anything about them
-              is unavailable the customer must still be able to reach the
-              catalogue and order.
+              Every product the vendor has appears here exactly once, under its
+              own category, in the order `/products` returned. The bar above
+              scrolls between these headings; it removes nothing, so there is no
+              selected state to be wrong, no empty result to explain, and no
+              second branch for "nothing matched".
+
+              That is also why there is only one empty state left. Under menus
+              there were three — no menus, no sections, no items in a section —
+              because a vendor could have products the menu did not reach. A
+              group exists because products were found under it, so the only way
+              to see nothing here is to have nothing.
               --------------------------------------------------------------- */}
-          {!productsLoading && !productsError && activeMenuId !== null && (
-            <>
-              {sectionsLoading && menuView.length === 0 && (
-                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-48 animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800"
-                    />
-                  ))}
-                </div>
-              )}
-
-              {sectionsError && (
-                <div className="rounded-2xl bg-red-50 dark:bg-red-950/20 border dark:border-red-900/30 p-6 text-center text-red-600 dark:text-red-400">
-                  {sectionsError}
-                </div>
-              )}
-
-              {!sectionsLoading && !sectionsError && menuView.length === 0 && (
-                <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
-                  {t("menuHasNoSections")}
-                </div>
-              )}
-
-              {!sectionsError && menuView.length > 0 && (
-                <>
-                  {menuView.map((section) => (
-                    <MenuSectionGroup
-                      key={section.id}
-                      section={section}
-                      renderProduct={renderMenuProduct}
-                      productKey={menuProductKey}
-                    />
-                  ))}
-
-                </>
-              )}
-            </>
-          )}
-
-          {/* ---------------------------------------------------------------
-              🔴 The vendor has no menus at all: their whole catalogue, ungrouped.
-
-              Not a control and not "All items" — there is no pill and nothing to
-              select. It is the branch that runs for a vendor who has not been
-              migrated to menus yet, and it exists because the vendor-side rule
-              that every product belongs to a menu is a forward promise: four of
-              seven live vendors did not satisfy it on the day this shipped, and
-              the frontend has no way to know when they all do. A restaurant
-              with products to sell must never render a blank page.
-
-              Once every vendor has a menu this never executes, which is exactly
-              what a migration fallback should cost.
-              --------------------------------------------------------------- */}
-          {!productsLoading && !productsError && menus.length === 0 && (
-            products.length === 0 ? (
+          {!catalogueLoading && !productsError && (
+            categoryGroups.length === 0 ? (
               <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
-                {t("noItemsFoundInCategory")}
+                {t("noProductsFound")}
               </div>
             ) : (
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {products.map((product) => (
-                  <MenuProductCard
-                    key={product.productId ?? product.id}
-                    product={product}
-                    onSelect={handleSelectProduct}
-                    storeClosed={isStoreClosed}
+              // `category-enter` fades and lifts the grouped catalogue in over
+              // the skeleton it replaces, and is a no-op under
+              // `prefers-reduced-motion: reduce`. Applied to the wrapper, once,
+              // rather than per group — a stagger down a list the customer is
+              // already looking at reads as lag, not polish.
+              <div className="category-enter">
+                {categoryGroups.map((group) => (
+                  <CategoryGroup
+                    key={group.id}
+                    group={group}
+                    renderProduct={renderCategoryProduct}
+                    productKey={categoryProductKey}
                   />
                 ))}
               </div>
             )
           )}
-
-        </section>
+          </section>
+        </div>
 
         {selectedProductId && (
           <ProductDetailsModal

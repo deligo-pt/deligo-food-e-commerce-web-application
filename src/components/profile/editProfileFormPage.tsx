@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { AlertTriangle, ChevronRight, Pencil, User, X } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
+import { isOptimizableImageHost } from "@/lib/imageHosts";
 import EditProfileFormSkeleton from "./EditProfileFormSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
@@ -388,6 +389,12 @@ export default function EditProfileFormPage() {
                     className="h-full w-full object-cover"
                     width={128}
                     height={128}
+                    // Two sources, both of which must skip the optimizer: an
+                    // uploaded photo on Deligo's own storage, which the
+                    // optimizer cannot fetch (see `OPTIMIZER_BYPASS_HOSTS`), and
+                    // the `blob:` URL shown while a newly picked file is still
+                    // local to the browser.
+                    unoptimized={!isOptimizableImageHost(imagePreview)}
                   />
                 ) : (
                   <User className="h-16 w-16 text-[#f9186b] dark:text-pink-400" />
