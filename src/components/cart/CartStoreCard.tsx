@@ -27,6 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface CartItem {
   productId: string;
@@ -177,35 +178,40 @@ export default function CartStoreCard({
             Activate. The order that *is* selected has nothing to press; the
             "Selected" chip below states it, and the selection moves by
             activating a different order. */}
+        {/* Green is doing semantic work here — "this is the live order" — so it
+            stays a call-site colour rather than becoming the brand fill. Only
+            the geometry comes from the component. */}
         {!hasActive && (
-          <button
+          <Button
             type="button"
             onClick={handleActivateStore}
             disabled={isToggling || isDeleting}
             aria-label={t("activateOrderTooltip")}
             title={t("activateOrderTooltip")}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-green-500 dark:bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-green-600 dark:hover:bg-green-700 disabled:opacity-60 cursor-pointer"
+            className="cursor-pointer gap-1.5 rounded-xl bg-green-500 font-semibold hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
           >
             {isToggling && <Loader2 className="h-4 w-4 animate-spin" />}
             {t("activateOrder")}
-          </button>
+          </Button>
         )}
 
         {/* Removes the whole order, unlike the per-product bin in each row. */}
-        <button
+        <Button
           type="button"
+          size="icon"
+          variant="ghost"
           onClick={() => setIsConfirmOpen(true)}
           disabled={isDeleting || isToggling}
           aria-label={t("deleteOrder")}
           title={t("deleteOrder")}
-          className="rounded-full p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 cursor-pointer"
+          className="cursor-pointer rounded-full text-red-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
         >
           {isDeleting ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
             <Trash2 className="h-5 w-5" />
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Store identity — avatar, name and meta, centred as a column. */}
@@ -221,7 +227,7 @@ export default function CartStoreCard({
 
         {/* Wraps rather than truncating — centred text has the full card width
             to work with, and the action row above is out of its way entirely. */}
-        <h3 className="mt-3 max-w-full break-words text-lg font-bold text-gray-900 dark:text-neutral-100 sm:text-2xl">
+        <h3 className="mt-3 max-w-full break-words text-xl font-bold text-gray-900 dark:text-neutral-100 sm:text-2xl">
           {businessName}
         </h3>
 
@@ -233,8 +239,8 @@ export default function CartStoreCard({
             </span>
           </div>
           <div className="flex items-center gap-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/20 px-2.5 py-1.5">
-            <UtensilsCrossed size={14} className="text-[#f9186b] dark:text-pink-400" />
-            <span className="text-sm font-semibold text-[#f9186b] dark:text-pink-400">
+            <UtensilsCrossed size={14} className="text-primary dark:text-pink-400" />
+            <span className="text-sm font-semibold text-primary dark:text-pink-400">
               {items.length} {t("items")} · €{storeTotal.toFixed(2)}
             </span>
           </div>
@@ -253,11 +259,12 @@ export default function CartStoreCard({
       {/* Collapse control — only worth offering when the cart has more than one
           store, since that's when the page gets long enough to need it. */}
       {collapsible && (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setIsCollapsed((prev) => !prev)}
           aria-expanded={!isCollapsed}
-          className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 dark:border-neutral-800 py-2 text-sm font-semibold text-gray-600 dark:text-neutral-400 transition hover:border-[#f9186b] hover:text-[#f9186b] dark:hover:text-pink-400 cursor-pointer"
+          className="mb-3 w-full cursor-pointer gap-1.5 rounded-xl font-semibold text-gray-600 hover:border-primary hover:text-primary dark:text-neutral-400 dark:hover:text-primary"
         >
           {isCollapsed ? (
             <>
@@ -270,7 +277,7 @@ export default function CartStoreCard({
               {t("hideProducts")}
             </>
           )}
-        </button>
+        </Button>
       )}
 
       {/* Product list */}
@@ -309,7 +316,7 @@ export default function CartStoreCard({
           }}
           className={`relative flex items-center justify-between gap-3 overflow-hidden rounded-3xl px-4 py-4 text-white transition cursor-pointer sm:px-6 sm:py-5 ${
             hasActive
-              ? "cart-cta bg-linear-to-r from-[#f9186b] to-[#d4145b] hover:from-[#d4145b] hover:to-[#b01254]"
+              ? "cart-cta bg-linear-to-r from-primary to-primary-hover hover:from-primary-hover hover:to-[#b01254]"
               : "cursor-not-allowed bg-gray-400 dark:bg-neutral-750"
           }`}
         >

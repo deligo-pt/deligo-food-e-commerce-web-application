@@ -42,7 +42,7 @@ export default function SelectCountryPage() {
       <div className="mx-auto max-w-md">
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-neutral-50">{t("selectCountry")}</h1>
+          <h1 className="text-2xl lg:text-display font-bold text-slate-900 dark:text-neutral-50">{t("selectCountry")}</h1>
           <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
             {t("selectCountryDescription")}
           </p>
@@ -54,7 +54,7 @@ export default function SelectCountryPage() {
             {t("availableCountries")}
           </p>
 
-          <button className="flex w-full items-center justify-between rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 px-5 py-5 shadow-sm dark:shadow-none transition hover:shadow-md dark:hover:bg-neutral-800/30">
+          <button className="focus-ring flex w-full items-center justify-between rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 px-5 py-5 shadow-sm dark:shadow-none transition hover:shadow-md dark:hover:bg-neutral-800/30">
             <div className="flex items-center gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 dark:bg-neutral-950">
                 <CountryFlag

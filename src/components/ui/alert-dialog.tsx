@@ -106,7 +106,7 @@ function AlertDialogMedia({
     <div
       data-slot="alert-dialog-media"
       className={cn(
-        "mb-2 inline-flex size-10 items-center justify-center rounded-xl bg-pink-50 text-[#f9186b] dark:bg-pink-950/20 dark:text-pink-400 sm:group-data-[size=default]/alert-dialog-content:row-span-2 *:[svg:not([class*='size-'])]:size-6",
+        "mb-2 inline-flex size-10 items-center justify-center rounded-xl bg-pink-50 text-primary dark:bg-pink-950/20 dark:text-pink-400 sm:group-data-[size=default]/alert-dialog-content:row-span-2 *:[svg:not([class*='size-'])]:size-6",
         className
       )}
       {...props}
@@ -122,7 +122,7 @@ function AlertDialogTitle({
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
       className={cn(
-        "font-heading text-lg font-bold text-gray-900 dark:text-neutral-100 sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2",
+        "font-heading text-xl font-bold text-gray-900 dark:text-neutral-100 sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2",
         className
       )}
       {...props}
@@ -147,7 +147,7 @@ function AlertDialogDescription({
 }
 
 const actionBase =
-  "inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#f9186b] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60"
+  "inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60"
 
 function AlertDialogAction({
   className,
@@ -158,7 +158,7 @@ function AlertDialogAction({
       data-slot="alert-dialog-action"
       className={cn(
         actionBase,
-        "bg-[#f9186b] text-white hover:bg-[#d4145b] dark:focus-visible:ring-offset-neutral-900",
+        "bg-primary text-white hover:bg-primary-hover dark:focus-visible:ring-offset-neutral-900",
         className
       )}
       {...props}

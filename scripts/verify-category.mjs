@@ -484,6 +484,10 @@ const spy = stripComments(read("src/hooks/useCategoryScrollSpy.ts"));
 const group = stripComments(read("src/components/vendors/CategoryGroup.tsx"));
 const page = stripComments(read("src/components/vendors/VendorDetailsPage.tsx"));
 const model = stripComments(read("src/lib/categoryModel.ts"));
+// Phase 2 moved this feature's controls onto the shared button. Reading it here
+// means these guards assert the geometry where it is actually decided, instead
+// of re-checking a copy of it at the call site.
+const button = stripComments(read("src/components/ui/button.tsx"));
 
 check(
   "neither view renders when there is nothing to navigate between",
@@ -535,8 +539,15 @@ check(
     /aria-label=/.test(nav) && /aria-label=/.test(sidebar),
 );
 check(
-  "both views have a visible focus ring",
-  /focus-visible:ring/.test(nav) && /focus-visible:ring/.test(sidebar),
+  "both views have a visible focus ring, from the system rather than by hand",
+  // The nav pills are `<Button>`, whose base class carries the ring; the
+  // sidebar row keeps bespoke markup — its label wraps, and every button size
+  // has a fixed height — so it wears the shared `focus-ring` class. Neither
+  // spells a ring out for itself any more.
+  /<Button/.test(nav) &&
+    /focus-visible:ring/.test(button) &&
+    /focus-ring/.test(sidebar) &&
+    !/focus-visible:ring/.test(sidebar),
 );
 check(
   "the model never reads a price",
@@ -732,14 +743,32 @@ check(
   /rootMargin: `-\$\{measureScrollOffset\(\)\}px/.test(spy),
 );
 check(
-  "the pill is on the Plan.md control scale — 40px tall, 16px sides, 14px text",
-  /h-10/.test(nav) && /px-4/.test(nav) && /text-sm/.test(nav) && !/px-5/.test(nav),
+  "the pill asks the button for its size instead of restating it",
+  // Before Phase 2 this read `h-10 px-4 text-sm` at the call site. The pill now
+  // takes the default size and hand-types no geometry at all.
+  // `px-1` survives on the sticky <nav> wrapper, which is not a control; what
+  // must be gone is the pill's own h-10 / px-4 / text-sm.
+  /<Button/.test(nav) &&
+    !/\bh-10\b/.test(nav) &&
+    !/\bpx-[345]\b/.test(nav) &&
+    !/\btext-sm\b/.test(nav),
+);
+check(
+  "…and that default size clears the touch target on a phone",
+  // 44 on mobile, settling to the 40 the scale asks for once there is a
+  // pointer. This row is `lg:hidden`, so in practice it is always the 44.
+  /default:\s*"h-11 gap-2 px-4 sm:h-10"/.test(button),
 );
 
 check(
   "the enter animation exists and is a no-op under prefers-reduced-motion",
-  /\.category-enter \{/.test(css) &&
-    /@media \(prefers-reduced-motion: reduce\) \{\s*\.category-enter \{\s*animation: none;/.test(css),
+  // It was `.category-enter`, defined here for this page alone. Phase 6 turned
+  // the same idea into `.motion-fade` and the page asks for that instead — so
+  // this now asserts the shared primitive, and that no page-local copy of it
+  // has come back.
+  /\.motion-fade \{/.test(css) &&
+    /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.motion-fade \{\s*animation: none;/.test(css) &&
+    !/category-enter/.test(css),
 );
 check(
   "reduced motion is scoped, not a blanket reset that would freeze the loaders",
@@ -747,7 +776,7 @@ check(
 );
 check(
   "the grouped catalogue fades in over the skeleton",
-  /className="category-enter"/.test(page),
+  /className="motion-fade"/.test(page),
 );
 check(
   "🔴 the skeleton is shaped like the content — headings and grid, same classes",
@@ -814,8 +843,15 @@ check(
     /formatPrice\(originalPrice, currency\)/.test(page),
 );
 check(
-  "the add button clears the 40px touch target",
-  /size-10 shrink-0 items-center justify-center rounded-xl bg-pink-600/.test(page),
+  "the add button clears the touch target, through the icon size",
+  // Was a hand-typed `size-10 … bg-pink-600`. It is now `size="icon"`, which is
+  // 44 on a phone and 40 with a pointer, and paints `--primary` rather than a
+  // Tailwind pink that was never the brand.
+  // The remaining `bg-pink-600` in this file is the discount badge, which is a
+  // label, not a control — it belongs to the Phase 4 hex sweep.
+  /size="icon"/.test(page) &&
+    /icon:\s*"size-11 sm:size-10"/.test(button) &&
+    !/size-10 shrink-0[^"]*bg-pink-600/.test(page),
 );
 check(
   "the card image asks before optimizing, via SafeImage",

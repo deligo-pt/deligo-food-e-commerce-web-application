@@ -14,6 +14,7 @@ import AddressForm from "@/components/address/AddressForm";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
 import { getAccessToken } from "@/lib/authCookies";
+import { Button } from "@/components/ui/button";
 
 const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
 
@@ -257,7 +258,7 @@ export default function CurrentLocationPage() {
   if (isLoggedIn) {
     return (
       <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -268,7 +269,7 @@ export default function CurrentLocationPage() {
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {/* Page Title */}
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d]">
+          <h1 className="text-2xl lg:text-display font-bold text-foreground">
             {t("myCurrentLocation") || "My Current Location"}
           </h1>
         </div>
@@ -278,17 +279,18 @@ export default function CurrentLocationPage() {
           <div className="lg:col-span-5 flex flex-col gap-6">
             {/* Quick Instant GPS Update Card */}
             <div className="rounded-2xl bg-white p-6 shadow-sm">
-              <h2 className="mb-2 text-xl font-bold text-[#191c1d]">
+              <h2 className="mb-2 text-xl font-bold text-foreground">
                 {t("myCurrentLocation") || "My Current Location"}
               </h2>
-              <p className="text-sm text-[#5a4044] mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 {t("currentLocationDescription") || "Use your device's GPS to update your delivery location instantly."}
               </p>
-              <button
+              <Button
                 type="button"
+                size="lg"
                 onClick={handleUseCurrentLocation}
                 disabled={loadingCurrentLocation}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#f9186b] px-6 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-[#d4145b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full gap-3 rounded-2xl font-semibold shadow-md active:scale-[0.98]"
               >
                 {loadingCurrentLocation ? (
                   <>
@@ -301,16 +303,16 @@ export default function CurrentLocationPage() {
                     {t("useCurrentLocation") || "Use Current Location"}
                   </>
                 )}
-              </button>
+              </Button>
             </div>
 
             {/* Interactive Location Confirmation Card */}
             <div className="rounded-2xl bg-white p-6 shadow-sm">
               <div className="mb-6">
-                <h2 className="mb-2 text-xl font-bold text-[#191c1d]">
+                <h2 className="mb-2 text-xl font-bold text-foreground">
                   {t("confirmLocation") || "Confirm Location"}
                 </h2>
-                <p className="text-sm text-[#5a4044]">
+                <p className="text-sm text-muted-foreground">
                   {t("confirmLocationDescription") || "Search for your location or drag the marker to target your address."}
                 </p>
               </div>
@@ -327,7 +329,7 @@ export default function CurrentLocationPage() {
                   onChange={handleSearchChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder") || "Search area..."}
-                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-10 outline-none focus:border-[#f9186b]"
+                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-10 outline-none focus:border-primary"
                   autoComplete="off"
                 />
                 {searchValue && <ClearFilterButton onClear={clearSearch} />}
@@ -340,20 +342,20 @@ export default function CurrentLocationPage() {
                         <button
                           type="button"
                           onClick={() => handleSuggestionClick(s)}
-                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] ${idx !== suggestions.length - 1
+                          className={`focus-ring flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] ${idx !== suggestions.length - 1
                             ? "border-b border-[#f5e0e5]"
                             : ""
                             }`}
                         >
                           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5]">
-                            <Search size={13} className="text-[#f9186b]" />
+                            <Search size={13} className="text-primary" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-[#191c1d]">
+                            <span className="block truncate text-sm font-semibold text-foreground">
                               {s.mainText}
                             </span>
                             {s.secondaryText && (
-                              <span className="block truncate text-xs text-[#5a4044]">
+                              <span className="block truncate text-xs text-muted-foreground">
                                 {s.secondaryText}
                               </span>
                             )}
@@ -395,7 +397,7 @@ export default function CurrentLocationPage() {
           <div className="mt-6 flex items-center justify-center">
             <Link
               href="/add-address"
-              className="inline-flex items-center gap-2 rounded-full bg-[#f9186b] px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[#d4145b] active:scale-95"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-primary-hover active:scale-95"
             >
               <span className="text-xl font-bold leading-none">+</span>
               {t("addNewAddress")}

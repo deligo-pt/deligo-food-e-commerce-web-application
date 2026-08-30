@@ -62,21 +62,21 @@ export default function HelpAccordion({
               type="button"
               onClick={() => toggle(item.question)}
               aria-expanded={isOpen}
-              className="flex w-full cursor-pointer items-center gap-3 px-4 py-4 text-left"
+              className="focus-ring flex w-full cursor-pointer items-center gap-3 px-4 py-4 text-left"
             >
               {showIcon && (
                 <HelpCircle
                   aria-hidden
-                  className="h-5 w-5 shrink-0 text-[#f9186b] dark:text-pink-400"
+                  className="h-5 w-5 shrink-0 text-primary dark:text-pink-400"
                 />
               )}
-              <span className="min-w-0 flex-1 font-semibold text-[#191c1d] dark:text-neutral-50">
+              <span className="min-w-0 flex-1 font-semibold text-foreground dark:text-neutral-50">
                 {item.question}
               </span>
               <ChevronDown
                 aria-hidden
                 className={`h-5 w-5 shrink-0 text-gray-400 transition-transform dark:text-neutral-500 ${
-                  isOpen ? "rotate-180 text-[#f9186b] dark:text-pink-400" : ""
+                  isOpen ? "rotate-180 text-primary dark:text-pink-400" : ""
                 }`}
               />
             </button>
@@ -85,7 +85,7 @@ export default function HelpAccordion({
               // Indented to clear the icon only when there is one; without it the
               // answer sits flush under the question, as the app draws it.
               <p
-                className={`pb-4 pr-4 text-sm leading-6 text-[#5a4044] dark:text-neutral-400 ${
+                className={`pb-4 pr-4 text-sm leading-6 text-muted-foreground dark:text-neutral-400 ${
                   showIcon ? "pl-12" : "pl-4"
                 }`}
               >

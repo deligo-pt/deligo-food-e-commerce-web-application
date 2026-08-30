@@ -62,11 +62,11 @@ export default function ReportIssuePage() {
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-gray-900 transition-colors duration-200 dark:bg-neutral-950 dark:text-neutral-100">
       <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
-        <h1 className="text-2xl font-bold text-[#191c1d] dark:text-neutral-50 sm:text-3xl">
+        <h1 className="text-2xl font-bold text-foreground dark:text-neutral-50">
           {t("reportAnIssue")}
         </h1>
 
-        <p className="mt-2 text-sm text-[#5a4044] dark:text-neutral-400">
+        <p className="mt-2 text-sm text-muted-foreground dark:text-neutral-400">
           {t("selectOrderToReport")}
         </p>
 
@@ -92,31 +92,31 @@ export default function ReportIssuePage() {
                   <button
                     type="button"
                     onClick={() => openChatFor(order)}
-                    className="group flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 text-left transition-all hover:border-[#f9186b]/30 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-pink-500/30 dark:hover:shadow-none"
+                    className="focus-ring group flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 text-left transition-all hover:border-primary/30 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-pink-500/30 dark:hover:shadow-none"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-base font-bold text-[#191c1d] dark:text-neutral-50">
+                      <span className="block truncate text-base font-bold text-foreground dark:text-neutral-50">
                         {t("order")}{" "}
-                        <span className="font-medium text-[#5a4044] dark:text-neutral-400">
+                        <span className="font-medium text-muted-foreground dark:text-neutral-400">
                           (#{order.orderId})
                         </span>
                       </span>
 
-                      <span className="mt-1 block text-sm text-[#5a4044] dark:text-neutral-400">
+                      <span className="mt-1 block text-sm text-muted-foreground dark:text-neutral-400">
                         {formatOrderDate(order.createdAt, lang)} •{" "}
                         {order.totalItems ?? 0} {t("items")}
                       </span>
 
                       {/* `payoutSummary.grandTotal`, exactly as the backend
                           returns it — see `formatOrderPrice`. */}
-                      <span className="mt-1 block text-base font-bold text-[#f9186b] dark:text-pink-400">
+                      <span className="mt-1 block text-base font-bold text-primary dark:text-pink-400">
                         {formatOrderPrice(order.payoutSummary?.grandTotal)}
                       </span>
                     </span>
 
                     <ChevronRight
                       aria-hidden
-                      className="h-5 w-5 shrink-0 text-gray-300 transition-colors group-hover:text-[#f9186b] dark:text-neutral-600 dark:group-hover:text-pink-400"
+                      className="h-5 w-5 shrink-0 text-gray-300 transition-colors group-hover:text-primary dark:text-neutral-600 dark:group-hover:text-pink-400"
                     />
                   </button>
                 </li>
@@ -142,14 +142,14 @@ function Empty({
     <div className="flex flex-col items-center rounded-2xl border border-gray-200 bg-white px-6 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900">
       <ShoppingBag
         aria-hidden
-        className="h-10 w-10 text-[#f9186b] dark:text-pink-400"
+        className="h-10 w-10 text-primary dark:text-pink-400"
       />
-      <p className="mt-3 text-sm font-semibold text-[#191c1d] dark:text-neutral-50">
+      <p className="mt-3 text-sm font-semibold text-foreground dark:text-neutral-50">
         {message}
       </p>
       <Link
         href={actionHref}
-        className="mt-4 rounded-lg bg-[#f9186b] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#d4145b] dark:bg-pink-600 dark:hover:bg-pink-700"
+        className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover dark:bg-pink-600 dark:hover:bg-pink-700"
       >
         {actionLabel}
       </Link>

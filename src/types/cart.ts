@@ -60,8 +60,8 @@ export interface CartItem {
   productPricing: {
     originalPrice: number;
     productDiscountAmount: number;
-    // Prices are tax-inclusive; unitPrice/lineTotal are gross and taxAmount is
-    // the embedded VAT. The cart endpoint no longer returns the pre-tax /
+    // Prices are VAT-inclusive; unitPrice/lineTotal are gross and taxAmount is
+    // the embedded VAT. The cart endpoint no longer returns the pre-VAT /
     // promo breakdown fields below, so they are optional.
     priceAfterProductDiscount?: number;
     promoDiscountAmount?: number;

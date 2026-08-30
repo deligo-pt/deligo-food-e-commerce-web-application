@@ -53,8 +53,8 @@ export default function SupportMessageBubble({
       <div
         className={`max-w-[78%] min-w-0 px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${
           outgoing
-            ? "rounded-2xl rounded-br-md bg-linear-to-br from-[#f9186b] to-[#d4145b] text-white"
-            : "rounded-2xl rounded-bl-md border border-gray-100 bg-white text-[#5a4044] dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
+            ? "rounded-2xl rounded-br-md bg-linear-to-br from-primary to-primary-hover text-white"
+            : "rounded-2xl rounded-bl-md border border-gray-100 bg-white text-muted-foreground dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
         }`}
       >
         {/* Above the text, as a chat draws it. `SafeImage` falls back to an
@@ -91,7 +91,7 @@ export default function SupportMessageBubble({
 
         {meta && (
           <span
-            className={`mt-1 flex items-center justify-end gap-1 text-[11px] ${
+            className={`mt-1 flex items-center justify-end gap-1 text-xs ${
               outgoing ? "text-white/75" : "text-gray-400 dark:text-neutral-500"
             }`}
           >
@@ -121,8 +121,8 @@ function Avatar({ initial, muted }: { initial: string; muted?: boolean }) {
       aria-hidden
       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
         muted
-          ? "border border-gray-200 bg-white text-[#f9186b] dark:border-neutral-800 dark:bg-neutral-900 dark:text-pink-400"
-          : "bg-linear-to-br from-[#f9186b] to-[#d4145b] text-white"
+          ? "border border-gray-200 bg-white text-primary dark:border-neutral-800 dark:bg-neutral-900 dark:text-pink-400"
+          : "bg-linear-to-br from-primary to-primary-hover text-white"
       }`}
     >
       {initial}

@@ -121,9 +121,9 @@ export default function Footer() {
   ];
 
   const linkClass =
-    "text-base leading-6 text-[#5a4044] dark:text-neutral-400 transition-colors hover:text-[#f9186b] dark:hover:text-pink-500";
+    "text-base leading-6 text-muted-foreground dark:text-neutral-400 transition-colors hover:text-primary dark:hover:text-pink-500";
   const headingClass =
-    "mb-4 md:mb-6 text-xs font-extrabold uppercase tracking-[0.16em] text-[#191c1d] dark:text-white";
+    "mb-4 md:mb-6 text-xs font-extrabold uppercase tracking-[0.06em] text-foreground dark:text-white";
 
   return (
     <footer className="w-full border-t border-[#e3bdc3]/20 dark:border-neutral-800 bg-[#e1e3e4] dark:bg-neutral-900 px-6 py-12 sm:px-8 sm:py-14 md:py-16 lg:px-16 lg:py-20 transition-colors duration-200">
@@ -135,7 +135,7 @@ export default function Footer() {
         <div className="col-span-2 md:col-span-4">
           <Link
             href="/"
-            className="group mb-6 flex w-fit items-center gap-2.5 rounded-xl outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#f9186b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#e1e3e4] dark:focus-visible:ring-offset-neutral-900"
+            className="group mb-6 flex w-fit items-center gap-2.5 rounded-xl outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#e1e3e4] dark:focus-visible:ring-offset-neutral-900"
           >
             {/* The footer is a neutral surface (#e1e3e4 / neutral-900), where
                 the tile reads on its own — 3.9:1 on light, 4.6:1 on dark — so
@@ -146,12 +146,12 @@ export default function Footer() {
               className="h-10 w-10 transition-transform duration-200 ease-out group-hover:scale-110 group-active:scale-95 motion-reduce:transform-none motion-reduce:transition-none sm:h-11 sm:w-11"
             />
 
-            <span className="block text-3xl font-black tracking-tight text-[#f9186b] sm:text-4xl">
+            <span className="block text-2xl font-black tracking-tight text-primary lg:text-display">
               DeliGo
             </span>
           </Link>
 
-          <p className="max-w-md text-base font-bold leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-base">
+          <p className="max-w-md text-base font-bold leading-6 text-muted-foreground dark:text-neutral-400">
             {t("footerDescription")}
           </p>
 
@@ -163,7 +163,7 @@ export default function Footer() {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-[#f9186b] dark:hover:bg-pink-600 hover:text-white dark:hover:text-white sm:h-12 sm:w-12"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 shadow-sm transition-all hover:bg-primary dark:hover:bg-pink-600 hover:text-white dark:hover:text-white sm:h-12 sm:w-12"
                 aria-label={label}
               >
                 <Icon size={22} />
@@ -211,7 +211,7 @@ export default function Footer() {
         {/* App Store Badges */}
         <div className="col-span-2 md:col-span-4">
           <h4 className={headingClass}>{t("getTheApp")}</h4>
-          <p className="mb-5 max-w-md text-base leading-6 text-[#5a4044] dark:text-neutral-400 sm:text-base">
+          <p className="mb-5 max-w-md text-base leading-6 text-muted-foreground dark:text-neutral-400">
             {t("mobileExperience")}
           </p>
           <div className="flex flex-row flex-wrap gap-3 sm:flex-col">
@@ -253,26 +253,26 @@ export default function Footer() {
       <div className="mb-6 h-px w-full bg-[#e3bdc3]/30 dark:bg-neutral-800 md:mb-8" />
 
       {/* Bottom */}
-      <div className="flex w-full flex-col items-center justify-between gap-4 text-center text-xs leading-5 text-[#5a4044] dark:text-neutral-400 sm:text-sm md:flex-row md:text-left">
+      <div className="flex w-full flex-col items-center justify-between gap-4 text-center text-xs leading-5 text-muted-foreground dark:text-neutral-400 sm:text-sm md:flex-row md:text-left">
         <div>
           © {currentYear} DeliGo PIXELMIRACLE, LDA. {t("allRightsReserved")}
         </div>
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
           <Link
             href="/privacy"
-            className="transition-colors hover:text-[#f9186b] dark:hover:text-pink-500"
+            className="transition-colors hover:text-primary dark:hover:text-pink-500"
           >
             {t("privacyPolicy")}
           </Link>
           <Link
             href="/gdpr-compliance"
-            className="transition-colors hover:text-[#f9186b] dark:hover:text-pink-500"
+            className="transition-colors hover:text-primary dark:hover:text-pink-500"
           >
             {t("gdprCompliance")}
           </Link>
           <Link
             href="/terms"
-            className="transition-colors hover:text-[#f9186b] dark:hover:text-pink-500"
+            className="transition-colors hover:text-primary dark:hover:text-pink-500"
           >
             {t("termsOfService")}
           </Link>
@@ -294,7 +294,7 @@ export default function Footer() {
             href="https://www.livroreclamacoes.pt/Inicio/"
             target="_blank"
             rel="noopener noreferrer"
-            className="transition-colors hover:text-[#f9186b] dark:hover:text-pink-500"
+            className="transition-colors hover:text-primary dark:hover:text-pink-500"
           >
             {t("complaintsBook")}
           </a>

@@ -209,7 +209,7 @@ export default function CartPage() {
     <div className="mx-auto max-w-7xl px-6 py-10 transition-colors duration-200">
       <div className="mb-10">
         <p className="mb-3 text-sm text-gray-500 dark:text-neutral-400">{t("cartBreadcrumb")}</p>
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-neutral-50">
+        <h1 className="text-2xl lg:text-display font-extrabold text-gray-900 dark:text-neutral-50">
           {t("myShoppingCart")}
         </h1>
         {/* Counted here rather than read from `cart.totalItems`: the API's

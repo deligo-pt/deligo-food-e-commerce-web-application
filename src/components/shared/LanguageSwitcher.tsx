@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { useStore } from "@/stores/translationStore";
+import { Button } from "@/components/ui/button";
 
 // Hydration-safe "is the client mounted yet" flag. Returns false on the server
 // and during the first hydration render, then true — without a setState-in-effect
@@ -67,21 +68,24 @@ export default function LanguageSwitcher() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => setOpen(!open)}
         suppressHydrationWarning
         aria-label="Change language"
-        className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/10 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
+        aria-expanded={open}
+        className="rounded-full font-semibold text-white hover:bg-white/10 hover:text-white aria-expanded:bg-white/10 aria-expanded:text-white"
       >
         {mounted ? lang.toUpperCase() : "PT"}
         <ChevronDown size={16} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
-      </button>
+      </Button>
 
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-24 overflow-hidden rounded-xl bg-white shadow-lg">
           <button
             onClick={() => changeLanguage("en")}
-            className="flex w-full items-center justify-between px-4 py-3 text-sm text-black hover:bg-gray-100"
+            className="focus-ring flex w-full items-center justify-between px-4 py-3 text-sm text-black hover:bg-gray-100"
           >
             EN
             {lang === "en" && <Check size={16} />}
@@ -89,7 +93,7 @@ export default function LanguageSwitcher() {
 
           <button
             onClick={() => changeLanguage("pt")}
-            className="flex w-full items-center justify-between px-4 py-3 text-sm text-black hover:bg-gray-100"
+            className="focus-ring flex w-full items-center justify-between px-4 py-3 text-sm text-black hover:bg-gray-100"
           >
             PT
             {lang === "pt" && <Check size={16} />}

@@ -178,7 +178,14 @@ const en = {
   orderDeletedToast: "“{store}” removed from your cart",
   couldNotDeleteOrder: "Could not delete the order",
 
+  // The homepage's accessible name. Rendered sr-only: the top of that page is
+  // sponsor artwork, so there is nothing to title visibly.
+  homeHeading: "Deligo — fresh delivery right to your door",
   remove: "Remove",
+  // Accessible names for the round quantity steppers, which show only a
+  // glyph. Screen readers otherwise announce them as unlabelled buttons.
+  decrease: "Decrease quantity",
+  increase: "Increase quantity",
 
   qty: "Qty",
 
@@ -206,11 +213,11 @@ const en = {
 
   originalPrice: "Original Price",
   productDiscount: "Product Discount",
-  tax: "Tax",
-  taxIncl: "Tax (incl.)",
+  vat: "VAT",
+  vatIncl: "VAT (incl.)",
   withoutDiscount: "without discount",
   incl: "incl.",
-  inclTax: "Incl. tax",
+  inclVat: "Incl. VAT",
   finalPrice: "Final Price",
   serviceCharge: "Service Charge",
   total: "Total",
@@ -1828,10 +1835,10 @@ const en = {
   invoiceTotal: "Total",
   invoiceTotalPrice: "Total Price",
   invoiceDiscount: "Discount",
-  invoiceSubtotal: "Subtotal (incl. tax)",
+  invoiceSubtotal: "Subtotal (incl. VAT)",
   invoiceOfferDiscount: "Offer discount",
   invoiceServiceFee: "Service Fee",
-  invoiceDeliveryFee: "Delivery fee (incl. tax)",
+  invoiceDeliveryFee: "Delivery fee (incl. VAT)",
   invoicePay: "Pay",
   invoiceAddress: "Address",
   invoicePhone: "Phone",

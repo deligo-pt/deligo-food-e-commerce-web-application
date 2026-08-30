@@ -1,7 +1,7 @@
 import axios from "axios";
 import { apiClient, getApiErrorMessage } from "./apiClient";
 import { resolveLocalized, type Lang, type LocalizedField } from "./localizedField";
-import { getServiceChargeGross } from "./tax";
+import { getServiceChargeGross } from "./vat";
 import { useStore } from "@/stores/translationStore";
 
 /** The `t` from `useTranslation`, passed in because this is not a component. */

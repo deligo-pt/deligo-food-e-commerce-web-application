@@ -74,7 +74,7 @@ export default function CategoryGroup<P>({
         */}
         <h3
           id={categoryDomId(group.id)}
-          className="scroll-mt-24 text-lg font-bold uppercase text-gray-900 dark:text-white"
+          className="scroll-mt-24 text-xl font-bold uppercase text-gray-900 dark:text-white"
         >
           {group.name}
         </h3>

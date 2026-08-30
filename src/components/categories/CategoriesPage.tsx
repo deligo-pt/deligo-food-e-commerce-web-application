@@ -11,6 +11,8 @@ import { getAccessToken } from "@/lib/authCookies";
 import { useProductCategoryStore } from "@/stores/productCategoryStore";
 import CategoriesPageSkeleton from "./CategoriesPageSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
+import { cn } from "@/lib/utils";
+import { cardVariants } from "@/components/ui/card";
 
 type Category = {
   _id: string;
@@ -140,21 +142,26 @@ export default function CategoriesPage() {
         <div>
           <Link
             href="/"
-            className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-[#f9186b] transition-colors hover:text-[#8d003d]"
+            className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-[#8d003d]"
           >
             <ChevronLeft size={18} /> {t("backToHome")}
           </Link>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d]">
+          <h1 className="text-2xl lg:text-display font-bold text-foreground">
             {t("allCategories")}
           </h1>
-          <p className="mt-2 text-base leading-6 text-[#5a4044]">
+          <p className="mt-2 text-base leading-6 text-muted-foreground">
             {t("browseAllCategories")}
           </p>
         </div>
       </div>
 
       {error ? (
-        <div className="flex h-48 items-center justify-center rounded-3xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+        <div
+          className={cn(
+            cardVariants(),
+            "flex h-48 items-center justify-center",
+          )}
+        >
           <div className="text-center text-red-500">{error}</div>
         </div>
       ) : (
@@ -163,31 +170,42 @@ export default function CategoriesPage() {
             <article
               key={category._id}
               onClick={() => handleCategoryClick(category)}
-              className="group flex cursor-pointer flex-col items-center gap-4 rounded-3xl bg-white p-5 text-center shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-transform duration-300 hover:-translate-y-1"
+              /* Plan.md Phase 8. Was `rounded-3xl bg-white` over a permanent
+                 `0 10px 40px` shadow with no border at all — a fourth shell,
+                 for a tile that is the same thing as the cuisine tile on the
+                 homepage. `p-5` went with it; 20 is not on the §1.2 scale. */
+              className={cn(
+                cardVariants({ variant: "interactive", padding: "card" }),
+                "group flex cursor-pointer flex-col items-center gap-4 text-center",
+              )}
             >
-              <div className="h-28 w-28 rounded-full bg-[#e7e8e9] p-1 shadow-md transition-all group-hover:bg-[#f9186b]">
+              <div className="h-28 w-28 rounded-full bg-[#e7e8e9] p-1 shadow-md transition-all group-hover:bg-primary">
                 <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#ffffff]">
                   {category.icon ? (
                     <Image
                       alt={category.name}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
                       height={112}
                       width={112}
                       src={category.icon}
                       unoptimized={!isOptimizableImageHost(category.icon)}
                     />
                   ) : (
-                    <Plus size={42} className="text-[#5a4044]" />
+                    <Plus size={42} className="text-muted-foreground" />
                   )}
                 </div>
               </div>
 
               <div>
-                <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[#191c1d] transition-colors group-hover:text-[#f9186b]">
+                {/* Phase 9. This was an `<h2>` — a 12px uppercase label marked
+                    up as a section heading, one per tile, so the page announced
+                    a dozen headings that were really the names of twelve links.
+                    It is a `<span>`; the section's own heading is the heading. */}
+                <span className="block text-xs font-bold uppercase tracking-[0.06em] text-foreground transition-colors group-hover:text-primary">
                   {category.name}
-                </h2>
+                </span>
                 {category.description ? (
-                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#5a4044]">
+                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
                     {category.description}
                   </p>
                 ) : null}

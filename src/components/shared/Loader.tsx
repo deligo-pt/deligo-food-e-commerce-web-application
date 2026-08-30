@@ -46,11 +46,11 @@ export default function Loader({
       <span className={`relative inline-flex items-center justify-center ${ring}`}>
         {/* faint track */}
         <span
-          className={`absolute inset-0 rounded-full ${border} border-[#f9186b]/15 dark:border-pink-500/20`}
+          className={`absolute inset-0 rounded-full ${border} border-primary/15 dark:border-pink-500/20`}
         />
         {/* spinning brand arc */}
         <span
-          className={`absolute inset-0 animate-spin rounded-full ${border} border-transparent border-t-[#f9186b] border-r-[#f9186b] dark:border-t-pink-500 dark:border-r-pink-500`}
+          className={`absolute inset-0 animate-spin rounded-full ${border} border-transparent border-t-primary border-r-primary dark:border-t-pink-500 dark:border-r-pink-500`}
         />
         {/* logo tile in the centre — the loader sits on a neutral background,
             so the tile stands on its own without a plate behind it */}

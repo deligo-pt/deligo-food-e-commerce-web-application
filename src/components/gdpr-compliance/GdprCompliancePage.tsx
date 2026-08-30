@@ -34,11 +34,11 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 
 function PartHeading({ label, title }: { label: string; title: string }) {
   return (
-    <div className="mt-4 mb-10 border-l-4 border-[#f9186b] pl-5">
-      <span className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#f9186b] dark:text-pink-500">
+    <div className="mt-4 mb-10 border-l-4 border-primary pl-5">
+      <span className="text-xs font-extrabold uppercase tracking-[0.06em] text-primary dark:text-pink-500">
         {label}
       </span>
-      <h2 className="mt-1 text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-neutral-50">
+      <h2 className="mt-1 text-2xl lg:text-display font-extrabold text-slate-900 dark:text-neutral-50">
         {title}
       </h2>
     </div>
@@ -126,10 +126,10 @@ export default function GdprCompliancePage() {
       {/* Hero */}
       <section className="bg-gray-50 dark:bg-neutral-900/50 py-16 border-b border-gray-200 dark:border-neutral-800">
         <div className="max-w-6xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-neutral-50 mb-6">
+          <h1 className="text-display font-extrabold text-gray-900 dark:text-neutral-50 mb-6">
             {t("gdprComplianceHeroTitle")}
           </h1>
-          <p className="text-lg text-gray-500 dark:text-neutral-400 max-w-2xl">
+          <p className="text-base text-gray-500 dark:text-neutral-400 max-w-2xl">
             {t("gdprComplianceHeroDescription")}
           </p>
 
@@ -140,7 +140,7 @@ export default function GdprCompliancePage() {
                 key={label}
                 className="flex items-start gap-3 rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm dark:shadow-none"
               >
-                <Icon className="mt-0.5 h-5 w-5 shrink-0 text-[#f9186b] dark:text-pink-500" />
+                <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary dark:text-pink-500" />
                 <div className="min-w-0">
                   <dt className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-neutral-500">
                     {label}
@@ -171,7 +171,7 @@ export default function GdprCompliancePage() {
                 ))}
                 <a
                   href="mailto:dpo@deligo.pt"
-                  className="block w-full bg-[#f9186b] text-white rounded-md py-2.5 px-4 text-sm text-center font-bold hover:bg-[#d4145b] transition-colors mt-4"
+                  className="block w-full bg-primary text-white rounded-md py-2.5 px-4 text-sm text-center font-bold hover:bg-primary-hover transition-colors mt-4"
                 >
                   {t("legalNavContactDpo")}
                 </a>
@@ -194,7 +194,7 @@ export default function GdprCompliancePage() {
                   ))}
                   <a
                     href="mailto:dpo@deligo.pt"
-                    className="bg-[#f9186b] text-white rounded-md py-2 px-3 text-sm text-center font-bold hover:bg-[#d4145b] transition-colors col-span-2 sm:col-span-1 flex items-center justify-center"
+                    className="bg-primary text-white rounded-md py-2 px-3 text-sm text-center font-bold hover:bg-primary-hover transition-colors col-span-2 sm:col-span-1 flex items-center justify-center"
                   >
                     {t("legalNavContactDpo")}
                   </a>
@@ -332,7 +332,7 @@ export default function GdprCompliancePage() {
                 {t("legalControllerDpoText")}{" "}
                 <a
                   href="mailto:dpo@deligo.pt"
-                  className="font-semibold text-[#f9186b] hover:underline dark:text-pink-500"
+                  className="font-semibold text-primary hover:underline dark:text-pink-500"
                 >
                   dpo@deligo.pt
                 </a>
@@ -423,7 +423,7 @@ export default function GdprCompliancePage() {
                     href="https://www.cnpd.pt"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-[#f9186b] hover:underline dark:text-pink-500"
+                    className="font-semibold text-primary hover:underline dark:text-pink-500"
                   >
                     www.cnpd.pt
                   </a>

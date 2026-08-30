@@ -61,20 +61,20 @@ export default function PickupLocationCard({
     <div className="rounded-3xl border border-transparent bg-white p-6 shadow-md dark:border-neutral-800 dark:bg-neutral-900">
       <div className="flex items-start gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#ffd9de] dark:bg-pink-950/30">
-          <MapPin className="h-6 w-6 text-[#f9186b] dark:text-pink-400" />
+          <MapPin className="h-6 w-6 text-primary dark:text-pink-400" />
         </div>
         <div className="min-w-0 flex-1 space-y-1">
-          <p className="text-xs font-semibold tracking-wide text-[#5a4044] dark:text-neutral-400">
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground dark:text-neutral-400">
             {t("collectFrom")}
           </p>
-          <h3 className="text-xl font-bold break-words text-[#191c1d] dark:text-neutral-50">
+          <h3 className="text-xl font-bold break-words text-foreground dark:text-neutral-50">
             {storeName}
           </h3>
           {/* An empty string rather than a placeholder when the vendor lookup
               has not resolved: inventing "address unavailable" would be copy
               about our own loading state, not about the store. */}
           {address && (
-            <p className="text-sm font-semibold leading-relaxed break-words text-[#5a4044] dark:text-neutral-400">
+            <p className="text-sm font-semibold leading-relaxed break-words text-muted-foreground dark:text-neutral-400">
               {address}
             </p>
           )}
@@ -86,7 +86,7 @@ export default function PickupLocationCard({
           href={directionsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#f9186b] py-3 text-sm font-semibold text-white transition hover:bg-[#d4145b]"
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
         >
           <Navigation className="h-4 w-4" />
           {t("getDirections")}

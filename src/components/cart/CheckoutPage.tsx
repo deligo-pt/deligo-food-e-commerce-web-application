@@ -27,7 +27,7 @@ import {
   getCartVendorId,
   getCartVendorPhoto,
   getLineOriginalPrice,
-  getLineTaxForQuantity,
+  getLineVatForQuantity,
   getLineTotalForQuantity,
   resolveAddonName,
 } from "@/lib/cart";
@@ -48,12 +48,13 @@ import {
   type PickupSlot,
   type PickupVendorHours,
 } from "@/lib/pickupTime";
+import { Button } from "@/components/ui/button";
 
 interface CheckoutPageProps {
   vendorId: string;
 }
 
-// Recomputes an add-on line for a new quantity. Add-ons are tax-inclusive and
+// Recomputes an add-on line for a new quantity. Add-ons are VAT-inclusive and
 // carry their own rate, so the VAT is extracted from the gross rather than
 // added on top — mirroring the backend's per-add-on figures.
 function addonLineValues(addon: any, qty: number) {
@@ -66,14 +67,14 @@ function addonLineValues(addon: any, qty: number) {
 // Flat sum of an add-ons array's gross total and embedded VAT. Add-ons are NOT
 // multiplied by the product quantity — each carries its own quantity.
 function sumAddons(addons: any[] | undefined | null) {
-  if (!addons?.length) return { total: 0, tax: 0 };
+  if (!addons?.length) return { total: 0, vat: 0 };
   return addons.reduce(
     (acc, a) => {
       acc.total += a.lineTotal || 0;
-      acc.tax += a.taxAmount || 0;
+      acc.vat += a.taxAmount || 0;
       return acc;
     },
-    { total: 0, tax: 0 },
+    { total: 0, vat: 0 },
   );
 }
 
@@ -281,15 +282,15 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         : Math.max(1, pendingQty);
 
       const newTotalProductDiscount = pricing.productDiscountAmount * newQty;
-      // Prices are tax-inclusive: the gross line total already contains the VAT,
-      // so scale the line and extract the embedded tax rather than adding it on
+      // Prices are VAT-inclusive: the gross line total already contains the VAT,
+      // so scale the line and extract the embedded VAT rather than adding it on
       // top. Only the product's share scales with quantity — add-ons carry their
       // own — so the line is rebuilt from `grandTotal`, not `unitPrice * qty`.
       // Isolate the product's share from the *original* add-ons, then re-add the
       // (possibly edited) add-ons, so quantity and add-on edits compose.
       const origAddons = sumAddons(cartItem.addons);
       const productGross = getLineTotalForQuantity(cartItem, newQty) - origAddons.total;
-      const productTax = getLineTaxForQuantity(cartItem, newQty) - origAddons.tax;
+      const productVat = getLineVatForQuantity(cartItem, newQty) - origAddons.vat;
       const nextAddons = sumAddons(addons);
 
       return {
@@ -299,7 +300,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
           ...cartItem.itemSummary,
           quantity: newQty,
           totalProductDiscount: newTotalProductDiscount,
-          totalTaxAmount: productTax + nextAddons.tax,
+          totalTaxAmount: productVat + nextAddons.vat,
           grandTotal: productGross + nextAddons.total,
         },
       };
@@ -394,11 +395,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         // Discount" comes out short of the amount actually due.
         acc.originalPrice += getLineOriginalPrice(item);
         acc.discount += item.itemSummary.totalProductDiscount;
-        acc.tax += item.itemSummary.totalTaxAmount;
+        acc.vat += item.itemSummary.totalTaxAmount;
         acc.total += item.itemSummary.grandTotal;
         return acc;
       },
-      { originalPrice: 0, discount: 0, tax: 0, total: 0 },
+      { originalPrice: 0, discount: 0, vat: 0, total: 0 },
     );
   }, [vendorItems]);
 
@@ -473,11 +474,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         if (itemKey === key) {
           const pricing = cartItem.productPricing;
           const newTotalProductDiscount = pricing.productDiscountAmount * newQty;
-          // Tax-inclusive. Only the product's share scales with quantity —
+          // VAT-inclusive. Only the product's share scales with quantity —
           // add-ons carry their own — so rebuild the line from `grandTotal`
           // rather than `unitPrice * qty`, and keep each add-on's own VAT rate.
           const newGrandTotal = getLineTotalForQuantity(cartItem, newQty);
-          const newTotalTaxAmount = getLineTaxForQuantity(cartItem, newQty);
+          const newTotalVatAmount = getLineVatForQuantity(cartItem, newQty);
 
           return {
             ...cartItem,
@@ -485,7 +486,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               ...cartItem.itemSummary,
               quantity: newQty,
               totalProductDiscount: newTotalProductDiscount,
-              totalTaxAmount: newTotalTaxAmount,
+              totalTaxAmount: newTotalVatAmount,
               grandTotal: newGrandTotal,
             },
           };
@@ -601,7 +602,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         // the edited add-ons (dropping any zeroed out) and re-add their totals.
         const curAddons = sumAddons(cartItem.addons);
         const productGross = cartItem.itemSummary.grandTotal - curAddons.total;
-        const productTax = cartItem.itemSummary.totalTaxAmount - curAddons.tax;
+        const productVat = cartItem.itemSummary.totalTaxAmount - curAddons.vat;
 
         const nextAddonsList = (cartItem.addons || [])
           .map((a) =>
@@ -617,7 +618,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
           addons: nextAddonsList,
           itemSummary: {
             ...cartItem.itemSummary,
-            totalTaxAmount: productTax + nextAddons.tax,
+            totalTaxAmount: productVat + nextAddons.vat,
             grandTotal: productGross + nextAddons.total,
           },
         };
@@ -771,7 +772,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-neutral-50">
+      <h1 className="text-2xl lg:text-display font-extrabold text-gray-900 dark:text-neutral-50">
         {t("reviewYourCart")}
       </h1>
       <p className="mt-2 text-gray-500 dark:text-neutral-400">{t("completeOrderDetails")}</p>
@@ -788,11 +789,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               />
             </div>
             <div className="flex-1">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-neutral-50">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-neutral-50">
                 {businessName || t("store")}
               </h2>
               <div className="mt-3 flex flex-wrap gap-3">
-                <div className="flex items-center gap-2 rounded-xl bg-pink-50 dark:bg-pink-950/30 px-3 py-2 text-[#f9186b] dark:text-pink-400">
+                <div className="flex items-center gap-2 rounded-xl bg-pink-50 dark:bg-pink-950/30 px-3 py-2 text-primary dark:text-pink-400">
                   <ShoppingBag size={16} />
                   <span className="font-medium">
                     {vendorItems.length} {t("products")}
@@ -808,7 +809,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
             {vendor?.userId && (
               <Link
                 href={`/vendors/${vendor.userId}`}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-[#f9186b] px-5 py-2.5 text-sm font-semibold text-[#f9186b] transition-colors hover:bg-[#f9186b] hover:text-white dark:border-pink-500 dark:text-pink-400 dark:hover:bg-pink-600 dark:hover:text-white"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-primary px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white dark:border-pink-500 dark:text-pink-400 dark:hover:bg-pink-600 dark:hover:text-white"
               >
                 <Plus size={16} />
                 {t("addMoreItems")}
@@ -861,7 +862,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                                 >
                                   <div className="min-w-0 flex-1">
                                     <span className="block truncate text-sm font-medium text-gray-700 dark:text-neutral-300">
-                                      <span className="text-[#f9186b] dark:text-pink-400">+ </span>
+                                      <span className="text-primary dark:text-pink-400">+ </span>
                                       {resolveAddonName(addon.name, lang)}
                                     </span>
                                     <span className="text-xs text-gray-400 dark:text-neutral-500">
@@ -869,29 +870,32 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                                     </span>
                                   </div>
                                   <div className="flex shrink-0 items-center rounded-full border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                                    <button
+                                    <Button
                                       type="button"
+                                      size="icon-sm"
+                                      variant="ghost"
                                       aria-label={t("decreaseQuantity")}
                                       onClick={() => updateAddonQuantity(item, addon, "decrement")}
-                                      className="flex h-7 w-7 items-center justify-center rounded-full text-gray-500 dark:text-neutral-400 transition hover:bg-gray-100 dark:hover:bg-neutral-800 active:scale-90"
+                                      className="rounded-full text-gray-500 active:scale-90 dark:text-neutral-400"
                                     >
                                       {addon.quantity <= 1 ? (
                                         <Trash2 size={13} />
                                       ) : (
                                         <Minus size={13} />
                                       )}
-                                    </button>
+                                    </Button>
                                     <span className="w-6 text-center text-sm font-bold text-gray-900 dark:text-neutral-50">
                                       {addon.quantity}
                                     </span>
-                                    <button
+                                    <Button
                                       type="button"
+                                      size="icon-sm"
                                       aria-label={t("increaseQuantity")}
                                       onClick={() => updateAddonQuantity(item, addon, "increment")}
-                                      className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f9186b] text-white transition hover:bg-[#d4145b] active:scale-90"
+                                      className="rounded-full active:scale-90"
                                     >
                                       <Plus size={13} />
-                                    </button>
+                                    </Button>
                                   </div>
                                   <span className="w-14 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-neutral-50">
                                     €{addon.lineTotal.toFixed(2)}
@@ -901,36 +905,45 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                             </ul>
                           )}
                         </div>
-                        <button
+                        <Button
+                          size="icon"
+                          variant="ghost"
                           onClick={() => deleteItem(item)}
                           disabled={deletingItem === item.productId}
-                          className="rounded-xl p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                          aria-label={t("remove")}
+                          className="rounded-xl text-red-500 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
                         >
                           {deletingItem === item.productId ? (
                             <Loader2 size={18} className="animate-spin" />
                           ) : (
                             <Trash2 size={18} />
                           )}
-                        </button>
+                        </Button>
                       </div>
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center rounded-2xl border border-gray-200 dark:border-neutral-800">
-                          <button
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label={t("decreaseQuantity")}
                             onClick={() => updateQuantity(item, "decrement")}
-                            className="p-3 transition hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300"
+                            className="rounded-none rounded-l-2xl text-gray-700 dark:text-neutral-300"
                           >
                             <Minus size={16} />
-                          </button>
+                          </Button>
                           <div className="min-w-15 text-center font-bold text-gray-900 dark:text-neutral-50">
                             {item.itemSummary.quantity}
                           </div>
 
-                          <button
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label={t("increaseQuantity")}
                             onClick={() => updateQuantity(item, "increment")}
-                            className="p-3 transition hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300"
+                            className="rounded-none rounded-r-2xl text-gray-700 dark:text-neutral-300"
                           >
                             <Plus size={16} />
-                          </button>
+                          </Button>
                         </div>
                         <div className="text-right">
                           {/* Only a genuine saving gets a strikethrough, and it
@@ -942,7 +955,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                               €{getLineOriginalPrice(item).toFixed(2)}
                             </p>
                           )}
-                          <p className="text-2xl font-bold text-[#f9186b] dark:text-pink-400">
+                          <p className="text-2xl font-bold text-primary dark:text-pink-400">
                             €{item.itemSummary.grandTotal.toFixed(2)}
                           </p>
                         </div>
@@ -958,7 +971,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         <div className="lg:col-span-4">
           <div className="sticky top-24 overflow-hidden rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
             <div className="border-b border-gray-100 dark:border-neutral-800 p-6">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-neutral-50">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-neutral-50">
                 {t("orderSummary")}
               </h3>
               <p className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
@@ -985,10 +998,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                       {t("finalPrice")}
                     </span>
                     <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-neutral-400">
-                      ({t("inclTax")} -&nbsp;€{summary.tax.toFixed(2)})
+                      ({t("inclVat")} -&nbsp;€{summary.vat.toFixed(2)})
                     </span>
                   </div>
-                  <span className="shrink-0 whitespace-nowrap text-3xl font-extrabold text-[#f9186b] dark:text-pink-400">
+                  <span className="shrink-0 whitespace-nowrap text-2xl font-extrabold text-primary dark:text-pink-400">
                     €{summary.total.toFixed(2)}
                   </span>
                 </div>
@@ -1003,9 +1016,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 onClick={handleToggleSelfPickup}
                 disabled={!canSelfPickup}
                 aria-pressed={isSelfPickup}
-                className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`focus-ring flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
                   isSelfPickup
-                    ? "border-[#f9186b] bg-pink-50/50 dark:border-pink-400 dark:bg-pink-950/20"
+                    ? "border-primary bg-pink-50/50 dark:border-pink-400 dark:bg-pink-950/20"
                     : "border-gray-200 dark:border-neutral-800"
                 }`}
               >
@@ -1013,7 +1026,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                   aria-hidden="true"
                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${
                     isSelfPickup
-                      ? "border-[#f9186b] bg-[#f9186b] dark:border-pink-400 dark:bg-pink-500"
+                      ? "border-primary bg-primary dark:border-pink-400 dark:bg-pink-500"
                       : "border-gray-300 dark:border-neutral-600"
                   }`}
                 >
@@ -1028,7 +1041,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                   size={20}
                   className={`shrink-0 ${
                     isSelfPickup
-                      ? "text-[#f9186b] dark:text-pink-400"
+                      ? "text-primary dark:text-pink-400"
                       : "text-gray-400 dark:text-neutral-500"
                   }`}
                 />
@@ -1047,9 +1060,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 <button
                   type="button"
                   onClick={() => setShowPickupPicker(true)}
-                  className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-[#f9186b] p-4 text-left transition hover:bg-pink-50/50 dark:border-pink-400 dark:hover:bg-pink-950/20"
+                  className="focus-ring mt-3 flex w-full items-center gap-3 rounded-2xl border border-primary p-4 text-left transition hover:bg-pink-50/50 dark:border-pink-400 dark:hover:bg-pink-950/20"
                 >
-                  <Clock size={18} className="shrink-0 text-[#f9186b] dark:text-pink-400" />
+                  <Clock size={18} className="shrink-0 text-primary dark:text-pink-400" />
                   <span
                     className={`min-w-0 flex-1 text-sm ${
                       pickupSlot
@@ -1091,10 +1104,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
             )}
 
             <div className="border-t border-gray-100 dark:border-neutral-800 p-6">
-              <button
+              <Button
+                size="lg"
                 onClick={handleProceedToCheckout}
                 disabled={isProceeding || vendorItems.length === 0}
-                className={`relative w-full overflow-hidden rounded-2xl bg-[#f9186b] py-4 text-lg font-semibold text-white transition hover:bg-[#d4145b] disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500 ${
+                className={`relative w-full overflow-hidden rounded-2xl font-semibold ${
                   !isProceeding && vendorItems.length > 0 ? "cart-cta" : ""
                 }`}
               >
@@ -1104,7 +1118,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 <span className="relative z-10">
                   {isProceeding ? t("processing") : t("proceedToCheckout")}
                 </span>
-              </button>
+              </Button>
               <p className="mt-3 text-center text-xs text-gray-400 dark:text-neutral-500">
                 {t("termsAndConditions")}
               </p>

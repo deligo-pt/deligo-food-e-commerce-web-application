@@ -171,14 +171,14 @@ export default function SupportChatDialog() {
                 naming the wrong counterparty. */}
             <span
               aria-hidden
-              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-[#f9186b] to-[#d4145b] text-base font-bold text-white"
+              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-primary to-primary-hover text-base font-bold text-white"
             >
               {initial}
               <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500 dark:border-neutral-900" />
             </span>
 
             <div className="min-w-0 flex-1">
-              <Dialog.Title className="truncate text-base font-bold text-[#191c1d] dark:text-neutral-50">
+              <Dialog.Title className="truncate text-base font-bold text-foreground dark:text-neutral-50">
                 {name}
               </Dialog.Title>
               <Dialog.Description className="truncate text-sm font-medium text-green-600 dark:text-green-400">
@@ -192,7 +192,7 @@ export default function SupportChatDialog() {
                 ("End chat", "Resolve") that suggests this did. */}
             <Dialog.Close
               aria-label={t("close")}
-              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#f9186b]/30 text-[#f9186b] transition-colors hover:bg-pink-50 dark:border-pink-500/30 dark:text-pink-400 dark:hover:bg-pink-950/30"
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-primary/30 text-primary transition-colors hover:bg-pink-50 dark:border-pink-500/30 dark:text-pink-400 dark:hover:bg-pink-950/30"
             >
               <X className="h-4.5 w-4.5" />
             </Dialog.Close>

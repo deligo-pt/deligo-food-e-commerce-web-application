@@ -8,24 +8,24 @@
 //
 // So the two fees are reported differently — `serviceCharge` is NET and
 // `totalDeliveryCharge` is GROSS — but each ships its own VAT amount. Read
-// those fields rather than re-deriving the tax: the rate is the backend's to
+// those fields rather than re-deriving the VAT: the rate is the backend's to
 // decide, and a hardcoded one would drift silently if it ever changed.
 //
 // The helpers below fall back to the standard rate only when a VAT field is
 // missing, so a summary from an older deployment still reconciles.
 
 /** Portuguese standard rate. Fallback only — prefer the VAT the API reports. */
-export const STANDARD_TAX_RATE = 23;
+export const STANDARD_VAT_RATE = 23;
 
 /** Adds VAT to a net amount. */
-export function addTax(net: number, rate: number = STANDARD_TAX_RATE): number {
+export function addVat(net: number, rate: number = STANDARD_VAT_RATE): number {
   return net * (1 + rate / 100);
 }
 
-/** Extracts the VAT embedded in a tax-inclusive (gross) amount. */
-export function extractTax(
+/** Extracts the VAT embedded in a VAT-inclusive (gross) amount. */
+export function extractVat(
   gross: number,
-  rate: number = STANDARD_TAX_RATE,
+  rate: number = STANDARD_VAT_RATE,
 ): number {
   if (gross <= 0) return 0;
   return gross - gross / (1 + rate / 100);
@@ -43,13 +43,13 @@ export interface DeliveryFields {
 
 /**
  * The service fee as charged — `grandTotal` includes its VAT, so the net figure
- * alone would leave the breakdown short by exactly the tax.
+ * alone would leave the breakdown short by exactly the VAT.
  */
 export function getServiceChargeGross(calc: ServiceChargeFields): number {
   const net = calc.serviceCharge ?? 0;
   if (net <= 0) return 0;
   const vat = calc.serviceChargeVatAmount;
-  return net + (typeof vat === "number" ? vat : addTax(net) - net);
+  return net + (typeof vat === "number" ? vat : addVat(net) - net);
 }
 
 /**
@@ -65,15 +65,15 @@ export function getServiceChargeGross(calc: ServiceChargeFields): number {
  * GROSS, while `totalDeliveryCharge` is already gross. The VAT is "included" in
  * what the customer reads either way, which is what the caption claims.
  */
-export function getServiceChargeTax(calc: ServiceChargeFields): number {
+export function getServiceChargeVat(calc: ServiceChargeFields): number {
   const net = calc.serviceCharge ?? 0;
   if (net <= 0) return 0;
   const vat = calc.serviceChargeVatAmount;
-  return typeof vat === "number" ? vat : addTax(net) - net;
+  return typeof vat === "number" ? vat : addVat(net) - net;
 }
 
 /** The VAT already contained in the (gross) delivery charge. */
-export function getDeliveryTax(delivery: DeliveryFields): number {
+export function getDeliveryVat(delivery: DeliveryFields): number {
   if (typeof delivery.vatAmount === "number") return delivery.vatAmount;
-  return extractTax(delivery.totalDeliveryCharge ?? 0);
+  return extractVat(delivery.totalDeliveryCharge ?? 0);
 }

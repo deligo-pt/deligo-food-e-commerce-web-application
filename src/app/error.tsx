@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { AlertTriangle, RotateCcw, Home } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Button } from "@/components/ui/button";
 
 // Route-segment error boundary. Catches unhandled render errors thrown anywhere
 // below the root layout (e.g. a malformed record) and shows a branded, recoverable
@@ -23,25 +24,22 @@ export default function Error({
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center bg-[#f7f2f5] dark:bg-neutral-950 px-4 py-16 text-center transition-colors duration-200">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#ffe1ea] dark:bg-pink-950/40">
-        <AlertTriangle className="h-8 w-8 text-[#f9186b] dark:text-pink-400" />
+        <AlertTriangle className="h-8 w-8 text-primary dark:text-pink-400" />
       </div>
-      <h1 className="mt-6 text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
+      <h1 className="mt-6 text-2xl font-bold text-foreground dark:text-neutral-50">
         {t("somethingWentWrong")}
       </h1>
-      <p className="mt-2 max-w-md text-base leading-6 text-[#5a4044] dark:text-neutral-400">
+      <p className="mt-2 max-w-md text-base leading-6 text-muted-foreground dark:text-neutral-400">
         {t("errorPageDesc")}
       </p>
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-        <button
-          onClick={reset}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f9186b] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#d4145b]"
-        >
+        <Button size="lg" onClick={reset} className="gap-2 rounded-full font-semibold">
           <RotateCcw size={18} />
           {t("tryAgain")}
-        </button>
+        </Button>
         <Link
           href="/"
-          className="inline-flex items-center justify-center gap-2 rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-900 px-6 py-3 font-semibold text-[#5a4044] dark:text-neutral-300 transition-colors hover:bg-gray-50 dark:hover:bg-neutral-800"
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-900 px-6 py-3 font-semibold text-muted-foreground dark:text-neutral-300 transition-colors hover:bg-gray-50 dark:hover:bg-neutral-800"
         >
           <Home size={18} />
           {t("backToHome")}

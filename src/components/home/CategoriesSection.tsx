@@ -209,7 +209,7 @@
 //                 </div>
 //               </div>
 //               <span
-//                 className={`text-center text-xs font-bold leading-4 tracking-[0.16em] uppercase transition-colors ${
+//                 className={`text-center text-xs font-bold leading-4 tracking-[0.06em] uppercase transition-colors ${
 //                   isActive
 //                     ? "text-[#f9186b]"
 //                     : "text-[#191c1d] group-hover:text-[#f9186b]"
@@ -236,6 +236,8 @@ import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { Utensils, Check, ChevronRight, ChevronLeft, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SectionHeading } from "@/components/ui/section-heading";
 
 // Cuisine data contract for the dynamic "What's on your mind?" section.
 type Cuisine = {
@@ -444,20 +446,16 @@ export default function CategoriesSection() {
   if (loading && cuisines.length === 0) {
     return (
       <section>
-        <div className="mb-5 flex items-center justify-between sm:mb-10">
-          <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-3xl sm:leading-10 dark:text-neutral-100">
-            {t("whatsOnYourMind")}
-          </h2>
-        </div>
+        <SectionHeading loading skeletonWidth="w-72" />
         <div className="overflow-hidden pb-6">
-          <div className="-mx-4 flex gap-4 overflow-hidden px-4 pb-4 sm:gap-8 lg:-mx-16 lg:px-16">
+          <div className="-mx-4 flex gap-4 overflow-hidden px-4 pb-4 sm:gap-6 lg:-mx-16 lg:px-16">
             {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={index}
-                className="flex w-[calc((100vw-5rem)/4)] min-w-0 shrink-0 flex-col items-center gap-2 sm:w-auto sm:min-w-35 sm:gap-4"
+                className="flex w-24 shrink-0 flex-col items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm sm:w-32 sm:p-4 dark:border-neutral-800"
               >
-                <div className="h-16 w-16 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800 sm:h-32 sm:w-32" />
-                <div className="h-3 w-12 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800 sm:h-4 sm:w-24" />
+                <div className="size-16 animate-pulse rounded-full bg-gray-200 sm:size-20 dark:bg-neutral-800" />
+                <div className="h-4 w-16 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
               </div>
             ))}
           </div>
@@ -469,11 +467,7 @@ export default function CategoriesSection() {
   if (errorKey && cuisines.length === 0) {
     return (
       <section>
-        <div className="mb-5 flex items-center justify-between sm:mb-10">
-          <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-3xl sm:leading-10 dark:text-neutral-100">
-            {t("whatsOnYourMind")}
-          </h2>
-        </div>
+        <SectionHeading>{t("whatsOnYourMind")}</SectionHeading>
         <div className="flex h-40 items-center justify-center">
           <div className="text-center text-red-500">{t(errorKey)}</div>
         </div>
@@ -483,37 +477,43 @@ export default function CategoriesSection() {
 
   return (
     <section>
-      <div className="mb-10 flex items-center justify-between">
-        <h2 className="text-xl font-bold leading-7 text-[#191c1d] sm:text-3xl sm:leading-10 dark:text-neutral-100">
-          {t("whatsOnYourMind")}
-        </h2>
-        {/* <button
+      {/* Phase 5 #2 again, in the file next door. The skeleton header said
+          `mb-5 sm:mb-10` and this one said a flat `mb-10`, so the row slid 16px
+          up on mobile when the cuisines landed. Phase 9 made that class of bug
+          impossible here: all three branches render one component. */}
+      {/* <button
           onClick={() => setIsModalOpen(true)}
           onMouseEnter={() => setIsModalOpen(true)}
           className="flex items-center gap-2 text-xl font-bold leading-7 text-[#f9186b] hover:underline cursor-pointer"
         >
           {t("viewAll")} <ChevronRight size={20} />
         </button> */}
-      </div>
+      <SectionHeading>{t("whatsOnYourMind")}</SectionHeading>
 
-      <div className="relative">
+      {/* Phase 6 #1 — the track fades in over its skeleton instead of
+          replacing it between two frames. */}
+      <div className="motion-fade relative">
         {/* Desktop-only arrow buttons (touch devices swipe instead). */}
-        <button
+        <Button
           type="button"
+          size="icon"
+          variant="outline"
           onClick={() => scrollByCards("left")}
           aria-label="Scroll left"
-          className={`absolute left-0 top-1/2 z-20 hidden -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/90 p-2 shadow-md backdrop-blur transition-opacity dark:border-neutral-700 dark:bg-neutral-900/90 sm:flex ${canScrollLeft ? "opacity-100" : "pointer-events-none opacity-0"}`}
+          className={`absolute left-0 top-1/2 z-20 hidden -translate-y-1/2 rounded-full bg-white/90 shadow-md backdrop-blur transition-opacity dark:bg-neutral-900/90 sm:inline-flex ${canScrollLeft ? "opacity-100" : "pointer-events-none opacity-0"}`}
         >
-          <ChevronLeft size={22} className="text-[#191c1d] dark:text-neutral-100" />
-        </button>
-        <button
+          <ChevronLeft size={22} className="text-foreground dark:text-neutral-100" />
+        </Button>
+        <Button
           type="button"
+          size="icon"
+          variant="outline"
           onClick={() => scrollByCards("right")}
           aria-label="Scroll right"
-          className={`absolute right-0 top-1/2 z-20 hidden -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/90 p-2 shadow-md backdrop-blur transition-opacity dark:border-neutral-700 dark:bg-neutral-900/90 sm:flex ${canScrollRight ? "opacity-100" : "pointer-events-none opacity-0"}`}
+          className={`absolute right-0 top-1/2 z-20 hidden -translate-y-1/2 rounded-full bg-white/90 shadow-md backdrop-blur transition-opacity dark:bg-neutral-900/90 sm:inline-flex ${canScrollRight ? "opacity-100" : "pointer-events-none opacity-0"}`}
         >
-          <ChevronRight size={22} className="text-[#191c1d] dark:text-neutral-100" />
-        </button>
+          <ChevronRight size={22} className="text-foreground dark:text-neutral-100" />
+        </Button>
 
         {/* Right-only edge fade — the "there's more, swipe me" cue on mobile.
             No left fade: it pooled over the leftmost card and obscured it. */}
@@ -529,53 +529,89 @@ export default function CategoriesSection() {
           onMouseLeave={handleMouseLeave}
           onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove}
-          className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pb-4 sm:gap-8 lg:-mx-16 lg:scroll-px-16 lg:px-16 select-none cursor-grab active:cursor-grabbing [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pb-4 sm:gap-6 lg:-mx-16 lg:scroll-px-16 lg:px-16 select-none cursor-grab active:cursor-grabbing [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           {cuisines.map((cuisine) => {
             const cuisineLabel = cuisine.name?.trim() || cuisine.slug;
             const isActive = selectedCuisines.includes(cuisineLabel);
             return (
-              <div
+              /* Plan.md Phase 3. The circle was 128px at `sm` and up; it is
+                 now 80, which is what it needs to be to read as a picture with
+                 a word under it. Mobile stays 64 — it was already right.
+
+                 It was also a `<div onClick>`. The plan assumed these circles
+                 were already focusable and that only the shop cards were not;
+                 they were not either, so both rows were unreachable by
+                 keyboard. Both are buttons now, and `aria-pressed` carries the
+                 selected state that the pink ring was showing to sighted users
+                 only. Children are <span>s because a <button> holds phrasing
+                 content. */
+              /* Plan.md Phase 7 #3. The circle used to float on the page
+                 background with a label under it, which made the rail read as
+                 a row of pictures rather than a row of choices — and left
+                 `aria-pressed` with nowhere to show up but a ring. It sits in
+                 a surface tile now, the same hairline-and-lift as the vendor
+                 card, and the tile's border carries the selected state.
+
+                 The width was `calc((100vw-5rem)/4)` — an arbitrary value
+                 tuned to fit exactly four circles. A tile is wider than the
+                 circle inside it, so the formula could not survive; `w-24
+                 sm:w-32` shows a little over three and lets the fourth peek,
+                 which is what says "this scrolls". */
+              <button
                 key={cuisine._id}
+                type="button"
                 onClick={() => handleCuisineClick(cuisineLabel)}
-                className="group flex w-[calc((100vw-5rem)/4)] min-w-0 shrink-0 snap-start select-none cursor-pointer flex-col items-center gap-2 sm:w-auto sm:min-w-35 sm:gap-4"
+                aria-pressed={isActive}
+                /* Phase 8 note: this tile deliberately does *not* take `cardVariants`.
+                 It is 96px wide holding a 64px circle; the card shell's 22px
+                 radius and `p-4 sm:p-6` would leave it a squircle with no
+                 slack. Phase 2 drew the same line for buttons — a control
+                 below the smallest size is not that component, and forcing it
+                 in is consistency that ignores scale. What it does share is
+                 the colours: `bg-card` and `border-border`, from the same
+                 tokens the shell uses. */
+                className={`focus-ring motion-press group flex w-24 shrink-0 snap-start cursor-pointer select-none flex-col items-center gap-3 rounded-2xl border bg-card p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:w-32 sm:p-4 ${isActive
+                    ? "border-primary"
+                    : "border-border dark:border-neutral-800"
+                  }`}
               >
-                <div
-                  className={`h-16 w-16 rounded-full p-1 shadow-md transition-all duration-300 sm:h-32 sm:w-32 ${isActive
-                      ? "bg-[#f9186b] ring-4 ring-[#ffd9de] dark:ring-pink-500/20"
-                      : "bg-[#e7e8e9] dark:bg-neutral-800 group-hover:bg-[#f9186b]"
+                <span
+                  className={`block size-16 rounded-full p-1 transition-all duration-300 sm:size-20 ${isActive
+                      ? "bg-primary"
+                      : "bg-[#e7e8e9] dark:bg-neutral-800 group-hover:bg-primary"
                     }`}
                 >
-                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-white dark:border-neutral-900 bg-[#ffffff] dark:bg-neutral-900 transition-all duration-300 sm:border-4">
+                  <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white transition-all duration-300 dark:border-neutral-900 dark:bg-neutral-900">
                     {cuisine.imageUrl ? (
                       <Image
                         alt={cuisineLabel}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        height={128}
-                        width={128}
+                        height={80}
+                        width={80}
                         src={cuisine.imageUrl}
                         unoptimized={!isOptimizableImageHost(cuisine.imageUrl)}
                       />
                     ) : (
                       <Utensils
-                        size={40}
+                        size={28}
                         className={`transition-all duration-300 ${isActive
-                            ? "text-[#f9186b] dark:text-pink-500 scale-110"
-                            : "text-[#5a4044] dark:text-neutral-300 group-hover:text-[#f9186b] group-hover:scale-110"
+                            ? "text-primary dark:text-pink-500 scale-110"
+                            : "text-muted-foreground dark:text-neutral-300 group-hover:text-primary group-hover:scale-110"
                           }`}
                       />
                     )}
-                  </div>
-                </div>
+                  </span>
+                </span>
                 <span
-                  className={`text-center text-[10px] font-bold leading-3 tracking-normal uppercase transition-colors sm:text-xs sm:leading-4 sm:tracking-[0.16em] ${isActive
-                      ? "text-[#f9186b] dark:text-pink-500"
-                      : "text-[#191c1d] dark:text-neutral-100 group-hover:text-[#f9186b] dark:group-hover:text-pink-500"
+                  className={`text-center text-xs font-bold uppercase tracking-[0.06em] transition-colors ${isActive
+                      ? "text-primary dark:text-pink-500"
+                      : "text-foreground dark:text-neutral-100 group-hover:text-primary dark:group-hover:text-pink-500"
                     }`}
                 >
                   {cuisineLabel}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -586,7 +622,7 @@ export default function CategoriesSection() {
         {(canScrollLeft || canScrollRight) && (
           <div className="relative mx-auto mt-2 h-1 w-16 overflow-hidden rounded-full bg-gray-200 dark:bg-neutral-800 sm:hidden">
             <div
-              className="absolute top-0 h-full w-1/3 rounded-full bg-[#f9186b] transition-[left] duration-150"
+              className="absolute top-0 h-full w-1/3 rounded-full bg-primary transition-[left] duration-150"
               style={{ left: `${scrollProgress * 66}%` }}
             />
           </div>
@@ -604,16 +640,18 @@ export default function CategoriesSection() {
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 px-6 py-4">
-              <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-100">
+              <h3 className="text-xl font-bold text-foreground dark:text-neutral-100">
                 {t("allCategories")}
               </h3>
-              <button
+              <Button
+                size="icon"
+                variant="ghost"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-neutral-800 hover:text-gray-600 dark:hover:text-neutral-300 transition-colors cursor-pointer"
+                className="cursor-pointer rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-neutral-300"
                 aria-label="Close"
               >
                 <X size={20} />
-              </button>
+              </Button>
             </div>
 
             {/* Modal Body */}
@@ -628,16 +666,16 @@ export default function CategoriesSection() {
                       handleCuisineClick(cuisineLabel);
                       setIsModalOpen(false);
                     }}
-                    className={`group flex w-full items-center justify-between rounded-xl border p-4 transition-all duration-300 cursor-pointer ${isActive
-                        ? "border-[#f9186b] bg-[#ffd9de]/30 dark:bg-pink-950/20 text-[#f9186b] dark:text-pink-500"
-                        : "border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 hover:bg-[#ffd9de]/10 dark:hover:bg-neutral-800 hover:border-[#ffd9de] text-[#191c1d] dark:text-neutral-200"
+                    className={`focus-ring group flex w-full items-center justify-between rounded-xl border p-4 transition-all duration-300 cursor-pointer ${isActive
+                        ? "border-primary bg-[#ffd9de]/30 dark:bg-pink-950/20 text-primary dark:text-pink-500"
+                        : "border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 hover:bg-[#ffd9de]/10 dark:hover:bg-neutral-800 hover:border-[#ffd9de] text-foreground dark:text-neutral-200"
                       }`}
                   >
                     <div className="flex items-center gap-4">
                       <div
                         className={`flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border transition-all duration-300 ${isActive
-                            ? "bg-[#f9186b] border-[#f9186b] text-white"
-                            : "bg-[#e7e8e9] dark:bg-neutral-800 border-white dark:border-neutral-900 text-[#5a4044] dark:text-neutral-300 group-hover:bg-[#f9186b] group-hover:text-white"
+                            ? "bg-primary border-primary text-white"
+                            : "bg-[#e7e8e9] dark:bg-neutral-800 border-white dark:border-neutral-900 text-muted-foreground dark:text-neutral-300 group-hover:bg-primary group-hover:text-white"
                           }`}
                       >
                         {cuisine.imageUrl ? (
@@ -658,21 +696,21 @@ export default function CategoriesSection() {
                       </div>
                       <span
                         className={`text-sm font-bold tracking-widest uppercase transition-colors ${isActive
-                            ? "text-[#f9186b] dark:text-pink-500"
-                            : "text-[#191c1d] dark:text-neutral-200 group-hover:text-[#f9186b] dark:group-hover:text-pink-500"
+                            ? "text-primary dark:text-pink-500"
+                            : "text-foreground dark:text-neutral-200 group-hover:text-primary dark:group-hover:text-pink-500"
                           }`}
                       >
                         {cuisineLabel}
                       </span>
                     </div>
                     {isActive ? (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#f9186b] text-white">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white">
                         <Check size={14} />
                       </div>
                     ) : (
                       <ChevronRight
                         size={18}
-                        className="text-gray-300 dark:text-neutral-600 group-hover:text-[#f9186b] dark:group-hover:text-pink-500 transition-colors"
+                        className="text-gray-300 dark:text-neutral-600 group-hover:text-primary dark:group-hover:text-pink-500 transition-colors"
                       />
                     )}
                   </button>

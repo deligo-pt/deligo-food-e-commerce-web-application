@@ -20,8 +20,8 @@ const PRESENTATION: Record<
   { accent: string; heading: string }
 > = {
   in_progress: {
-    accent: "border-l-[#f9186b] dark:border-l-[#f9186b]",
-    heading: "text-[#f9186b] dark:text-pink-400",
+    accent: "border-l-primary dark:border-l-primary",
+    heading: "text-primary dark:text-pink-400",
   },
   completed: {
     accent: "border-l-green-600 dark:border-l-green-500",
@@ -78,8 +78,8 @@ export default function RefundBanner({ state }: { state: RefundState }) {
       )}
 
       <div className="space-y-1">
-        <h2 className={`text-2xl font-extrabold ${heading}`}>{t(labelKey)}</h2>
-        <p className="text-sm font-semibold leading-relaxed text-[#5a4044] dark:text-neutral-400">
+        <h2 className={`text-xl font-extrabold ${heading}`}>{t(labelKey)}</h2>
+        <p className="text-sm font-semibold leading-relaxed text-muted-foreground dark:text-neutral-400">
           {t(descriptionKey)}
         </p>
       </div>

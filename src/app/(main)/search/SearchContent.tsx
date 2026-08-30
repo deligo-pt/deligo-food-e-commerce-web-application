@@ -25,6 +25,9 @@ import {
   type SearchSortBy,
   type SearchSortOrder,
 } from "@/lib/search";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { cardVariants } from "@/components/ui/card";
 
 /**
  * `/search` — results from the backend's Meilisearch index.
@@ -111,9 +114,14 @@ function DishCard({
           onOpen(hit);
         }
       }}
-      className={`flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-[#ffd9de] hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f9186b] dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${
-        busy ? "opacity-60" : ""
-      }`}
+      /* Phase 8. A fifth shell — `rounded-2xl`, a grey border, `shadow-sm`,
+         and the pink hover border again. The focus ring stays local: this is a
+         div with `role="button"`, so it needs one spelled out. */
+      className={cn(
+        cardVariants({ variant: "interactive" }),
+        "flex h-full cursor-pointer flex-col overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        busy && "opacity-60",
+      )}
     >
       <div className="relative aspect-4/3 shrink-0 overflow-hidden bg-gray-50 dark:bg-neutral-800">
         <SafeImage
@@ -125,10 +133,10 @@ function DishCard({
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="line-clamp-2 font-semibold text-[#191c1d] dark:text-neutral-50">
+        <h3 className="line-clamp-2 font-semibold text-foreground dark:text-neutral-50">
           {hit.name}
         </h3>
-        <p className="mt-1 line-clamp-1 text-sm text-[#5a4044] dark:text-neutral-400">
+        <p className="mt-1 line-clamp-1 text-sm text-muted-foreground dark:text-neutral-400">
           {formatRestaurantLabel(hit)}
         </p>
 
@@ -144,13 +152,13 @@ function DishCard({
             {cuisines.slice(0, CUISINE_CHIP_LIMIT).map((cuisine) => (
               <li
                 key={cuisine}
-                className="rounded-full bg-[#fff1f4] px-2 py-0.5 text-[11px] font-medium text-[#f9186b] dark:bg-neutral-800 dark:text-pink-400"
+                className="rounded-full bg-[#fff1f4] px-2 py-0.5 text-xs font-medium text-primary dark:bg-neutral-800 dark:text-pink-400"
               >
                 {cuisine}
               </li>
             ))}
             {cuisines.length > CUISINE_CHIP_LIMIT && (
-              <li className="px-1 py-0.5 text-[11px] font-medium text-[#5a4044] dark:text-neutral-400">
+              <li className="px-1 py-0.5 text-xs font-medium text-muted-foreground dark:text-neutral-400">
                 +{cuisines.length - CUISINE_CHIP_LIMIT}
               </li>
             )}
@@ -158,7 +166,7 @@ function DishCard({
         )}
 
         {/* Rendered exactly as the API sent it — the backend owns the money. */}
-        <div className="mt-auto pt-3 font-bold text-[#f9186b] dark:text-pink-500">
+        <div className="mt-auto pt-3 font-bold text-primary dark:text-pink-500">
           {currencySymbol(hit.currency)} {hit.price?.toFixed(2) ?? "0.00"}
         </div>
       </div>
@@ -367,10 +375,10 @@ export default function SearchContent() {
             filter rather than requiring a word to be typed first. */}
         {filterBar}
         <div className="py-20 text-center">
-          <h1 className="text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
+          <h1 className="text-2xl font-bold text-foreground dark:text-neutral-50">
             {t("searchPromptTitle")}
           </h1>
-          <p className="mt-2 text-[#5a4044] dark:text-neutral-400">
+          <p className="mt-2 text-muted-foreground dark:text-neutral-400">
             {t("searchPromptHint")}
           </p>
         </div>
@@ -384,7 +392,7 @@ export default function SearchContent() {
         {filterBar}
         {/* A filter-only search has no term to echo, and "Searching for ''" is
             worse than no subtitle at all. */}
-        <h1 className="mb-6 text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
+        <h1 className="mb-6 text-2xl font-bold text-foreground dark:text-neutral-50">
           {query ? (
             <>
               {t("searchingFor")} &ldquo;{query}&rdquo;
@@ -410,16 +418,16 @@ export default function SearchContent() {
       <main className="w-full px-4 py-8 lg:px-16">
         {filterBar}
         <div className="py-20 text-center">
-          <p className="text-[#5a4044] dark:text-neutral-400">
+          <p className="text-muted-foreground dark:text-neutral-400">
             {t("failedToLoadSearchResults")}
           </p>
-          <button
+          <Button
             type="button"
             onClick={() => refetch()}
-            className="mt-4 rounded-2xl bg-[#f9186b] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#d4145b]"
+            className="mt-4 rounded-2xl font-semibold"
           >
             {t("tryAgain")}
-          </button>
+          </Button>
         </div>
       </main>
     );
@@ -429,7 +437,7 @@ export default function SearchContent() {
     <main className="w-full px-4 py-8 lg:px-16">
       {filterBar}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
+        <h1 className="text-2xl font-bold text-foreground dark:text-neutral-50">
           {query ? (
             <>
               {t("searchResultsFor")} &ldquo;{query}&rdquo;
@@ -440,7 +448,7 @@ export default function SearchContent() {
         </h1>
         {/* The server's total, not `hits.length` — that is only what has been
             paged in so far, and reporting it was the old page's counting bug. */}
-        <p className="mt-1 text-[#5a4044] dark:text-neutral-400">
+        <p className="mt-1 text-muted-foreground dark:text-neutral-400">
           {total} {total === 1 ? t("resultLabel") : t("resultsLabel")}
         </p>
       </div>
@@ -451,18 +459,18 @@ export default function SearchContent() {
             className="mx-auto h-10 w-10 text-gray-300 dark:text-neutral-600"
             aria-hidden="true"
           />
-          <p className="mt-4 font-semibold text-[#191c1d] dark:text-neutral-50">
+          <p className="mt-4 font-semibold text-foreground dark:text-neutral-50">
             {t("noResultsFound")}
           </p>
           {/* Says which criteria produced the emptiness. With single-select
               cuisine (§1.2) an over-narrow filter is the likelier cause than a
               genuinely missing dish, so both are named. */}
-          <p className="mt-1 text-sm text-[#5a4044] dark:text-neutral-400">
+          <p className="mt-1 text-sm text-muted-foreground dark:text-neutral-400">
             {query && <>&ldquo;{query}&rdquo;</>}
             {query && cuisineLabel && " · "}
             {cuisineLabel}
           </p>
-          <p className="mt-3 text-sm text-[#5a4044] dark:text-neutral-400">
+          <p className="mt-3 text-sm text-muted-foreground dark:text-neutral-400">
             {t("noResultsHint")}
           </p>
           {/* Meilisearch matches word *prefixes*: "izza" finds nothing, though
@@ -471,7 +479,7 @@ export default function SearchContent() {
               search works differently than they assumed. Held back until the
               query is long enough that a typo is the less likely explanation. */}
           {query.length >= PREFIX_HINT_MIN_LENGTH && (
-            <p className="mx-auto mt-2 max-w-md text-sm text-[#5a4044] dark:text-neutral-400">
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground dark:text-neutral-400">
               {t("prefixMatchHint")}
             </p>
           )}
@@ -495,14 +503,15 @@ export default function SearchContent() {
               request the user did not ask for against the 100/60s budget. */}
           {hasNextPage && (
             <div className="mt-8 flex justify-center">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => fetchNextPage()}
                 disabled={isFetchingNextPage}
-                className="rounded-2xl border border-[#edeeef] bg-white px-6 py-2.5 text-sm font-semibold text-[#191c1d] shadow-sm transition hover:border-[#ffd9de] disabled:opacity-60 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:hover:border-neutral-700"
+                className="rounded-2xl font-semibold shadow-sm"
               >
                 {isFetchingNextPage ? t("loading") : t("loadMore")}
-              </button>
+              </Button>
             </div>
           )}
         </>

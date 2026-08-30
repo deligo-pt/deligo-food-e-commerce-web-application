@@ -45,7 +45,7 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-5xl px-4 py-8 md:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900 dark:text-neutral-50">
+          <h1 className="text-2xl lg:text-display font-bold text-neutral-900 dark:text-neutral-50">
             {t("settings")}
           </h1>
           <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
@@ -56,7 +56,7 @@ export default function SettingsPage() {
         <div className="space-y-8">
           {/* App Settings */}
           <section>
-            <h2 className="mb-4 px-1 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+            <h2 className="mb-4 px-1 text-xl font-semibold text-neutral-900 dark:text-neutral-50">
               {t("appSettings")}
             </h2>
 
@@ -95,7 +95,7 @@ export default function SettingsPage() {
 
           {/* Order Preferences */}
           <section>
-            <h2 className="mb-4 px-1 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+            <h2 className="mb-4 px-1 text-xl font-semibold text-neutral-900 dark:text-neutral-50">
               {t("orderPreferences")}
             </h2>
 
@@ -119,7 +119,7 @@ export default function SettingsPage() {
 
           {/* Legal */}
           <section>
-            <h2 className="mb-4 px-1 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+            <h2 className="mb-4 px-1 text-xl font-semibold text-neutral-900 dark:text-neutral-50">
               {t("legal")}
             </h2>
 
@@ -139,12 +139,12 @@ export default function SettingsPage() {
 
           {/* Account */}
           <section>
-            <h2 className="mb-4 px-1 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+            <h2 className="mb-4 px-1 text-xl font-semibold text-neutral-900 dark:text-neutral-50">
               {t("account")}
             </h2>
 
             <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm transition-colors duration-200">
-              <button className="flex w-full items-center gap-4 p-5 text-left transition hover:bg-red-50 dark:hover:bg-red-950/20">
+              <button className="focus-ring flex w-full items-center gap-4 p-5 text-left transition hover:bg-red-50 dark:hover:bg-red-950/20">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/40">
                   <Trash2 size={18} className="text-red-600 dark:text-red-400" />
                 </div>
@@ -193,7 +193,7 @@ function ToggleRow({
 
       <button
         onClick={onChange}
-        className={`relative h-7 w-12 rounded-full transition cursor-pointer ${
+        className={`focus-ring relative h-7 w-12 rounded-full transition cursor-pointer ${
           checked ? "bg-pink-600" : "bg-neutral-300 dark:bg-neutral-700"
         }`}
       >
@@ -249,7 +249,7 @@ function LinkRow({
 
   return (
     <button
-      className={`group flex w-full items-center justify-between px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors ${
+      className={`focus-ring group flex w-full items-center justify-between px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors ${
         !isLast ? "border-b border-neutral-100 dark:border-neutral-800" : ""
       }`}
     >
@@ -291,7 +291,7 @@ function LanguageRow() {
       <button
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        className="group flex w-full items-center justify-between px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
+        className="focus-ring group flex w-full items-center justify-between px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
       >
         <div className="flex items-center gap-4">
           <div className="text-pink-600">
@@ -321,7 +321,7 @@ function LanguageRow() {
                 setLang(l.code);
                 setOpen(false);
               }}
-              className="flex w-full items-center justify-between py-3.5 pl-16 pr-5 text-left text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
+              className="focus-ring flex w-full items-center justify-between py-3.5 pl-16 pr-5 text-left text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
             >
               <span className={lang === l.code ? "font-semibold text-pink-600" : ""}>
                 {l.label}

@@ -37,13 +37,13 @@ export default function ContactPage() {
           shared back bar instead of butting against it, and matches the rounded
           gradient blocks used further down the page. */}
       <section className="mx-auto max-w-7xl px-4 pt-2 md:px-8">
-        <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-[#f9186b] via-[#d4145b] to-[#f9186b] px-6 py-16 text-center md:py-20">
+        <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-primary via-primary-hover to-primary px-6 py-16 text-center md:py-20">
           <div className="mb-8 flex justify-center">
             {/* Hero is the pink gradient — knockout, no white plate. */}
             <Logo size={96} variant="mark" />
           </div>
 
-          <h1 className="text-3xl font-bold text-white sm:text-4xl md:text-6xl">
+          <h1 className="text-2xl font-bold text-white lg:text-display">
             {t("contactPageTitle")}
           </h1>
 
@@ -64,8 +64,8 @@ export default function ContactPage() {
                 key={card.title}
                 className="rounded-3xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f9186b]/10">
-                  <Icon className="h-7 w-7 text-[#f9186b]" />
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                  <Icon className="h-7 w-7 text-primary" />
                 </div>
 
                 <h3 className="mb-3 text-xl font-bold">{card.title}</h3>
@@ -83,12 +83,12 @@ export default function ContactPage() {
 
       {/* Location Card */}
       <section className="mx-auto max-w-7xl px-4 pb-20 md:px-8">
-        <div className="overflow-hidden rounded-3xl bg-linear-to-r from-[#f9186b] to-[#d4145b] p-6 text-white sm:p-10">
+        <div className="overflow-hidden rounded-3xl bg-linear-to-r from-primary to-primary-hover p-6 text-white sm:p-10">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
               <div className="mb-4 flex items-center gap-3">
                 <MapPin className="h-8 w-8" />
-                <h2 className="text-3xl font-bold">{t("contactLocationTitle")}</h2>
+                <h2 className="text-xl font-bold">{t("contactLocationTitle")}</h2>
               </div>
 
               <p className="mb-6 text-white/85">
@@ -103,7 +103,7 @@ export default function ContactPage() {
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   href={`mailto:${t("contactEmailDetail1")}`}
-                  className="rounded-xl bg-white px-6 py-3 font-medium text-[#f9186b] transition hover:bg-pink-50"
+                  className="rounded-xl bg-white px-6 py-3 font-medium text-primary transition hover:bg-pink-50"
                 >
                   {t("contactEmailButton")}
                 </Link>
@@ -131,8 +131,8 @@ export default function ContactPage() {
       {/* CTA */}
       <section className="pb-20">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="rounded-3xl bg-linear-to-r from-[#f9186b] via-[#d4145b] to-[#f9186b] px-6 py-14 text-center text-white sm:px-8">
-            <h2 className="text-2xl font-bold sm:text-3xl md:text-4xl">
+          <div className="rounded-3xl bg-linear-to-r from-primary via-primary-hover to-primary px-6 py-14 text-center text-white sm:px-8">
+            <h2 className="text-2xl font-bold lg:text-display">
               {t("contactCtaTitle")}
             </h2>
 

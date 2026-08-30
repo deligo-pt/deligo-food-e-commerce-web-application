@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
 import Loader from "@/components/shared/Loader";
+import { Button } from "@/components/ui/button";
 
 export default function SuccessContent() {
   const { t } = useTranslation();
@@ -54,12 +55,13 @@ export default function SuccessContent() {
 
           <p className="mt-3 text-gray-600 dark:text-neutral-400">{error}</p>
 
-          <button
+          <Button
+            size="lg"
             onClick={() => router.replace("/payment-failed")}
-            className="mt-6 w-full rounded-xl bg-pink-600 hover:bg-pink-700 px-6 py-3 text-white font-semibold transition"
+            className="mt-6 w-full rounded-xl font-semibold"
           >
             {t("continueButton")}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -70,7 +72,7 @@ export default function SuccessContent() {
       <div className="text-center">
         <Loader label={null} className="mx-auto" />
 
-        <h2 className="mt-4 text-lg font-semibold text-gray-800 dark:text-neutral-200">
+        <h2 className="mt-4 text-xl font-semibold text-gray-800 dark:text-neutral-200">
           {t("paymentSuccessful")}
         </h2>
 

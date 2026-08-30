@@ -7,6 +7,7 @@ import { useAuthed } from "@/hooks/useAuthed";
 import { openSupportChat } from "@/stores/supportChatStore";
 import HelpRow from "./HelpRow";
 import HelpAccordion from "./HelpAccordion";
+import { Button } from "@/components/ui/button";
 
 /**
  * "Account & Profile" — the four common questions, the two screens that answer
@@ -70,11 +71,11 @@ export default function AccountHelpPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-gray-900 transition-colors duration-200 dark:bg-neutral-950 dark:text-neutral-100">
       <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
-        <h1 className="text-2xl font-bold text-[#191c1d] dark:text-neutral-50 sm:text-3xl">
+        <h1 className="text-2xl font-bold text-foreground dark:text-neutral-50">
           {t("accountProfile")}
         </h1>
 
-        <p className="mt-2 text-sm text-[#5a4044] dark:text-neutral-400">
+        <p className="mt-2 text-sm text-muted-foreground dark:text-neutral-400">
           {t("accountHelpSubtitle")}
         </p>
 
@@ -83,7 +84,7 @@ export default function AccountHelpPage() {
         </div>
 
         <section className="mt-10">
-          <h2 className="mb-3 text-lg font-bold text-[#191c1d] dark:text-neutral-50">
+          <h2 className="mb-3 text-xl font-bold text-foreground dark:text-neutral-50">
             {t("manageAccount")}
           </h2>
 
@@ -104,16 +105,18 @@ export default function AccountHelpPage() {
         </section>
 
         <div className="mt-10 text-center">
-          <p className="text-sm text-[#5a4044] dark:text-neutral-400">
+          <p className="text-sm text-muted-foreground dark:text-neutral-400">
             {t("stillNeedHelp")}
           </p>
-          <button
+          <Button
             type="button"
+            variant="link"
+            size="sm"
             onClick={contactSupport}
-            className="mt-1 cursor-pointer text-base font-bold text-[#f9186b] transition-opacity hover:opacity-80 dark:text-pink-400"
+            className="mt-1 h-auto cursor-pointer px-0 font-bold"
           >
             {t("contactSupport")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { forwardRef, memo, useEffect, useRef } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Button } from "@/components/ui/button";
 
 /**
  * The minimum a group has to be for this bar to navigate to it. Deliberately
@@ -93,7 +94,7 @@ const CategoryNav = memo(
           {groups.map((group) => {
             const isActive = group.id === activeId;
             return (
-              <button
+              <Button
                 key={group.id}
                 type="button"
                 ref={(node) => {
@@ -102,18 +103,16 @@ const CategoryNav = memo(
                 }}
                 onClick={() => onSelect(group.id)}
                 aria-current={isActive ? "true" : undefined}
-                // Plan.md §1.3: 40px tall, 16px side padding, 14px text — the
-                // `md` button size, so this row matches every other control on
-                // the page once that sweep lands, and clears the 40px touch
-                // target it previously missed.
-                className={`inline-flex h-10 shrink-0 items-center rounded-lg px-4 text-sm font-semibold uppercase transition focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 focus-visible:outline-none dark:focus-visible:ring-offset-neutral-950 ${
-                  isActive
-                    ? "bg-pink-600 text-white"
-                    : "border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                }`}
+                variant={isActive ? "default" : "outline"}
+                // These pills were drawn to the `md` spec by hand before the
+                // component existed; now they just ask for it. This row is
+                // `lg:hidden`, so in practice it renders at the 44px mobile
+                // height — which is the whole reason `md` is taller there.
+                // `shrink-0` because the row scrolls horizontally.
+                className="shrink-0 font-semibold uppercase"
               >
                 {group.name}
-              </button>
+              </Button>
             );
           })}
         </div>

@@ -26,10 +26,10 @@ import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
-  getDeliveryTax,
+  getDeliveryVat,
   getServiceChargeGross,
-  getServiceChargeTax,
-} from "@/lib/tax";
+  getServiceChargeVat,
+} from "@/lib/vat";
 import {
   canCancelOrder,
   getRefundState,
@@ -57,6 +57,7 @@ import PickupCodeCard from "./PickupCodeCard";
 import PickupLocationCard from "./PickupLocationCard";
 import RefundBanner from "./RefundBanner";
 import CancelOrderDialog from "../CancelOrderDialog";
+import { Button } from "@/components/ui/button";
 
 
 // A live order changes minute to minute, so it is worth watching closely. A
@@ -69,7 +70,7 @@ const REFUND_POLL_MS = 30000;
 // card's own heading caption, so the two read as a hierarchy rather than
 // competing for the same line.
 const FIELD_LABEL_CLASS =
-  "text-[11px] font-bold uppercase tracking-wider text-[#8e6f74] dark:text-neutral-500";
+  "text-xs font-bold uppercase tracking-wider text-muted-foreground dark:text-neutral-500";
 
 // Copy and icon for every step the timeline can show. Which of these actually
 // appear — and in what order — is `getTimelineStepKeys`'s call, so that a
@@ -389,7 +390,7 @@ export default function TrackOrder() {
 
   if (loading) {
     return (
-      <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-[#191c1d] dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
+      <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-foreground dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-24">
           <div className="animate-pulse space-y-6">
             <div className="h-100 bg-gray-200 dark:bg-neutral-800 rounded-4xl" />
@@ -406,7 +407,7 @@ export default function TrackOrder() {
 
   if (error || !order) {
     return (
-      <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-[#191c1d] dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
+      <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-foreground dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-24 text-center">
           <p className="text-red-500 dark:text-red-400">{error || "Order not found"}</p>
         </div>
@@ -494,14 +495,14 @@ export default function TrackOrder() {
   // Through the shared helper rather than reading `serviceChargeVatAmount`
   // directly: `getServiceChargeGross` falls back to the standard rate when that
   // field is absent, and a caption without the same fallback would print "incl.
-  // tax €0.00" beside a gross figure that plainly contains some.
-  const serviceChargeTax = getServiceChargeTax(calc);
+  // VAT €0.00" beside a gross figure that plainly contains some.
+  const serviceChargeVat = getServiceChargeVat(calc);
   const offerDiscount = calc.totalOfferDiscount || 0;
   const deliveryFee = order.delivery?.totalDeliveryCharge || 0;
-  const deliveryTax = getDeliveryTax(order.delivery || {});
-  // Tax embedded in the items subtotal — shown inline on the subtotal row,
+  const deliveryVat = getDeliveryVat(order.delivery || {});
+  // VAT embedded in the items subtotal — shown inline on the subtotal row,
   // matching the app, rather than as a standalone line.
-  const subtotalTax = calc.totalTaxAmount || 0;
+  const subtotalVat = calc.totalTaxAmount || 0;
 
   const steps = getOrderStep(order, t, getTerminalReason(order), isPickup);
 
@@ -511,7 +512,7 @@ export default function TrackOrder() {
   const paymentStatusDisplay = getPaymentStatusDisplay(order.paymentStatus);
 
   return (
-    <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-[#191c1d] dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
+    <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-foreground dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column */}
@@ -594,13 +595,13 @@ export default function TrackOrder() {
                     )}
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-[#5a4044] dark:text-neutral-400 tracking-wide uppercase">
+                    <p className="text-xs font-bold text-muted-foreground dark:text-neutral-400 tracking-wide uppercase">
                       {t("yourRider") || "Your Rider"}
                     </p>
-                    <h3 className="text-xl font-extrabold text-[#191c1d] dark:text-neutral-50">
+                    <h3 className="text-xl font-extrabold text-foreground dark:text-neutral-50">
                       {`${order.deliveryPartnerId.name?.firstName || ""} ${order.deliveryPartnerId.name?.lastName || ""}`.trim()}
                     </h3>
-                    <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-muted-foreground dark:text-neutral-400 flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
                       {order.orderStatus === "DELIVERED"
                         ? t("orderHasBeenDelivered")
@@ -626,13 +627,13 @@ export default function TrackOrder() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800">
                 <div className="h-12 w-12 rounded-full bg-[#ffd9de] dark:bg-pink-950/30 flex items-center justify-center shrink-0">
-                  <Utensils className="w-6 h-6 text-[#f9186b] dark:text-pink-400" />
+                  <Utensils className="w-6 h-6 text-primary dark:text-pink-400" />
                 </div>
                 <div className="space-y-1 min-w-0">
-                  <p className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400 tracking-wide">
+                  <p className="text-xs font-semibold text-muted-foreground dark:text-neutral-400 tracking-wide">
                     {t("restaurant")}
                   </p>
-                  <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50 break-words">
+                  <h3 className="text-xl font-bold text-foreground dark:text-neutral-50 break-words">
                     {vendorName || t("restaurant")}
                   </h3>
                   {/* Two facts about the same shop, so each is captioned rather
@@ -648,7 +649,7 @@ export default function TrackOrder() {
                           on a pickup order. The store's real address is the one
                           thing the customer has to have, so it comes from the
                           vendor lookup instead. */}
-                      <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 leading-relaxed break-words">
+                      <p className="text-sm font-semibold text-muted-foreground dark:text-neutral-400 leading-relaxed break-words">
                         {isPickup && storeLocation
                           ? formatAddressFull(storeLocation)
                           : restaurantAddress}
@@ -668,12 +669,12 @@ export default function TrackOrder() {
                           <a
                             href={vendorPhoneHref}
                             aria-label={`${t("phone")}: ${vendorPhone}`}
-                            className="text-sm font-semibold break-all text-[#f9186b] dark:text-pink-400 hover:underline"
+                            className="text-sm font-semibold break-all text-primary dark:text-pink-400 hover:underline"
                           >
                             {vendorPhone}
                           </a>
                         ) : (
-                          <p className="text-sm font-semibold break-all text-[#5a4044] dark:text-neutral-400">
+                          <p className="text-sm font-semibold break-all text-muted-foreground dark:text-neutral-400">
                             {vendorPhone}
                           </p>
                         )}
@@ -685,19 +686,19 @@ export default function TrackOrder() {
 
               {/* Where the order ends up: an address for delivery, a time and a
                   counter for pickup. */}
-              <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-l-[#f9186b] dark:border-l-[#f9186b]">
+              <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-l-primary dark:border-l-primary">
                 <div className="h-12 w-12 rounded-full bg-[#ffd9df] dark:bg-pink-950/30 flex items-center justify-center shrink-0">
                   {isPickup ? (
-                    <Clock className="w-6 h-6 text-[#f9186b] dark:text-pink-400" />
+                    <Clock className="w-6 h-6 text-primary dark:text-pink-400" />
                   ) : (
-                    <MapPin className="w-6 h-6 text-[#f9186b] dark:text-pink-400" />
+                    <MapPin className="w-6 h-6 text-primary dark:text-pink-400" />
                   )}
                 </div>
                 <div className="space-y-1 min-w-0">
-                  <p className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400">
+                  <p className="text-xs font-semibold text-muted-foreground dark:text-neutral-400">
                     {isPickup ? t("pickupTime") : t("deliveryTo")}
                   </p>
-                  <h3 className="text-xl font-bold text-[#191c1d] dark:text-neutral-50 break-words">
+                  <h3 className="text-xl font-bold text-foreground dark:text-neutral-50 break-words">
                     {isPickup
                       ? order.pickup?.pickupTime
                         ? formatPickupMoment(order.pickup.pickupTime, lang, {
@@ -707,7 +708,7 @@ export default function TrackOrder() {
                         : "—"
                       : deliveryAddress?.city || t("location")}
                   </h3>
-                  <p className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 break-words">
+                  <p className="text-sm font-semibold text-muted-foreground dark:text-neutral-400 break-words">
                     {isPickup
                       ? t("collectAtCounter")
                       : addressString || t("addressNotProvided")}
@@ -721,9 +722,9 @@ export default function TrackOrder() {
               <div className="md:col-span-5 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-[#ffd9de] dark:bg-pink-950/30 rounded-xl">
-                    <ShoppingBag className="w-5 h-5 text-[#f9186b] dark:text-pink-400" />
+                    <ShoppingBag className="w-5 h-5 text-primary dark:text-pink-400" />
                   </div>
-                  <h4 className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400">
+                  <h4 className="text-sm font-semibold text-muted-foreground dark:text-neutral-400">
                     {t("orderItems")} ({totalItems})
                   </h4>
                 </div>
@@ -734,14 +735,14 @@ export default function TrackOrder() {
                       className="flex items-center justify-between"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-[#f9186b] dark:text-pink-400 font-bold">
+                        <span className="text-primary dark:text-pink-400 font-bold">
                           {item.itemSummary?.quantity}x
                         </span>
-                        <span className="text-[#191c1d] dark:text-neutral-300 font-semibold">
+                        <span className="text-foreground dark:text-neutral-300 font-semibold">
                           {item.name}
                         </span>
                       </div>
-                      <span className="text-[#191c1d] dark:text-neutral-250 font-bold">
+                      <span className="text-foreground dark:text-neutral-250 font-bold">
                         €{item.itemSummary?.grandTotal?.toFixed(2)}
                       </span>
                     </div>
@@ -751,17 +752,17 @@ export default function TrackOrder() {
               <div className="md:col-span-7 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-[#ffd9df] dark:bg-pink-950/30 rounded-xl">
-                    <Receipt className="w-5 h-5 text-[#f9186b] dark:text-pink-400" />
+                    <Receipt className="w-5 h-5 text-primary dark:text-pink-400" />
                   </div>
-                  <h4 className="text-sm font-semibold text-[#5a4044] dark:text-neutral-400 uppercase tracking-wider">
+                  <h4 className="text-sm font-semibold text-muted-foreground dark:text-neutral-400 uppercase tracking-wider">
                     {t("billSummary")}
                   </h4>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                  <div className="flex items-baseline justify-between gap-3 text-muted-foreground dark:text-neutral-400">
                     <span className="min-w-0">
                       {t("totalPrice")}
-                      <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
+                      <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
                         ({t("withoutDiscount")})
                       </span>
                     </span>
@@ -773,11 +774,11 @@ export default function TrackOrder() {
                       <span>-€{productDiscount.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                  <div className="flex items-baseline justify-between gap-3 text-muted-foreground dark:text-neutral-400">
                     <span className="min-w-0">
                       {t("subtotal")}
-                      <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
-                        ({t("inclTax")}&nbsp;€{subtotalTax.toFixed(2)})
+                      <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
+                        ({t("inclVat")}&nbsp;€{subtotalVat.toFixed(2)})
                       </span>
                     </span>
                     <span className="shrink-0 whitespace-nowrap">€{subtotal.toFixed(2)}</span>
@@ -787,12 +788,12 @@ export default function TrackOrder() {
                       from a delivery that happened to be free. Matches the
                       payment page. */}
                   {!isPickup && (
-                    <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                    <div className="flex items-baseline justify-between gap-3 text-muted-foreground dark:text-neutral-400">
                       <span className="min-w-0">
                         {t("deliveryFee")}
                         {deliveryFee > 0 && (
-                          <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
-                            ({t("inclTax")}&nbsp;€{deliveryTax.toFixed(2)})
+                          <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
+                            ({t("inclVat")}&nbsp;€{deliveryVat.toFixed(2)})
                           </span>
                         )}
                       </span>
@@ -800,12 +801,12 @@ export default function TrackOrder() {
                     </div>
                   )}
                   {serviceCharge > 0 && (
-                    <div className="flex items-baseline justify-between gap-3 text-[#5a4044] dark:text-neutral-400">
+                    <div className="flex items-baseline justify-between gap-3 text-muted-foreground dark:text-neutral-400">
                       <span className="min-w-0">
                         {t("serviceCharge")}
-                        {serviceChargeTax > 0 && (
-                          <span className="ml-1 whitespace-nowrap text-xs text-[#8e6f74] dark:text-neutral-500">
-                            ({t("inclTax")}&nbsp;€{serviceChargeTax.toFixed(2)})
+                        {serviceChargeVat > 0 && (
+                          <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
+                            ({t("inclVat")}&nbsp;€{serviceChargeVat.toFixed(2)})
                           </span>
                         )}
                       </span>
@@ -819,20 +820,20 @@ export default function TrackOrder() {
                     </div>
                   )}
                   <div className="pt-4 mt-2 border-t border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
-                    <span className="text-2xl font-extrabold text-[#191c1d] dark:text-neutral-50">
+                    <span className="text-xl font-extrabold text-foreground dark:text-neutral-50">
                       {t("totalAmount")}
                     </span>
-                    <span className="text-2xl font-extrabold text-[#f9186b] dark:text-pink-400">
+                    <span className="text-2xl font-extrabold text-primary dark:text-pink-400">
                       €{grandTotal.toFixed(2)}
                     </span>
                   </div>
                 </div>
                 <div className="mt-6 bg-[#edeeef] dark:bg-neutral-950 p-4 rounded-2xl flex items-center justify-between transition-colors duration-200">
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-[#5a4044] dark:text-neutral-400">
+                    <span className="text-xs font-semibold text-muted-foreground dark:text-neutral-400">
                       {t("paymentMethod")}
                     </span>
-                    <span className="text-[#191c1d] dark:text-neutral-300 font-extrabold">
+                    <span className="text-foreground dark:text-neutral-300 font-extrabold">
                       {order.paymentMethod || t("notAvailable")}
                     </span>
                   </div>
@@ -841,7 +842,7 @@ export default function TrackOrder() {
                       the one question this badge exists to answer. */}
                   {paymentStatusDisplay && (
                     <span
-                      className={`px-3 py-1 text-[10px] font-bold rounded-full border ${paymentStatusDisplay.className}`}
+                      className={`px-3 py-1 text-xs font-bold rounded-full border ${paymentStatusDisplay.className}`}
                     >
                       {paymentStatusDisplay.labelKey
                         ? t(paymentStatusDisplay.labelKey)
@@ -849,10 +850,12 @@ export default function TrackOrder() {
                     </span>
                   )}
                 </div>
-                <button
+                <Button
+                  variant="outline"
+                  size="lg"
                   onClick={handleDownloadInvoice}
                   disabled={downloadingInvoice}
-                  className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-3 font-bold text-[#191c1d] dark:text-neutral-100 transition-all hover:bg-neutral-50 dark:hover:bg-neutral-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-4 w-full gap-2 rounded-2xl font-bold active:scale-95"
                 >
                   {downloadingInvoice ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -860,17 +863,19 @@ export default function TrackOrder() {
                     <Download className="w-4 h-4" />
                   )}
                   <span>{t("downloadInvoice")}</span>
-                </button>
+                </Button>
                 {/* Below the invoice, and outlined rather than filled: this is
                     the only destructive action on the page. */}
                 {canCancelOrder(order) && (
-                  <button
+                  <Button
+                    variant="outline"
+                    size="lg"
                     onClick={() => setCancelDialogOpen(true)}
-                    className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-red-200 dark:border-red-900/40 bg-white dark:bg-neutral-950 px-6 py-3 font-bold text-red-600 dark:text-red-400 transition-all hover:bg-red-50 dark:hover:bg-red-950/20 active:scale-95"
+                    className="mt-3 w-full gap-2 rounded-2xl border-red-200 font-bold text-red-600 hover:bg-red-50 hover:text-red-600 active:scale-95 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20"
                   >
                     <XCircle className="w-4 h-4" />
                     <span>{t("cancelOrder")}</span>
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -880,20 +885,23 @@ export default function TrackOrder() {
           <aside className="lg:col-span-5 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6 h-full min-h-175 transition-colors duration-200">
             <div className="flex justify-between items-start mb-8">
               <div>
-                <h2 className="text-2xl font-extrabold text-[#191c1d] dark:text-neutral-50">
+                <h2 className="text-xl font-extrabold text-foreground dark:text-neutral-50">
                   {t("orderStatus")}
                 </h2>
-                <div className="flex items-center gap-2 mt-1 text-[#5a4044] dark:text-neutral-400 text-xs font-semibold">
+                <div className="flex items-center gap-2 mt-1 text-muted-foreground dark:text-neutral-400 text-xs font-semibold">
                   <span className="font-bold">{order.orderId}</span>
                   <span>•</span>
                   <span>{new Date(order.createdAt).toLocaleString()}</span>
                 </div>
               </div>
-              <Link href="/help-center">
-                <button className="bg-[#f9186b] dark:bg-pink-600 text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg hover:opacity-90 transition-all active:scale-95">
+              {/* Was a <button> inside a <Link> — invalid HTML, and the anchor
+                  was already what navigated. The link now carries the shape and
+                  the shared focus ring. */}
+              <Link href="/help-center" className="focus-ring rounded-full active:scale-95">
+                <span className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm text-primary-foreground shadow-lg transition-all sm:h-10">
                   <Headphones className="w-4 h-4" />
                   <span className="font-bold">{t("support")}</span>
-                </button>
+                </span>
               </Link>
             </div>
 
@@ -909,14 +917,14 @@ export default function TrackOrder() {
                   >
                     {idx < steps.length - 1 && (
                       <div
-                        className={`absolute left-5 top-10 bottom-0 w-0.5 ${isCompleted ? "bg-[#f9186b] dark:bg-pink-600" : "bg-[#e3bdc3] dark:bg-neutral-800"
+                        className={`absolute left-5 top-10 bottom-0 w-0.5 ${isCompleted ? "bg-primary dark:bg-pink-600" : "bg-[#e3bdc3] dark:bg-neutral-800"
                           } ${isCurrent && idx !== steps.length - 1 ? "border-l-2 border-dashed border-[#e3bdc3] dark:border-neutral-800" : ""}`}
                       />
                     )}
                     <div
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shadow-md ${isCompleted || isCurrent
-                        ? "bg-[#f9186b] dark:bg-pink-600 text-white"
-                        : "bg-[#f3f4f5] dark:bg-neutral-950 text-[#8e6f74] dark:text-neutral-500 border border-[#e3bdc3] dark:border-neutral-800"
+                        ? "bg-primary dark:bg-pink-600 text-white"
+                        : "bg-[#f3f4f5] dark:bg-neutral-950 text-muted-foreground dark:text-neutral-500 border border-[#e3bdc3] dark:border-neutral-800"
                         } ${isCurrent ? "border-4 border-[#ffd9de] dark:border-pink-950/40" : ""}`}
                     >
                       <Icon className="w-5 h-5" />
@@ -924,14 +932,14 @@ export default function TrackOrder() {
                     <div className="flex-1">
                       <h4
                         className={`text-xl font-bold ${isCompleted || isCurrent
-                          ? "text-[#191c1d] dark:text-neutral-50"
-                          : "text-[#8e6f74] dark:text-neutral-500"
-                          } ${isCurrent ? "text-[#f9186b] dark:text-pink-400" : ""}`}
+                          ? "text-foreground dark:text-neutral-50"
+                          : "text-muted-foreground dark:text-neutral-500"
+                          } ${isCurrent ? "text-primary dark:text-pink-400" : ""}`}
                       >
                         {step.label}
                       </h4>
                       <p
-                        className={`text-base ${isCompleted || isCurrent ? "text-[#5a4044] dark:text-neutral-400" : "text-[#e3bdc3] dark:text-neutral-600"}`}
+                        className={`text-base ${isCompleted || isCurrent ? "text-muted-foreground dark:text-neutral-400" : "text-[#e3bdc3] dark:text-neutral-600"}`}
                       >
                         {step.description}
                       </p>
@@ -941,8 +949,8 @@ export default function TrackOrder() {
                           collected pickup order — telling a customer holding
                           their food that something was still happening. */}
                       {isCurrent && !isCompletedStatus(step.key) && !isTerminatedStatus(step.key) && (
-                        <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] dark:bg-pink-950/40 text-[#f9186b] dark:text-pink-400 rounded-full text-xs font-bold">
-                          <span className="w-1.5 h-1.5 bg-[#f9186b] dark:bg-pink-500 rounded-full animate-pulse" />
+                        <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] dark:bg-pink-950/40 text-primary dark:text-pink-400 rounded-full text-xs font-bold">
+                          <span className="w-1.5 h-1.5 bg-primary dark:bg-pink-500 rounded-full animate-pulse" />
                           {t("inProgress")}
                         </span>
                       )}

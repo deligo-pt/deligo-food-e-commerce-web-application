@@ -32,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface DeliveryAddress {
   _id: string;
@@ -157,7 +158,7 @@ export default function SavedAddressesPage() {
           window focus and after every mutation, so the button gave the user
           nothing to observe. */}
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black dark:text-neutral-50">
+        <h1 className="text-2xl lg:text-display font-bold text-black dark:text-neutral-50">
           {t("manageAddresses")}
         </h1>
       </div>
@@ -165,7 +166,7 @@ export default function SavedAddressesPage() {
       {/* Delivery Addresses */}
       <div className="space-y-4">
         {addresses.length > 0 && (
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-neutral-400">
+          <h2 className="text-xs font-bold uppercase tracking-[0.06em] text-muted-foreground dark:text-neutral-400">
             {t("deliveryAddresses") || "Delivery Addresses"}
           </h2>
         )}
@@ -202,7 +203,7 @@ export default function SavedAddressesPage() {
                   }`}
               >
                 <TypeIcon
-                  className={`h-4 w-4 ${isActiveAddress ? "text-[#C2185B] dark:text-pink-400" : "text-gray-600 dark:text-neutral-400"
+                  className={`h-4 w-4 ${isActiveAddress ? "text-primary dark:text-pink-400" : "text-gray-600 dark:text-neutral-400"
                     }`}
                 />
               </div>
@@ -214,14 +215,14 @@ export default function SavedAddressesPage() {
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
                   <span
-                    className={`text-sm font-semibold uppercase ${isActiveAddress ? "text-[#C2185B] dark:text-pink-400" : "text-black dark:text-neutral-200"
+                    className={`text-sm font-semibold uppercase ${isActiveAddress ? "text-primary dark:text-pink-400" : "text-black dark:text-neutral-200"
                       }`}
                   >
                     {addressTypeLabel(t, address.addressType, address.customAddressType)}
                   </span>
 
                   {isActiveAddress && (
-                    <span className="rounded bg-[#C2185B] dark:bg-pink-600 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-white">
+                    <span className="rounded bg-primary dark:bg-pink-600 px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap text-white">
                       {t("active")}
                     </span>
                   )}
@@ -242,31 +243,35 @@ export default function SavedAddressesPage() {
               {/* Icon-only, so they carry their own labels. Sized to a real
                   36px tap target instead of the bare 16px glyph. */}
               <div className="flex shrink-0 items-center gap-1">
-                <button
+                <Button
                   type="button"
+                  size="icon-sm"
+                  variant="ghost"
                   aria-label={t("editAddress")}
                   title={t("editAddress")}
                   onClick={(e) => {
                     e.stopPropagation();
                     router.push(`/edit-address/${address._id}`);
                   }}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-[#C2185B] focus-visible:outline-none dark:hover:bg-white/10"
+                  className="hover:bg-black/5 dark:hover:bg-white/10"
                 >
-                  <Pencil className="h-4 w-4 text-[#C2185B] dark:text-pink-400" />
-                </button>
+                  <Pencil className="h-4 w-4 text-primary dark:text-pink-400" />
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  size="icon-sm"
+                  variant="ghost"
                   aria-label={t("deleteAddress")}
                   title={t("deleteAddress")}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteAddress(address._id);
                   }}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-[#C2185B] focus-visible:outline-none dark:hover:bg-white/10"
+                  className="hover:bg-black/5 dark:hover:bg-white/10"
                 >
-                  <Trash2 className="h-4 w-4 text-[#C2185B] dark:text-pink-400" />
-                </button>
+                  <Trash2 className="h-4 w-4 text-primary dark:text-pink-400" />
+                </Button>
               </div>
             </div>
           );
@@ -280,7 +285,7 @@ export default function SavedAddressesPage() {
 
         <Link
           href="/add-address"
-          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-pink-300 dark:border-pink-500/40 bg-white dark:bg-neutral-900/30 px-4 py-4 text-sm font-semibold text-[#C2185B] dark:text-pink-400 transition-all hover:border-[#C2185B] dark:hover:border-pink-400 hover:bg-pink-50/60 dark:hover:bg-pink-950/10"
+          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-pink-300 dark:border-pink-500/40 bg-white dark:bg-neutral-900/30 px-4 py-4 text-sm font-semibold text-primary dark:text-pink-400 transition-all hover:border-primary dark:hover:border-pink-400 hover:bg-pink-50/60 dark:hover:bg-pink-950/10"
         >
           <Plus className="h-4 w-4" />
           {t("addNewAddress")}

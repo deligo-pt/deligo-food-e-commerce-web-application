@@ -2,6 +2,7 @@
 
 import { Shield } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Button } from "@/components/ui/button";
 
 // Helper Components (same as before)
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
@@ -18,7 +19,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id} className="scroll-mt-20 mb-12">
-      <h2 className="text-2xl md:text-3xl font-bold mt-8 mb-4 text-slate-900 dark:text-neutral-50">{title}</h2>
+      <h2 className="text-2xl lg:text-display font-bold mt-8 mb-4 text-slate-900 dark:text-neutral-50">{title}</h2>
       <div className="text-gray-600 dark:text-neutral-300 leading-relaxed space-y-3">{children}</div>
     </section>
   );
@@ -27,7 +28,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border border-gray-200 dark:border-neutral-800 rounded-xl p-5 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none">
-      <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-neutral-200">{title}</h3>
+      <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-neutral-200">{title}</h3>
       {children}
     </div>
   );
@@ -41,10 +42,10 @@ export default function PrivacyPolicyPage() {
       {/* Hero Section */}
       <section className="bg-gray-50 dark:bg-neutral-900/50 py-16 border-b border-gray-200 dark:border-neutral-800">
         <div className="max-w-6xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-neutral-50 mb-6">
+          <h1 className="text-display font-extrabold text-gray-900 dark:text-neutral-50 mb-6">
             {t("privacyHeroTitle")}
           </h1>
-          <p className="text-lg text-gray-500 dark:text-neutral-400 max-w-2xl">
+          <p className="text-base text-gray-500 dark:text-neutral-400 max-w-2xl">
             {t("privacyHeroDescription")}
           </p>
         </div>
@@ -75,7 +76,7 @@ export default function PrivacyPolicyPage() {
                 <NavLink href="#deletion">{t("privacyNavDeletion")}</NavLink>
                 <a
                   href="mailto:info@deligoeu.com"
-                  className="block w-full bg-[#f9186b] text-white rounded-md py-2.5 px-4 text-sm text-center font-bold hover:bg-[#d4145b] transition-colors mt-4"
+                  className="block w-full bg-primary text-white rounded-md py-2.5 px-4 text-sm text-center font-bold hover:bg-primary-hover transition-colors mt-4"
                 >
                   {t("privacyNavContact")}
                 </a>
@@ -107,7 +108,7 @@ export default function PrivacyPolicyPage() {
                   <NavLink href="#deletion">{t("privacyNavDeletion")}</NavLink>
                   <a
                     href="mailto:info@deligoeu.com"
-                    className="bg-[#f9186b] text-white rounded-md py-2 px-3 text-sm text-center font-bold hover:bg-[#d4145b] transition-colors col-span-2 sm:col-span-1 flex items-center justify-center"
+                    className="bg-primary text-white rounded-md py-2 px-3 text-sm text-center font-bold hover:bg-primary-hover transition-colors col-span-2 sm:col-span-1 flex items-center justify-center"
                   >
                     {t("privacyNavContact")}
                   </a>
@@ -202,9 +203,9 @@ export default function PrivacyPolicyPage() {
               <div className="bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 rounded-xl p-6 my-4">
                 <p className="mb-4">{t("privacyDeletionText")}</p>
                 <p className="mb-4 italic text-gray-600 dark:text-neutral-400">{t("privacyDeletionRequestText")}</p>
-                <button className="bg-red-500 text-white px-6 py-2.5 rounded-md font-bold hover:bg-red-700 transition-colors shadow-md">
+                <Button className="rounded-md bg-red-500 font-bold shadow-md hover:bg-red-700">
                   {t("privacyDeletionButton")}
-                </button>
+                </Button>
                 <p className="mt-4 text-xs text-gray-400 dark:text-neutral-500">{t("privacyDeletionNote")}</p>
               </div>
             </Section>
