@@ -8,6 +8,7 @@ import { getAccessToken } from "@/lib/authCookies";
 import { apiClient } from "@/lib/apiClient";
 import { addDeliveryAddress } from "@/services/addressApi";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
+import { Button } from "@/components/ui/button";
 
 // Minimal shapes for the fields we read off a Google Maps geocoder result
 // (the global `window.google` is untyped; this avoids `any` at the call sites).
@@ -183,25 +184,29 @@ export default function LocationPromptModal() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ffd9de]/50 opacity-75 duration-1000" />
             <span className="absolute inline-flex h-20 w-20 animate-pulse rounded-full bg-[#ffd9de]/70" />
             {isRequesting ? (
-              <Loader2 className="relative h-12 w-12 animate-spin text-[#f9186b]" />
+              <Loader2 className="relative h-12 w-12 animate-spin text-primary" />
             ) : (
-              <MapPin className="relative h-12 w-12 text-[#f9186b] drop-shadow-md" />
+              <MapPin className="relative h-12 w-12 text-primary drop-shadow-md" />
             )}
           </div>
 
-          <h2 className="mb-4 text-3xl font-black tracking-tight text-[#191c1d]">
+          <h2 className="mb-4 text-xl font-black tracking-tight text-foreground">
             {t("locationPromptTitle")}
           </h2>
 
-          <p className="mb-8 text-base leading-relaxed text-[#5a4044] font-medium px-2">
+          <p className="mb-8 text-base leading-relaxed text-muted-foreground font-medium px-2">
             {t("locationPromptDescription")}
           </p>
 
           <div className="flex w-full flex-col gap-3">
-            <button
+            {/* The gradient here ran from #f9186b to #f9186b — a gradient
+                between a colour and itself. It is a flat brand fill, which is
+                exactly what the default variant paints. */}
+            <Button
+              size="lg"
               onClick={handleShareLocation}
               disabled={isRequesting}
-              className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-2xl bg-linear-to-r from-[#f9186b] to-[#f9186b] py-4 text-base font-bold text-white shadow-lg shadow-[#f9186b]/20 transition-all hover:opacity-95 hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full cursor-pointer gap-2.5 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-xl active:scale-[0.98]"
             >
               {isRequesting ? (
                 <>
@@ -214,15 +219,17 @@ export default function LocationPromptModal() {
                   {t("shareLocation")}
                 </>
               )}
-            </button>
+            </Button>
 
-            <button
+            <Button
+              variant="outline"
+              size="lg"
               onClick={handleNotNow}
               disabled={isRequesting}
-              className="w-full cursor-pointer rounded-2xl border-2 border-[#edeeef] py-4 text-base font-bold text-[#5a4044] hover:bg-[#f8f9fa] hover:text-[#191c1d] transition-all disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full cursor-pointer rounded-2xl border-2 font-bold"
             >
               {t("notNow")}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

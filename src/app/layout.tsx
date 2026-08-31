@@ -53,7 +53,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-[#f8f9fa] dark:bg-neutral-950 font-sans text-[#191c1d] dark:text-neutral-100 transition-colors duration-200">
+      <body className="min-h-full flex flex-col bg-[#f8f9fa] dark:bg-neutral-950 font-sans text-foreground dark:text-neutral-100 transition-colors duration-200">
         <QueryProvider>
           {children}
           <Toaster position="top-center" richColors />

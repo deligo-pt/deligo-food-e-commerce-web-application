@@ -62,7 +62,7 @@ export default function ClosingCountdown({
       role="status"
       aria-live="polite"
     >
-      <span className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-[#f9186b] dark:text-pink-400">
+      <span className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-primary dark:text-pink-400">
         <Clock size={16} className="closing-clock shrink-0" />
         {t("closingSoon")}
       </span>

@@ -129,8 +129,8 @@ export default function CancelOrderDialog({
                     submitting ? "cursor-not-allowed opacity-60" : ""
                   } ${
                     isSelected
-                      ? "text-[#191c1d] dark:text-neutral-50 font-semibold"
-                      : "text-[#5a4044] dark:text-neutral-300"
+                      ? "text-foreground dark:text-neutral-50 font-semibold"
+                      : "text-muted-foreground dark:text-neutral-300"
                   }`}
                 >
                   <input
@@ -145,14 +145,14 @@ export default function CancelOrderDialog({
                   <span className="min-w-0">{t(option.labelKey)}</span>
                   <span
                     aria-hidden
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#f9186b]/40 peer-focus-visible:ring-offset-2 dark:peer-focus-visible:ring-offset-neutral-900 ${
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 peer-focus-visible:ring-offset-2 dark:peer-focus-visible:ring-offset-neutral-900 ${
                       isSelected
-                        ? "border-[#f9186b] dark:border-pink-500"
+                        ? "border-primary dark:border-pink-500"
                         : "border-gray-300 dark:border-neutral-600"
                     }`}
                   >
                     {isSelected && (
-                      <span className="h-2.5 w-2.5 rounded-full bg-[#f9186b] dark:bg-pink-500" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-primary dark:bg-pink-500" />
                     )}
                   </span>
                 </label>
@@ -173,7 +173,7 @@ export default function CancelOrderDialog({
               rows={3}
               autoFocus
               placeholder={t("cancelReasonPlaceholder")}
-              className="w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-[#f9186b] disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-600 dark:focus:border-pink-500"
+              className="w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-primary disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-600 dark:focus:border-pink-500"
             />
           )}
         </div>

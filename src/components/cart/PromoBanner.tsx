@@ -12,7 +12,7 @@ export default function PromoBanner() {
         src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c"
         alt="Promo"
         sizes="(max-width: 768px) 100vw, 33vw"
-        className="object-cover transition-transform duration-700 group-hover:scale-105"
+        className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
       />
 
       <div className="absolute inset-0 bg-linear-to-t from-pink-900/90 to-transparent" />

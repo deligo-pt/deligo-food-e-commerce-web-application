@@ -58,11 +58,11 @@ export default function PaymentsHelpPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-gray-900 transition-colors duration-200 dark:bg-neutral-950 dark:text-neutral-100">
       <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
-        <h1 className="text-2xl font-bold text-[#191c1d] dark:text-neutral-50 sm:text-3xl">
+        <h1 className="text-2xl font-bold text-foreground dark:text-neutral-50">
           {t("paymentsRefunds")}
         </h1>
 
-        <p className="mt-2 text-sm text-[#5a4044] dark:text-neutral-400">
+        <p className="mt-2 text-sm text-muted-foreground dark:text-neutral-400">
           {t("paymentsHelpSubtitle")}
         </p>
 

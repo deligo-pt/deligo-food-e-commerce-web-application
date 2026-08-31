@@ -11,6 +11,7 @@ import {
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCuisines } from "@/hooks/queries/useCuisines";
 import { formatCuisineLabel } from "@/lib/search";
+import { Button } from "@/components/ui/button";
 
 /**
  * The filter and sort controls above the search results.
@@ -77,15 +78,16 @@ function Dropdown({
 
   return (
     <div className="relative">
-      <button
+      <Button
         type="button"
+        variant="outline"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold shadow-sm transition ${
+        className={`gap-2 rounded-2xl font-semibold shadow-sm ${
           active
-            ? "border-[#f9186b] bg-[#fff1f4] text-[#f9186b] dark:border-pink-600 dark:bg-neutral-800 dark:text-pink-400"
-            : "border-[#edeeef] bg-white text-[#191c1d] hover:border-[#ffd9de] dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:hover:border-neutral-700"
+            ? "border-primary bg-[#fff1f4] text-primary dark:border-pink-600 dark:bg-neutral-800 dark:text-pink-400"
+            : "border-border bg-white text-foreground hover:border-[#ffd9de] dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:hover:border-neutral-700"
         }`}
       >
         {label}
@@ -93,7 +95,7 @@ function Dropdown({
           size={16}
           className={`transition-transform ${open ? "rotate-180" : ""}`}
         />
-      </button>
+      </Button>
 
       {open && (
         <>
@@ -102,7 +104,7 @@ function Dropdown({
             onClick={close}
             aria-hidden="true"
           />
-          <div className="absolute left-0 z-20 mt-2 w-60 overflow-hidden rounded-2xl border border-[#edeeef] bg-white py-1 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="absolute left-0 z-20 mt-2 w-60 overflow-hidden rounded-2xl border border-border bg-white py-1 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
             {children(close)}
           </div>
         </>
@@ -121,20 +123,21 @@ function Toggle({
   onChange: (next: boolean) => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold shadow-sm transition ${
+      className={`gap-2 rounded-2xl font-semibold shadow-sm ${
         checked
-          ? "border-[#f9186b] bg-[#fff1f4] text-[#f9186b] dark:border-pink-600 dark:bg-neutral-800 dark:text-pink-400"
-          : "border-[#edeeef] bg-white text-[#191c1d] hover:border-[#ffd9de] dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:hover:border-neutral-700"
+          ? "border-primary bg-[#fff1f4] text-primary dark:border-pink-600 dark:bg-neutral-800 dark:text-pink-400"
+          : "border-border bg-white text-foreground hover:border-[#ffd9de] dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:hover:border-neutral-700"
       }`}
     >
       {checked && <Check size={16} />}
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -209,39 +212,35 @@ export default function SearchFilters({
           for a perfectly valid pair (§0.4, §1.2). */}
       {cuisines.length > 0 && (
         <div className="flex flex-wrap gap-2" role="group">
-          <button
+          <Button
             type="button"
+            size="sm"
+            variant={values.cuisine ? "outline" : "default"}
             onClick={() => onChange({ cuisine: null })}
             aria-pressed={!values.cuisine}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-              !values.cuisine
-                ? "bg-[#f9186b] text-white"
-                : "bg-white text-[#191c1d] ring-1 ring-[#edeeef] hover:ring-[#ffd9de] dark:bg-neutral-900 dark:text-neutral-50 dark:ring-neutral-800"
-            }`}
+            className="rounded-full font-semibold"
           >
             {t("allCuisines")}
-          </button>
+          </Button>
 
           {cuisines.map((cuisine) => {
             const selected = values.cuisine === cuisine.slug;
             return (
-              <button
+              <Button
                 key={cuisine.slug}
                 type="button"
+                size="sm"
+                variant={selected ? "default" : "outline"}
                 onClick={() =>
                   onChange({ cuisine: selected ? null : cuisine.slug })
                 }
                 aria-pressed={selected}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  selected
-                    ? "bg-[#f9186b] text-white"
-                    : "bg-white text-[#191c1d] ring-1 ring-[#edeeef] hover:ring-[#ffd9de] dark:bg-neutral-900 dark:text-neutral-50 dark:ring-neutral-800"
-                }`}
+                className="rounded-full font-semibold"
               >
                 {/* `name` from the same object the `slug` came from, so a
                     display string can never be sent as a filter value. */}
                 {formatCuisineLabel(cuisine.name)}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -269,10 +268,10 @@ export default function SearchFilters({
                         });
                         close();
                       }}
-                      className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition hover:bg-[#fff1f4] dark:hover:bg-neutral-800 ${
+                      className={`focus-ring flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition hover:bg-[#fff1f4] dark:hover:bg-neutral-800 ${
                         selected
-                          ? "font-bold text-[#f9186b] dark:text-pink-400"
-                          : "text-[#191c1d] dark:text-neutral-50"
+                          ? "font-bold text-primary dark:text-pink-400"
+                          : "text-foreground dark:text-neutral-50"
                       }`}
                     >
                       {t(option.labelKey)}
@@ -299,9 +298,9 @@ export default function SearchFilters({
                 onKeyDown={(e) => e.key === "Enter" && commitPrice()}
                 placeholder={t("priceMin")}
                 aria-label={t("priceMin")}
-                className="w-full rounded-xl border border-[#edeeef] px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50"
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50"
               />
-              <span className="text-[#5a4044] dark:text-neutral-400">–</span>
+              <span className="text-muted-foreground dark:text-neutral-400">–</span>
               <input
                 type="number"
                 inputMode="decimal"
@@ -313,7 +312,7 @@ export default function SearchFilters({
                 onKeyDown={(e) => e.key === "Enter" && commitPrice()}
                 placeholder={t("priceMax")}
                 aria-label={t("priceMax")}
-                className="w-full rounded-xl border border-[#edeeef] px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50"
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50"
               />
             </div>
           )}
@@ -335,23 +334,24 @@ export default function SearchFilters({
             <div>
               {!hasCoords ? (
                 <div className="p-3">
-                  <p className="text-sm text-[#5a4044] dark:text-neutral-400">
+                  <p className="text-sm text-muted-foreground dark:text-neutral-400">
                     {locationDenied
                       ? t("locationDenied")
                       : t("nearMeUnavailable")}
                   </p>
                   {!locationDenied && (
-                    <button
+                    <Button
                       type="button"
+                      size="sm"
                       onClick={() => {
                         onRequestLocation();
                         close();
                       }}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#f9186b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d4145b]"
+                      className="mt-3 w-full gap-2 rounded-xl font-semibold"
                     >
                       <MapPin size={16} />
                       {t("useMyLocation")}
-                    </button>
+                    </Button>
                   )}
                 </div>
               ) : (
@@ -372,10 +372,10 @@ export default function SearchFilters({
                             });
                             close();
                           }}
-                          className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition hover:bg-[#fff1f4] dark:hover:bg-neutral-800 ${
+                          className={`focus-ring flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition hover:bg-[#fff1f4] dark:hover:bg-neutral-800 ${
                             selected
-                              ? "font-bold text-[#f9186b] dark:text-pink-400"
-                              : "text-[#191c1d] dark:text-neutral-50"
+                              ? "font-bold text-primary dark:text-pink-400"
+                              : "text-foreground dark:text-neutral-50"
                           }`}
                         >
                           {radius === null
@@ -410,19 +410,20 @@ export default function SearchFilters({
         />
 
         {anyActive && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={onClear}
-            className="flex items-center gap-1.5 rounded-2xl px-3 py-2.5 text-sm font-semibold text-[#5a4044] transition hover:text-[#f9186b] dark:text-neutral-400 dark:hover:text-pink-400"
+            className="gap-1.5 rounded-2xl font-semibold text-muted-foreground hover:bg-transparent hover:text-primary dark:text-neutral-400 dark:hover:bg-transparent dark:hover:text-primary"
           >
             <X size={16} />
             {t("clearFilters")}
-          </button>
+          </Button>
         )}
 
         <SlidersHorizontal
           size={16}
-          className="order-first text-[#f9186b] dark:text-pink-500"
+          className="order-first text-primary dark:text-pink-500"
           aria-hidden="true"
         />
       </div>

@@ -42,6 +42,7 @@ import { formatCuisine } from "@/lib/cuisine";
 import { currencySymbol } from "@/lib/currency";
 import { formatDiscountValue, hasProductDiscount } from "@/lib/productPricing";
 import SafeImage from "@/components/shared/SafeImage";
+import { Button } from "@/components/ui/button";
 
 function getDistanceKm(
   lat1: number,
@@ -252,14 +253,15 @@ const MenuProductCard = memo(function MenuProductCard({
               </p>
             )}
           </div>
-          <button
+          <Button
+            size="icon"
             onClick={() => onSelect(product.productId)}
             disabled={storeClosed}
             aria-label={storeClosed ? t("storeClosedTitle") : t("addToCart")}
-            className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-pink-600 text-white transition hover:scale-105 focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-gray-300 disabled:hover:scale-100 dark:focus-visible:ring-offset-neutral-900 dark:disabled:bg-neutral-700"
+            className="shrink-0 rounded-xl hover:scale-105 disabled:hover:scale-100"
           >
             <Plus size={18} />
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -551,7 +553,7 @@ export default function VendorDetailsPage({
               <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8">
                 <div className="rounded-2xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 p-5 shadow-xl dark:shadow-none">
                   <div className="mb-1 flex items-center gap-2">
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-2xl lg:text-display font-bold text-gray-900 dark:text-white">
                       {vendor.businessDetails.businessName}
                     </h1>
                     <span
@@ -566,12 +568,14 @@ export default function VendorDetailsPage({
                       vendor.businessDetails.businessType}
                   </p>
                   <div className="flex flex-wrap items-center gap-4 text-sm">
-                    <button
+                    <Button
+                      variant="link"
+                      size="sm"
                       onClick={() => setIsVendorModalOpen(true)}
-                      className="font-semibold text-pink-600 dark:text-pink-400"
+                      className="h-auto px-0 font-semibold"
                     >
                       {t("moreInfo")} →
-                    </button>
+                    </Button>
                     <div className="flex items-center gap-1">
                       <Star
                         size={16}
@@ -697,12 +701,16 @@ export default function VendorDetailsPage({
                 {t("noProductsFound")}
               </div>
             ) : (
-              // `category-enter` fades and lifts the grouped catalogue in over
-              // the skeleton it replaces, and is a no-op under
-              // `prefers-reduced-motion: reduce`. Applied to the wrapper, once,
-              // rather than per group — a stagger down a list the customer is
-              // already looking at reads as lag, not polish.
-              <div className="category-enter">
+              // Fades the grouped catalogue in over the skeleton it replaces,
+              // and is a no-op under `prefers-reduced-motion: reduce`. Applied
+              // to the wrapper, once, rather than per group — a stagger down a
+              // list the customer is already looking at reads as lag, not
+              // polish.
+              //
+              // This was `category-enter`, a page-local class that did the same
+              // thing with a 4px lift. Phase 6 made it a system primitive; two
+              // classes for one idea is how the seven pinks happened.
+              <div className="motion-fade">
                 {categoryGroups.map((group) => (
                   <CategoryGroup
                     key={group.id}

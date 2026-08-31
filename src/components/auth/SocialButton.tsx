@@ -33,12 +33,12 @@ export default function SocialButton({
       aria-busy={busy}
       className={[
         // 40px and pill: Google's `size: "large"` with `shape: "pill"`.
-        "flex h-10 w-full cursor-pointer items-center justify-center gap-3 rounded-full border transition-colors",
+        "focus-ring flex h-10 w-full cursor-pointer items-center justify-center gap-3 rounded-full border transition-colors",
         // 500 weight at 14px with 0.25px tracking is Google's button type.
         "text-sm font-medium tracking-[0.25px]",
         "border-[#dadce0] bg-white text-[#3c4043] hover:bg-[#f8f9fa]",
         "dark:border-[#8e918f] dark:bg-[#131314] dark:text-[#e3e3e3] dark:hover:bg-[#1f1f20]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d7357c] focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-70",
       ].join(" ")}
     >

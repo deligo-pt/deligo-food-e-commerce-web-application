@@ -26,15 +26,15 @@ export default function TermsCategoryContent({ slug }: { slug: string }) {
 
         {/* Hero */}
         <div className="mt-8 flex items-center gap-4">
-          <span className="text-4xl md:text-5xl">{category.icon}</span>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-neutral-50">
+          <span className="text-display">{category.icon}</span>
+          <h1 className="text-2xl lg:text-display font-extrabold tracking-tight text-gray-900 dark:text-neutral-50">
             {t(category.titleKey)}
           </h1>
         </div>
 
         {/* Category-specific body */}
         <div className="mt-8 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-neutral-800 p-6 md:p-10">
-          <p className="text-lg leading-relaxed text-gray-600 dark:text-neutral-300">
+          <p className="text-base leading-relaxed text-gray-600 dark:text-neutral-300">
             {t(category.bodyKey)}
           </p>
 
@@ -57,7 +57,7 @@ export default function TermsCategoryContent({ slug }: { slug: string }) {
           <p className="text-gray-600 dark:text-neutral-400 mb-6">{t("termsContactSupportHelper")}</p>
           <Link
             href="/contact-us"
-            className="inline-block rounded-full bg-linear-to-r from-[#f9186b] to-[#d4145b] px-8 py-3 font-bold text-white shadow-md transition hover:from-[#d4145b] hover:to-[#b01254] active:scale-95"
+            className="inline-block rounded-full bg-linear-to-r from-primary to-primary-hover px-8 py-3 font-bold text-white shadow-md transition hover:from-primary-hover hover:to-[#b01254] active:scale-95"
           >
             {t("termsContactSupportButton")}
           </Link>

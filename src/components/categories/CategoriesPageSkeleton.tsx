@@ -1,3 +1,6 @@
+import { cn } from "@/lib/utils";
+import { cardVariants } from "@/components/ui/card";
+
 export default function CategoriesPageSkeleton() {
   return (
     <div className="animate-pulse mx-auto w-full max-w-7xl px-4 py-10 lg:px-16">
@@ -15,7 +18,10 @@ export default function CategoriesPageSkeleton() {
         {Array.from({ length: 12 }).map((_, index) => (
           <div
             key={index}
-            className="flex flex-col items-center gap-4 rounded-3xl bg-white p-5 shadow-[0_10px_40px_rgba(0,0,0,0.06)]"
+            className={cn(
+              cardVariants({ padding: "card" }),
+              "flex flex-col items-center gap-4",
+            )}
           >
             {/* Category Image */}
             <div className="h-28 w-28 rounded-full bg-gray-200" />

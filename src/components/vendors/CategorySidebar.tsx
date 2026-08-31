@@ -63,7 +63,7 @@ const CategorySidebar = memo(function CategorySidebar({
       className="sticky hidden h-fit w-60 shrink-0 lg:block xl:w-64"
     >
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-        <h2 className="text-base font-bold text-gray-900 dark:text-white">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
           {t("productCategories")}
         </h2>
         <div className="mt-3 border-t border-gray-200 pt-3 dark:border-neutral-800">
@@ -76,7 +76,10 @@ const CategorySidebar = memo(function CategorySidebar({
                     type="button"
                     onClick={() => onSelect(group.id)}
                     aria-current={isActive ? "true" : undefined}
-                    className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition focus-visible:ring-2 focus-visible:ring-pink-600 focus-visible:ring-offset-2 focus-visible:outline-none dark:focus-visible:ring-offset-neutral-900 ${
+                    // Deliberately not a <Button>: the category name wraps
+                    // onto a second line, and every button size has a fixed
+                    // height that would clip it. Bespoke shape, shared ring.
+                    className={`focus-ring flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${
                       isActive
                         ? "bg-pink-50 font-semibold text-pink-600 dark:bg-pink-950/30 dark:text-pink-400"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white"

@@ -8,6 +8,9 @@ import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
 import { useStore } from "@/stores/translationStore";
 import VouchersSkeleton from "./VouchersSkeleton";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { cardVariants } from "@/components/ui/card";
 
 type Offer = {
   _id: string;
@@ -126,40 +129,40 @@ export default function VouchersPageContent() {
     <section className="w-full bg-[#f8f9fa] dark:bg-neutral-950 px-8 py-12 min-h-screen transition-colors duration-200">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="mb-2 text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
+        <h1 className="mb-2 text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
           {t("vouchers")}
         </h1>
 
-        <p className="text-[#5a4044] dark:text-neutral-400">{t("vouchersDescription")}</p>
+        <p className="text-muted-foreground dark:text-neutral-400">{t("vouchersDescription")}</p>
       </div>
 
       {/* Tabs */}
       <div className="mb-8 flex gap-8 border-b border-[#e7e8e9] dark:border-neutral-800">
         <button
           onClick={() => setActiveTab("available")}
-          className={`relative pb-4 text-sm font-semibold transition-colors duration-150 ${
+          className={`focus-ring relative pb-4 text-sm font-semibold transition-colors duration-150 ${
             activeTab === "available"
-              ? "text-[#f9186b] dark:text-pink-500"
-              : "text-[#5a4044] dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+              ? "text-primary dark:text-pink-500"
+              : "text-muted-foreground dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
           }`}
         >
           {t("available")}
           {activeTab === "available" && (
-            <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#f9186b] dark:bg-pink-500" />
+            <span className="absolute bottom-0 left-0 h-0.5 w-full bg-primary dark:bg-pink-500" />
           )}
         </button>
 
         <button
           onClick={() => setActiveTab("expired")}
-          className={`relative pb-4 text-sm font-semibold transition-colors duration-150 ${
+          className={`focus-ring relative pb-4 text-sm font-semibold transition-colors duration-150 ${
             activeTab === "expired"
-              ? "text-[#f9186b] dark:text-pink-500"
-              : "text-[#5a4044] dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+              ? "text-primary dark:text-pink-500"
+              : "text-muted-foreground dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
           }`}
         >
           {t("expired")}
           {activeTab === "expired" && (
-            <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#f9186b] dark:bg-pink-500" />
+            <span className="absolute bottom-0 left-0 h-0.5 w-full bg-primary dark:bg-pink-500" />
           )}
         </button>
       </div>
@@ -181,11 +184,11 @@ export default function VouchersPageContent() {
               <Ticket size={60} className="text-gray-400 dark:text-neutral-500" />
             </div>
 
-            <h2 className="mb-2 text-2xl font-semibold text-[#191c1d] dark:text-neutral-50">
+            <h2 className="mb-2 text-xl font-semibold text-foreground dark:text-neutral-50">
               {t("noExpiredVouchers")}
             </h2>
 
-            <p className="max-w-sm text-[#5a4044] dark:text-neutral-400">
+            <p className="max-w-sm text-muted-foreground dark:text-neutral-400">
               {t("noExpiredVouchersDescription")}
             </p>
           </div>
@@ -196,7 +199,12 @@ export default function VouchersPageContent() {
         !error &&
         activeTab === "available" &&
         availableOffers.length === 0 && (
-          <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 p-10 text-center text-gray-900 dark:text-neutral-100 shadow-sm animate-fadeIn">
+          <div
+            className={cn(
+              cardVariants(),
+              "animate-fadeIn p-8 text-center text-gray-900 dark:text-neutral-100",
+            )}
+          >
             {t("noAvailableVouchers")}
           </div>
         )}
@@ -207,48 +215,54 @@ export default function VouchersPageContent() {
           {displayedOffers.map((offer) => (
             <div
               key={offer._id}
-              className="rounded-xl border border-[#f3f4f5] dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-[0_4px_20px_rgba(0,0,0,0.05)] dark:shadow-none transition-all hover:shadow-[0_8px_30px_rgba(176,0,74,0.08)] dark:hover:border-neutral-700"
+              /* Phase 8. A sixth shell, with its own radius, its own hex
+                 border and two hand-mixed shadows — one of them a pink-tinted
+                 hover that no other card in the app has. */
+              className={cn(
+                cardVariants({ variant: "interactive", padding: "card" }),
+              )}
             >
               <div className="mb-4 flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f9186b] dark:bg-pink-600">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary dark:bg-pink-600">
                   <Ticket size={18} className="text-white" />
                 </div>
 
                 <div>
-                  <h3 className="mb-1 text-lg font-semibold text-[#191c1d] dark:text-neutral-50">
+                  <h3 className="mb-1 text-xl font-semibold text-foreground dark:text-neutral-50">
                     {resolveLocalized(offer.title, lang)}
                   </h3>
 
-                  <p className="text-sm text-[#5a4044] dark:text-neutral-400">
+                  <p className="text-sm text-muted-foreground dark:text-neutral-400">
                     {resolveLocalized(offer.description, lang)}
                   </p>
                 </div>
               </div>
 
               <div className="mt-6 flex items-center justify-between">
-                <div className="rounded-lg border-2 border-dashed border-[#f9186b]/30 dark:border-pink-500/30 bg-[#f9186b]/5 dark:bg-pink-500/10 px-4 py-2">
-                  <span className="text-sm font-semibold tracking-widest text-[#f9186b] dark:text-pink-400">
+                <div className="rounded-lg border-2 border-dashed border-primary/30 dark:border-pink-500/30 bg-primary/5 dark:bg-pink-500/10 px-4 py-2">
+                  <span className="text-sm font-semibold tracking-widest text-primary dark:text-pink-400">
                     {offer.code}
                   </span>
                 </div>
 
-                <button
+                <Button
+                  size="sm"
                   onClick={() => handleCopy(offer.code)}
-                  className="rounded-lg bg-[#f9186b] dark:bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-[#f9186b] dark:hover:bg-pink-700 transition"
+                  className="font-semibold"
                 >
                   {copiedCode === offer.code ? t("copied") : t("copy")}
-                </button>
+                </Button>
               </div>
 
               <div className="mt-4 flex items-center justify-between border-t border-[#e7e8e9] dark:border-neutral-800 pt-4">
-                <div className="flex items-center gap-1 text-xs text-[#5a4044] dark:text-neutral-400">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground dark:text-neutral-400">
                   <Clock3 size={12} />
                   <span>{getRemainingDays(offer.expiresAt)}</span>
                 </div>
 
-                <button className="text-xs text-[#f9186b] dark:text-pink-400 hover:underline">
+                <Button variant="link" size="sm" className="h-auto px-0 text-xs">
                   {t("termsAndConditions")}
-                </button>
+                </Button>
               </div>
             </div>
           ))}

@@ -9,33 +9,42 @@ import { useLocationStore } from "@/stores/locationStore";
 import { useActiveAddressCoords } from "@/hooks/queries/useProfile";
 import { useVendorsNearby } from "@/hooks/queries/useVendors";
 
+import { Button } from "@/components/ui/button";
+import { useRevealOnScroll } from "@/hooks/useMotion";
+import { cn } from "@/lib/utils";
+import { cardVariants } from "@/components/ui/card";
+
 const ITEMS_PER_PAGE = 10;
 
 function VendorCardSkeleton() {
   return (
-    <article className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all">
+    /* Phase 7 #1. This skeleton lives in a different file from the card it
+       stands in for, which is exactly the drift Phase 5 went looking for — so
+       it moves in the same commit, to the same numbers: `rounded-3xl`, the
+       hairline, `gap-3 p-4 sm:p-6`, a 32px pill inset 12, the dot beside the
+       title, and one footer row. */
+    <article
+      className={cn(
+        cardVariants(),
+        "group flex h-full cursor-pointer flex-col overflow-hidden",
+      )}
+    >
       <div className="relative aspect-16/10 shrink-0 overflow-hidden">
         <div className="h-full w-full animate-pulse bg-gray-200 dark:bg-neutral-800" />
-        <div className="absolute left-5 top-5">
-          <div className="h-9 w-16 animate-pulse rounded-2xl bg-white/95 dark:bg-neutral-900/95 shadow-lg backdrop-blur-md" />
+        <div className="absolute left-3 top-3">
+          <div className="h-8 w-16 animate-pulse rounded-full bg-white/95 shadow-lg backdrop-blur-md dark:bg-neutral-900/95" />
+        </div>
+        <div className="absolute bottom-3 right-3">
+          <div className="h-8 w-28 animate-pulse rounded-full bg-black/20 backdrop-blur-md dark:bg-black/40" />
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col p-6 sm:p-8">
-        <div className="mb-2 flex items-center justify-between gap-4">
-          <div className="h-7 w-48 animate-pulse rounded-lg bg-gray-200 dark:bg-neutral-800" />
-          <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-        </div>
-        <div className="mb-6 h-6 w-32 animate-pulse rounded-lg bg-gray-200 dark:bg-neutral-800" />
-        <div className="mt-auto flex items-center gap-6 border-t border-[#edeeef] dark:border-neutral-800 pt-6">
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-            <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-          </div>
+      <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
+        <div className="h-7 w-2/3 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+        <div className="h-4 w-1/2 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+        <div className="mt-auto flex items-center gap-4 border-t border-border pt-3 dark:border-neutral-800">
+          <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+          <div className="h-5 w-32 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
         </div>
       </div>
     </article>
@@ -44,6 +53,7 @@ function VendorCardSkeleton() {
 
 export default function VendorsGrid() {
   const { t } = useTranslation();
+  const [gridRef, revealed] = useRevealOnScroll<HTMLDivElement>();
   const [page, setPage] = useState(1);
   const { coords: geoCoords, permissionStatus } = useLocationStore();
 
@@ -78,7 +88,7 @@ export default function VendorsGrid() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
           <VendorCardSkeleton key={index} />
         ))}
@@ -96,7 +106,7 @@ export default function VendorsGrid() {
 
   if (!vendors.length) {
     return (
-      <div className="rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-10 text-center">
+      <div className={cn(cardVariants(), "p-8 text-center")}>
         <h3 className="text-xl font-semibold text-gray-700 dark:text-neutral-200">
           {t("noVendorsFound")}
         </h3>
@@ -106,7 +116,15 @@ export default function VendorsGrid() {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
+      {/* Phase 6 #2 — the same reveal the homepage grid uses, for the same
+          reason: ten cards arriving at once is the one place a stagger reads
+          as arrival rather than as lag. It fires once, so paging to the next
+          set does not replay it. */}
+      <div
+        ref={gridRef}
+        data-revealed={revealed}
+        className="reveal-group grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
+      >
         {vendors.map((vendor) => (
           <VendorCard
             key={vendor.id}
@@ -118,39 +136,41 @@ export default function VendorsGrid() {
 
       {totalPages > 1 && (
         <div className="mt-16 flex flex-wrap items-center justify-center gap-3">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage((prev) => prev - 1)}
             disabled={page === 1}
-            className="rounded-xl border border-gray-200 dark:border-neutral-800 px-5 py-2.5 font-medium text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t("previous")}
-          </button>
+          </Button>
 
           {Array.from({ length: totalPages }).map((_, index) => {
             const pageNumber = index + 1;
 
             return (
-              <button
+              /* The page number is square, so it takes the icon size rather
+                 than a hand-typed `h-11 w-11`, and the selected one is the
+                 default variant — which is what `bg-primary` means. */
+              <Button
                 key={pageNumber}
+                size="icon"
+                variant={page === pageNumber ? "default" : "outline"}
                 onClick={() => setPage(pageNumber)}
-                className={`h-11 w-11 rounded-xl font-semibold transition-all cursor-pointer ${
-                  page === pageNumber
-                    ? "bg-[#f9186b] text-white"
-                    : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:border-[#f9186b] dark:hover:border-pink-500"
-                }`}
+                className="rounded-xl font-semibold"
+                aria-current={page === pageNumber ? "page" : undefined}
               >
                 {pageNumber}
-              </button>
+              </Button>
             );
           })}
 
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage((prev) => prev + 1)}
             disabled={page === totalPages}
-            className="rounded-xl border border-gray-200 dark:border-neutral-800 px-5 py-2.5 font-medium text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t("next")}
-          </button>
+          </Button>
         </div>
       )}
     </>

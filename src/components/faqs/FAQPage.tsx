@@ -77,7 +77,7 @@ export default function FAQPage() {
       <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none">
         <button
           onClick={() => setOpen(!open)}
-          className="flex w-full items-center justify-between gap-4 p-5 text-left"
+          className="focus-ring flex w-full items-center justify-between gap-4 p-5 text-left"
         >
           <span className="font-semibold text-slate-900 dark:text-neutral-100">{question}</span>
           <ChevronDown
@@ -114,13 +114,13 @@ export default function FAQPage() {
           shared back bar instead of butting against it (same as the contact
           page). */}
       <section className="mx-auto max-w-7xl px-4 pt-2 md:px-8">
-        <div className="rounded-3xl bg-linear-to-r from-[#f9186b] via-[#d4145b] to-[#f9186b] px-6 py-16 text-center md:py-20">
+        <div className="rounded-3xl bg-linear-to-r from-primary via-primary-hover to-primary px-6 py-16 text-center md:py-20">
           {/* Hero is the pink gradient — knockout, no white plate. */}
           <Logo size={96} variant="mark" className="mx-auto mb-8" />
-          <h1 className="text-3xl font-bold text-white sm:text-4xl md:text-6xl">
+          <h1 className="text-2xl font-bold text-white lg:text-display">
             {t("faqTitle")}
           </h1>
-          <p className="mt-4 text-base text-white/85 md:text-lg">
+          <p className="mt-4 text-base text-white/85">
             {t("faqSubtitle")}
           </p>
           <div className="mx-auto mt-10 max-w-2xl">
@@ -130,7 +130,7 @@ export default function FAQPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("faqSearchPlaceholder")}
-                className="h-14 w-full rounded-2xl border-0 bg-white dark:bg-neutral-900 pl-12 pr-11 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-[#f9186b]/30"
+                className="h-14 w-full rounded-2xl border-0 bg-white dark:bg-neutral-900 pl-12 pr-11 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-primary/30"
               />
               {search && <ClearFilterButton onClear={() => setSearch("")} />}
             </div>
@@ -148,7 +148,7 @@ export default function FAQPage() {
                 key={category.id}
                 className="rounded-3xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 transition hover:shadow-lg dark:hover:shadow-none dark:hover:bg-neutral-800/30"
               >
-                <Icon className="mb-4 h-8 w-8 text-[#f9186b]" />
+                <Icon className="mb-4 h-8 w-8 text-primary" />
                 <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-neutral-100">{category.title}</h3>
                 <p className="text-slate-500 dark:text-neutral-400">
                   {category.faqs.length} {t("faqQuestions")}
@@ -167,8 +167,8 @@ export default function FAQPage() {
             return (
               <div key={category.id}>
                 <div className="mb-6 flex items-center gap-3">
-                  <Icon className="h-7 w-7 text-[#f9186b]" />
-                  <h2 className="text-3xl font-bold text-[#f9186b]">
+                  <Icon className="h-7 w-7 text-primary" />
+                  <h2 className="text-xl font-bold text-primary">
                     {category.title}
                   </h2>
                 </div>

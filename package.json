@@ -13,7 +13,7 @@
     "verify:notifications": "node --no-warnings scripts/verify-notification-header.mjs",
     "verify:cancel-reason": "node --no-warnings scripts/verify-cancel-reason.mjs",
     "verify:support": "node --no-warnings scripts/verify-support.mjs",
-    "verify:tax": "node --no-warnings scripts/verify-tax.mjs",
+    "verify:vat": "node --no-warnings scripts/verify-vat.mjs",
     "verify:product-pricing": "node --no-warnings scripts/verify-product-pricing.mjs",
     "verify:search": "node --no-warnings scripts/verify-search.mjs",
     "verify:order-search": "node --no-warnings scripts/verify-order-search.mjs",
@@ -21,6 +21,7 @@
     "verify:delivery-code": "node --no-warnings scripts/verify-delivery-code.mjs",
     "verify:orders-page": "node --no-warnings scripts/verify-orders-page.mjs",
     "verify:category": "node --no-warnings scripts/verify-category.mjs",
+    "verify:design": "node --no-warnings scripts/verify-design-system.mjs",
     "verify:pickup": "node scripts/verify-pickup-contract.mjs"
   },
   "dependencies": {

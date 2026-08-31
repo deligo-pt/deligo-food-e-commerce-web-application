@@ -1,20 +1,21 @@
 "use client";
 
 import { useTranslation } from "@/hooks/useTranslation";
+import { Button } from "@/components/ui/button";
 
 interface CartSummaryProps {
   originalPrice?: number;
   discount?: number;
-  taxableAmount?: number;
-  tax?: number;
+  vatableAmount?: number;
+  vat?: number;
   total?: number;
 }
 
 export default function CartSummary({
   originalPrice = 0,
   discount = 0,
-  taxableAmount = 0,
-  tax = 0,
+  vatableAmount = 0,
+  vat = 0,
   total = 0,
 }: CartSummaryProps) {
   const { t } = useTranslation();
@@ -59,7 +60,7 @@ export default function CartSummary({
           </span>
 
           <span className="font-medium text-gray-900">
-            €{taxableAmount.toFixed(2)}
+            €{vatableAmount.toFixed(2)}
           </span>
         </div>
 
@@ -69,7 +70,7 @@ export default function CartSummary({
           </span>
 
           <span className="font-medium text-gray-900">
-            €{tax.toFixed(2)}
+            €{vat.toFixed(2)}
           </span>
         </div>
 
@@ -79,7 +80,7 @@ export default function CartSummary({
               {t("grandTotal")}
             </span>
 
-            <span className="text-3xl font-extrabold text-[#f9186b]">
+            <span className="text-2xl font-extrabold text-primary">
               €{total.toFixed(2)}
             </span>
           </div>
@@ -88,10 +89,13 @@ export default function CartSummary({
 
       {/* Footer */}
       <div className="border-t border-gray-100 p-6">
-        <button className="cart-cta relative w-full overflow-hidden rounded-2xl bg-[#f9186b] py-4 text-lg font-semibold text-white transition-all hover:bg-[#d4145b]">
+        <Button
+          size="lg"
+          className="cart-cta relative w-full overflow-hidden rounded-2xl font-semibold"
+        >
           <span className="cart-cta-shine" aria-hidden="true" />
           <span className="relative z-10">{t("proceedToCheckout")}</span>
-        </button>
+        </Button>
       </div>
     </div>
   );

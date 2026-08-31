@@ -16,6 +16,7 @@ import {
   type PickupSlot,
   type TimeOfDay,
 } from "@/lib/pickupTime";
+import { Button } from "@/components/ui/button";
 
 interface PickupTimePickerProps {
   /**
@@ -201,14 +202,16 @@ export default function PickupTimePicker({
         />
 
         <div className="flex shrink-0 items-center gap-3 px-6 pt-4">
-          <button
+          <Button
             type="button"
+            size="icon"
+            variant="ghost"
             onClick={onClose}
             aria-label={t("close")}
-            className="-ml-2 rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-50"
+            className="-ml-2 rounded-full text-gray-500 dark:text-neutral-400"
           >
             <ArrowLeft size={20} />
-          </button>
+          </Button>
           <h2
             id="pickup-time-heading"
             className="text-xl font-bold text-gray-900 dark:text-neutral-50"
@@ -244,9 +247,9 @@ export default function PickupTimePicker({
                 tabIndex={isOpen ? 0 : -1}
                 onClick={() => setOpenDayOffset(day.offset)}
                 onKeyDown={(event) => handleChipKeyDown(event, index)}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition ${
+                className={`focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition ${
                   isOpen
-                    ? "bg-[#f9186b] text-white"
+                    ? "bg-primary text-white"
                     : isEmpty
                       ? "bg-gray-50 text-gray-300 line-through dark:bg-neutral-800/40 dark:text-neutral-600"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
@@ -297,9 +300,9 @@ export default function PickupTimePicker({
                     aria-selected={isSelected}
                     onClick={() => selectSlot(time)}
                     onKeyDown={(event) => handleSlotKeyDown(event, index)}
-                    className={`flex items-center justify-between rounded-2xl px-4 py-4 text-left text-sm font-medium transition ${
+                    className={`focus-ring flex items-center justify-between rounded-2xl px-4 py-4 text-left text-sm font-medium transition ${
                       isSelected
-                        ? "bg-pink-50 text-gray-900 ring-1 ring-[#f9186b] dark:bg-pink-950/25 dark:text-neutral-50 dark:ring-pink-400"
+                        ? "bg-pink-50 text-gray-900 ring-1 ring-primary dark:bg-pink-950/25 dark:text-neutral-50 dark:ring-pink-400"
                         : "bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-neutral-800/60 dark:text-neutral-200 dark:hover:bg-neutral-800"
                     }`}
                   >
@@ -309,7 +312,7 @@ export default function PickupTimePicker({
                     {isSelected && (
                       <span
                         aria-hidden="true"
-                        className="flex h-5 w-5 items-center justify-center rounded-full bg-[#f9186b] dark:bg-pink-500"
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-primary dark:bg-pink-500"
                       >
                         <Check size={13} strokeWidth={3} className="text-white" />
                       </span>
@@ -326,16 +329,17 @@ export default function PickupTimePicker({
         </div>
 
         <div className="shrink-0 border-t border-gray-100 p-6 dark:border-neutral-800">
-          <button
+          <Button
             type="button"
+            size="lg"
             // Nothing is preselected on a first visit: a slot the customer
             // never read is not a choice they made.
             disabled={!selected}
             onClick={() => selected && onConfirm(selected)}
-            className="w-full rounded-2xl bg-[#f9186b] py-4 text-base font-semibold text-white transition hover:bg-[#d4145b] disabled:cursor-not-allowed disabled:opacity-40"
+            className="w-full rounded-2xl font-semibold"
           >
             {t("confirmPickupTime")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

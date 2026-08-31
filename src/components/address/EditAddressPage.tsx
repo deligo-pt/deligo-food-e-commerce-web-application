@@ -13,6 +13,7 @@ import LocationPicker from "@/components/profile/locationPicker";
 import AddressForm from "./AddressForm";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile } from "@/hooks/queries/useProfile";
+import { Button } from "@/components/ui/button";
 
 const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
 
@@ -269,7 +270,7 @@ export default function EditAddressPage({ addressId }: Props) {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -277,13 +278,10 @@ export default function EditAddressPage({ addressId }: Props) {
   if (error || !address) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#f8f9fa] dark:bg-neutral-950">
-        <p className="text-lg text-red-500 dark:text-red-400">{error || t("addressNotFound")}</p>
-        <button
-          onClick={() => router.back()}
-          className="rounded-lg bg-[#f9186b] px-6 py-2 text-white transition hover:opacity-90 active:scale-95"
-        >
+        <p className="text-base text-red-500 dark:text-red-400">{error || t("addressNotFound")}</p>
+        <Button onClick={() => router.back()} className="active:scale-95">
           {t("goBack")}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -294,7 +292,7 @@ export default function EditAddressPage({ addressId }: Props) {
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {/* Page Title */}
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
+          <h1 className="text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
             {t("editAddress")}
           </h1>
         </div>
@@ -307,17 +305,18 @@ export default function EditAddressPage({ addressId }: Props) {
           <div className="flex flex-col gap-6">
             {/* Quick Instant GPS Update Card (Original Functionality preserved) */}
             <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
-              <h2 className="mb-2 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
+              <h2 className="mb-2 text-xl font-bold text-foreground dark:text-neutral-50">
                 {t("myCurrentLocation") || "My Current Location"}
               </h2>
-              <p className="text-sm text-[#5a4044] dark:text-neutral-400 mb-4">
+              <p className="text-sm text-muted-foreground dark:text-neutral-400 mb-4">
                 {t("currentLocationDescription") || "Use your device's GPS to update your delivery location instantly."}
               </p>
-              <button
+              <Button
                 type="button"
+                size="lg"
                 onClick={handleUseCurrentLocation}
                 disabled={loadingCurrentLocation}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#f9186b] px-6 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-[#d4145b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full gap-3 rounded-2xl font-semibold shadow-md active:scale-[0.98]"
               >
                 {loadingCurrentLocation ? (
                   <>
@@ -330,16 +329,16 @@ export default function EditAddressPage({ addressId }: Props) {
                     {t("useCurrentLocation") || "Use Current Location"}
                   </>
                 )}
-              </button>
+              </Button>
             </div>
 
             {/* Interactive Location Confirmation Card */}
             <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
               <div className="mb-6">
-                <h2 className="mb-2 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
+                <h2 className="mb-2 text-xl font-bold text-foreground dark:text-neutral-50">
                   {t("confirmLocation")}
                 </h2>
-                <p className="text-sm text-[#5a4044] dark:text-neutral-400">
+                <p className="text-sm text-muted-foreground dark:text-neutral-400">
                   {t("confirmLocationDescription")}
                 </p>
               </div>
@@ -356,7 +355,7 @@ export default function EditAddressPage({ addressId }: Props) {
                   onChange={handleSearchChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder")}
-                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b] dark:focus:border-[#f9186b]"
+                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-primary dark:focus:border-primary"
                   autoComplete="off"
                 />
                 {searchValue && <ClearFilterButton onClear={clearSearch} />}
@@ -369,20 +368,20 @@ export default function EditAddressPage({ addressId }: Props) {
                         <button
                           type="button"
                           onClick={() => handleSuggestionClick(s)}
-                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] dark:hover:bg-neutral-800/50 ${idx !== suggestions.length - 1
+                          className={`focus-ring flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] dark:hover:bg-neutral-800/50 ${idx !== suggestions.length - 1
                               ? "border-b border-[#f5e0e5] dark:border-neutral-800"
                               : ""
                             }`}
                         >
-                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5] dark:bg-[#f9186b]/10">
-                            <Search size={13} className="text-[#f9186b]" />
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5] dark:bg-primary/10">
+                            <Search size={13} className="text-primary" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-[#191c1d] dark:text-neutral-200">
+                            <span className="block truncate text-sm font-semibold text-foreground dark:text-neutral-200">
                               {s.mainText}
                             </span>
                             {s.secondaryText && (
-                              <span className="block truncate text-xs text-[#5a4044] dark:text-neutral-400">
+                              <span className="block truncate text-xs text-muted-foreground dark:text-neutral-400">
                                 {s.secondaryText}
                               </span>
                             )}
@@ -408,7 +407,7 @@ export default function EditAddressPage({ addressId }: Props) {
                 ) : (
                   <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50 dark:bg-neutral-950 border border-transparent dark:border-neutral-800/50">
                     <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-neutral-500">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
                       <p className="text-sm">Detecting your location…</p>
                     </div>
                   </div>

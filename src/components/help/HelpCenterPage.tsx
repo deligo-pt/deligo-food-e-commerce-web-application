@@ -72,7 +72,7 @@ export default function HelpCenterPage() {
           a single column of rows rather than full-width cards, and stretching a
           row to 64rem leaves its chevron stranded from its title. */}
       <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
-        <h1 className="text-2xl font-bold text-[#191c1d] dark:text-neutral-50 sm:text-3xl">
+        <h1 className="text-2xl font-bold text-foreground dark:text-neutral-50">
           {t("helpCenter")}
         </h1>
 
@@ -154,7 +154,7 @@ function Section({
 }) {
   return (
     <section className="mt-8">
-      <h2 className="mb-3 text-lg font-bold text-[#191c1d] dark:text-neutral-50">
+      <h2 className="mb-3 text-xl font-bold text-foreground dark:text-neutral-50">
         {title}
       </h2>
       <div className="space-y-3">{children}</div>

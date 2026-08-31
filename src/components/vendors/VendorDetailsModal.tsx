@@ -18,6 +18,7 @@ import { getApiErrorMessage } from "@/lib/apiClient";
 import { useVendor } from "@/hooks/queries/useVendors";
 import { useTranslation } from "@/hooks/useTranslation";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
+import { Button } from "@/components/ui/button";
 
 interface VendorDetailsModalProps {
   isOpen: boolean;
@@ -227,15 +228,18 @@ export default function VendorDetailsModal({
         {/* Header */}
         <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-4 sm:px-6 md:px-8 sm:py-5 md:py-6">
           <div className="flex items-center gap-3 sm:gap-4">
-            <button
+            <Button
+              size="icon"
+              variant="ghost"
               onClick={onClose}
-              className="rounded-full p-2 text-gray-700 dark:text-neutral-300 transition hover:bg-gray-100 dark:hover:bg-neutral-800"
+              aria-label={t("close")}
+              className="rounded-full"
             >
               <ArrowLeft size={20} />
-            </button>
+            </Button>
 
             <div>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {vendorData?.businessDetails?.businessName || t("vendor")}
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-neutral-400">
@@ -246,14 +250,16 @@ export default function VendorDetailsModal({
 
           {/* Share button + dropdown */}
           <div className="relative self-end sm:self-auto" ref={shareRef}>
-            <button
+            <Button
+              size="icon"
+              variant="ghost"
               onClick={handleShareClick}
-              className="rounded-full p-2 text-pink-600 transition hover:bg-pink-50 dark:hover:bg-pink-950/20"
               title={t("share")}
               aria-label={t("share")}
+              className="rounded-full text-primary hover:bg-pink-50 dark:hover:bg-pink-950/20"
             >
               <Share2 size={18} />
-            </button>
+            </Button>
 
             {/* Copied toast */}
             {copied && (
@@ -273,7 +279,7 @@ export default function VendorDetailsModal({
                 {/* Copy Link */}
                 <button
                   onClick={handleCopyLink}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-neutral-300 transition hover:bg-pink-50 dark:hover:bg-pink-950/20 hover:text-pink-600 dark:hover:text-pink-400"
+                  className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-neutral-300 transition hover:bg-pink-50 dark:hover:bg-pink-950/20 hover:text-pink-600 dark:hover:text-pink-400"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800">
                     <Copy size={15} />
@@ -284,7 +290,7 @@ export default function VendorDetailsModal({
                 {/* WhatsApp */}
                 <button
                   onClick={handleShareWhatsApp}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-neutral-300 transition hover:bg-green-50 dark:hover:bg-green-950/20 hover:text-green-600 dark:hover:text-green-400"
+                  className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-neutral-300 transition hover:bg-green-50 dark:hover:bg-green-950/20 hover:text-green-600 dark:hover:text-green-400"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-950/40">
                     <MessageCircle size={15} className="text-green-600" />
@@ -295,7 +301,7 @@ export default function VendorDetailsModal({
                 {/* Email */}
                 <button
                   onClick={handleShareEmail}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-neutral-300 transition hover:bg-pink-50 dark:hover:bg-pink-950/20 hover:text-pink-600 dark:hover:text-pink-400"
+                  className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-neutral-300 transition hover:bg-pink-50 dark:hover:bg-pink-950/20 hover:text-pink-600 dark:hover:text-pink-400"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
                     <Mail size={15} className="text-pink-600" />
@@ -391,7 +397,7 @@ export default function VendorDetailsModal({
           {/* Right Column */}
           <div className="space-y-5 sm:space-y-6">
             <div>
-              <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-pink-600 dark:text-pink-400">
+              <h2 className="mb-4 text-xl font-semibold text-pink-600 dark:text-pink-400">
                 {t("contactInformation")}
               </h2>
               <div className="space-y-3">
@@ -444,7 +450,7 @@ export default function VendorDetailsModal({
 
             {/* Other Details */}
             <div className="border-t border-gray-200 dark:border-neutral-800 pt-4 sm:pt-5">
-              <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-pink-600 dark:text-pink-400">
+              <h2 className="mb-4 text-xl font-semibold text-pink-600 dark:text-pink-400">
                 {t("otherDetails")}
               </h2>
               <div className="space-y-3 sm:space-y-4">

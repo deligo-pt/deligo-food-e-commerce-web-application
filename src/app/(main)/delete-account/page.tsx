@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Button } from "@/components/ui/button";
 
 export default function DeleteAccountPage() {
   const router = useRouter();
@@ -51,18 +52,18 @@ export default function DeleteAccountPage() {
       <div className="mx-auto max-w-lg rounded-3xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-xl dark:shadow-none md:p-8">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#f9186b] dark:text-[#c2185b]">
+          <h1 className="text-2xl lg:text-display font-black text-primary dark:text-primary">
             {t("deleteAccount")}
           </h1>
           <Link
             href="/"
-            className="rounded-full p-2 text-[#5a4044] dark:text-neutral-400 transition-colors hover:bg-[#e3bdc3]/30 dark:hover:bg-neutral-800 hover:text-[#f9186b] dark:hover:text-neutral-200"
+            className="rounded-full p-2 text-muted-foreground dark:text-neutral-400 transition-colors hover:bg-[#e3bdc3]/30 dark:hover:bg-neutral-800 hover:text-primary dark:hover:text-neutral-200"
           >
             <X size={24} />
           </Link>
         </div>
 
-        <p className="mb-8 text-base text-[#5a4044] dark:text-neutral-400">
+        <p className="mb-8 text-base text-muted-foreground dark:text-neutral-400">
           {t("deleteAccountWarning")}
         </p>
 
@@ -70,7 +71,7 @@ export default function DeleteAccountPage() {
           <div>
             <label
               htmlFor="name"
-              className="mb-1 block text-sm font-semibold text-[#191c1d] dark:text-neutral-200"
+              className="mb-1 block text-sm font-semibold text-foreground dark:text-neutral-200"
             >
               {t("fullName")}
             </label>
@@ -81,7 +82,7 @@ export default function DeleteAccountPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#f9186b] focus:ring-1 focus:ring-[#f9186b]"
+              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
               placeholder="John Doe"
             />
           </div>
@@ -89,7 +90,7 @@ export default function DeleteAccountPage() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1 block text-sm font-semibold text-[#191c1d] dark:text-neutral-200"
+              className="mb-1 block text-sm font-semibold text-foreground dark:text-neutral-200"
             >
               {t("emailAddress")}
             </label>
@@ -100,7 +101,7 @@ export default function DeleteAccountPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#f9186b] focus:ring-1 focus:ring-[#f9186b]"
+              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
               placeholder="you@example.com"
             />
           </div>
@@ -108,7 +109,7 @@ export default function DeleteAccountPage() {
           <div>
             <label
               htmlFor="contactNumber"
-              className="mb-1 block text-sm font-semibold text-[#191c1d] dark:text-neutral-200"
+              className="mb-1 block text-sm font-semibold text-foreground dark:text-neutral-200"
             >
               {t("contactNumber")}
             </label>
@@ -119,22 +120,23 @@ export default function DeleteAccountPage() {
               value={formData.contactNumber}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-[#f9186b] focus:ring-1 focus:ring-[#f9186b]"
+              className="w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-600 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
               placeholder="+1234567890"
             />
           </div>
 
-          <button
+          <Button
             type="submit"
+            size="lg"
             disabled={isSubmitting}
-            className="w-full rounded-xl bg-[#f9186b] py-3 font-bold text-white transition-all hover:bg-[#8a0038] disabled:opacity-60 cursor-pointer"
+            className="w-full cursor-pointer rounded-xl font-bold"
           >
             {isSubmitting ? t("submitting") : t("requestDeletion")}
-          </button>
+          </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-[#5a4044] dark:text-neutral-400">
-          <Link href="/" className="underline hover:text-[#f9186b] dark:hover:text-[#c2185b]">
+        <div className="mt-6 text-center text-sm text-muted-foreground dark:text-neutral-400">
+          <Link href="/" className="underline hover:text-primary dark:hover:text-primary">
             {t("returnToHome")}
           </Link>
         </div>
@@ -144,12 +146,15 @@ export default function DeleteAccountPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="relative mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 text-center shadow-2xl dark:shadow-none md:p-8">
-            <button
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              aria-label={t("close")}
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-4 top-4 text-[#5a4044] dark:text-neutral-400 hover:text-[#f9186b] dark:hover:text-neutral-200"
+              className="absolute right-4 top-4 rounded-full text-muted-foreground hover:text-primary dark:text-neutral-400 dark:hover:text-neutral-200"
             >
               <X size={20} />
-            </button>
+            </Button>
             <div className="mb-4 flex justify-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400">
                 <svg
@@ -167,25 +172,26 @@ export default function DeleteAccountPage() {
                 </svg>
               </div>
             </div>
-            <h3 className="mb-2 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
+            <h3 className="mb-2 text-xl font-bold text-foreground dark:text-neutral-50">
               {t("requestSubmitted")}
             </h3>
-            <p className="mb-6 text-base text-[#5a4044] dark:text-neutral-400">
+            <p className="mb-6 text-base text-muted-foreground dark:text-neutral-400">
               {t("deleteAccountRequestReceived")}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-xl border border-[#f9186b] px-6 py-2 font-semibold text-[#f9186b] dark:text-[#f9186b] transition-colors hover:bg-[#f9186b] hover:text-white dark:hover:text-white cursor-pointer"
+                className="cursor-pointer rounded-xl border-primary font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
               >
                 {t("close")}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => router.push("/")}
-                className="rounded-xl bg-[#f9186b] px-6 py-2 font-semibold text-white transition-colors hover:bg-[#8a0038] cursor-pointer"
+                className="cursor-pointer rounded-xl font-semibold"
               >
                 {t("goBackHome")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

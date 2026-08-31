@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface CartItem {
   productId: string;
@@ -108,7 +109,7 @@ export default function CartProductRow({
       <div className="flex flex-1 flex-col justify-between">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1">
-            <h4 className="text-lg font-bold text-gray-900 dark:text-neutral-100">{item.name}</h4>
+            <h4 className="text-xl font-bold text-gray-900 dark:text-neutral-100">{item.name}</h4>
             {item.variationSku && (
               <p className="text-xs text-gray-500 dark:text-neutral-400">
                 {t("sku")}: {item.variationSku}
@@ -119,19 +120,21 @@ export default function CartProductRow({
           {/* Remove is the only per-product action. Activate/deactivate is a
               store-level concept (see CartStoreCard) because the backend only
               lets one vendor be checked out at a time. */}
-          <button
+          <Button
+            size="icon"
+            variant="ghost"
             onClick={handleDelete}
             disabled={isDeleting}
             aria-label={t("remove")}
             title={t("remove")}
-            className="rounded-full p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 cursor-pointer"
+            className="cursor-pointer rounded-full text-red-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
           >
             {isDeleting ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <Trash2 className="h-5 w-5" />
             )}
-          </button>
+          </Button>
         </div>
 
         {/* Quantity and price */}
@@ -151,7 +154,7 @@ export default function CartProductRow({
                 ).toFixed(2)}
               </p>
             )}
-            <p className="text-xl font-bold text-[#f9186b] dark:text-pink-400">
+            <p className="text-xl font-bold text-primary dark:text-pink-400">
               €{item.itemSummary.grandTotal.toFixed(2)}
             </p>
           </div>

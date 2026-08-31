@@ -11,6 +11,7 @@ import {
   normalizeOutgoingMessage,
 } from "@/lib/support";
 import { uploadSupportAttachment } from "@/services/supportApi";
+import { Button } from "@/components/ui/button";
 
 /** Roughly five rows of the textarea's own line-height. */
 const MAX_TEXTAREA_HEIGHT = 120;
@@ -135,16 +136,16 @@ export default function SupportComposer({
           {uploading ? (
             <Loader2
               aria-hidden
-              className="h-4 w-4 shrink-0 animate-spin text-[#f9186b] dark:text-pink-400"
+              className="h-4 w-4 shrink-0 animate-spin text-primary dark:text-pink-400"
             />
           ) : (
             <ImageIcon
               aria-hidden
-              className="h-4 w-4 shrink-0 text-[#f9186b] dark:text-pink-400"
+              className="h-4 w-4 shrink-0 text-primary dark:text-pink-400"
             />
           )}
 
-          <span className="min-w-0 flex-1 truncate text-xs text-[#5a4044] dark:text-neutral-400">
+          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground dark:text-neutral-400">
             {attachment.name}
           </span>
 
@@ -152,7 +153,7 @@ export default function SupportComposer({
             type="button"
             onClick={() => setAttachment(null)}
             aria-label={t("removeAttachment")}
-            className="shrink-0 cursor-pointer text-gray-400 transition-colors hover:text-[#f9186b] dark:text-neutral-500 dark:hover:text-pink-400"
+            className="focus-ring shrink-0 cursor-pointer rounded-sm text-gray-400 transition-colors hover:text-primary dark:text-neutral-500 dark:hover:text-pink-400"
           >
             <X className="h-4 w-4" />
           </button>
@@ -174,15 +175,17 @@ export default function SupportComposer({
           }}
         />
 
-        <button
+        <Button
           type="button"
+          size="icon-sm"
+          variant="outline"
           onClick={() => fileInputRef.current?.click()}
           disabled={attachment !== null}
           aria-label={t("attachFile")}
-          className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#f9186b]/30 text-[#f9186b] transition-colors hover:bg-pink-50 disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent dark:border-pink-500/30 dark:text-pink-400 dark:hover:bg-pink-950/30"
+          className="shrink-0 cursor-pointer rounded-full border-primary/30 text-primary hover:bg-pink-50 hover:text-primary dark:border-pink-500/30 dark:text-pink-400 dark:hover:bg-pink-950/30"
         >
           <Plus className="h-4.5 w-4.5" />
-        </button>
+        </Button>
 
         <textarea
           ref={textareaRef}
@@ -208,15 +211,16 @@ export default function SupportComposer({
           className="max-h-30 min-h-9 w-full resize-none self-center bg-transparent py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 dark:text-neutral-100 dark:placeholder:text-neutral-600"
         />
 
-        <button
+        <Button
           type="button"
+          size="icon"
           onClick={submit}
           disabled={!canSend}
           aria-label={t("send")}
-          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-linear-to-br from-[#f9186b] to-[#d4145b] text-white transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-40"
+          className="shrink-0 cursor-pointer rounded-full bg-linear-to-br from-primary to-primary-hover hover:opacity-90"
         >
           <ArrowUp className="h-5 w-5" />
-        </button>
+        </Button>
       </div>
     </div>
   );

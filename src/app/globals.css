@@ -9,24 +9,45 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ---------------------------------------------------------------------------
+   Design tokens — Plan.md Phase 1.
+
+   The shadcn defaults shipped with `--primary: oklch(0.205 0 0)` — chroma 0,
+   a near-black. The brand pink was never a token at all; it is typed inline
+   174 times across 107 distinct hex literals, spelled seven different ways
+   (#f9186b, #e91e7f, #d7357c, #d4145b, #DC3173, #ef2f7a, #c2185b). #f9186b is
+   the canonical one, confirmed 2026-08-30, and the other six become it during
+   the Phase 4 sweep.
+
+   The rule that comes with it: **pink means one thing — action and
+   availability.** Today a single vendor card paints "Open now" *and* the city
+   line in it, so it signals nothing. Facts go to --muted-foreground.
+
+   This phase is additive on purpose. Only three files read these tokens today
+   (ui/button.tsx, which nothing imports; contact-page/ContactPage.tsx; and
+   ui/alert-dialog.tsx), and no file outside button.tsx uses bg-primary or
+   text-primary. The one wide change is --border: the base layer applies
+   `border-border` to `*`, so every uncoloured hairline moves from #e5e5e5 to
+   #edeeef — which is the value the app already hand-types as border-[#edeeef].
+   --------------------------------------------------------------------------- */
 :root {
   --font-plus-jakarta-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: #191c1d;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #f9186b;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: #5f6368;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
+  --border: #edeeef;
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.87 0 0);
@@ -34,6 +55,24 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
+  --warning: #f6c344;
+  --warning-foreground: #191c1d;
+  /* Availability. A store being open is the one green fact on a vendor card,
+     and it had been painted in the brand pink — which §1.4 reserves for action
+     *and* availability, so the card said "action" twice and distinguished
+     neither. Green separates them.
+
+     The design prototype uses #0E8A5F. That measures 4.36:1 on white, which
+     misses the 4.5:1 a 14px label needs, so this is the same hue 5% darker at
+     4.76:1 — indistinguishable to the eye, and it passes. The dark value is
+     the prototype's, 7.43:1 on the dark card. */
+  --success: #0d835a;
+  /* The darker step. Twenty-five call sites reached for #d4145b to paint a
+     hover or the far end of a gradient — a seventh spelling of the pink that
+     existed only because "the brand, a bit darker" had no name. It is derived
+     from --primary rather than typed, so it cannot drift away from it, and it
+     is the same mix `<Button>` already used inline. */
+  --primary-hover: color-mix(in oklch, var(--primary), black 10%);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -79,6 +118,24 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-primary-hover: var(--primary-hover);
+
+  /* The only step of the six-step type scale Tailwind does not already name.
+     xs/sm/base/xl/2xl land on 12/14/16/20/24 with the line-heights the scale
+     asks for; 32px sits between text-3xl (30) and text-4xl (36), so it gets a
+     name of its own instead of another `text-[2rem]` literal. */
+  --text-display: 2rem;
+  --text-display--line-height: 2.5rem;
+
+  /* Spacing needs no new tokens: Tailwind's base unit is already 4px, so
+     p-1/2/3/4/6/8/12/16 *are* 4/8/12/16/24/32/48/64. The rule the plan adds is
+     which multiples we use, not new names. Stated here so the next reader does
+     not invent a parallel set. */
+  --spacing: 0.25rem;
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -425,17 +482,21 @@ body {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: #f9186b;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
+  --muted-foreground: #a3a3a3;
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
+  --warning: #f6c344;
+  --warning-foreground: #191c1d;
+  --success: #2ecc94;
+  --primary-hover: color-mix(in oklch, var(--primary), black 10%);
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -463,20 +524,116 @@ body {
     @apply font-sans;
   }
 }
-/* ---------------------------------------------------------------------------
-   Vendor page — the grouped catalogue fading in over its skeleton.
 
-   Scoped to one class rather than applied as a blanket
-   `*, ::before, ::after { animation-duration: 0.01ms }` reduced-motion reset.
-   That reset is the usual advice, and it is wrong here: it would also freeze
-   `animate-spin` and `animate-pulse`, which are used 108 times across this app
-   to say "still loading". Stopping those does not reduce motion, it removes the
-   only signal that anything is happening.
+/* ---------------------------------------------------------------------------
+   Shared focus ring — Plan.md Phase 2.
+
+   Most interactive controls become `<Button>`, which carries its own ring. A
+   few deliberately do not: carousel dots, the round category tiles, the
+   quantity steppers drawn as circles. They are not buttons in the design-system
+   sense and forcing them into one would fight their shape — but they still have
+   to be reachable and visibly focused when tabbed to. This is the one ring they
+   all share, so a bespoke control cannot quietly ship without one.
+
+   `:focus-visible`, not `:focus`, so a mouse click does not leave a ring behind.
    --------------------------------------------------------------------------- */
-@keyframes category-enter {
+@layer components {
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+/* ---------------------------------------------------------------------------
+   Motion primitives — Plan.md Phase 6.
+
+   Three of them, and the app's motion is built from these plus the loaders it
+   already had. They live here rather than at the call sites for the reason
+   `<Button>` and `.focus-ring` do: a duration typed into a component is a
+   duration that drifts. The card image hover was 700ms in one file, 1000ms in
+   the next and 500ms in a third, all doing the same thing.
+
+   ## prefers-reduced-motion comes first, not last
+
+   The plan is explicit that item 6 ships before items 1–5, so every block
+   below is followed by its own opt-out in the one media query at the end of
+   this file. Nothing here can be added without a line there — `verify:design`
+   §11 asserts exactly that, class by class.
+
+   ## Why not the blanket reset
+
+   The usual advice is `*, ::before, ::after { animation-duration: 0.01ms
+   !important }`. It is wrong in this app: `animate-spin` and `animate-pulse`
+   run 113 times to say "still loading". Freezing those does not reduce motion,
+   it removes the only signal that anything is happening — a spinner that has
+   stopped reads as a hang. So the opt-out is enumerated, one class at a time.
+
+   ## Unlayered on purpose
+
+   Tailwind's utilities sit in `@layer utilities`, and unlayered rules beat
+   layered ones. `.reveal-group` has to win against whatever opacity utility a
+   card carries, so these are not wrapped in a layer. `.focus-ring` above is
+   layered for the opposite reason — a call site should be able to override a
+   ring, but not to half-reveal a hidden card.
+   --------------------------------------------------------------------------- */
+
+/* 1 — skeleton to content. A pure fade: the element it lands on has just
+   replaced a skeleton of the same size, so there is nothing to travel. */
+@keyframes motion-fade {
   from {
     opacity: 0;
-    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.motion-fade {
+  animation: motion-fade 300ms ease-out both;
+}
+
+/* 2 — press feedback. This is a phone-first app: a tap on a card gave nothing
+   back at all. 120ms is short enough that the finger is still down when the
+   card has finished moving.
+
+   It carries the card's other two hover transitions as well, and that is
+   deliberate rather than convenient. Unlayered rules beat Tailwind's
+   utilities, so a `transition` here would silently clobber a
+   `transition-all duration-300` typed at the call site — the shadow and the
+   border would then snap instead of easing, and nothing would report it. Naming
+   the three properties a card actually animates means the primitive replaces
+   that utility instead of fighting it. */
+.motion-press {
+  transition-property: transform, box-shadow, border-color;
+  transition-duration: 120ms, 200ms, 200ms;
+  transition-timing-function: ease-out;
+}
+
+.motion-press:active {
+  transform: scale(0.97);
+}
+
+/* 3 — reveal on scroll. 8px rise + fade over 350ms, staggered 50ms per card
+   and capped at the ninth so the bottom of a long grid is not left waiting.
+
+   The hidden state is keyed off `data-revealed`, which the component renders
+   as "false" in its own markup and `useRevealOnScroll` flips to "true" when
+   the container first intersects. Two consequences worth stating:
+
+   - A container with no attribute at all is fully visible. Nothing is hidden
+     by default, so forgetting the hook cannot blank a section.
+   - Markup that ships as "false" is invisible until JavaScript runs. It is
+     only ever put on grids whose contents are fetched client-side and do not
+     exist without JavaScript in the first place.
+
+   Under reduced motion the media query at the end forces every child visible
+   regardless of the attribute, so the hook needs to know nothing about it. */
+@keyframes motion-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -484,12 +641,60 @@ body {
   }
 }
 
-.category-enter {
-  animation: category-enter 300ms ease-out both;
+.reveal-group[data-revealed="false"] > * {
+  opacity: 0;
 }
 
+.reveal-group[data-revealed="true"] > * {
+  animation: motion-reveal 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reveal-group[data-revealed="true"] > *:nth-child(2) {
+  animation-delay: 50ms;
+}
+.reveal-group[data-revealed="true"] > *:nth-child(3) {
+  animation-delay: 100ms;
+}
+.reveal-group[data-revealed="true"] > *:nth-child(4) {
+  animation-delay: 150ms;
+}
+.reveal-group[data-revealed="true"] > *:nth-child(5) {
+  animation-delay: 200ms;
+}
+.reveal-group[data-revealed="true"] > *:nth-child(6) {
+  animation-delay: 250ms;
+}
+.reveal-group[data-revealed="true"] > *:nth-child(7) {
+  animation-delay: 300ms;
+}
+.reveal-group[data-revealed="true"] > *:nth-child(8) {
+  animation-delay: 350ms;
+}
+.reveal-group[data-revealed="true"] > *:nth-child(n + 9) {
+  animation-delay: 400ms;
+}
+
+/* The opt-out. One block, every primitive named in it.
+
+   `.reveal-group` is the one that needs more than `animation: none` — its
+   children start at opacity 0, and an animation that never runs would leave
+   them there. Both attribute states are forced visible so the content is on
+   screen before the observer has an opinion. */
 @media (prefers-reduced-motion: reduce) {
-  .category-enter {
+  .motion-fade {
+    animation: none;
+  }
+
+  .motion-press {
+    transition-property: none;
+  }
+  .motion-press:active {
+    transform: none;
+  }
+
+  .reveal-group[data-revealed="false"] > *,
+  .reveal-group[data-revealed="true"] > * {
+    opacity: 1;
     animation: none;
   }
 }

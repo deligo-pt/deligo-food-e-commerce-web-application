@@ -24,6 +24,7 @@ import { formatOrderPrice } from "@/lib/currency";
 import { getOrderBucket } from "@/lib/orderStatus";
 import { getOrderCardStatus } from "@/lib/orderCardStatus";
 import { getOrderStatusLabel } from "@/lib/orderStatusLabel";
+import { Button } from "@/components/ui/button";
 
 interface StarRatingProps {
   value: number;
@@ -45,13 +46,13 @@ function StarRating({ value, onChange, size = 28 }: StarRatingProps) {
             onClick={() => onChange(star)}
             onMouseEnter={() => setHoverValue(star)}
             onMouseLeave={() => setHoverValue(null)}
-            className="transition-transform active:scale-95 duration-100 hover:scale-110"
+            className="focus-ring rounded-sm transition-transform duration-100 hover:scale-110 active:scale-95"
           >
             <Star
               size={size}
               className={`transition-all duration-100 ${
                 active
-                  ? "fill-[#f6c344] text-[#f6c344] drop-shadow-[0_2px_4px_rgba(246,195,68,0.2)]"
+                  ? "fill-warning text-warning drop-shadow-[0_2px_4px_rgba(246,195,68,0.2)]"
                   : "text-gray-300 dark:text-neutral-700 hover:text-gray-400 dark:hover:text-neutral-600"
               }`}
             />
@@ -332,7 +333,7 @@ export default function OrdersPage() {
   const renderEmptyState = (tab: "ongoing" | "history") => {
     if (!isSearching) {
       return (
-        <p className="text-[#5a4044] dark:text-neutral-400">
+        <p className="text-muted-foreground dark:text-neutral-400">
           {tab === "ongoing" ? t("noOngoingOrders") : t("previousOrdersMessage")}
         </p>
       );
@@ -345,7 +346,7 @@ export default function OrdersPage() {
     if (otherCount === 0) {
       return (
         <>
-          <p className="text-[#5a4044] dark:text-neutral-400">
+          <p className="text-muted-foreground dark:text-neutral-400">
             {t("noResultsFound")}
           </p>
           <p className="text-sm text-gray-400 dark:text-neutral-500">
@@ -357,18 +358,19 @@ export default function OrdersPage() {
 
     return (
       <>
-        <p className="text-[#5a4044] dark:text-neutral-400">
+        <p className="text-muted-foreground dark:text-neutral-400">
           {t("noMatchingOrders")}
         </p>
-        <button
+        <Button
           type="button"
+          size="sm"
           onClick={() => setActiveTab(otherTab)}
-          className="rounded-full bg-[#f9186b] dark:bg-pink-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#90003c]"
+          className="rounded-full font-semibold"
         >
           {/* Composed here rather than interpolated: `t()` takes one argument
               and does not substitute. */}
           {otherCount} {t(tab === "ongoing" ? "inHistory" : "inOngoing")}
-        </button>
+        </Button>
       </>
     );
   };
@@ -423,11 +425,11 @@ export default function OrdersPage() {
     <section className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-8 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-5xl px-4 md:px-8">
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
+          <h1 className="text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
             {t("myOrders")}
           </h1>
 
-          <p className="mt-1 text-sm text-[#5a4044] dark:text-neutral-400">
+          <p className="mt-1 text-sm text-muted-foreground dark:text-neutral-400">
             {t("trackOrdersDescription")}
           </p>
         </div>
@@ -444,8 +446,8 @@ export default function OrdersPage() {
         <div className="mb-8 flex border-b border-neutral-200 dark:border-neutral-800">
           <button
             onClick={() => setActiveTab("ongoing")}
-            className={`relative flex-1 py-4 text-center font-medium transition-colors ${
-              activeTab === "ongoing" ? "text-[#f9186b] dark:text-pink-500" : "text-[#5a4044] dark:text-neutral-400"
+            className={`focus-ring relative flex-1 py-4 text-center font-medium transition-colors ${
+              activeTab === "ongoing" ? "text-primary dark:text-pink-500" : "text-muted-foreground dark:text-neutral-400"
             }`}
           >
             {/* Counts appear only while searching, so an idle page looks
@@ -455,20 +457,20 @@ export default function OrdersPage() {
             {t("ongoing")}
             {isSearching && ` (${visibleOngoing.length})`}
             {activeTab === "ongoing" && (
-              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#f9186b] dark:bg-pink-500" />
+              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-primary dark:bg-pink-500" />
             )}
           </button>
 
           <button
             onClick={() => setActiveTab("history")}
-            className={`relative flex-1 py-4 text-center font-medium transition-colors ${
-              activeTab === "history" ? "text-[#f9186b] dark:text-pink-500" : "text-[#5a4044] dark:text-neutral-400"
+            className={`focus-ring relative flex-1 py-4 text-center font-medium transition-colors ${
+              activeTab === "history" ? "text-primary dark:text-pink-500" : "text-muted-foreground dark:text-neutral-400"
             }`}
           >
             {t("history")}
             {isSearching && ` (${visibleHistory.length})`}
             {activeTab === "history" && (
-              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-[#f9186b] dark:bg-pink-500" />
+              <div className="absolute bottom-0 left-0 h-1 w-full rounded-t bg-primary dark:bg-pink-500" />
             )}
           </button>
         </div>
@@ -582,19 +584,22 @@ export default function OrdersPage() {
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 px-6 py-4">
               <div>
-                <h3 className="text-lg font-bold text-[#191c1d] dark:text-neutral-50">
+                <h3 className="text-xl font-bold text-foreground dark:text-neutral-50">
                   {t("rateYourOrder")}
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-neutral-400">
                   {t("order")} #{activeRatingOrder.orderId}
                 </p>
               </div>
-              <button
+              <Button
+                size="icon-sm"
+                variant="secondary"
+                aria-label={t("close")}
                 onClick={() => setActiveRatingOrder(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-neutral-700 hover:text-gray-700 dark:hover:text-neutral-200 transition"
+                className="rounded-full"
               >
                 <X size={18} />
-              </button>
+              </Button>
             </div>
 
             {/* Modal Scrollable Body */}
@@ -602,7 +607,7 @@ export default function OrdersPage() {
               {/* Product / Food Rating Section */}
               <div className="rounded-2xl border border-pink-100/55 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-5 space-y-4 shadow-xs">
                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-2">
-                  <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-[#f9186b] dark:text-pink-400 uppercase tracking-wider">
+                  <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-primary dark:text-pink-400 uppercase tracking-wider">
                     {t("foodReview")}
                   </span>
                 </div>
@@ -648,7 +653,7 @@ export default function OrdersPage() {
               {activeRatingOrder.deliveryPartnerId && (
                 <div className="rounded-2xl border border-pink-100/55 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-5 space-y-4 shadow-xs">
                   <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-2">
-                    <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-[#f9186b] dark:text-pink-400 uppercase tracking-wider">
+                    <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-primary dark:text-pink-400 uppercase tracking-wider">
                       {t("deliveryReview")}
                     </span>
                   </div>
@@ -694,16 +699,17 @@ export default function OrdersPage() {
 
             {/* Modal Footer Actions */}
             <div className="flex items-center justify-end gap-3 border-t border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-950 px-6 py-4">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setActiveRatingOrder(null)}
                 disabled={submittingRating}
-                className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-neutral-800 transition disabled:opacity-50"
+                className="text-gray-600 dark:text-neutral-400"
               >
                 {t("cancel")}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
                 onClick={handleSubmitReview}
                 disabled={
@@ -713,7 +719,7 @@ export default function OrdersPage() {
                       ? deliveryRating === 0
                       : true))
                 }
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#f9186b] dark:bg-pink-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#90003c] transition disabled:opacity-50 disabled:cursor-not-allowed min-w-30"
+                className="min-w-30 gap-2 font-semibold"
               >
                 {submittingRating ? (
                   <>
@@ -723,7 +729,7 @@ export default function OrdersPage() {
                 ) : (
                   <span>{t("submitReview")}</span>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationStore } from "@/stores/locationStore";
 import { getAccessToken } from "@/lib/authCookies";
+import { Button } from "@/components/ui/button";
 
 const GOOGLE_API_URL = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
 
@@ -248,7 +249,7 @@ export default function AddAddressPage() {
   if (loading)
     return (
       <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#f9186b] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
 
@@ -257,7 +258,7 @@ export default function AddAddressPage() {
       <Toaster position="top-center" richColors />
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
+          <h1 className="text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
             {t("addNewAddress")}
           </h1>
         </div>
@@ -275,17 +276,18 @@ export default function AddAddressPage() {
                 position into an answer — matched to the same card on the edit
                 and current-location pages. */}
             <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
-              <h2 className="mb-2 text-xl font-bold text-[#191c1d] dark:text-neutral-50">
+              <h2 className="mb-2 text-xl font-bold text-foreground dark:text-neutral-50">
                 {t("myCurrentLocation")}
               </h2>
-              <p className="mb-4 text-sm text-[#5a4044] dark:text-neutral-400">
+              <p className="mb-4 text-sm text-muted-foreground dark:text-neutral-400">
                 {t("currentLocationDescription")}
               </p>
-              <button
+              <Button
                 type="button"
+                size="lg"
                 onClick={handleUseCurrentLocation}
                 disabled={loadingCurrentLocation}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#f9186b] px-6 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-[#d4145b] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full gap-3 rounded-2xl font-semibold shadow-md active:scale-[0.98]"
               >
                 {loadingCurrentLocation ? (
                   <>
@@ -298,15 +300,15 @@ export default function AddAddressPage() {
                     {t("useCurrentLocation")}
                   </>
                 )}
-              </button>
+              </Button>
             </div>
 
             <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
               <div className="mb-6">
-                <h2 className="mb-2 text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
+                <h2 className="mb-2 text-xl font-bold text-foreground dark:text-neutral-50">
                   {t("confirmLocation")}
                 </h2>
-                <p className="text-sm text-[#5a4044] dark:text-neutral-400">
+                <p className="text-sm text-muted-foreground dark:text-neutral-400">
                   {t("confirmLocationDescription")}
                 </p>
               </div>
@@ -323,7 +325,7 @@ export default function AddAddressPage() {
                   onChange={handleSearchChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder")}
-                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b] dark:focus:border-[#f9186b]"
+                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-primary dark:focus:border-primary"
                   autoComplete="off"
                 />
                 {searchValue && <ClearFilterButton onClear={clearSearch} />}
@@ -336,20 +338,20 @@ export default function AddAddressPage() {
                         <button
                           type="button"
                           onClick={() => handleSuggestionClick(s)}
-                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] dark:hover:bg-neutral-800/50 ${idx !== suggestions.length - 1
+                          className={`focus-ring flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[#fff2f5] dark:hover:bg-neutral-800/50 ${idx !== suggestions.length - 1
                             ? "border-b border-[#f5e0e5] dark:border-neutral-800"
                             : ""
                             }`}
                         >
-                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5] dark:bg-[#f9186b]/10">
-                            <Search size={13} className="text-[#f9186b]" />
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff2f5] dark:bg-primary/10">
+                            <Search size={13} className="text-primary" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-[#191c1d] dark:text-neutral-200">
+                            <span className="block truncate text-sm font-semibold text-foreground dark:text-neutral-200">
                               {s.mainText}
                             </span>
                             {s.secondaryText && (
-                              <span className="block truncate text-xs text-[#5a4044] dark:text-neutral-400">
+                              <span className="block truncate text-xs text-muted-foreground dark:text-neutral-400">
                                 {s.secondaryText}
                               </span>
                             )}

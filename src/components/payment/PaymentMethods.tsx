@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 export default function PaymentMethodPage() {
   const { t } = useTranslation();
@@ -96,7 +97,7 @@ export default function PaymentMethodPage() {
         <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
           {/* Header */}
           <div className="border-b border-gray-200 dark:border-neutral-800 px-5 py-6 sm:px-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#222] dark:text-neutral-50">
+            <h1 className="text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
               {t("paymentMethods")}
             </h1>
             <p className="mt-1.5 text-sm text-gray-500 dark:text-neutral-400">
@@ -110,7 +111,7 @@ export default function PaymentMethodPage() {
               since a card can only be saved during a checkout. */}
           {authed && (
             <div className="border-b border-gray-200 dark:border-neutral-800 px-5 py-6 sm:px-8">
-              <h2 className="mb-3 text-base font-semibold text-[#222] dark:text-neutral-50">
+              <h2 className="mb-3 text-xl font-semibold text-foreground dark:text-neutral-50">
                 {t("savedCards")}
               </h2>
 
@@ -130,7 +131,7 @@ export default function PaymentMethodPage() {
               ) : savedCards.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-gray-300 dark:border-neutral-700 px-4 py-6 text-center">
                   <CreditCard className="mx-auto h-6 w-6 text-gray-400 dark:text-neutral-500" />
-                  <p className="mt-2 text-sm font-medium text-[#222] dark:text-neutral-100">
+                  <p className="mt-2 text-sm font-medium text-foreground dark:text-neutral-100">
                     {t("noSavedCards")}
                   </p>
                   <p className="mt-0.5 text-xs text-gray-500 dark:text-neutral-400">
@@ -149,7 +150,7 @@ export default function PaymentMethodPage() {
                         }`}
                       >
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0f5] dark:bg-pink-950/20">
-                          <CreditCard className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                          <CreditCard className="h-5 w-5 text-primary dark:text-pink-400" />
                         </div>
 
                         <div className="min-w-0 flex-1">
@@ -158,7 +159,7 @@ export default function PaymentMethodPage() {
                               the web should not be first. `label` still reads
                               "Visa ending in 4242" and is used as-is in the
                               remove dialog, where the card is named in prose. */}
-                          <h3 className="truncate text-base font-semibold tracking-wide text-[#222] dark:text-neutral-50">
+                          <h3 className="truncate text-base font-semibold tracking-wide text-foreground dark:text-neutral-50">
                             {card.brand} •••• {card.last4}
                           </h3>
                           {/* `isDefault` is deliberately not surfaced. It is
@@ -172,16 +173,18 @@ export default function PaymentMethodPage() {
                           </p>
                         </div>
 
-                        <button
+                        <Button
                           type="button"
+                          size="icon-sm"
+                          variant="ghost"
                           aria-label={t("removeCard")}
                           title={t("removeCard")}
                           onClick={() => setCardToRemove(card)}
                           disabled={isRemoving}
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-[#f9186b] focus-visible:outline-none dark:hover:bg-white/10"
+                          className="shrink-0 hover:bg-black/5 dark:hover:bg-white/10"
                         >
-                          <Trash2 className="h-4 w-4 text-[#f9186b] dark:text-pink-400" />
-                        </button>
+                          <Trash2 className="h-4 w-4 text-primary dark:text-pink-400" />
+                        </Button>
                       </li>
                     );
                   })}
@@ -192,7 +195,7 @@ export default function PaymentMethodPage() {
 
           {/* Accepted methods */}
           <div className="px-5 pt-6 sm:px-8">
-            <h2 className="text-base font-semibold text-[#222] dark:text-neutral-50">
+            <h2 className="text-xl font-semibold text-foreground dark:text-neutral-50">
               {t("acceptedPaymentMethods")}
             </h2>
           </div>
@@ -202,19 +205,19 @@ export default function PaymentMethodPage() {
               return (
                 <li
                   key={method.id}
-                  className="flex items-center gap-4 rounded-xl border border-[#e6e6e6] dark:border-neutral-800 bg-white dark:bg-neutral-900/40 px-4 py-4 transition-colors hover:border-[#f9186b]/40 dark:hover:border-[#f9186b]/40"
+                  className="flex items-center gap-4 rounded-xl border border-[#e6e6e6] dark:border-neutral-800 bg-white dark:bg-neutral-900/40 px-4 py-4 transition-colors hover:border-primary/40 dark:hover:border-primary/40"
                 >
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0f5] dark:bg-pink-950/20">
-                    <Icon className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                    <Icon className="h-5 w-5 text-primary dark:text-pink-400" />
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-semibold text-[#222] dark:text-neutral-50">
+                      <h3 className="text-xl font-semibold text-foreground dark:text-neutral-50">
                         {method.title}
                       </h3>
                       {method.recommended && (
-                        <span className="rounded-full bg-[#f9186b] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                        <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white">
                           {t("recommended")}
                         </span>
                       )}

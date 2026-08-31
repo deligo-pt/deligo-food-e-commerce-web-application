@@ -34,7 +34,7 @@ export default function ClearFilterButton({
       onClick={onClear}
       aria-label={label}
       title={label}
-      className={`absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full p-0.5 text-gray-400 dark:text-neutral-500 transition-colors hover:text-gray-600 dark:hover:text-neutral-300 ${className}`}
+      className={`focus-ring absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full p-0.5 text-gray-400 dark:text-neutral-500 transition-colors hover:text-gray-600 dark:hover:text-neutral-300 ${className}`}
     >
       <X size={size} />
     </button>

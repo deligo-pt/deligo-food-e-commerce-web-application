@@ -7,6 +7,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useInvalidateSavedCards } from "@/hooks/queries/usePaymentTokens";
 import Loader from "@/components/shared/Loader";
 import { openSupportChat } from "@/stores/supportChatStore";
+import { Button } from "@/components/ui/button";
 
 export default function PaymentReturnPage() {
   const { t } = useTranslation();
@@ -88,23 +89,20 @@ export default function PaymentReturnPage() {
           <h2 className="text-xl font-bold text-red-600">{t("paymentFailed")}</h2>
           <p className="mt-2 text-gray-700">{error}</p>
           <div className="mt-4 flex gap-3 justify-center">
-            <button
-              onClick={() => router.push("/cart")}
-              className="rounded-lg bg-gray-600 px-4 py-2 text-white"
-            >
+            <Button variant="secondary" onClick={() => router.push("/cart")}>
               {t("returnToCart")}
-            </button>
+            </Button>
             {/* Was `router.push("/contact")` — a route that does not exist
                 (`Project_Reference.md` §4.9). The button says Contact Support,
                 so it now does that: the chat opens over this page, filed under
                 PAYMENT, without navigating away from a payment that has just
                 failed. The customer is necessarily signed in to have got here. */}
-            <button
+            <Button
               onClick={() => openSupportChat({ category: "PAYMENT" })}
-              className="rounded-lg bg-pink-600 px-4 py-2 text-white cursor-pointer"
+              className="cursor-pointer"
             >
               {t("contactSupport")}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

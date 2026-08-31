@@ -7,6 +7,8 @@ import { Star, Truck, Check, Store, Moon } from "lucide-react";
 import { memo, useCallback, useEffect, useState, useRef } from "react";
 import { formatCuisine } from "@/lib/cuisine";
 import { useTranslation } from "@/hooks/useTranslation";
+import { cn } from "@/lib/utils";
+import { cardVariants } from "@/components/ui/card";
 
 export interface Vendor {
   id: string;
@@ -194,29 +196,48 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
     : estimatedTime || "Under 10 min";
 
   const cardBody = (
+    /* Plan.md Phase 7 #1 — the same card as the homepage's, class for class.
+       It is one design that happens to be rendered by two components; letting
+       the copies drift is how "the vendor card" stops meaning anything. */
     <article
-      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-4xl border-2 border-transparent bg-white dark:bg-neutral-900 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-all hover:border-[#ffd9de] dark:hover:border-neutral-800 hover:shadow-2xl"
+      className={cn(
+        cardVariants({ variant: "interactive" }),
+        "group flex h-full cursor-pointer flex-col overflow-hidden",
+      )}
     >
       <div className="relative aspect-16/10 shrink-0 overflow-hidden">
         <SafeImage
           src={vendor.storePhoto?.[0]}
           alt={vendor.businessDetails.businessName}
           sizes="(max-width: 1024px) 100vw, 33vw"
-          className={`object-cover transition-transform duration-1000 ${
-            isClosed ? "grayscale" : "group-hover:scale-110"
+          // Phase 6 #4. A full second at 1.10 — the slowest of the three
+          // copies of this construct in the tree, all now 1.04 over 300ms.
+          className={`object-cover transition-transform duration-300 ${
+            isClosed ? "grayscale" : "group-hover:scale-[1.04]"
           }`}
           fallbackIcon={<Store className="h-12 w-12" />}
         />
-        <div className="absolute left-5 top-5">
-          <span className="flex items-center gap-1.5 rounded-2xl bg-white/95 dark:bg-neutral-900/95 px-4 py-2 text-sm font-bold text-[#191c1d] dark:text-white shadow-lg backdrop-blur-md">
-            <Star size={18} className="text-[#f6c344]" />
+        <div className="absolute left-3 top-3">
+          <span className="flex h-8 items-center gap-1.5 rounded-full bg-white/95 px-3 text-xs font-bold text-foreground shadow-lg backdrop-blur-md dark:bg-neutral-900/95 dark:text-white">
+            <Star size={14} className="text-warning" />
             {vendor.rating?.average ?? 0}
           </span>
         </div>
+        {/* The delivery estimate was a pink row in the footer here and an
+            overlay pill on the homepage — the same fact drawn two ways in two
+            files. It is the overlay in both now. */}
+        {!isClosed && (
+          <div className="absolute bottom-3 right-3">
+            <span className="flex h-8 items-center gap-2 rounded-full bg-black/70 px-3 text-xs font-bold text-white backdrop-blur-md">
+              <Truck size={14} />
+              {displayTime}
+            </span>
+          </div>
+        )}
         {isClosed && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/45">
-            <span className="flex items-center gap-2 rounded-full bg-black/70 px-5 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
-              <Moon size={18} />
+            <span className="flex h-8 items-center gap-2 rounded-full bg-black/70 px-4 text-xs font-bold text-white shadow-lg backdrop-blur-sm">
+              <Moon size={14} />
               {t("currentlyClosed")}
             </span>
           </div>
@@ -225,48 +246,63 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
 
       {/* flex-1 + mt-auto on the footer keeps every card's divider and meta row
           aligned regardless of how long the cuisine list is. */}
-      <div className="flex flex-1 flex-col p-6 sm:p-8">
-        <div className="mb-2 flex items-center gap-4">
-          <h3
-            className={`line-clamp-1 text-lg font-bold sm:text-xl ${
-              isClosed
-                ? "text-[#9aa0a6] dark:text-neutral-500"
-                : "text-[#191c1d] dark:text-neutral-100"
-            }`}
-          >
-            {vendor.businessDetails.businessName}
-          </h3>
-        </div>
+      <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
+        <h3
+          className={`line-clamp-1 text-xl font-bold tracking-[-0.015em] ${
+            isClosed
+              ? "text-[#9aa0a6] dark:text-neutral-500"
+              : "text-foreground dark:text-neutral-100"
+          }`}
+        >
+          {vendor.businessDetails.businessName}
+        </h3>
         <p
-          className={`mb-6 line-clamp-2 text-base leading-7 ${
+          className={`line-clamp-1 text-xs font-bold uppercase tracking-[0.06em] ${
             isClosed
               ? "text-[#9aa0a6] dark:text-neutral-600"
-              : "text-[#5a4044] dark:text-neutral-400"
+              : "text-muted-foreground dark:text-neutral-400"
           }`}
         >
           {formatCuisine(vendor.businessDetails.restaurantCuisineType) ||
             vendor.businessDetails.businessType}
         </p>
-        <div className="mt-auto flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#edeeef] dark:border-neutral-800 pt-6 text-sm font-medium">
+        {/* 🔴 The city line was `text-primary dark:text-pink-400` — the §1.4
+            violation Phase 4 fixed on the homepage card and missed here,
+            because §9's guard only ever read the other file. A city is a fact,
+            not an action. */}
+        {/* Availability is a labelled status, not a dot on its own. Phase 7
+            moved it up to the title as a bare dot and dropped the words to
+            `sr-only`, which asked a sighted reader to know what a coloured dot
+            means. It is back beside the city where it was, with two changes:
+            the truck icon is a dot, and it is green rather than the brand pink
+            — §1.4 gives pink to action *and* availability, so painting both in
+            it distinguished neither. Closed is untouched: the same muted
+            #9aa0a6 it has always been. */}
+        <div className="mt-auto flex min-w-0 items-center gap-4 border-t border-border pt-3 text-sm font-semibold dark:border-neutral-800">
           <span
-            className={`flex items-center gap-2 ${
-              isClosed
-                ? "text-[#9aa0a6] dark:text-neutral-500"
-                : "text-[#f9186b] dark:text-pink-500"
+            className={`flex shrink-0 items-center gap-2 ${
+              isClosed ? "text-[#9aa0a6] dark:text-neutral-500" : "text-success"
             }`}
           >
-            <Truck size={20} />
-            {displayTime}
+            <span
+              aria-hidden="true"
+              className={`size-2 shrink-0 rounded-full ${
+                isClosed ? "bg-[#9aa0a6] dark:bg-neutral-600" : "bg-success"
+              }`}
+            />
+            {vendor.businessDetails.isStoreOpen ? t("openNow") : t("closed")}
           </span>
           <span
-            className={`flex items-center gap-2 ${
+            className={`flex min-w-0 items-center gap-2 ${
               isClosed
                 ? "text-[#9aa0a6] dark:text-neutral-500"
-                : "text-[#f9186b] dark:text-pink-400"
+                : "text-muted-foreground dark:text-neutral-400"
             }`}
           >
-            <Check size={20} />
-            {vendor.businessLocation.city}, {vendor.businessLocation.country}
+            <Check size={16} className="shrink-0" />
+            <span className="truncate">
+              {vendor.businessLocation.city}, {vendor.businessLocation.country}
+            </span>
           </span>
         </div>
       </div>
@@ -274,7 +310,12 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
   );
 
   return (
-    <Link href={`/vendors/${vendor.userId}`} className="block h-full">
+    /* Phase 6 #3 — press feedback on the anchor, which is the control. The
+       <article> keeps its own hover transition. */
+    <Link
+      href={`/vendors/${vendor.userId}`}
+      className="motion-press block h-full"
+    >
       {cardBody}
     </Link>
   );

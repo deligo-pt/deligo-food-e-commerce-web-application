@@ -19,6 +19,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/authCookies";
 import { useLocationStore } from "@/stores/locationStore";
+import { Button } from "@/components/ui/button";
 
 interface AddressFormProps {
   coordinates: { lat: number; lng: number } | null;
@@ -362,17 +363,17 @@ export default function AddressForm({
     <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none md:p-8">
       <Toaster position="top-center" richColors />
       <div className="mb-8">
-        <h2 className="mb-2 text-2xl font-bold text-[#191c1d] dark:text-neutral-50">
+        <h2 className="mb-2 text-xl font-bold text-foreground dark:text-neutral-50">
           {t("addressDetails")}
         </h2>
-        <p className="text-sm text-[#5a4044] dark:text-neutral-400">
+        <p className="text-sm text-muted-foreground dark:text-neutral-400">
           {t("addressDetailsDescription")}
         </p>
       </div>
 
       {/* Address Type */}
       <div className="mb-8">
-        <label className="mb-4 block text-sm font-semibold text-[#191c1d] dark:text-neutral-200">
+        <label className="mb-4 block text-sm font-semibold text-foreground dark:text-neutral-200">
           {t("labelAddressAs")}
         </label>
         <div className="grid grid-cols-3 gap-3">
@@ -381,9 +382,9 @@ export default function AddressForm({
               key={type}
               type="button"
               onClick={() => setAddressType(type)}
-              className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-medium transition ${addressType === type
-                ? "border-[#f9186b] dark:border-[#f9186b] bg-[#fff2f5] dark:bg-[#f9186b]/10 text-[#f9186b]"
-                : "border-[#e3bdc3] dark:border-neutral-800 text-[#5a4044] dark:text-neutral-300 bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800"
+              className={`focus-ring flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-medium transition ${addressType === type
+                ? "border-primary dark:border-primary bg-[#fff2f5] dark:bg-primary/10 text-primary"
+                : "border-[#e3bdc3] dark:border-neutral-800 text-muted-foreground dark:text-neutral-300 bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800"
                 }`}
             >
               {type === "home" && <Home size={18} />}
@@ -401,12 +402,12 @@ export default function AddressForm({
           <div className="mt-4">
             <label
               htmlFor="customAddressType"
-              className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200"
+              className="mb-2 block text-sm font-medium text-foreground dark:text-neutral-200"
             >
               {t("customAddressTypeLabel")} *
             </label>
-            <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#f9186b]">
-              <Tag size={18} className="mr-3 text-[#5a4044] dark:text-neutral-500" />
+            <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-primary">
+              <Tag size={18} className="mr-3 text-muted-foreground dark:text-neutral-500" />
               <input
                 id="customAddressType"
                 type="text"
@@ -414,7 +415,7 @@ export default function AddressForm({
                 onChange={(e) => setCustomAddressType(e.target.value)}
                 placeholder={t("customAddressTypePlaceholder")}
                 maxLength={50}
-                className="h-14 w-full bg-transparent outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
+                className="h-14 w-full bg-transparent outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
               />
             </div>
           </div>
@@ -424,11 +425,11 @@ export default function AddressForm({
       {/* Street + Detailed */}
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
+          <label className="mb-2 block text-sm font-medium text-foreground dark:text-neutral-200">
             {getLabelText("streetAddress")}
           </label>
-          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#f9186b]">
-            <MapPin size={18} className="mr-3 text-[#5a4044] dark:text-neutral-500" />
+          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-primary">
+            <MapPin size={18} className="mr-3 text-muted-foreground dark:text-neutral-500" />
             <input
               type="text"
               value={formData.street}
@@ -436,16 +437,16 @@ export default function AddressForm({
                 setFormData({ ...formData, street: e.target.value })
               }
               placeholder={t("enterStreetAddress")}
-              className="h-14 w-full bg-transparent outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
+              className="h-14 w-full bg-transparent outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
             />
           </div>
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
+          <label className="mb-2 block text-sm font-medium text-foreground dark:text-neutral-200">
             {getLabelText("houseApartmentFloor")}
           </label>
-          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#f9186b]">
-            <Building2 size={18} className="mr-3 text-[#5a4044] dark:text-neutral-500" />
+          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-primary">
+            <Building2 size={18} className="mr-3 text-muted-foreground dark:text-neutral-500" />
             <input
               type="text"
               value={formData.detailedAddress}
@@ -453,7 +454,7 @@ export default function AddressForm({
                 setFormData({ ...formData, detailedAddress: e.target.value })
               }
               placeholder={t("apartmentPlaceholder")}
-              className="h-14 w-full bg-transparent outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
+              className="h-14 w-full bg-transparent outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
             />
           </div>
         </div>
@@ -465,7 +466,7 @@ export default function AddressForm({
           the vertical order too. */}
       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
+          <label className="mb-2 block text-sm font-medium text-foreground dark:text-neutral-200">
             {getLabelText("postalCode")}
           </label>
           <input
@@ -475,11 +476,11 @@ export default function AddressForm({
               setFormData({ ...formData, postalCode: e.target.value })
             }
             placeholder={t("enterPostalCode")}
-            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
+            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-primary"
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
+          <label className="mb-2 block text-sm font-medium text-foreground dark:text-neutral-200">
             {getLabelText("city")}
           </label>
           <input
@@ -487,7 +488,7 @@ export default function AddressForm({
             value={formData.city}
             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
             placeholder={t("enterCity")}
-            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
+            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-primary"
           />
         </div>
       </div>
@@ -495,7 +496,7 @@ export default function AddressForm({
       {/* State + Country */}
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
+          <label className="mb-2 block text-sm font-medium text-foreground dark:text-neutral-200">
             {getLabelText("stateRegion")}
           </label>
           <input
@@ -505,15 +506,15 @@ export default function AddressForm({
               setFormData({ ...formData, state: e.target.value })
             }
             placeholder={t("enterStateRegion")}
-            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-[#f9186b]"
+            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-primary"
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#191c1d] dark:text-neutral-200">
+          <label className="mb-2 block text-sm font-medium text-foreground dark:text-neutral-200">
             {getLabelText("country")}
           </label>
-          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-[#f9186b]">
-            <Globe size={18} className="mr-3 text-[#5a4044] dark:text-neutral-500" />
+          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-primary">
+            <Globe size={18} className="mr-3 text-muted-foreground dark:text-neutral-500" />
             <input
               type="text"
               value={formData.country}
@@ -521,7 +522,7 @@ export default function AddressForm({
                 setFormData({ ...formData, country: e.target.value })
               }
               placeholder={t("enterCountry")}
-              className="h-14 w-full bg-transparent outline-none text-[#191c1d] dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
+              className="h-14 w-full bg-transparent outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
             />
           </div>
         </div>
@@ -532,25 +533,25 @@ export default function AddressForm({
       {/* Coordinates Card */}
       <div className="mb-8 rounded-2xl border border-[#e3bdc3] dark:border-neutral-800 bg-[#fafafa] dark:bg-[#fafafa]/5 p-5">
         <div className="mb-4 flex items-center gap-2">
-          <Navigation size={18} className="text-[#f9186b]" />
-          <h3 className="font-semibold text-[#191c1d] dark:text-neutral-200">
+          <Navigation size={18} className="text-primary" />
+          <h3 className="font-semibold text-foreground dark:text-neutral-200">
             {t("gpsCoordinates")}
           </h3>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <p className="mb-1 text-xs uppercase tracking-wide text-[#5a4044] dark:text-neutral-400">
+            <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground dark:text-neutral-400">
               {t("latitude")}
             </p>
-            <p className="rounded-lg bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800/50 px-4 py-3 font-mono text-sm text-[#191c1d] dark:text-neutral-300">
+            <p className="rounded-lg bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800/50 px-4 py-3 font-mono text-sm text-foreground dark:text-neutral-300">
               {coordinates ? coordinates.lat.toFixed(6) : "—"}
             </p>
           </div>
           <div>
-            <p className="mb-1 text-xs uppercase tracking-wide text-[#5a4044] dark:text-neutral-400">
+            <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground dark:text-neutral-400">
               {t("longitude")}
             </p>
-            <p className="rounded-lg bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800/50 px-4 py-3 font-mono text-sm text-[#191c1d] dark:text-neutral-300">
+            <p className="rounded-lg bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800/50 px-4 py-3 font-mono text-sm text-foreground dark:text-neutral-300">
               {coordinates ? coordinates.lng.toFixed(6) : "—"}
             </p>
           </div>
@@ -560,20 +561,23 @@ export default function AddressForm({
       {!isLoggedIn && !isGuestMode && (
         <div className="mb-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-400">
           <strong>{t("notSignedIn")}</strong> {t("notSignedInExplore")}{" "}
-          <button
+          <Button
+            variant="link"
+            size="sm"
             onClick={() => router.push("/login")}
-            className="font-semibold underline hover:text-amber-900 dark:hover:text-amber-200"
+            className="h-auto px-0 font-semibold text-inherit underline hover:text-amber-900 dark:hover:text-amber-200"
           >
             {t("logInLink")}
-          </button>{" "}
+          </Button>{" "}
           {t("notSignedInSaveSuffix")}
         </div>
       )}
 
-      <button
+      <Button
+        size="lg"
         onClick={handleSave}
         disabled={isSaving}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#f9186b] py-4 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+        className="w-full gap-2 rounded-xl font-semibold"
       >
         <Save size={18} />
         {isGuestMode
@@ -585,7 +589,7 @@ export default function AddressForm({
               : isEditMode
                 ? t("updateAddress")
                 : t("saveAddress")}
-      </button>
+      </Button>
     </div>
   );
 }

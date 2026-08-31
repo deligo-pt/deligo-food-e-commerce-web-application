@@ -30,6 +30,7 @@ import {
   formatDiscountValue,
   hasProductDiscount,
 } from "@/lib/productPricing";
+import { Button } from "@/components/ui/button";
 
 interface ProductDetailsModalProps {
   isOpen: boolean;
@@ -291,7 +292,7 @@ export default function ProductDetailsModal({
     ? applyProductDiscount(selectedOption.price, product?.pricing)
     // The API exposes the post-discount unit price as `finalPrice` (there is no
     // `discountedBasePrice` field). Reading the missing field made this `0`,
-    // which zeroed out the subtotal/tax/total shown in the modal.
+    // which zeroed out the subtotal/VAT/total shown in the modal.
     : (product?.pricing?.finalPrice ?? 0);
 
   const currentOriginalUnitPrice = selectedOption
@@ -299,15 +300,15 @@ export default function ProductDetailsModal({
     : (product?.pricing?.price ?? 0);
 
   const productSubtotal = unitPrice * quantity;
-  const taxRate = product?.pricing?.taxRate ?? 0;
+  const vatRate = product?.pricing?.taxRate ?? 0;
   // Addon prices are independent of the product quantity (they carry their own
-  // quantity) and, like products, are tax-inclusive with their own tax rate.
+  // quantity) and, like products, are VAT-inclusive with their own VAT rate.
   const addonsSubtotal = addonGroups.reduce(
     (sum, g) =>
       sum + g.options.reduce((s, o) => s + (addonQty[o.sku] || 0) * o.price, 0),
     0,
   );
-  const addonsTax = addonGroups.reduce(
+  const addonsVat = addonGroups.reduce(
     (sum, g) =>
       sum +
       g.options.reduce((s, o) => {
@@ -318,11 +319,11 @@ export default function ProductDetailsModal({
     0,
   );
   const subtotal = productSubtotal + addonsSubtotal;
-  // Prices are tax-inclusive (the backend's grandTotal already contains the
-  // VAT), so the tax is embedded in the price and must be *extracted* for the
+  // Prices are VAT-inclusive (the backend's grandTotal already contains the
+  // VAT), so the VAT is embedded in the price and must be *extracted* for the
   // breakdown line — not added on top. The total therefore equals the subtotal.
-  const taxAmount =
-    productSubtotal - productSubtotal / (1 + taxRate / 100) + addonsTax;
+  const vatAmount =
+    productSubtotal - productSubtotal / (1 + vatRate / 100) + addonsVat;
   const total = subtotal;
   const currency = currencySymbol(product?.pricing?.currency);
 
@@ -472,12 +473,15 @@ export default function ProductDetailsModal({
         <div className="absolute left-1/2 top-3 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-gray-300 dark:bg-neutral-700" />
 
         {/* Close button */}
-        <button
+        <Button
+          size="icon"
+          variant="secondary"
           onClick={onClose}
-          className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 transition hover:bg-gray-200 dark:hover:bg-neutral-700"
+          aria-label={t("close")}
+          className="absolute right-4 top-4 z-20 rounded-full"
         >
           <X size={20} />
-        </button>
+        </Button>
 
         {/* Content */}
         <div className="max-h-[calc(100vh-140px)] flex-1 overflow-y-auto scrollbar-hide">
@@ -515,11 +519,11 @@ export default function ProductDetailsModal({
               {/* Product Info */}
               <div className="mb-8 w-full">
                 <div className="flex items-start justify-between gap-4">
-                  <h2 className="max-w-[70%] text-3xl font-bold leading-tight text-gray-900 dark:text-white">
+                  <h2 className="max-w-[70%] text-xl font-bold leading-tight text-gray-900 dark:text-white">
                     {product.name}
                   </h2>
                   <div className="text-right">
-                    <p className="text-3xl font-bold text-pink-600 dark:text-pink-400">
+                    <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">
                       {formatPrice(unitPrice, currency)}
                     </p>
                     {hasDiscount && (
@@ -604,36 +608,41 @@ export default function ProductDetailsModal({
 
               {/* Quantity */}
               <div className="mb-8 flex w-full items-center justify-end gap-4">
-                <button
+                <Button
+                  size="icon"
+                  variant="outline"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   disabled={quantity <= 1}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 transition hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  aria-label={quantity <= 1 ? t("remove") : t("decrease")}
+                  className="rounded-full"
                 >
                   {quantity <= 1 ? <Trash2 size={16} /> : <Minus size={16} />}
-                </button>
+                </Button>
                 <span className="w-8 text-center text-xl font-bold text-gray-950 dark:text-white">
                   {quantity}
                 </span>
-                <button
+                <Button
+                  size="icon"
                   onClick={() => setQuantity((q) => q + 1)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-600 text-white transition hover:bg-pink-700"
+                  aria-label={t("increase")}
+                  className="rounded-full"
                 >
                   <Plus size={16} />
-                </button>
+                </Button>
               </div>
 
               {/* Summary */}
               <div className="mb-6 w-full rounded-3xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-6">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="block text-lg font-semibold text-gray-900 dark:text-white">
+                    <span className="block text-xl font-semibold text-gray-900 dark:text-white">
                       {t("total")}
                     </span>
                     <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-neutral-400">
-                      ({t("inclTax")} -&nbsp;{formatPrice(taxAmount, currency)})
+                      ({t("inclVat")} -&nbsp;{formatPrice(vatAmount, currency)})
                     </span>
                   </div>
-                  <span className="shrink-0 whitespace-nowrap text-lg font-bold text-pink-600 dark:text-pink-400">
+                  <span className="shrink-0 whitespace-nowrap text-xl font-bold text-pink-600 dark:text-pink-400">
                     {formatPrice(total, currency)}
                   </span>
                 </div>
@@ -644,7 +653,7 @@ export default function ProductDetailsModal({
                 <div className="mb-8 w-full space-y-5">
                   <div className="flex items-center gap-2">
                     <Sparkles size={18} className="text-pink-600 dark:text-pink-400" />
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                       {t("customizeYourOrder")}
                     </h3>
                   </div>
@@ -680,23 +689,28 @@ export default function ProductDetailsModal({
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <button
+                                  <Button
+                                    size="icon-sm"
+                                    variant="outline"
                                     onClick={() => decAddon(opt.sku)}
                                     disabled={qty === 0}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 transition hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+                                    aria-label={t("decrease")}
+                                    className="rounded-full"
                                   >
                                     <Minus size={14} />
-                                  </button>
+                                  </Button>
                                   <span className="w-5 text-center text-sm font-bold text-gray-900 dark:text-white">
                                     {qty}
                                   </span>
-                                  <button
+                                  <Button
+                                    size="icon-sm"
                                     onClick={() => incAddon(group, opt.sku)}
                                     disabled={atMax}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-600 text-white transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                    aria-label={t("increase")}
+                                    className="rounded-full"
                                   >
                                     <Plus size={14} />
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             );
@@ -712,7 +726,7 @@ export default function ProductDetailsModal({
               <div className="w-full text-gray-900 dark:text-white">
                 <div className="mb-4 flex items-center gap-2">
                   <FileText size={18} />
-                  <h3 className="text-lg font-semibold">{t("details")}</h3>
+                  <h3 className="text-xl font-semibold">{t("details")}</h3>
                 </div>
                 <p className="leading-7 text-gray-600 dark:text-neutral-400">
                   {product.description ||
@@ -742,10 +756,17 @@ export default function ProductDetailsModal({
                 </div>
               </div>
             )}
-            <button
+            {/* Plan.md Phase 2/3: this was `py-5 text-lg` — a 68px slab with an
+                18px label, the shape that started the whole design pass. It is
+                now the `lg` size (48px, 14px label) and keeps its gradient and
+                shine, which are bespoke to the primary CTA. The gradient still
+                holds two of the seven pink literals; those belong to the Phase 4
+                sweep, not here. */}
+            <Button
+              size="lg"
               onClick={handleAddToCart}
               disabled={cartLoading || isStoreClosed}
-              className={`relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-linear-to-r from-[#f9186b] to-[#d4145b] py-5 text-lg font-semibold text-white shadow-lg transition hover:from-[#d4145b] hover:to-[#b01254] active:scale-[0.98] disabled:opacity-50 ${
+              className={`relative w-full gap-3 overflow-hidden rounded-2xl bg-linear-to-r from-primary to-primary-hover font-semibold shadow-lg hover:from-primary-hover hover:to-[#b01254] active:scale-[0.98] ${
                 cartLoading ? "" : "cart-cta"
               }`}
             >
@@ -760,7 +781,7 @@ export default function ProductDetailsModal({
                   {t("addToCart")} • {formatPrice(total, currency)}
                 </span>
               )}
-            </button>
+            </Button>
           </div>
         )}
       </div>

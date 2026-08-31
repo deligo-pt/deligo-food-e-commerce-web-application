@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Button } from "@/components/ui/button";
 
 // Routes that are their own landing surface and shouldn't show a back control.
 // Everything else under the (main) layout gets a consistent "go back" button so
@@ -28,15 +29,17 @@ export default function PageBackBar() {
 
   return (
     <div className="w-full px-4 pt-4 md:px-8">
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={handleBack}
         aria-label={t("back")}
-        className="group inline-flex items-center gap-1.5 rounded-full py-1.5 pr-3 text-sm font-semibold text-gray-600 transition-colors hover:text-[#f9186b] dark:text-neutral-400 dark:hover:text-[#f9186b]"
+        className="group gap-1.5 rounded-full pl-2 pr-3 font-semibold text-gray-600 hover:bg-transparent hover:text-primary dark:text-neutral-400 dark:hover:bg-transparent dark:hover:text-primary"
       >
-        <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-0.5" />
+        <ArrowLeft className="size-5 transition-transform group-hover:-translate-x-0.5" />
         {t("back")}
-      </button>
+      </Button>
     </div>
   );
 }

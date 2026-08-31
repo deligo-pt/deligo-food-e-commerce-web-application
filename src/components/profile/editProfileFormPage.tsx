@@ -11,6 +11,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
 import { normalizePortugueseNumber } from "@/lib/phone";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface ProfileData {
   userId: string;
@@ -368,12 +369,12 @@ export default function EditProfileFormPage() {
   return (
     <section className="bg-[#f8f9fa] dark:bg-neutral-950 py-8 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-250 px-4">
-        <div className="mb-6 flex items-center gap-2 text-sm text-[#5a4044] dark:text-neutral-400">
+        <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground dark:text-neutral-400">
           <span>{t("home")}</span>
-          <ChevronRight className="h-3.5 w-3.5 text-[#5a4044]/60 dark:text-neutral-500" />
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 dark:text-neutral-500" />
           <span>{t("settings")}</span>
-          <ChevronRight className="h-3.5 w-3.5 text-[#5a4044]/60 dark:text-neutral-500" />
-          <span className="font-semibold text-[#191c1d] dark:text-neutral-200">
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 dark:text-neutral-500" />
+          <span className="font-semibold text-foreground dark:text-neutral-200">
             {t("editProfile")}
           </span>
         </div>
@@ -397,10 +398,10 @@ export default function EditProfileFormPage() {
                     unoptimized={!isOptimizableImageHost(imagePreview)}
                   />
                 ) : (
-                  <User className="h-16 w-16 text-[#f9186b] dark:text-pink-400" />
+                  <User className="h-16 w-16 text-primary dark:text-pink-400" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white dark:border-neutral-800 bg-[#f9186b] dark:bg-pink-600 p-2 text-white shadow-lg">
+              <label className="absolute bottom-0 right-0 cursor-pointer rounded-full border-2 border-white dark:border-neutral-800 bg-primary dark:bg-pink-600 p-2 text-white shadow-lg">
                 <Pencil size={18} />
                 <input
                   type="file"
@@ -414,7 +415,7 @@ export default function EditProfileFormPage() {
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white shadow-md"
+                  className="focus-ring absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white shadow-md"
                 >
                   <X size={14} />
                 </button>
@@ -432,31 +433,31 @@ export default function EditProfileFormPage() {
               </div>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
+                  <label className="mb-2 block text-sm font-medium text-muted-foreground dark:text-neutral-400">
                     {t("firstName")} *
                   </label>
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
+                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
+                  <label className="mb-2 block text-sm font-medium text-muted-foreground dark:text-neutral-400">
                     {t("lastName")} ({t("optional")})
                   </label>
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
+                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                   />
                 </div>
               </div>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
+                  <label className="mb-2 block text-sm font-medium text-muted-foreground dark:text-neutral-400">
                     {t("emailAddress")}
                   </label>
                   <div className="flex gap-2">
@@ -464,17 +465,17 @@ export default function EditProfileFormPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
+                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                     />
                     {!emailOtpSent ? (
-                      <button
+                      <Button
                         type="button"
                         onClick={handleSendEmailOtp}
                         disabled={sendingEmailOtp || email === originalEmail}
-                        className="whitespace-nowrap rounded bg-[#f9186b] dark:bg-pink-600 hover:bg-[#d4145b] dark:hover:bg-pink-700 px-4 py-2 text-white disabled:opacity-50 transition"
+                        className="whitespace-nowrap rounded"
                       >
                         {sendingEmailOtp ? t("sending") : t("sendOtp")}
-                      </button>
+                      </Button>
                     ) : (
                       <div className="flex gap-2">
                         <input
@@ -483,16 +484,16 @@ export default function EditProfileFormPage() {
                           value={emailOtp}
                           onChange={(e) => setEmailOtp(e.target.value)}
                           onKeyDown={handleOtpKeyDown(handleVerifyEmailOtp)}
-                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
+                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                         />
-                        <button
+                        <Button
                           type="button"
                           onClick={handleVerifyEmailOtp}
                           disabled={verifyingEmail}
-                          className="whitespace-nowrap rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50 transition"
+                          className="whitespace-nowrap rounded bg-green-600 text-white hover:bg-green-700"
                         >
                           {verifyingEmail ? t("verifying") : t("verify")}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -504,7 +505,7 @@ export default function EditProfileFormPage() {
                   )}
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
+                  <label className="mb-2 block text-sm font-medium text-muted-foreground dark:text-neutral-400">
                     {t("mobileNumber")} *
                   </label>
                   <div className="flex gap-2">
@@ -513,17 +514,17 @@ export default function EditProfileFormPage() {
                       placeholder={t("mobilePlaceholder")}
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}
-                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
+                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                     />
                     {!mobileOtpSent ? (
-                      <button
+                      <Button
                         type="button"
                         onClick={handleSendMobileOtp}
                         disabled={sendingMobileOtp || mobileNumber === originalMobile}
-                        className="whitespace-nowrap rounded bg-[#f9186b] dark:bg-pink-600 hover:bg-[#d4145b] dark:hover:bg-pink-700 px-4 py-2 text-white disabled:opacity-50 transition"
+                        className="whitespace-nowrap rounded"
                       >
                         {sendingMobileOtp ? t("sending") : t("sendOtp")}
-                      </button>
+                      </Button>
                     ) : (
                       <div className="flex gap-2">
                         <input
@@ -532,16 +533,16 @@ export default function EditProfileFormPage() {
                           value={mobileOtp}
                           onChange={(e) => setMobileOtp(e.target.value)}
                           onKeyDown={handleOtpKeyDown(handleVerifyMobileOtp)}
-                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
+                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                         />
-                        <button
+                        <Button
                           type="button"
                           onClick={handleVerifyMobileOtp}
                           disabled={verifyingMobile}
-                          className="whitespace-nowrap rounded bg-green-600 px-4 py-2 text-white disabled:opacity-50 transition"
+                          className="whitespace-nowrap rounded bg-green-600 text-white hover:bg-green-700"
                         >
                           {verifyingMobile ? t("verifying") : t("verify")}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -554,37 +555,40 @@ export default function EditProfileFormPage() {
                 </div>
               </div>
               <div className="max-w-md">
-                <label className="mb-2 block text-sm font-medium text-[#5a4044] dark:text-neutral-400">
+                <label className="mb-2 block text-sm font-medium text-muted-foreground dark:text-neutral-400">
                   {t("nifTaxId")}
                 </label>
                 <input
                   type="text"
                   value={nif}
                   onChange={(e) => setNif(e.target.value)}
-                  className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-[#f9186b] dark:focus:border-pink-500"
+                  className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                 />
               </div>
             </section>
 
             <div className="flex flex-col justify-end gap-4 border-t border-neutral-200/50 dark:border-neutral-800 pt-8 sm:flex-row">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="lg"
                 onClick={() => window.history.back()}
-                className="px-8 py-3 font-bold text-[#f9186b] dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 transition"
+                className="px-8 font-bold text-primary hover:bg-transparent hover:text-pink-700 dark:hover:bg-transparent dark:hover:text-pink-300"
               >
                 {t("cancel")}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                size="lg"
                 disabled={submitting || imageUploading}
-                className="rounded bg-[#f9186b] dark:bg-pink-600 hover:bg-[#d4145b] dark:hover:bg-pink-700 px-12 py-3 font-bold text-white shadow-lg disabled:opacity-50 transition"
+                className="rounded px-12 font-bold shadow-lg"
               >
                 {imageUploading
                   ? t("uploadingImage")
                   : submitting
                     ? t("saving")
                     : t("saveChanges")}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

@@ -44,6 +44,7 @@ import {
   useOffersCount,
   useRewardPoints,
 } from "@/hooks/queries/useProfile";
+import { Button } from "@/components/ui/button";
 
 interface ProfileData {
   _id: string;
@@ -199,7 +200,7 @@ export default function AccountPage() {
   if (error || !profile) {
     return (
       <section className="bg-[#f7f7f7] dark:bg-neutral-950 min-h-screen p-4 md:p-6 flex items-center justify-center text-gray-900 dark:text-neutral-100 transition-colors duration-200">
-        <div className="text-red-500 dark:text-red-400 text-lg">
+        <div className="text-red-500 dark:text-red-400 text-base">
           Error: {error || t("profileNotFound")}
         </div>
       </section>
@@ -259,10 +260,10 @@ export default function AccountPage() {
 
                 <Link href="/edit-profile" className="w-full">
                   {" "}
-                  <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#f9186b] hover:bg-[#d4145b] dark:hover:bg-[#d4145b] py-3 font-medium text-white transition">
+                  <span className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition">
                     <Edit size={16} />
                     {t("editProfile")}
-                  </button>
+                  </span>
                 </Link>
               </div>
             </div>
@@ -271,21 +272,21 @@ export default function AccountPage() {
             <div className="grid grid-cols-2 gap-4">
               <Link href="/vouchers">
                 <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-gray-100 dark:border-neutral-800 transition hover:shadow-md cursor-pointer">
-                  <Ticket className="mx-auto mb-2 text-[#f9186b] dark:text-pink-400" />
+                  <Ticket className="mx-auto mb-2 text-primary dark:text-pink-400" />
                   <h3 className="font-bold text-gray-900 dark:text-neutral-50">{voucherCount}</h3>
                   <p className="text-sm text-gray-500 dark:text-neutral-400">{t("vouchers")}</p>
                 </div>
               </Link>
 
               <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-gray-100 dark:border-neutral-800">
-                <Gift className="mx-auto mb-2 text-[#f9186b] dark:text-pink-400" />
+                <Gift className="mx-auto mb-2 text-primary dark:text-pink-400" />
                 <h3 className="font-bold text-gray-900 dark:text-neutral-50">{rewardPoints}</h3>
                 <p className="text-sm text-gray-500 dark:text-neutral-400">{t("rewardPoints")}</p>
               </div>
             </div>
 
             {/* Pro Banner */}
-            <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-[#f9186b] to-pink-500 p-6 text-white shadow-sm">
+            <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-primary to-pink-500 p-6 text-white shadow-sm">
               <Star className="absolute -bottom-6 -right-6 h-28 w-28 opacity-10" />
 
               <h3 className="text-2xl font-bold">{t("deligoPro")}</h3>
@@ -294,12 +295,13 @@ export default function AccountPage() {
                 {t("deligoProDescription")}
               </p>
 
-              <button
+              <Button
+                size="sm"
                 onClick={() => setShowProModal(true)}
-                className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-medium text-[#f9186b] transition hover:bg-pink-50"
+                className="mt-4 rounded-full bg-white text-primary hover:bg-pink-50"
               >
                 {t("learnMore")}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -323,7 +325,7 @@ export default function AccountPage() {
                     >
                       <div className="flex items-center gap-4">
                         <div className="rounded-full bg-pink-100 dark:bg-pink-950/40 p-3">
-                          <Icon className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+                          <Icon className="h-5 w-5 text-primary dark:text-pink-400" />
                         </div>
                         <div>
                           <h4 className="font-semibold text-gray-900 dark:text-neutral-100">{item.title}</h4>
@@ -384,11 +386,13 @@ export default function AccountPage() {
               </div>
             </div>
 
-            <button
+            <Button
+              variant="outline"
+              size="lg"
               onClick={handleLogout}
               disabled={isLoggingOut}
               aria-busy={isLoggingOut}
-              className="flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-950/30 bg-white dark:bg-neutral-900 px-6 py-3 font-medium text-red-500 dark:text-red-400 shadow-sm hover:bg-red-50 dark:hover:bg-red-950/10 transition disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-white dark:disabled:hover:bg-neutral-900"
+              className="gap-2 rounded-xl border-red-200 text-red-500 shadow-sm hover:bg-red-50 hover:text-red-500 dark:border-red-950/30 dark:text-red-400 dark:hover:bg-red-950/10"
             >
               {isLoggingOut ? (
                 <LoaderCircle size={18} className="animate-spin" />
@@ -396,7 +400,7 @@ export default function AccountPage() {
                 <LogOut size={18} />
               )}
               {isLoggingOut ? t("loggingOut") : t("logout")}
-            </button>
+            </Button>
 
             <p className="text-xs text-gray-400 dark:text-neutral-500">{t("version")} 1.0.0</p>
           </div>
@@ -413,7 +417,7 @@ export default function AccountPage() {
           {/* Panel */}
           <div className="relative z-10 w-full max-w-md mx-4 rounded-2xl bg-white dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#f9186b] to-pink-400 px-6 pt-8 pb-10 text-center">
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary to-pink-400 px-6 pt-8 pb-10 text-center">
               <Star className="absolute -bottom-6 -right-6 h-28 w-28 opacity-10" />
               <Star className="absolute -top-4 -left-4 h-20 w-20 opacity-10" />
               <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/20">
@@ -447,12 +451,13 @@ export default function AccountPage() {
 
             {/* Footer */}
             <div className="border-t border-gray-100 dark:border-neutral-800 px-6 py-4 bg-gray-50 dark:bg-neutral-900/80">
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => setShowProModal(false)}
-                className="w-full rounded-lg bg-gray-100 dark:bg-neutral-800 py-2.5 text-sm font-semibold text-gray-600 dark:text-neutral-300 transition hover:bg-gray-200 dark:hover:bg-neutral-700"
+                className="w-full font-semibold"
               >
                 {t("ok")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

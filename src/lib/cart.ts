@@ -41,10 +41,10 @@ export function getLineTotalForQuantity(item: CartItem, newQty: number): number 
   return productUnit * newQty + addonsTotal;
 }
 
-// The VAT embedded in a line's add-ons. Add-ons are tax-inclusive and carry
+// The VAT embedded in a line's add-ons. Add-ons are VAT-inclusive and carry
 // their own rate (a 6% drink can sit on a 23% product), so the backend's
 // per-add-on `taxAmount` is preferred and `taxRate` is only a fallback.
-function getAddonsTax(item: CartItem): number {
+function getAddonsVat(item: CartItem): number {
   if (!item.addons?.length) return 0;
   return item.addons.reduce((sum, addon) => {
     if (typeof addon.taxAmount === "number") return sum + addon.taxAmount;
@@ -56,14 +56,14 @@ function getAddonsTax(item: CartItem): number {
 
 // Recomputes a line's embedded VAT for a new quantity. The product's share is
 // extracted at the product's rate; the add-ons keep their own rates rather than
-// being taxed at the product's.
-export function getLineTaxForQuantity(item: CartItem, newQty: number): number {
+// having VAT applied at the product's.
+export function getLineVatForQuantity(item: CartItem, newQty: number): number {
   const addonsTotal = getAddonsTotal(item);
   const lineTotal = getLineTotalForQuantity(item, newQty);
   const productPart = lineTotal - addonsTotal;
   const rate = item.productPricing.taxRate ?? 0;
-  const productTax = productPart - productPart / (1 + rate / 100);
-  return productTax + getAddonsTax(item);
+  const productVat = productPart - productPart / (1 + rate / 100);
+  return productVat + getAddonsVat(item);
 }
 
 // /carts/view-cart doesn't reliably populate the vendor: `vendorId` comes back

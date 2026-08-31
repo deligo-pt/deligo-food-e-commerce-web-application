@@ -59,6 +59,7 @@ import {
   useUnreadNotificationCount,
   useInvalidateUnreadCount,
 } from "@/hooks/queries/useNotifications";
+import { Button } from "@/components/ui/button";
 
 type NavAddress = {
   _id?: string;
@@ -579,7 +580,7 @@ export default function Navbar() {
                 onClick={() => handleSelectAddress(addr._id)}
                 disabled={updatingAddressId === addr._id}
                 title={formatAddressFull(addr)}
-                className={`flex w-full items-start gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-neutral-700/50 disabled:opacity-60 ${
+                className={`focus-ring flex w-full items-start gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-neutral-700/50 disabled:opacity-60 ${
                   active ? "bg-pink-50 dark:bg-pink-950/20" : ""
                 }`}
               >
@@ -587,7 +588,7 @@ export default function Navbar() {
                   size={18}
                   className={`mt-0.5 shrink-0 ${
                     active
-                      ? "text-[#f9186b] dark:text-pink-400"
+                      ? "text-primary dark:text-pink-400"
                       : "text-gray-400 dark:text-neutral-500"
                   }`}
                 />
@@ -606,11 +607,11 @@ export default function Navbar() {
                   )}
                 </span>
                 {updatingAddressId === addr._id ? (
-                  <span className="mt-0.5 h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#f9186b]/40 border-t-[#f9186b]" />
+                  <span className="mt-0.5 h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-primary/40 border-t-primary" />
                 ) : active ? (
                   <Check
                     size={16}
-                    className="mt-0.5 shrink-0 text-[#f9186b] dark:text-pink-400"
+                    className="mt-0.5 shrink-0 text-primary dark:text-pink-400"
                   />
                 ) : null}
               </button>
@@ -622,7 +623,7 @@ export default function Navbar() {
         <Link
           href="/add-address"
           onClick={() => setShowLocationDropdown(false)}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-[#f9186b] dark:text-pink-400 hover:bg-gray-100 dark:hover:bg-neutral-700/50"
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-primary dark:text-pink-400 hover:bg-gray-100 dark:hover:bg-neutral-700/50"
         >
           <Plus size={18} className="shrink-0" />
           {t("addNewAddress")}
@@ -640,7 +641,7 @@ export default function Navbar() {
   );
 
   return (
-    <header className="sticky top-0 z-50 bg-[#f9186b] text-white transition-all duration-300 dark:bg-[#f9186b] px-4 py-3 lg:px-16 lg:py-4">
+    <header className="sticky top-0 z-50 bg-primary text-white transition-all duration-300 dark:bg-primary px-4 py-3 lg:px-16 lg:py-4">
       {/* Desktop Layout & Mobile Row 1 */}
       <div className="flex w-full items-center justify-between gap-2">
         {/* Brand / Logo */}
@@ -650,7 +651,7 @@ export default function Navbar() {
               users. `group` drives both children from the one hover. */}
           <Link
             href="/"
-            className="group flex shrink-0 items-center gap-2 rounded-xl outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f9186b]"
+            className="group flex shrink-0 items-center gap-2 rounded-xl outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
           >
             {/* The header is #f9186b, so the pink tile would vanish into it.
                 The knockout is the mark itself in white — no plate needed, and
@@ -674,12 +675,13 @@ export default function Navbar() {
             ref={locationDropdownRef}
             className="relative hidden min-w-0 lg:block lg:max-w-[220px] xl:max-w-[280px]"
           >
-            <button
+            <Button
+              variant="ghost"
               suppressHydrationWarning
               onClick={handleLocationButtonClick}
               aria-haspopup="menu"
               aria-expanded={showLocationDropdown}
-              className="cursor-pointer flex w-full min-w-0 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20"
+              className="w-full min-w-0 cursor-pointer justify-start rounded-full bg-white/10 text-[#fff2f3] hover:bg-white/20 aria-expanded:bg-white/20 aria-expanded:text-[#fff2f3]"
             >
               <MapPin size={20} className="shrink-0" />
               <span className="min-w-0 truncate">
@@ -709,9 +711,9 @@ export default function Navbar() {
                   showLocationDropdown ? "rotate-180" : ""
                 }`}
               />
-            </button>
+            </Button>
             {isLoggedIn && showLocationDropdown && (
-              <div className="absolute left-0 z-50 mt-2 w-80 rounded-xl bg-white dark:bg-neutral-800 py-2 text-[#191c1d] dark:text-neutral-100 shadow-lg ring-1 ring-black/5 dark:ring-white/10">
+              <div className="absolute left-0 z-50 mt-2 w-80 rounded-xl bg-white dark:bg-neutral-800 py-2 text-foreground dark:text-neutral-100 shadow-lg ring-1 ring-black/5 dark:ring-white/10">
                 {locationPanel}
               </div>
             )}
@@ -729,7 +731,7 @@ export default function Navbar() {
               value={localSearchTerm}
               onChange={onSearchChange}
               onKeyDown={onKeyDown}
-              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-11 text-base text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
+              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-11 text-base text-foreground dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-primary/50 transition-colors"
             />
             {localSearchTerm && (
               <ClearFilterButton onClear={clearSearch} />
@@ -743,33 +745,41 @@ export default function Navbar() {
             {/* Language toggle: styled to match the Bell/Cart icon buttons so it
                 sits inline with the other actions on every screen size. */}
             <LanguageSwitcher />
-            <Link href="/notifications">
-              <button className="relative rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:p-2">
+            <Link
+              href="/notifications"
+              aria-label={t("notifications")}
+              className="focus-ring relative rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:p-2"
+            >
+              <span className="relative block">
                 <Bell size={22} />
                 {unreadCount > 0 && (
-                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#f9186b] ring-2 ring-white">
+                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-xs font-bold text-primary ring-2 ring-white">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
-              </button>
+              </span>
             </Link>
 
-            <Link href="/cart">
-              <button className="relative rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:p-2">
+            <Link
+              href="/cart"
+              aria-label={t("cart")}
+              className="focus-ring relative rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:p-2"
+            >
+              <span className="relative block">
                 <ShoppingCart size={22} />
                 {vendorCount > 0 && (
-                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#f9186b] ring-2 ring-white">
+                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-xs font-bold text-primary ring-2 ring-white">
                     {vendorCount > 9 ? "9+" : vendorCount}
                   </span>
                 )}
-              </button>
+              </span>
             </Link>
           </div>
 
           <div className="relative min-w-0" ref={dropdownRef}>
             <button
               onClick={handleAccountClick}
-              className="flex min-w-0 items-center gap-2 rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:gap-3"
+              className="focus-ring flex min-w-0 items-center gap-2 rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:gap-3"
             >
               <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-white/20 bg-[#edeeef] flex items-center justify-center sm:h-9 sm:w-9">
                 {!mounted ? (
@@ -803,7 +813,7 @@ export default function Navbar() {
                     </svg>
                   )
                 ) : (
-                  <User size={22} className="text-[#f9186b]" />
+                  <User size={22} className="text-primary" />
                 )}
               </div>
               <span className="min-w-0 max-w-[84px] truncate text-sm font-semibold leading-5 sm:max-w-[140px]">
@@ -824,7 +834,7 @@ export default function Navbar() {
                   onClick={handleLogout}
                   disabled={isLoggingOut}
                   aria-busy={isLoggingOut}
-                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-neutral-700/50 transition-colors disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
+                  className="focus-ring flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-neutral-700/50 transition-colors disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
                 >
                   {isLoggingOut ? (
                     <LoaderCircle size={16} className="animate-spin" />
@@ -849,7 +859,7 @@ export default function Navbar() {
             value={localSearchTerm}
             onChange={onSearchChange}
             onKeyDown={onKeyDown}
-            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-11 text-base text-[#191c1d] dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-[#f9186b]/50 transition-colors"
+            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-11 text-base text-foreground dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-primary/50 transition-colors"
           />
           {localSearchTerm && (
             <ClearFilterButton onClear={clearSearch} />
@@ -860,12 +870,13 @@ export default function Navbar() {
       {/* Mobile-only Row 3: Location (goes after second row) */}
       <div className="mt-2.5 w-full lg:hidden">
         <div ref={locationDropdownRefMobile} className="relative w-full">
-          <button
+          <Button
+            variant="ghost"
             suppressHydrationWarning
             onClick={handleLocationButtonClick}
             aria-haspopup="menu"
             aria-expanded={showLocationDropdown}
-            className="cursor-pointer flex w-full items-center justify-between rounded-xl bg-white/10 px-4 py-2 text-[#fff2f3] transition-all hover:bg-white/20"
+            className="w-full cursor-pointer justify-between rounded-xl bg-white/10 text-[#fff2f3] hover:bg-white/20 aria-expanded:bg-white/20 aria-expanded:text-[#fff2f3]"
           >
             <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
               <MapPin size={18} className="shrink-0" />
@@ -897,9 +908,9 @@ export default function Navbar() {
                 showLocationDropdown ? "rotate-180" : ""
               }`}
             />
-          </button>
+          </Button>
           {isLoggedIn && showLocationDropdown && (
-            <div className="absolute left-0 right-0 z-50 mt-2 rounded-xl bg-white dark:bg-neutral-800 py-2 text-[#191c1d] dark:text-neutral-100 shadow-lg ring-1 ring-black/5 dark:ring-white/10">
+            <div className="absolute left-0 right-0 z-50 mt-2 rounded-xl bg-white dark:bg-neutral-800 py-2 text-foreground dark:text-neutral-100 shadow-lg ring-1 ring-black/5 dark:ring-white/10">
               {locationPanel}
             </div>
           )}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Copy, Store } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Button } from "@/components/ui/button";
 
 interface PickupCodeCardProps {
   /**
@@ -52,9 +53,9 @@ export default function PickupCodeCard({ code, isReady }: PickupCodeCardProps) {
     <div className="rounded-3xl border border-transparent bg-white p-6 shadow-md dark:border-neutral-800 dark:bg-neutral-900">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ffd9de] dark:bg-pink-950/30">
-          <Store className="h-5 w-5 text-[#f9186b] dark:text-pink-400" />
+          <Store className="h-5 w-5 text-primary dark:text-pink-400" />
         </div>
-        <h3 className="text-lg font-bold text-[#191c1d] dark:text-neutral-50">
+        <h3 className="text-xl font-bold text-foreground dark:text-neutral-50">
           {t("yourPickupCode")}
         </h3>
       </div>
@@ -64,27 +65,29 @@ export default function PickupCodeCard({ code, isReady }: PickupCodeCardProps) {
             the code the same wide, readable rhythm the mobile app uses — this
             is meant to be read aloud across a counter. */}
         <p
-          className="rounded-2xl bg-pink-50 px-6 py-4 text-4xl font-extrabold tracking-[0.2em] tabular-nums text-[#f9186b] dark:bg-pink-950/20 dark:text-pink-400"
+          className="rounded-2xl bg-pink-50 px-6 py-4 text-display font-extrabold tracking-[0.2em] tabular-nums text-primary dark:bg-pink-950/20 dark:text-pink-400"
           aria-label={`${t("yourPickupCode")}: ${code.split("").join(" ")}`}
         >
           {code}
         </p>
 
-        <button
+        <Button
           type="button"
+          size="icon"
+          variant="outline"
           onClick={handleCopy}
           aria-label={t("copyCode")}
-          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-50"
+          className="rounded-2xl text-gray-500 dark:text-neutral-400"
         >
           {hasCopied ? (
             <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
           ) : (
             <Copy className="h-5 w-5" />
           )}
-        </button>
+        </Button>
       </div>
 
-      <p className="mt-3 text-sm font-medium text-[#5a4044] dark:text-neutral-400">
+      <p className="mt-3 text-sm font-medium text-muted-foreground dark:text-neutral-400">
         {isReady ? t("orderReadyShowCode") : t("showCodeAtCounter")}
       </p>
     </div>

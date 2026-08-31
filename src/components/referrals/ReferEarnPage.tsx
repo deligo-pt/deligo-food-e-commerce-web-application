@@ -6,6 +6,7 @@ import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
 import ReferEarnSkeleton from "./ReferEarnSkeleton";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface ReferralResponse {
   success: boolean;
@@ -119,12 +120,12 @@ export default function ReferEarnPage() {
     <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-10 transition-colors duration-200 text-gray-900 dark:text-neutral-100">
       <div className="mx-auto max-w-5xl px-4 animate-fadeIn">
         {/* Breadcrumbs */}
-        <div className="mb-6 flex items-center gap-2 text-xs text-[#5a4044] dark:text-neutral-400">
+        <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground dark:text-neutral-400">
           <span>{t("home")}</span>
-          <ChevronRight className="h-3.5 w-3.5 text-[#5a4044]/60 dark:text-neutral-500" />
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 dark:text-neutral-500" />
           <span>{t("settings")}</span>
-          <ChevronRight className="h-3.5 w-3.5 text-[#5a4044]/60 dark:text-neutral-500" />
-          <span className="font-semibold text-[#191c1d] dark:text-neutral-200">
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 dark:text-neutral-500" />
+          <span className="font-semibold text-foreground dark:text-neutral-200">
             {t("referrals")}
           </span>
         </div>
@@ -137,20 +138,20 @@ export default function ReferEarnPage() {
                 <Gift className="h-8 w-8 text-pink-600 dark:text-pink-400" />
               </div>
 
-              <h1 className="mb-5 text-2xl sm:text-3xl lg:text-4xl font-bold text-[#191c1d] dark:text-neutral-50">
+              <h1 className="mb-5 text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
                 {t("yourReferralCode")}
               </h1>
 
               <div className="mb-6 w-full max-w-sm">
                 <button
                   onClick={handleCopy}
-                  className={`flex w-full items-center justify-between rounded-xl border-2 border-dashed p-4 transition-all duration-200 ${
+                  className={`focus-ring flex w-full items-center justify-between rounded-xl border-2 border-dashed p-4 transition-all duration-200 ${
                     copied
                       ? "border-pink-600 dark:border-pink-500 bg-pink-50 dark:bg-pink-950/10"
                       : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/30 hover:border-pink-600 dark:hover:border-pink-500"
                   }`}
                 >
-                  <span className="text-xl font-extrabold tracking-[0.2em] text-[#f9186b] dark:text-pink-400 md:text-2xl">
+                  <span className="text-xl font-extrabold tracking-[0.2em] text-primary dark:text-pink-400 md:text-2xl">
                     {referralData?.myReferralCode || t("notAvailable")}
                   </span>
 
@@ -162,13 +163,14 @@ export default function ReferEarnPage() {
                 </button>
               </div>
 
-              <button
+              <Button
+                size="lg"
                 onClick={handleShare}
-                className="flex w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-[#f9186b] dark:bg-pink-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-[#d4145b] dark:hover:bg-pink-700 active:scale-[0.99]"
+                className="w-full max-w-sm gap-2 rounded-xl font-semibold active:scale-[0.99]"
               >
                 <Share2 className="h-4 w-4" />
                 {t("shareCode")}
-              </button>
+              </Button>
             </div>
           </div>
         </section>
@@ -176,8 +178,8 @@ export default function ReferEarnPage() {
         {/* Stats */}
         <section className="mb-12 grid grid-cols-1 gap-5 md:grid-cols-3">
           <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-neutral-200 dark:border-neutral-800">
-            <Clock3 className="mx-auto mb-3 h-8 w-8 text-[#f9186b] dark:text-pink-400" />
-            <h3 className="mb-0 text-2xl font-bold text-[#f9186b] dark:text-pink-400">
+            <Clock3 className="mx-auto mb-3 h-8 w-8 text-primary dark:text-pink-400" />
+            <h3 className="mb-0 text-2xl font-bold text-primary dark:text-pink-400">
               {referralData?.summary.pendingInvites ?? 0}
             </h3>
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
@@ -186,8 +188,8 @@ export default function ReferEarnPage() {
           </div>
 
           <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-neutral-200 dark:border-neutral-800">
-            <Users className="mx-auto mb-3 h-8 w-8 text-[#f9186b] dark:text-pink-400" />
-            <h3 className="mb-0 text-2xl font-bold text-[#f9186b] dark:text-pink-400">
+            <Users className="mx-auto mb-3 h-8 w-8 text-primary dark:text-pink-400" />
+            <h3 className="mb-0 text-2xl font-bold text-primary dark:text-pink-400">
               {referralData?.summary.successfulInvites ?? 0}
             </h3>
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
@@ -196,8 +198,8 @@ export default function ReferEarnPage() {
           </div>
 
           <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-neutral-200 dark:border-neutral-800">
-            <Wallet className="mx-auto mb-3 h-8 w-8 text-[#f9186b] dark:text-pink-400" />
-            <h3 className="mb-0 text-2xl font-bold text-[#f9186b] dark:text-pink-400">
+            <Wallet className="mx-auto mb-3 h-8 w-8 text-primary dark:text-pink-400" />
+            <h3 className="mb-0 text-2xl font-bold text-primary dark:text-pink-400">
               €{referralData?.summary.totalEarned ?? 0}
             </h3>
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
@@ -208,49 +210,49 @@ export default function ReferEarnPage() {
 
         {/* How It Works */}
         <section className="rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-sm border border-neutral-200 dark:border-neutral-800 md:p-8">
-          <h2 className="mb-8 text-center text-2xl font-bold text-[#191c1d] dark:text-neutral-50 md:text-3xl">
+          <h2 className="mb-8 text-center text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
             {t("howItWorks")}
           </h2>
 
           <div className="grid gap-8 md:grid-cols-3">
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f9186b] dark:bg-pink-500 text-xl font-bold text-white">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary dark:bg-pink-500 text-xl font-bold text-white">
                 1
               </div>
 
-              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-neutral-100">
+              <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-neutral-100">
                 {t("shareYourCode")}
               </h3>
 
-              <p className="text-sm text-[#5a4044] dark:text-neutral-400">
+              <p className="text-sm text-muted-foreground dark:text-neutral-400">
                 {t("shareYourCodeDescription")}
               </p>
             </div>
 
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f9186b] dark:bg-pink-500 text-xl font-bold text-white">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary dark:bg-pink-500 text-xl font-bold text-white">
                 2
               </div>
 
-              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-neutral-100">
+              <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-neutral-100">
                 {t("theySignUp")}
               </h3>
 
-              <p className="text-sm text-[#5a4044] dark:text-neutral-400">
+              <p className="text-sm text-muted-foreground dark:text-neutral-400">
                 {t("theySignUpDescription")}
               </p>
             </div>
 
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f9186b] dark:bg-pink-500 text-xl font-bold text-white">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary dark:bg-pink-500 text-xl font-bold text-white">
                 3
               </div>
 
-              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-neutral-100">
+              <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-neutral-100">
                 {t("bothGetRewards")}
               </h3>
 
-              <p className="text-sm text-[#5a4044] dark:text-neutral-400">
+              <p className="text-sm text-muted-foreground dark:text-neutral-400">
                 {t("bothGetRewardsDescription")}
               </p>
             </div>

@@ -4,6 +4,7 @@ import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/apiClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Button } from "@/components/ui/button";
 
 function PaymentFailedContent() {
   const { t } = useTranslation();
@@ -46,19 +47,22 @@ function PaymentFailedContent() {
         )}
 
         <div className="mt-6 flex justify-center gap-3">
-          <button
+          <Button
+            variant="secondary"
+            size="lg"
             onClick={() => router.push("/cart")}
-            className="flex-1 rounded-xl bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 px-6 py-3 text-gray-800 dark:text-neutral-200 font-semibold transition"
+            className="flex-1 rounded-xl font-semibold"
           >
             {t("goBack")}
-          </button>
+          </Button>
 
-          <button
+          <Button
+            size="lg"
             onClick={() => router.push("/")}
-            className="flex-1 rounded-xl bg-pink-600 hover:bg-pink-700 px-6 py-3 text-white font-semibold transition"
+            className="flex-1 rounded-xl font-semibold"
           >
             {t("home")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

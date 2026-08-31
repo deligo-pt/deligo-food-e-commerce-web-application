@@ -12,6 +12,7 @@ import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import { useReorder } from "@/hooks/queries/useOrders";
 import { refundStateLabelKey, type RefundState } from "@/lib/refund";
 import { isFinishedCardStatus, type OrderCardStatus } from "@/lib/orderCardStatus";
+import { Button } from "@/components/ui/button";
 
 /**
  * How each refund state is chipped. `not_eligible` is amber and neutral on
@@ -27,7 +28,7 @@ const REFUND_CHIP: Record<
     icon: CheckCircle,
   },
   in_progress: {
-    className: "bg-pink-50 dark:bg-pink-950/30 text-[#f9186b] dark:text-pink-400",
+    className: "bg-pink-50 dark:bg-pink-950/30 text-primary dark:text-pink-400",
     icon: HandCoins,
   },
   not_eligible: {
@@ -172,9 +173,9 @@ export default function OrderCard({
           </div>
 
           <div>
-            <h3 className="font-semibold text-[#191c1d] dark:text-neutral-50">{restaurant}</h3>
+            <h3 className="font-semibold text-foreground dark:text-neutral-50">{restaurant}</h3>
 
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#5a4044] dark:text-neutral-400">
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground dark:text-neutral-400">
               <span>
                 {t("order")} #{orderId}
               </span>
@@ -184,7 +185,7 @@ export default function OrderCard({
                   order has no rider and no address, so two cards that look
                   alike can mean very different things to the customer. */}
               {isPickup && (
-                <span className="flex items-center gap-1 rounded-full bg-pink-50 px-2 py-0.5 font-semibold text-[#f9186b] dark:bg-pink-950/30 dark:text-pink-400">
+                <span className="flex items-center gap-1 rounded-full bg-pink-50 px-2 py-0.5 font-semibold text-primary dark:bg-pink-950/30 dark:text-pink-400">
                   <Store size={11} />
                   {t("selfPickup")}
                 </span>
@@ -194,10 +195,10 @@ export default function OrderCard({
         </div>
 
         <div className="flex flex-col items-end gap-2">
-          <span className="font-semibold text-[#f9186b] dark:text-pink-400">{price}</span>
+          <span className="font-semibold text-primary dark:text-pink-400">{price}</span>
 
           {status === "accepted" ? (
-            <div className="flex items-center gap-1 rounded-full bg-pink-50 dark:bg-pink-950/30 px-2 py-1 text-xs text-[#f9186b] dark:text-pink-400">
+            <div className="flex items-center gap-1 rounded-full bg-pink-50 dark:bg-pink-950/30 px-2 py-1 text-xs text-primary dark:text-pink-400">
               <CheckCircle size={12} />
               {t("accepted")}
             </div>
@@ -260,8 +261,8 @@ export default function OrderCard({
       {/* Items */}
       <div className="mt-4 rounded-lg bg-[#f3f4f5] dark:bg-neutral-950 px-3 py-3 transition-colors duration-200">
         <div className="flex items-center gap-2">
-          <UtensilsCrossed size={15} className="text-[#f9186b] dark:text-pink-400" />
-          <p className="text-sm text-[#191c1d] dark:text-neutral-300">{items}</p>
+          <UtensilsCrossed size={15} className="text-primary dark:text-pink-400" />
+          <p className="text-sm text-foreground dark:text-neutral-300">{items}</p>
         </div>
       </div>
 
@@ -271,8 +272,8 @@ export default function OrderCard({
           <span
             className={
               status === "accepted"
-                ? "font-medium text-[#f9186b] dark:text-pink-400"
-                : "text-[#5a4044] dark:text-neutral-400"
+                ? "font-medium text-primary dark:text-pink-400"
+                : "text-muted-foreground dark:text-neutral-400"
             }
           >
             {progressText}
@@ -293,7 +294,7 @@ export default function OrderCard({
                   ? "bg-amber-500 dark:bg-amber-500"
                   : status === "unknown"
                     ? "bg-gray-400 dark:bg-neutral-600"
-                    : "bg-[#f9186b] dark:bg-pink-600"
+                    : "bg-primary dark:bg-pink-600"
             }`}
             style={{
               width: `${progress}%`,
@@ -305,22 +306,23 @@ export default function OrderCard({
       {/* Actions */}
       <div className="mt-5">
         {status === "delivered" ? (
-          <button
+          <Button
+            variant={isRated ? "outline" : "default"}
             onClick={() => onRateOrder?.(dbId)}
             disabled={isRated}
-            className={`flex w-full items-center justify-center gap-2 rounded-lg py-3 text-center text-sm transition ${
+            className={`w-full gap-2 ${
               isRated
-                ? "bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400 cursor-default"
-                : "bg-[#f9186b] dark:bg-pink-600 text-white font-semibold hover:opacity-90"
+                ? "cursor-default text-gray-500 dark:text-neutral-400"
+                : "font-semibold"
             }`}
           >
-            <Star size={16} className={isRated ? "fill-[#f6c344] text-[#f6c344]" : "fill-white text-white"} />
+            <Star size={16} className={isRated ? "fill-warning text-warning" : "fill-white text-white"} />
             {isRated ? t("alreadySubmitted") || "Already Submitted" : t("rateOrder") || "Rate Order"}
-          </button>
+          </Button>
         ) : (
           <Link
             href={`/orders/track-order/${orderId}`}
-            className="block w-full rounded-lg bg-[#f9186b] dark:bg-pink-600 py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
+            className="block w-full rounded-lg bg-primary dark:bg-pink-600 py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
           >
             {t("trackOrder")}
           </Link>
@@ -330,10 +332,11 @@ export default function OrderCard({
             one is already on its way, and an `unknown` status has not been
             established to be finished at all. */}
         {isFinished && (
-          <button
+          <Button
+            variant="outline"
             onClick={handleReorder}
             disabled={reordering}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 dark:border-neutral-700 py-3 text-sm font-semibold text-[#191c1d] dark:text-neutral-100 transition hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-2 w-full gap-2 font-semibold"
           >
             {reordering ? (
               <Loader2 size={16} className="animate-spin" />
@@ -341,14 +344,15 @@ export default function OrderCard({
               <RotateCcw size={16} />
             )}
             {t("reorder")}
-          </button>
+          </Button>
         )}
 
         {!isTerminated && (
-          <button
+          <Button
+            variant="outline"
             onClick={handleDownloadInvoice}
             disabled={downloading}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 dark:border-neutral-700 py-3 text-sm font-semibold text-[#191c1d] dark:text-neutral-100 transition hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-2 w-full gap-2 font-semibold"
           >
             {downloading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -356,19 +360,20 @@ export default function OrderCard({
               <Download size={16} />
             )}
             {t("downloadInvoice")}
-          </button>
+          </Button>
         )}
 
         {/* Last, and the only destructive action here — kept away from Track
             Order so it is never the button a customer reaches for by habit. */}
         {canCancel && onCancelOrder && (
-          <button
+          <Button
+            variant="outline"
             onClick={() => onCancelOrder(orderId)}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 dark:border-red-900/40 py-3 text-sm font-semibold text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-950/20"
+            className="mt-2 w-full gap-2 border-red-200 font-semibold text-red-600 hover:bg-red-50 hover:text-red-600 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20"
           >
             <XCircle size={16} />
             {t("cancelOrder")}
-          </button>
+          </Button>
         )}
       </div>
     </div>

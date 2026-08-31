@@ -183,7 +183,13 @@ const pt = {
   orderDeletedToast: "“{store}” removido do seu carrinho",
   couldNotDeleteOrder: "Não foi possível eliminar o pedido",
 
+  // Nome acessível da página inicial, apresentado apenas a leitores de ecrã.
+  homeHeading: "Deligo — entrega fresca à sua porta",
   remove: "Remover",
+  // Nomes acessíveis dos botões redondos de quantidade, que mostram apenas um
+  // ícone.
+  decrease: "Diminuir quantidade",
+  increase: "Aumentar quantidade",
 
   qty: "Qtd",
 
@@ -212,11 +218,11 @@ const pt = {
 
   originalPrice: "Preço Original",
   productDiscount: "Desconto do Produto",
-  tax: "Imposto",
-  taxIncl: "Imposto (incl.)",
+  vat: "IVA",
+  vatIncl: "IVA (incl.)",
   withoutDiscount: "sem desconto",
   incl: "incl.",
-  inclTax: "Incl. imposto",
+  inclVat: "Incl. IVA",
   finalPrice: "Preço Final",
   serviceCharge: "Taxa de Serviço",
   total: "Total",

@@ -7,6 +7,7 @@ import { isOptimizableImageHost } from "@/lib/imageHosts";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useTranslation } from "@/hooks/useTranslation";
+import { usePrefersReducedMotion } from "@/hooks/useMotion";
 
 type Sponsorship = {
   _id: string;
@@ -28,6 +29,11 @@ export default function HeroSection() {
   const [error, setError] = useState(false);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
+  // Plan.md Phase 6 #5. The carousel advanced every four seconds no matter
+  // what the reader was doing — including while they were reaching for a dot,
+  // or tabbed onto one.
+  const [paused, setPaused] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     let alive = true;
@@ -81,13 +87,25 @@ export default function HeroSection() {
     };
   }, [emblaApi]);
 
+  /**
+   * Autoplay, with the three reasons to stop it.
+   *
+   * `paused` covers hover and focus: the pointer is over the banner, or a dot
+   * has the keyboard, and moving the thing under it is hostile either way.
+   *
+   * `reducedMotion` stops it outright. This is the one piece of motion in the
+   * app that a CSS opt-out cannot reach — nothing here is animated, the
+   * carousel is *scrolled* by a timer — so it needs the hook. Content that
+   * moves on its own is exactly what "reduce motion" is asking about.
+   */
   useEffect(() => {
     if (!emblaApi || slides.length <= 1) return;
+    if (paused || reducedMotion) return;
     const timer = setInterval(() => {
       emblaApi.scrollNext();
     }, 4000);
     return () => clearInterval(timer);
-  }, [emblaApi, slides.length]);
+  }, [emblaApi, slides.length, paused, reducedMotion]);
 
   const emptyStateMessage = useMemo(() => {
     if (loading) return t("loadingSponsorshipBanners");
@@ -99,7 +117,7 @@ export default function HeroSection() {
   const hasSlides = slides.length > 0;
 
   return (
-    <section className="group relative mt-5 sm:mt-8">
+    <section className="group relative mt-6 sm:mt-8">
       {loading ? (
         <div>
           <div className="relative overflow-hidden rounded-4xl bg-gray-100 dark:bg-neutral-800">
@@ -113,14 +131,24 @@ export default function HeroSection() {
               </div>
             </div>
           </div>
-          <div className="mt-5 flex justify-center gap-3 pb-1">
-            <span className="h-2.5 w-12 animate-pulse rounded-full bg-[#f9186b]/20 dark:bg-pink-600/20" />
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#f9186b]/20 dark:bg-pink-600/20" />
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#f9186b]/20 dark:bg-pink-600/20" />
+          <div className="mt-4 flex justify-center gap-3 pb-1">
+            <span className="h-1.5 w-12 animate-pulse rounded-full bg-primary/20 dark:bg-pink-600/20" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/20 dark:bg-pink-600/20" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/20 dark:bg-pink-600/20" />
           </div>
         </div>
       ) : hasSlides ? (
-        <div>
+        /* `motion-fade` is Phase 6 #1: the banners replaced their skeleton by
+           hard-swapping in. The pause handlers cover the whole block, dots
+           included — onFocus/onBlur are React's focusin/focusout, so they
+           catch a dot being tabbed to without a listener on each one. */
+        <div
+          className="motion-fade"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onFocus={() => setPaused(true)}
+          onBlur={() => setPaused(false)}
+        >
           <div className="relative overflow-hidden rounded-4xl">
             <div className="absolute inset-0 z-10 pointer-events-none" />
             <div className="overflow-hidden touch-pan-y" ref={emblaRef}>
@@ -147,12 +175,15 @@ export default function HeroSection() {
               </div>
             </div>
             <div className="pointer-events-none absolute inset-0 z-20 flex items-start px-6 pt-6 text-white lg:px-16 lg:pt-8">
-              <span className="rounded-full bg-black/40 px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] backdrop-blur-sm">
+              {/* Was `px-4 py-2 text-sm` at 0.2em — a 36px pill of wide-tracked
+                  14px over the artwork it is labelling. The prototype's is 28px
+                  of 11px at 0.14em; this is the same idea on our scale. */}
+              <span className="flex h-7 items-center rounded-lg bg-black/60 px-3 text-xs font-bold uppercase tracking-[0.06em] backdrop-blur-sm">
                 {slides[selectedIndex]?.sponsorType ?? t("sponsorship")}
               </span>
             </div>
           </div>
-          <div className="mt-5 flex justify-center gap-3 pb-1">
+          <div className="mt-4 flex justify-center gap-3 pb-1">
             {slides.map((slide, index) => (
               <button
                 key={slide._id}
@@ -160,10 +191,10 @@ export default function HeroSection() {
                 aria-label={`Go to slide ${index + 1}`}
                 onClick={() => emblaApi?.scrollTo(index)}
                 className={[
-                  "rounded-full transition-all",
+                  "focus-ring rounded-full transition-all",
                   index === selectedIndex
-                    ? "h-2.5 w-12 bg-[#f9186b]"
-                    : "h-2.5 w-2.5 bg-[#f9186b]/30 dark:bg-[#f9186b]/50",
+                    ? "h-1.5 w-12 bg-primary"
+                    : "h-1.5 w-1.5 bg-primary/30 dark:bg-primary/50",
                 ].join(" ")}
               />
             ))}
@@ -172,15 +203,21 @@ export default function HeroSection() {
       ) : (
         <div className="flex h-125 items-center justify-center bg-[#111418] px-6 text-center text-white">
           <div className="max-w-xl">
-            <span className="mb-4 inline-flex rounded-full bg-white/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
+            <span className="mb-4 inline-flex rounded-full bg-white/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.06em] text-white/80">
               {t("sponsorships")}
             </span>
-            <h1 className="mb-4 text-3xl font-extrabold lg:text-5xl">
+            {/* Plan.md Phase 5 #3: the heading and the paragraph beneath it
+                both rendered `emptyStateMessage`, so this panel printed the
+                same sentence twice. There is no second sentence to say — the
+                four states are each one line — so the paragraph is gone rather
+                than filled with copy invented to occupy it.
+
+                #4: an <h2>, not an <h1>. The page's single <h1> now lives in
+                `HomeContent`, where it exists whether or not the banners load.
+                This heading described the state of one section, not the page. */}
+            <h2 className="text-2xl font-extrabold lg:text-display">
               {emptyStateMessage}
-            </h1>
-            <p className="text-base leading-7 text-white/75 lg:text-lg">
-              {emptyStateMessage}
-            </p>
+            </h2>
           </div>
         </div>
       )}
