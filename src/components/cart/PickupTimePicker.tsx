@@ -192,7 +192,7 @@ export default function PickupTimePicker({
         aria-modal="true"
         aria-labelledby="pickup-time-heading"
         tabIndex={-1}
-        className="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-white shadow-2xl outline-none dark:bg-neutral-900 sm:max-h-[80vh] sm:rounded-3xl"
+        className="relative flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-card shadow-2xl outline-none sm:max-h-[80vh] sm:rounded-3xl"
       >
         {/* Decorative on the web, but it is what makes the sheet read as the
             same component the mobile app shows. */}
@@ -302,7 +302,7 @@ export default function PickupTimePicker({
                     onKeyDown={(event) => handleSlotKeyDown(event, index)}
                     className={`focus-ring flex items-center justify-between rounded-2xl px-4 py-4 text-left text-sm font-medium transition ${
                       isSelected
-                        ? "bg-pink-50 text-gray-900 ring-1 ring-primary dark:bg-pink-950/25 dark:text-neutral-50 dark:ring-pink-400"
+                        ? "bg-primary/5 text-gray-900 ring-1 ring-primary dark:bg-pink-950/25 dark:text-neutral-50 dark:ring-pink-400"
                         : "bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-neutral-800/60 dark:text-neutral-200 dark:hover:bg-neutral-800"
                     }`}
                   >
@@ -328,7 +328,7 @@ export default function PickupTimePicker({
           )}
         </div>
 
-        <div className="shrink-0 border-t border-gray-100 p-6 dark:border-neutral-800">
+        <div className="shrink-0 border-t border-border p-6">
           <Button
             type="button"
             size="lg"

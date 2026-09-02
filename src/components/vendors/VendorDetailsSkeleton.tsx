@@ -7,11 +7,11 @@ export default function VendorDetailsSkeleton() {
           <div className="overflow-hidden rounded-3xl shadow-lg">
             <div className="relative h-62.5 bg-gray-200 dark:bg-neutral-800 md:h-90">
               <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8">
-                <div className="rounded-2xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 p-5 shadow-xl dark:shadow-none">
+                <div className="rounded-2xl bg-card border p-4 shadow-xl dark:shadow-none">
                   <div className="h-8 w-56 rounded bg-gray-200 dark:bg-neutral-800" />
                   <div className="mt-3 h-4 w-40 rounded bg-gray-200 dark:bg-neutral-800" />
 
-                  <div className="mt-5 flex gap-4">
+                  <div className="mt-4 flex gap-4">
                     <div className="h-4 w-20 rounded bg-gray-200 dark:bg-neutral-800" />
                     <div className="h-4 w-16 rounded bg-gray-200 dark:bg-neutral-800" />
                     <div className="h-4 w-24 rounded bg-gray-200 dark:bg-neutral-800" />
@@ -38,11 +38,11 @@ export default function VendorDetailsSkeleton() {
         <div className="mb-6 h-8 w-28 rounded bg-gray-200 dark:bg-neutral-800" />
 
         {/* Products Grid */}
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
-              className="flex overflow-hidden rounded-2xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none"
+              className="flex overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:shadow-none"
             >
               {/* Product Image */}
               <div className="h-36 w-32 shrink-0 bg-gray-200 dark:bg-neutral-800" />

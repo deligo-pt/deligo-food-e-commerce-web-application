@@ -32,13 +32,16 @@
  *   §9  the sweep — the whole tree is on the six-step scale, and the hex count
  *       can only fall
  *  §10  the five layout defects, and the shapes that let them in
- *  §11  motion: three primitives, each with its own reduced-motion opt-out,
- *       and nothing animating a value the backend supplied
+ *  §11  motion: every animated class in the stylesheet has a reduced-motion
+ *       opt-out, the adopted list carries a reason per entry, and the denylist
+ *       is asserted by reason — a transform may not sit over a backend value
  *  §12  the homepage box model — one card design across two files, a heading
  *       that steps, and no spacing off the 4-based scale
  *  §13  one card shell, tree-wide — the first guard here that walks the whole
  *       tree instead of naming the files a phase happened to touch
  *  §14  two heading roles and one label voice, tree-wide
+ *  §15  the two colours that already have names are asked for, not typed —
+ *       tree-wide, and per className rather than per file
  *
  * ## What this cannot check
  *
@@ -92,6 +95,12 @@ const cuisines = stripComments(read("src/components/home/CategoriesSection.tsx")
 const spec = stripComments(read("src/app/%5Fdesign/page.tsx"));
 const cardComponent = stripComments(read("src/components/ui/card.tsx"));
 const headingComponent = stripComments(read("src/components/ui/section-heading.tsx"));
+/** `mb-4 flex items-end` — the wrapper `SectionHeading` renders, read from the
+ *  component so the "nobody hand-rolls this" checks cannot go stale when its
+ *  spacing changes. */
+const headingWrapperClass = (
+  /<div className="((?:mb-\d+) flex items-end)/.exec(headingComponent) || [, "mb-4 flex items-end"]
+)[1];
 const motionHook = stripComments(read("src/hooks/useMotion.ts"));
 
 /** Narrow a source to one region, so a match somewhere else in a 700-line file
@@ -188,9 +197,15 @@ section("§3  the button owns its geometry");
 
 check(
   "three sizes, and the default is 44 on a phone before settling to 40",
-  /sm:\s*"h-8 gap-2 px-3"/.test(button) &&
-    /default:\s*"h-11 gap-2 px-4 sm:h-10"/.test(button) &&
-    /lg:\s*"h-12 gap-2 px-5"/.test(button),
+  // Rewritten in Phase 11, and for the fifth phase running the cause was the
+  // same: this pinned the whole class string, including `lg`'s `px-5`, so it
+  // broke the moment the spacing sweep touched a padding it was never about.
+  // §3 is the *height* ladder — 32 / 44-then-40 / 48, the middle one being the
+  // 44px touch target on a phone. §16 owns the paddings. One fact, one guard.
+  /sm:\s*"h-8 /.test(button) &&
+    /default:\s*"h-11 .*sm:h-10"/.test(button) &&
+    /lg:\s*"h-12 /.test(button),
+  between(button, "size: {", "},").replace(/\s+/g, " ").slice(0, 140),
 );
 check(
   "the icon sizes are square at the same three heights",
@@ -315,35 +330,87 @@ check(
 );
 check(
   "it is reachable and visibly focused",
-  /focus-ring group flex/.test(cuisines),
+  // Scoped to the track. This read the whole file and was matching the cuisine
+  // *picker's* rows — a different button in the same file — so it would have
+  // passed with the tile unfocusable. Two elements, two assertions.
+  /focus-ring motion-press group flex/.test(cuisineTrack),
+);
+
+/**
+ * 🔴 Browser round 2, 1 Sep 2026. Five assertions below used to pin 80px, and
+ * they were right for Phase 7 and wrong about the row.
+ *
+ * The strip is made of circles. Phase 7 boxed each one in a surface tile, and
+ * a tile has to hold the label too, so the circle shrank to 80 to make room —
+ * the row spent its budget on chrome and shrank the only thing in it anyone
+ * reads. Reversed on sight against a screenshot of the previous design.
+ *
+ * What is asserted now is the *relationship*, not the number: the live circle
+ * and the skeleton circle are the same diameter, and the image is requested at
+ * the diameter it is drawn at. Those hold at any size. The one literal left is
+ * that a circle is bigger than a label — which is the thing that went wrong.
+ */
+
+/** `size-16 … sm:size-32` → ["16", "32"]. */
+const circleSize = (src) => {
+  const m = /block (size-\d+) rounded-full[\s\S]{0,200}(sm:size-\d+)/.exec(src);
+  return m ? [m[1].slice(5), m[2].slice(8)] : null;
+};
+const skeletonSize = (src) => {
+  const m = /(size-\d+) animate-pulse rounded-full[\s\S]{0,80}(sm:size-\d+)/.exec(src);
+  return m ? [m[1].slice(5), m[2].slice(8)] : null;
+};
+
+check(
+  "🔴 the skeleton circle is the live circle, whatever size that is",
+  // Phase 5 #2's shape: two literals in two branches, free to drift apart.
+  // Comparing them to each other is the only form of this that survives a
+  // resize — and this is the third guard in the file to learn that lesson.
+  circleSize(cuisines) !== null &&
+    JSON.stringify(circleSize(cuisines)) === JSON.stringify(skeletonSize(cuisines)),
+  `live ${JSON.stringify(circleSize(cuisines))} vs skeleton ${JSON.stringify(skeletonSize(cuisines))}`,
 );
 check(
-  "80px from sm, not 128 — mobile keeps the 64 that was already right",
-  // Phase 7 put the circle inside a tile, and the tile is `w-24 sm:w-32`. The
-  // old form of this guard read `!/sm:w-32/` across the whole file, so it
-  // could not tell a tile's width from a circle's diameter. It asks about the
-  // circle's own class string now, which is what it always meant.
-  /block size-16 rounded-full[\s\S]{0,200}sm:size-20/.test(cuisines) &&
-    !/\bsize-32\b/.test(cuisines) &&
-    !/\bsm:h-32\b/.test(cuisines),
+  "the image is requested at the diameter it is drawn at",
+  (() => {
+    const size = circleSize(cuisines);
+    if (!size) return false;
+    const px = Number(size[1]) * 4;
+    return new RegExp(`height=\\{${px}\\}`).test(cuisines) &&
+      new RegExp(`width=\\{${px}\\}`).test(cuisines);
+  })(),
+  `circle is ${JSON.stringify(circleSize(cuisines))}`,
+);
+check(
+  "🔴 the circle is the tile — no box drawn around it competing for the width",
+  // The reversal itself. A surface tile here means a border and a background
+  // on the button, and a fixed width to hold them; all three are what pushed
+  // the circle down to 80 and wrapped the long labels onto two lines.
+  !/rounded-2xl border bg-card/.test(cuisineTrack) &&
+    !/sm:w-32/.test(cuisineTrack) &&
+    // Content-driven from `sm` so "PORTUGUESE FOOD" stays on one line.
+    /sm:w-auto sm:min-w-35/.test(cuisineTrack),
+);
+check(
+  "…and the selected state is the ring it was before the tile carried it",
+  /bg-primary ring-4 ring-primary\/20/.test(cuisineTrack) &&
+    // §1.4: pink has a name. The original spelled this #f9186b / #ffd9de.
+    !/#f9186b|#ffd9de/.test(cuisineTrack),
 );
 check(
   "the label is one size at every width",
+  // The restore tried to bring back `sm:tracking-[0.16em]` too, and §14 caught
+  // it: 0.16em was one of the five spellings Phase 9 collapsed into one. The
+  // circle was the reason the row read badly; the letter-spacing was not, and
+  // re-opening a settled rule for it would be taste overruling a decision.
   /text-center text-xs font-bold uppercase/.test(cuisines) &&
+    /tracking-\[0\.06em\]/.test(cuisines) &&
     !/sm:text-xs/.test(cuisines) &&
     !/sm:leading-4/.test(cuisines),
 );
 check(
-  "the image is requested at the size it is drawn at",
-  /height=\{80\}/.test(cuisines) && /width=\{80\}/.test(cuisines),
-);
-check(
-  "🔴 the skeleton circle matches the live circle",
-  /size-16 animate-pulse rounded-full[\s\S]{0,80}sm:size-20/.test(cuisines),
-);
-check(
   "the track gap is on the scale, and the skeleton track uses the same one",
-  (cuisines.match(/sm:gap-6/g) || []).length === 2 && !/sm:gap-8/.test(cuisines),
+  (cuisines.match(/sm:gap-8/g) || []).length === 2 && !/sm:gap-6/.test(cuisines),
 );
 
 // ---------------------------------------------------------------------------
@@ -460,8 +527,12 @@ check(
  * A ratchet, not a target. 1,092 hex utilities before the sweep; whatever is
  * left is surface tints and one disabled grey, none of which §1.4 names a token
  * for. The number may fall. It may not rise.
+ *
+ * 211 → 199 in Phase 10: twelve of them were hairlines spelled as hex
+ * (`border-[#e7e8e9]`, `border-[#efefef]`, five more one-offs) and they went to
+ * `border-border` with the rest of §15's sweep.
  */
-const HEX_CEILING = 211;
+const HEX_CEILING = 199;
 const hexNow = countAcross(/-\[#[0-9a-fA-F]{3,8}\]/g);
 check(
   `hex utilities are at or below the ${HEX_CEILING} the sweep left`,
@@ -585,28 +656,94 @@ const reducedMotionBlocks = [
 ].map((m) => m[1]);
 const reducedMotion = reducedMotionBlocks.join("\n");
 
-/** Every motion primitive the stylesheet declares, by name. */
-const motionClasses = [
+/**
+ * 🔴 Every class in the stylesheet that *starts an animation* — found by
+ * behaviour, not by name.
+ *
+ * This used to be `/\.(motion-[a-z-]+|reveal-group)\b/`, and that regex is how
+ * `animate-fadeIn` and `animate-scaleIn` lived in this file for six phases
+ * without a `prefers-reduced-motion` opt-out: they predate Phase 6's naming
+ * convention, so a guard that enumerated by prefix looked straight past them.
+ * A guard that enumerates by name can only ever check the things somebody
+ * remembered to name.
+ *
+ * The rules inside a media block are excluded — that is where the opt-outs
+ * live, and they turn animations off rather than on.
+ */
+const topLevelCss = cssCode.replace(/@media[^{]*\{[\s\S]*?\n\}/g, "");
+const animatedClasses = [
   ...new Set(
-    [...cssCode.matchAll(/\.(motion-[a-z-]+|reveal-group)\b/g)].map((m) => m[1]),
+    // Any rule whose body starts an animation, then every class named in its
+    // selector — so `.reveal-group[data-revealed="true"] > *` is found by the
+    // class it keys off rather than missed for having a combinator.
+    [...topLevelCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((m) => /\banimation(?:-name)?\s*:/.test(m[2]))
+      .flatMap((m) => [...m[1].matchAll(/\.([a-zA-Z][\w-]*)/g)].map((c) => c[1])),
   ),
 ].sort();
 
+/**
+ * 🔴 The other half: classes that animate by **transition** rather than by
+ * keyframe, found the same way — by what the rule body does.
+ *
+ * `motion-press` used to be appended to the opt-out sweep by hand, with a
+ * comment saying it was excluded "by construction". That was true and it was
+ * also a list somebody had to remember: browser round 3 added two more
+ * primitives of exactly that shape, and a hand-appended name would have let
+ * either of them ship without a reduced-motion opt-out. The same mistake as
+ * `animate-fadeIn`, one layer over.
+ */
+const transitionClasses = [
+  ...new Set(
+    [...topLevelCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((m) => /\btransition(?:-property|-duration)?\s*:/.test(m[2]))
+      .flatMap((m) => [...m[1].matchAll(/\.([a-zA-Z][\w-]*)/g)].map((c) => c[1])),
+  ),
+].sort();
+
+/** Of those, the ones the design system owns. The rest are illustration: the
+ *  order-tracking scene, the add-to-cart cue, the closing-soon notice. */
+const motionClasses = animatedClasses.filter((c) => /^(motion-|reveal-group)/.test(c));
+const transitionPrimitives = transitionClasses.filter((c) => /^motion-/.test(c));
 check(
-  "the three motion primitives exist, and are the only ones",
-  motionClasses.join(" ") === "motion-fade motion-press reveal-group",
-  `found: ${motionClasses.join(", ") || "none"}`,
+  "the design system's motion primitives are the ones it declares",
+  motionClasses.join(" ") === "motion-fade motion-scale reveal-group" &&
+    transitionPrimitives.join(" ") ===
+      "motion-image-floor motion-image-in motion-press",
+  `animated: ${motionClasses.join(", ") || "none"} | transitioned: ${transitionPrimitives.join(", ") || "none"}`,
+);
+check(
+  "🔴 every `animation:` names a keyframe that exists, and every keyframe is used",
+  // Phase 12 deleted `@keyframes fadeIn` and `.closing-banner` still referenced
+  // it. Nothing would have thrown: the banner would simply have stopped
+  // animating, which is the quietest way for a stylesheet to be wrong.
+  (() => {
+    const defined = new Set([...cssCode.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]));
+    const used = new Set(
+      [...cssCode.matchAll(/animation(?:-name)?:\s*([\w-]+)/g)]
+        .map((m) => m[1])
+        .filter((n) => n !== "none"),
+    );
+    return (
+      [...used].every((u) => defined.has(u)) && [...defined].every((d) => used.has(d))
+    );
+  })(),
 );
 
-const missingOptOut = motionClasses.filter(
+const missingOptOut = [...animatedClasses, ...transitionClasses].filter(
   (name) => !new RegExp(`\\.${name}\\b`).test(reducedMotion),
 );
 check(
-  "🔴 every primitive names itself in a prefers-reduced-motion block",
+  "🔴 every animated class names itself in a prefers-reduced-motion block",
+  // Widened in Phase 12 from the four system primitives to *every* class in
+  // the stylesheet that animates — eleven of them, including the delivery
+  // scene and the add-to-cart cue. Two had no opt-out at all when this was
+  // widened, and both had been there since before Phase 6.
   missingOptOut.length === 0,
   // Written as a sweep rather than three assertions on purpose: a fourth
   // primitive added without an opt-out has to fail this, and a guard that
-  // lists the three by hand would pass right over it.
+  // lists the three by hand would pass right over it. Transitions are swept
+  // the same way as of browser round 3 — see `transitionClasses`.
   `no opt-out for: ${missingOptOut.join(", ")}`,
 );
 
@@ -653,49 +790,426 @@ check(
     !/animationDelay/.test(spec),
 );
 
-/** The files allowed to carry a motion primitive. Not decoration: the phase's
- *  other acceptance criterion is that no price, discount or cart quantity
- *  animates, and those live in `cart`, `payment` and `orders`. Motion arriving
- *  in a file that is not on this list has to change this line first, which is
- *  where somebody notices what they are about to animate. */
-const MOTION_CALL_SITES = [
-  "home/HeroSection.tsx",
-  "home/ShopSection.tsx",
-  "home/CategoriesSection.tsx",
-  "home/RestaurantsSection.tsx",
-  "vendors/VendorCard.tsx",
-  "vendors/VendorsGrid.tsx",
-  "vendors/VendorDetailsPage.tsx",
+/**
+ * The **adopted list** — Plan.md Phase 12.
+ *
+ * Phase 6 shipped this as an allowlist of seven files, and it was right then:
+ * it is what stops a price animating. But it could not tell "this must not
+ * move" from "nobody got to it", and that is what the entries now carry — a
+ * reason each, asserted to be present. A list of filenames documents where a
+ * phase stopped. A list of reasons documents a decision.
+ */
+const MOTION_ADOPTED = [
+  ["home/HeroSection.tsx", "banner reveals when its image decodes; dots fade when the request answers"],
+  ["home/ShopSection.tsx", "lane grid arrives; the lanes are controls, so they press"],
+  ["home/CategoriesSection.tsx", "cuisine strip staggers in on view; tiles are controls; picker is a dialog"],
+  ["home/RestaurantsSection.tsx", "vendor grid staggers in; the card is a link, so it presses"],
+  ["vendors/VendorCard.tsx", "same card as the homepage, same press"],
+  ["vendors/VendorsGrid.tsx", "ten cards at once is where a stagger reads as arrival"],
+  ["vendors/VendorHeroImage.tsx", "store banner reveals when its photo decodes; holds no price, by design"],
+  ["vendors/CategoryGroup.tsx", "menu cards stagger in on view — fade only, because the cards carry prices"],
+  ["categories/CategoriesPage.tsx", "tile grid replaces a skeleton; tiles became real buttons"],
+  ["vouchers/VouchersPageContent.tsx", "voucher list replaces a skeleton — fade only, over discounts"],
+  ["referrals/ReferEarnPage.tsx", "page body replaces a skeleton — fade only, over an earnings total"],
+  ["notifications/NotificationsPage.tsx", "list replaces a skeleton"],
+  ["profile/profilePage.tsx", "profile replaces a skeleton"],
+  ["profile/editProfileFormPage.tsx", "form replaces a skeleton"],
+  ["saved-addresses/SavedAddressesPage.tsx", "address list replaces a skeleton"],
+  ["help/ReportIssuePage.tsx", "order list replaces a skeleton"],
+  ["auth/LoginPage.tsx", "the auth panel is a dialog and enters like one"],
 ];
-const motionFiles = filesWith(/\b(?:motion-fade|motion-press|reveal-group)\b/);
+check(
+  "the adopted list is reasons, not filenames",
+  // The assertion that keeps this list honest as it grows: an entry with no
+  // reason is somebody adding motion without saying what for.
+  MOTION_ADOPTED.every(([file, why]) => file.endsWith(".tsx") && why.length > 20),
+  `missing a reason: ${MOTION_ADOPTED.filter(([, w]) => !w || w.length <= 20).map(([f]) => f).join(", ")}`,
+);
+
+const PRIMITIVE =
+  /\b(?:motion-fade|motion-press|motion-scale|reveal-group|motion-image-in|motion-image-floor)\b/;
+/** `motion-image-in` scales as well as blurring, so it belongs here — not
+ *  because the hero renders a price (it renders none) but because the rule is
+ *  about the primitive, and the next file to reach for it may. */
+const ALWAYS_TRANSFORMS = /\b(?:motion-press|motion-scale|motion-image-in)\b/;
+
+/**
+ * 🔴 `reveal-group` is the one primitive that can be asked *not* to transform.
+ *
+ * Browser round 6 added `data-travel="none"`, which swaps the 8px rise for
+ * opacity alone. That is not a loophole in the denylist below — it is the
+ * denylist's own reasoning followed to its end. The rule bans a transform over
+ * a price because a number that moves while it is read can be misread; a group
+ * that fades without travelling moves nothing, so there is nothing left to ban.
+ *
+ * A file "travels" if any of its groups is unpinned, not if none of them is —
+ * one travelling group in a file full of prices is the defect, however many
+ * fade-only ones sit beside it.
+ */
+const travellingReveal = (src) => {
+  const groups = (src.match(/\breveal-group\b/g) || []).length;
+  if (groups === 0) return false;
+  return (src.match(/data-travel="none"/g) || []).length < groups;
+};
+const transformsIn = (src) => ALWAYS_TRANSFORMS.test(src) || travellingReveal(src);
+const TRANSFORMING = { test: transformsIn };
+/** A backend-supplied number, rendered. The user's standing rule is that these
+ *  appear exactly as returned. */
+const RENDERS_A_VALUE = /currencySymbol|€|\bprice\b|discountValue|totalPrice|\bquantity\b/i;
+
+const motionFiles = filesWith(PRIMITIVE);
 const unexpected = motionFiles.filter(
-  (f) => !MOTION_CALL_SITES.some((allowed) => f.endsWith(allowed)),
+  (f) => !MOTION_ADOPTED.some(([allowed]) => f.endsWith(allowed)),
 );
 check(
-  "🔴 motion is confined to the surfaces this phase named",
+  "🔴 motion appears only where the adopted list says, with its reason",
   unexpected.length === 0,
   `unexpected: ${unexpected.join(", ")}`,
 );
+const staleAdopted = MOTION_ADOPTED.filter(
+  ([file]) => !motionFiles.some((f) => f.endsWith(file)),
+);
 check(
-  "…and no money, discount or quantity file is among them",
-  // Stated separately from the allowlist so the reason survives if the list
-  // grows. Backend-supplied values render exactly as returned and do not move.
-  !motionFiles.some((f) => /\/(?:cart|payment|orders)\//.test(f)),
+  "…and every reason on it still describes a file that carries motion",
+  // The list was only ever checked in one direction, so an entry could outlive
+  // the motion it justified and sit there reading as a decision. Browser round
+  // 3 took `motion-fade` off the hero's outer block; had it taken the last
+  // primitive out of the file, nothing would have noticed the reason was now
+  // describing something that no longer happens.
+  staleAdopted.length === 0,
+  `listed but carries no primitive: ${staleAdopted.map(([f]) => f).join(", ")}`,
+);
+
+/**
+ * 🔴 The denylist, asserted by reason rather than by folder — which is what
+ * Phase 12 was for.
+ *
+ * The distinction that makes it checkable: **a transform moves the number, an
+ * opacity fade does not.** `motion-press`, `motion-scale` and `reveal-group`
+ * translate or scale everything inside them, so they may not appear in a file
+ * that renders a price, a discount or a quantity. `motion-fade` is opacity
+ * only over one shot — it is the hard skeleton swap that was already happening,
+ * softened — so it is allowed over values, and the app has shipped exactly that
+ * on the vendor menu since Phase 6.
+ *
+ * This is what denied `/search` a press state: its result card renders a price,
+ * and the card is the price's container.
+ */
+const movingValues = tree
+  .filter((f) => TRANSFORMING.test(f.src) && RENDERS_A_VALUE.test(f.src))
+  .map((f) => f.path);
+check(
+  "🔴 nothing that transforms is in a file that renders a price, discount or quantity",
+  movingValues.length === 0,
+  `a transform over a backend value in: ${movingValues.join(", ")}`,
+);
+check(
+  "…and the fade exemption is exercised, not theoretical",
+  // If no adopted file both fades and renders a value, the rule above has never
+  // actually been the *narrower* claim it says it is, and the next reader would
+  // be right to simplify it into a blanket ban.
+  tree.some(
+    (f) =>
+      /motion-fade/.test(f.src) &&
+      RENDERS_A_VALUE.test(f.src) &&
+      !TRANSFORMING.test(f.src),
+  ),
+);
+/**
+ * 🔴 The fade-only stagger, and the hole it was written to cover.
+ *
+ * Asked for on the vendor menu: "the cards should appear like the homepage".
+ * The homepage's stagger travels, every card on that menu ends in a price, and
+ * the denylist above exists precisely to stop the two meeting. `data-travel`
+ * keeps the sequencing and drops the rise.
+ *
+ * **The hole.** `CategoryGroup` staggers cards it does not render — they come
+ * in through a render prop, and their prices are written in `VendorDetailsPage`.
+ * So the denylist, which reads one file at a time, sees a component with no
+ * money in it and would have waved a travelling group straight through. The
+ * file-scoped check is not wrong, it is just blind at exactly this seam, and no
+ * amount of tightening `RENDERS_A_VALUE` would open its eyes.
+ *
+ * What is checkable is the shape rather than the content: a component that
+ * animates children supplied by its caller cannot know what it is moving.
+ */
+const foreignChildStaggers = tree
+  .filter(
+    (f) =>
+      /\breveal-group\b/.test(f.src) &&
+      /\brenderProduct\b|\bReactNode\b|\bchildren\b/.test(f.src) &&
+      travellingReveal(f.src),
+  )
+  .map((f) => f.path);
+check(
+  "🔴 a group that staggers content it did not author does not travel",
+  // It cannot know whether it is moving a price, and "probably not" is not the
+  // standard this rule was written to.
+  foreignChildStaggers.length === 0,
+  `travels over children it does not render: ${foreignChildStaggers.join(", ")}`,
 );
 
 check(
-  "the crossfade landed on the sections that hard-swapped their skeleton",
-  // Three of the four homepage bands. The fourth, the restaurant grid, reveals
-  // instead — a reveal is a fade with a rise, so stacking both on one element
-  // would fade it twice.
-  /className="motion-fade"/.test(hero) &&
-    /motion-fade grid/.test(shopSection) &&
-    /motion-fade relative/.test(cuisines),
+  "…and the variant it uses is opacity alone, not a smaller rise",
+  // The distinction the whole exemption rests on. A 2px rise would still be a
+  // transform and would still move the number; the answer to "a price must not
+  // move" is zero, not less.
+  (() => {
+    const variant =
+      /\.reveal-group\[data-travel="none"\]\[data-revealed="true"\] > \* \{([^}]*)\}/.exec(
+        cssCode,
+      )?.[1] ?? "";
+    const named = /animation-name:\s*([\w-]+)/.exec(variant)?.[1];
+    if (!named) return false;
+    const kf =
+      new RegExp(`@keyframes\\s+${named}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(cssCode)?.[1] ?? "";
+    return kf.length > 0 && !/transform/.test(kf) && /opacity/.test(kf);
+  })(),
+);
+
+check(
+  "…and it names itself in the reduced-motion block rather than inheriting one",
+  // The rule above it is `animation: none` at (0,2,0); this variant sets
+  // `animation-name` at (0,3,0) and wins the longhand back. It is still inert,
+  // because the shorthand also reset the duration — but "correct because two
+  // specificities cancelled out" has no place in an accessibility opt-out.
+  /\.reveal-group\[data-travel="none"\]\[data-revealed="true"\] > \* \{\s*animation-name: none;/.test(
+    reducedMotion,
+  ),
+);
+
+check(
+  "🔴 the vendor banner's transform lives where there is no price to move",
+  // The other half of the same request, and the reason `VendorHeroImage` is its
+  // own file rather than eight lines of `VendorDetailsPage`. The boundary is
+  // load-bearing: a price rendered in that file would silently re-create the
+  // defect the split exists to prevent.
+  (() => {
+    const heroFile = tree.find((f) => f.path.endsWith("vendors/VendorHeroImage.tsx"));
+    const page = tree.find((f) => f.path.endsWith("vendors/VendorDetailsPage.tsx"));
+    if (!heroFile || !page) return false;
+    return (
+      /motion-image-in/.test(heroFile.src) &&
+      !RENDERS_A_VALUE.test(heroFile.src) &&
+      RENDERS_A_VALUE.test(page.src) &&
+      !transformsIn(page.src)
+    );
+  })(),
+);
+
+check(
+  "the coarse backstop holds: cart, payment and orders carry no motion at all",
+  // Redundant with the rule above and kept anyway. These are the three places
+  // someone is reading a number they will be charged, and a check that cannot
+  // be argued with is worth having where being wrong costs most.
+  !motionFiles.some((f) => /\/(?:cart|payment|orders)\//.test(f)),
+  motionFiles.filter((f) => /\/(?:cart|payment|orders)\//.test(f)).join(", "),
+);
+
+const interactiveCards = tree.filter((f) => /variant: "interactive"/.test(f.src));
+const unpressable = interactiveCards.filter(
+  (f) => !/motion-press/.test(f.src) && !RENDERS_A_VALUE.test(f.src),
 );
 check(
-  "…and nothing carries the crossfade and the reveal at once",
+  "🔴 every card that says it is a control is pressable, or denied for a reason",
+  // Two states, no third. Either the card presses, or its file renders a value
+  // and the rule above denied it. A card carrying `interactive` and neither is
+  // one nobody got to — which is the gap this phase existed to close.
+  interactiveCards.length > 0 && unpressable.length === 0,
+  `interactive but neither pressed nor denied: ${unpressable.map((f) => f.path).join(", ")}`,
+);
+
+/**
+ * 🔴 Every homepage band that replaces a skeleton animates the replacement —
+ * stated as a relationship, because the value-shaped version of this assertion
+ * has now needed editing in two consecutive rounds.
+ *
+ * It used to name the exact className each band carried (`motion-fade grid`,
+ * `motion-fade relative`), which meant it failed whenever a band changed *how*
+ * it arrives rather than *whether* it does — twice, both times correctly and
+ * both times for a reason the assertion could not express. What it is actually
+ * for is that none of the four arrives with no transition at all, and that no
+ * band pays for its arrival twice.
+ */
+const HOMEPAGE_BANDS = [
+  ["HeroSection", hero],
+  ["ShopSection", shopSection],
+  ["CategoriesSection", cuisines],
+  ["RestaurantsSection", restaurants],
+];
+const bandsWithoutArrival = HOMEPAGE_BANDS.filter(([, src]) => !PRIMITIVE.test(src));
+check(
+  "🔴 every homepage band animates the frame where its skeleton becomes content",
+  bandsWithoutArrival.length === 0,
+  `arrives with no transition: ${bandsWithoutArrival.map(([n]) => n).join(", ")}`,
+);
+check(
+  "…and none of them pays for that arrival twice",
+  // A container that fades while its own children stagger inside it animates
+  // one event as two. Checked as "not on the same element" and, for the two
+  // bands that stagger, as "the ancestor is not fading either".
   countAcross(/className="[^"]*motion-fade[^"]*reveal-group/g) === 0 &&
-    countAcross(/className="[^"]*reveal-group[^"]*motion-fade/g) === 0,
+    countAcross(/className="[^"]*reveal-group[^"]*motion-fade/g) === 0 &&
+    !/motion-fade relative/.test(cuisines) &&
+    !/motion-fade grid[^"]*reveal-group/.test(restaurants),
+);
+
+// ---------------------------------------------------------------------------
+section("§11.1  the banner reveal");
+// ---------------------------------------------------------------------------
+
+/**
+ * Browser round 3. Five assertions, none of which name a duration, a blur
+ * radius or a pixel — the lesson of round 2 is that a guard which pins a value
+ * defends whatever value happened to be there.
+ *
+ * What went wrong: `loading` went false when `/sponsorships` answered, the
+ * skeleton unmounted, and `motion-fade` crossfaded in a carousel whose
+ * `<Image fill>` had painted nothing. The slide has no background, so the
+ * animation ran over an empty box and the artwork arrived after it with no
+ * transition at all. The motion was real and it was on the wrong event.
+ */
+
+const heroImageIn = /\.motion-image-in \{([^}]*)\}/.exec(cssCode)?.[1] ?? "";
+/** `.motion-image-floor { … transition-duration: 400ms … }` → 400. */
+const transitionMs = (cls) => {
+  const body = new RegExp(`\\.${cls} \\{([^}]*)\\}`).exec(cssCode)?.[1] ?? "";
+  const m = /transition-duration:\s*(\d+)ms/.exec(body);
+  return m ? Number(m[1]) : null;
+};
+
+check(
+  "🔴 the banner reveal waits on the image decoding, not on the request answering",
+  // The whole defect, stated as the thing that must not come back: anything
+  // that gates the floor on `loading` puts the crossfade back over an empty
+  // frame. The floor and the image read one signal, written by `onLoad`.
+  /onLoad=\{\(\) => markLoaded\(slide\._id\)\}/.test(hero) &&
+    /data-loaded=\{loadedIds\.has\(slide\._id\)\}/.test(hero) &&
+    /const currentLoaded = loadedIds\.has\(/.test(hero) &&
+    /data-loaded=\{currentLoaded\}/.test(hero) &&
+    !/motion-image-floor[\s\S]{0,240}data-loaded=\{!?loading\}/.test(hero),
+);
+
+check(
+  "…and a banner that never loads still clears the floor",
+  // A 404 fires `onError` and never `onLoad`. Without this the placeholder
+  // shimmers forever, which reads as a hang rather than as a broken image.
+  /onError=\{\(\) => markLoaded\(slide\._id\)\}/.test(hero),
+);
+
+check(
+  "🔴 the placeholder is one component, drawn in both places it appears",
+  // It is rendered in flow while the request is out and again as the floor
+  // over the mounted carousel. Two copies of the same markup would drift, and
+  // the drift would show at exactly the frame where nothing should change.
+  /function BannerSkeletonArt\(\)/.test(hero) &&
+    (hero.match(/<BannerSkeletonArt \/>/g) || []).length === 2 &&
+    // `animate-pulse` animates opacity and so does the floor's fade. On one
+    // element the animation wins outright and the floor never dissolves.
+    !/motion-image-floor[^"]*animate-pulse/.test(hero),
+);
+
+check(
+  "🔴 the LCP image blurs rather than fades",
+  // The first slide carries `priority`, which makes it the page's LCP element,
+  // and LCP is recorded when the element becomes *visible*. Animating it up
+  // from `opacity: 0` moves the metric by the length of the animation and buys
+  // nothing over blurring an image that is already opaque.
+  /filter:\s*blur\(/.test(heroImageIn) &&
+    !/opacity/.test(heroImageIn) &&
+    /priority=\{index === 0\}/.test(hero),
+  `motion-image-in: ${heroImageIn.replace(/\s+/g, " ").trim()}`,
+);
+
+check(
+  "the floor is gone before the picture has finished resolving",
+  // A relationship, not two numbers: whatever the durations are, a placeholder
+  // still fading over an already-sharp banner is two events where the design
+  // calls for one handover.
+  transitionMs("motion-image-floor") !== null &&
+    transitionMs("motion-image-in") !== null &&
+    transitionMs("motion-image-floor") < transitionMs("motion-image-in"),
+  `floor ${transitionMs("motion-image-floor")}ms vs image ${transitionMs("motion-image-in")}ms`,
+);
+/**
+ * 🔴 An animation that persists its last keyframe keeps *declaring* it, and
+ * animation declarations outrank every normal author rule in the cascade.
+ *
+ * `motion-reveal` ended on `transform: none` with `animation-fill-mode: both`,
+ * so from the moment a grid finished revealing, every card in it was pinned to
+ * `transform: none` — and `.motion-press:active { transform: scale(0.97) }`
+ * never landed again. Two primitives, each correct alone, silently cancelling
+ * one another wherever they met. `backwards` keeps the half that is needed
+ * (the first keyframe applies through the stagger delay, so a card waiting its
+ * turn is not visible) and drops the half that did the damage.
+ *
+ * Derived rather than named: any class whose animation persists and whose
+ * keyframes touch `transform` is one that can do this to whatever it lands on.
+ */
+const persistingTransformClasses = [
+  ...new Set(
+    [...topLevelCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((m) => {
+        const anim = /animation:\s*([\w-]+)[^;]*?\b(?:forwards|both)\s*;/.exec(m[2]);
+        if (!anim) return false;
+        const kf = new RegExp(`@keyframes\\s+${anim[1]}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(
+          cssCode,
+        )?.[1];
+        return Boolean(kf) && /transform/.test(kf);
+      })
+      .flatMap((m) => [...m[1].matchAll(/\.([a-zA-Z][\w-]*)/g)].map((c) => c[1])),
+  ),
+].sort();
+
+check(
+  "🔴 the reveal hands its children back when it ends, so their press still lands",
+  // `reveal-group` is the one primitive here that lands on arbitrary elements
+  // — whatever a grid happens to be made of — so it is the one that may not
+  // keep declaring a transform after it has finished.
+  !persistingTransformClasses.includes("reveal-group") &&
+    /animation: motion-reveal [^;]*\bbackwards;/.test(cssCode),
+  `persists a transform: ${persistingTransformClasses.join(", ") || "none"}`,
+);
+
+const deadPresses = tree
+  .filter((f) =>
+    persistingTransformClasses.some((c) =>
+      new RegExp(
+        `className="[^"]*(?:${c}[^"]*motion-press|motion-press[^"]*${c})`,
+      ).test(f.src),
+    ),
+  )
+  .map((f) => f.path);
+check(
+  "…and nothing that presses carries one of those on the same element either",
+  // The remaining two — the dialog panel's `motion-scale` and the order-tracking
+  // scene — persist a transform legitimately, because neither is a control.
+  // This is what stops the next one being put on something that is.
+  deadPresses.length === 0,
+  `press cancelled by a persisting transform in: ${deadPresses.join(", ")}`,
+);
+
+const cuisineTrackAttrs = between(cuisines, "ref={trackRef}", 'className="reveal-group');
+check(
+  "🔴 the strip reveals on the element whose children are the tiles",
+  // `.reveal-group > *` keys off *direct* children. Moved up to the wrapper it
+  // would have exactly one child — the scroll track — so the strip would fade
+  // as a single block and the stagger would quietly do nothing at all. Asserted
+  // as "no element opens between the ref and the class", which is the only way
+  // to say that they are the same element.
+  cuisineTrackAttrs.length > 0 &&
+    !/<div/.test(cuisineTrackAttrs) &&
+    /data-revealed=\{revealed\}/.test(cuisineTrackAttrs),
+);
+
+check(
+  "…and it borrows the grid's stagger rather than typing its own",
+  // The 50ms step is a system value shared with the vendor grid directly below
+  // it. A strip that staggered faster than the grid under it would read as two
+  // systems on one page.
+  /reveal-group/.test(cuisines) &&
+    /reveal-group/.test(restaurants) &&
+    countAcross(/animation-delay|animationDelay/g) === 0,
 );
 
 check(
@@ -762,8 +1276,12 @@ check(
   // — under the new crossfade, which would have drawn the eye to it.
   (cuisines.match(/<SectionHeading/g) || []).length === 3 &&
     (restaurants.match(/<SectionHeading/g) || []).length === 3 &&
-    !/mb-6 flex items-end/.test(cuisines) &&
-    !/mb-6 flex items-end/.test(restaurants) &&
+    // Derived, not typed: the string these must *not* contain is whatever
+    // `SectionHeading` currently opens with. Spelled by hand it went stale the
+    // moment round 5 changed the component's margin, and a negative assertion
+    // that can no longer match anything passes forever.
+    !new RegExp(headingWrapperClass).test(cuisines) &&
+    !new RegExp(headingWrapperClass).test(restaurants) &&
     !/sm:mb-10/.test(cuisines) &&
     !/sm:mb-10/.test(restaurants),
 );
@@ -900,20 +1418,25 @@ check(
 );
 
 check(
-  "the cuisine tile is a surface, and its skeleton is the same surface",
-  // The circle used to float on the page background, which left `aria-pressed`
-  // with nowhere to show but a ring.
-  (cuisines.match(/rounded-2xl border/g) || []).length >= 2 &&
-    /w-24 shrink-0 snap-start/.test(cuisines) &&
+  "the cuisine tile and its skeleton are one geometry, and neither is a surface",
+  // 🔴 Reversed in browser round 2 — this asserted the Phase 7 tile. What
+  // survives the reversal is the half that was always the point: the two
+  // branches state the same width, and the arbitrary `calc()` stays gone.
+  /w-24 shrink-0 snap-start/.test(cuisines) &&
     /w-24 shrink-0 flex-col/.test(cuisines) &&
-    !/calc\(\(100vw-5rem\)\/4\)/.test(cuisines),
+    !/calc\(\(100vw-5rem\)\/4\)/.test(cuisines) &&
+    // §6 owns the reversal itself; this only refuses to re-add the surface.
+    !/rounded-2xl border bg-card/.test(cuisines),
 );
 
 /**
  * Spacing, ratcheted. §1.2 allows 4, 8, 12, 16, 24, 32, 48, 64 — so `p-1`
- * through `p-4`, `p-6`, `p-8`, `p-12`, `p-16` and nothing between. The rest of
- * the tree carries ~200 more of these; this is scoped to the files Phase 7
- * owns and may only ever fall.
+ * through `p-4`, `p-6`, `p-8`, `p-12`, `p-16` and nothing between.
+ *
+ * Phase 11 widened this from the six files Phase 7 owned to the whole tree,
+ * which is the widening §2b asks each phase to do. The old regex is kept below
+ * as the *scoped* check because it also documents which values were retired;
+ * §16 is the tree-wide one.
  */
 const OFF_SCALE_SPACING = /\b(?:sm:|md:|lg:|xl:)?[pm][trblxy]?-(?:5|7|9|10|11|14|20)\b/g;
 const phase7Files = [
@@ -948,13 +1471,23 @@ section("§13  one card shell, tree-wide");
  * rule. This one walks.
  */
 
+const cardBase = between(cardComponent, "cva(", "{");
 check(
   "the shell is declared once, with the values the phase settled on",
-  /rounded-3xl border border-border bg-card dark:border-neutral-800/.test(cardComponent) &&
+  // Rewritten in Phase 10. It used to pin the literal
+  // `... bg-card dark:border-neutral-800`, which is exactly the hand-typing
+  // Phase 10 removed — so it asserts the stronger fact now: the shell names
+  // two tokens and *no theme override*, because a token that needs a `dark:`
+  // beside it is not carrying its dark value.
+  /rounded-3xl/.test(cardBase) &&
+    /border border-border/.test(cardBase) &&
+    /bg-card/.test(cardBase) &&
+    !/dark:/.test(cardBase) &&
     /interactive:\s*\n?\s*"transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"/.test(
       cardComponent,
     ) &&
     /card: "p-4 sm:p-6"/.test(cardComponent),
+  cardBase.trim().slice(0, 120),
 );
 check(
   "…and it is a cva export, not a component nothing can import",
@@ -1154,6 +1687,653 @@ check(
   !/<h2[^>]*text-xs font-bold uppercase[\s\S]{0,240}category\.name/.test(
     tree.find((f) => f.path.endsWith("categories/CategoriesPage.tsx")).src,
   ),
+);
+
+// ---------------------------------------------------------------------------
+section("§15 the token layer, again — tree-wide");
+// ---------------------------------------------------------------------------
+
+/**
+ * Plan.md Phase 10, and the third guard here built the way §2b asks: it walks
+ * the tree rather than naming the files a phase happened to touch.
+ *
+ * §0 opened the plan with "the token layer exists and nothing uses it". It had
+ * happened a second time with two different tokens — `bg-card` used once
+ * against 125 hand-typed `bg-white dark:bg-neutral-900`, `border-border` used
+ * 17 times against 286 hand-typed `dark:border-neutral-800`. Both are now
+ * swept, so what these assertions defend is the *pairing*: the moment a
+ * `dark:` variant appears next to a colour a token already carries, the token
+ * has stopped being the source of truth again.
+ */
+
+check(
+  "🔴 --border carries its own dark value instead of borrowing the surface's",
+  // It was `oklch(1 0 0 / 10%)` — 10% white, so it composited to #2e2e2e on a
+  // card, #232323 on the page ground and to the photograph over an image. A
+  // token that renders four colours is why 286 call sites overrode it.
+  /--border:\s*#262626;/.test(darkTokens),
+  "expected the opaque #262626 the tree was already hand-typing",
+);
+check(
+  "…and the light value is unchanged",
+  /--border:\s*#edeeef;/.test(lightTokens),
+);
+
+/** Per line, which in this Prettier-formatted tree is per className string. */
+const linesWhere = (predicate) =>
+  tree.flatMap((f) =>
+    f.src
+      .split("\n")
+      .map((line, i) => (predicate(line) ? `${f.path}:${i + 1}` : null))
+      .filter(Boolean),
+  );
+
+const bare = (token) =>
+  new RegExp(`(?<![\\w:/-])${token.replace(/[[\]#]/g, "\\$&")}(?![\\w/-])`);
+
+const bgPairs = linesWhere(
+  (l) => bare("bg-white").test(l) && bare("dark:bg-neutral-900").test(l),
+);
+check(
+  "🔴 no className states the card surface in both themes by hand",
+  // `bg-white dark:bg-neutral-900` is `bg-card`, measured: --card is #ffffff
+  // and #171717, and #171717 is neutral-900 exactly. 150 lines said it the
+  // long way.
+  bgPairs.length === 0,
+  bgPairs.slice(0, 5).join(", "),
+);
+
+/* The light greys that are the hairline --border already draws. Max per-channel
+   distance from #edeeef in brackets — measured, none above 12, all of them a
+   1px line. */
+const HAIRLINE_GREYS = [
+  "border-gray-200", // #e5e7eb [8]
+  "border-gray-100", // #f3f4f6 [7]
+  "border-neutral-200", // #e5e5e5 [10]
+  "border-neutral-100", // #f5f5f5 [8]
+  "border-slate-200", // #e2e8f0 [11]
+  "border-slate-100", // #f1f5f9 [10]
+  "border-gray-150", // not a Tailwind colour — it was drawing --border already
+  "border-\\[#e7e8e9\\]", // [6]
+  "border-\\[#f0f0f0\\]", // [3]
+  "border-\\[#e3e3e3\\]", // [12]
+  "border-\\[#e7e7e7\\]", // [8]
+  "border-\\[#efefef\\]", // [2]
+  "border-\\[#e6e6e6\\]", // [9]
+  "border-\\[#f3f4f5\\]", // [6]
+];
+const GREY_HAIRLINE = new RegExp(
+  `(?<![\\w:/-])(?:${HAIRLINE_GREYS.join("|")})(?![\\w/-])`,
+);
+const borderPairs = linesWhere(
+  (l) => bare("dark:border-neutral-800").test(l) && GREY_HAIRLINE.test(l),
+);
+check(
+  "🔴 no hairline spells a grey the token already means, then overrides it",
+  // Fourteen spellings of one light grey, each with the same dark override.
+  // This is the §1.4 argument that retired the seven pinks, one layer down.
+  borderPairs.length === 0,
+  borderPairs.slice(0, 5).join(", "),
+);
+
+/**
+ * Ratchets, not targets — the same shape as the hex ceiling above. What is left
+ * is held on purpose and each kind has a reason:
+ *
+ * - `border-transparent dark:border-neutral-800` (23) — invisible in light by
+ *   design. Sweeping it would *add* a hairline to 23 surfaces.
+ * - the pink tints, `#e3bdc3` and friends (26) — brand colour, and deriving
+ *   them from --primary the way --primary-hover already is remains a decision
+ *   rather than a sweep.
+ * - an alpha on either side (12) — `border-neutral-200/50`, `dark:…-800/80`.
+ *   The token cannot express a translucency that differs per theme.
+ * - `border-gray-300` (2) and `border-[#dcdcdc]` (2) — 28 and 19 from #edeeef,
+ *   which is a deliberately heavier line, not a spelling of this one.
+ */
+const DARK_BORDER = /dark:border-neutral-800/g;
+const darkBorderNow = countAcross(DARK_BORDER);
+const DARK_BORDER_CEILING = 77;
+check(
+  `hand-typed dark hairlines are at or below the ${DARK_BORDER_CEILING} the sweep left`,
+  darkBorderNow <= DARK_BORDER_CEILING,
+  `now ${darkBorderNow} — lower the ceiling in this file when it drops`,
+);
+
+const WHITE = /(?<![\w:/-])bg-white(?![\w/-])/g;
+const whiteNow = countAcross(WHITE);
+const WHITE_CEILING = 48;
+check(
+  `hand-typed white surfaces are at or below the ${WHITE_CEILING} the sweep left`,
+  // These are the ones that are not the card: a pill over a photograph, a
+  // surface whose dark side carries an alpha, the login panel.
+  whiteNow <= WHITE_CEILING,
+  `now ${whiteNow} — lower the ceiling in this file when it drops`,
+);
+
+const sunkenUnthemed = linesWhere(
+  (l) => /(?<!hover:)bg-\[#f8f9fa\]/i.test(l) && !/dark:bg-/.test(l),
+);
+/**
+ * 🔴 The named palette is a spelling of the brand pink too.
+ *
+ * Reported from the vendor page: "different type of pink is used". Phase 4
+ * collapsed seven pinks into `--primary` and swept **hex literals** to do it —
+ * so `bg-[#f9186b]` was caught and `bg-pink-600` was not. `pink-600` is
+ * `#db2777`: duller, and a different *hue*, not a different shade. It sat
+ * beside the navbar and the buttons for eight phases, in 151 places, and every
+ * assertion in this file looked straight past it because none of them was
+ * looking for a class name.
+ *
+ * That is the same failure as `animate-fadeIn` in §11 and for the same reason:
+ * a guard that enumerates the ways a thing can be spelled only ever catches the
+ * spellings somebody thought of.
+ *
+ * Dark mode is deliberately exempt. The brand pink is too hot on a dark ground,
+ * and `text-primary dark:text-pink-400` is a decision, not drift — 260 of them.
+ */
+const PINK_EXCEPTIONS = [
+  ["to-pink-500", "second stop of a two-stop brand gradient; one token deletes the gradient"],
+  ["to-pink-400", "second stop of a two-stop brand gradient; one token deletes the gradient"],
+  ["from-pink-900", "a near-black scrim over a photo — from-primary would be a bright pink wash"],
+];
+const LIGHT_PINK = /(?:^|[\s"'`])((?:[a-z][a-z-]*:)*)((?:bg|text|border|ring|fill|stroke|from|to|via|decoration|shadow|divide)-pink-\d+)/g;
+const paletteLeaks = [];
+for (const f of tree) {
+  for (const m of f.src.matchAll(LIGHT_PINK)) {
+    if (m[1].includes("dark:")) continue;
+    if (PINK_EXCEPTIONS.some(([base]) => m[2] === base)) continue;
+    paletteLeaks.push(`${f.path}:${m[1]}${m[2]}`);
+  }
+}
+check(
+  "🔴 no light-mode Tailwind pink survives — the token is the only brand pink",
+  paletteLeaks.length === 0,
+  `palette pink instead of --primary: ${paletteLeaks.slice(0, 6).join(", ")}`,
+);
+check(
+  "…and the exceptions are reasons, not a hole",
+  // Same shape as §11's adopted list. An entry with no reason is somebody
+  // widening the exception rather than making the case for one.
+  PINK_EXCEPTIONS.every(([base, why]) => /^[a-z-]+-pink-\d+$/.test(base) && why.length > 25) &&
+    // …and each one is actually still in use. An exception nobody exercises is
+    // a hole standing open for the next person who reaches for that class.
+    PINK_EXCEPTIONS.every(([base]) => countAcross(new RegExp(`\\b${base}\\b`, "g")) > 0),
+  `unused or unexplained: ${PINK_EXCEPTIONS.filter(([b, w]) => !w || countAcross(new RegExp(`\\b${b}\\b`, "g")) === 0).map(([b]) => b).join(", ")}`,
+);
+check(
+  "🔴 the dark-mode pair is left alone, and is still the common case",
+  // The exemption has to be exercised or the rule above is quietly a blanket
+  // ban that nobody noticed was one. It is not: dark mode steps to a lighter
+  // palette pink on purpose, in far more places than light mode ever used one.
+  countAcross(/dark:(?:bg|text|border|ring)-pink-\d+/g) > 100,
+);
+
+check(
+  "the sunken surface has no token yet, so every use of it states both themes",
+  // `#f8f9fa` (39) and `bg-gray-50 dark:bg-neutral-900` (9) are a page ground
+  // one step below the card. --background is #ffffff light, --muted is #262626
+  // dark; neither pair matches, so folding them in would change a colour rather
+  // than name one. That is §5 open question 8 — a decision, like #9aa0a6.
+  //
+  // Which is exactly why this asserts the *pair* rather than the colour's
+  // presence: an untokenised colour has to carry its own dark value by hand,
+  // and writing this found one that did not — a whole `/current-location` band
+  // that stayed light grey in dark mode. `hover:` is excluded because
+  // SocialButton's is Google's brand spec, deliberately unthemed.
+  sunkenUnthemed.length === 0,
+  sunkenUnthemed.join(", "),
+);
+
+// ---------------------------------------------------------------------------
+section("§16 the 4-based scale, tree-wide");
+// ---------------------------------------------------------------------------
+
+/**
+ * Plan.md Phase 11. §12 has asserted the scale since Phase 7 — across six
+ * files. This is the same rule with the scope §2b asks for, and the widening is
+ * the phase: the sweep was an afternoon, the ratchet is what stops it happening
+ * a third time.
+ *
+ * ## 🔴 There are two spacing roles, and the scale governs one of them
+ *
+ * The phase was planned from a count — "181 off-scale utilities" — produced by
+ * a regex that only looked at `p*` and `m*` whole numbers. Counting properly
+ * (adding `gap`, `space-x/y`, and the half-steps) gives **358**, and reading
+ * them splits cleanly in two:
+ *
+ * - **Layout** — the space *between* things: card padding, grid gaps, section
+ *   rhythm, page frame. 216 of these were off-scale and every one was
+ *   arbitrary — `p-6` used 94 times and `p-5` 34 times for the same job. Swept.
+ * - **Optical alignment** — 142 sub-step values, and they are not drift.
+ *   `mt-0.5` nudges a 16px icon onto a 14px text baseline. `px-1.5 py-0.5` is
+ *   the box of an inline `<code>` at 12px. `gap-1.5` separates an icon from a
+ *   12px label. Two pixels is not a layout decision; it is a correction for a
+ *   glyph's bearing, and rounding it to zero misaligns the icon.
+ *
+ * Sweeping the second group would have been a regression performed in the name
+ * of compliance — the same trap as Phase 9's "settle on one `<h2>` size". So
+ * they are held, named, and ratcheted: they may not grow.
+ *
+ * ## One rule, not 216 judgments
+ *
+ * The plan said `p-10` → "8 or 12 by eye". With no browser in this session,
+ * 216 unverifiable eye-judgments are worse than one stated rule, so: **round to
+ * the nearest allowed step, ties break downward** — 5→4, 7→6, 9→8, 10→8, 11→12,
+ * 14→12, 20→16, 24→16. Every change is at most one step, and it is checkable.
+ *
+ * It broke upward exactly once, and the exception has a reason rather than an
+ * eye: `<Button size="lg">` was `px-5`, and 5→4 would have given it the same
+ * horizontal padding as `size="default"`, collapsing two rungs of a deliberate
+ * ladder into one. Where a tie erases a distinction, it breaks up. See §16's
+ * ladder assertion.
+ */
+
+const SPACING_UTIL =
+  /(?<![\w:/-])((?:(?:sm|md|lg|xl|2xl|hover|focus|group-hover|dark|first|last|max-sm|max-md|max-lg):)*)(-?(?:p[trblxyse]?|m[trblxyse]?|gap(?:-[xy])?|space-[xy]))-(\d+(?:\.\d+)?)(?![\w/.-])/g;
+
+/** 4, 8, 12, 16, 24, 32, 48, 64 — and 0, which is the absence of space. */
+const ON_SCALE = new Set(["0", "1", "2", "3", "4", "6", "8", "12", "16"]);
+
+/**
+ * `tree` already excludes `%5Fdesign` — see `walk` above. That exclusion long
+ * predates this phase and is right: the kit *renders* the retired values so
+ * they can be compared against what ships, so a tree-wide rule would flag its
+ * evidence. It also means nothing guards the kit, which the separate ceiling
+ * below fixes.
+ */
+const strayLayout = [];
+let subStep = 0;
+for (const f of tree) {
+  f.src.split("\n").forEach((line, i) => {
+    for (const m of line.matchAll(SPACING_UTIL)) {
+      const val = m[3];
+      if (ON_SCALE.has(val)) continue;
+      if (val.includes(".")) { subStep++; continue; }
+      strayLayout.push(`${f.path}:${i + 1} ${m[0]}`);
+    }
+  });
+}
+
+check(
+  "🔴 no layout spacing off the 4-based scale, anywhere in the tree",
+  // The rule §1.2 has stated since the plan was written, enforced for the
+  // first time outside the six files Phase 7 touched.
+  strayLayout.length === 0,
+  `found ${strayLayout.length}: ${strayLayout.slice(0, 8).join(", ")}`,
+);
+
+const SUB_STEP_CEILING = 129;
+check(
+  `the optical sub-step is held at or below the ${SUB_STEP_CEILING} that exist`,
+  // Held on purpose, not missed — see the note above. A ratchet rather than a
+  // ban, because the next `mt-0.5` should have to justify itself against 140
+  // that already do the same job.
+  subStep <= SUB_STEP_CEILING,
+  `now ${subStep} — lower the ceiling in this file when it drops`,
+);
+
+const kitOffScale = [...spec.matchAll(SPACING_UTIL)].filter(
+  (m) => !ON_SCALE.has(m[3]) && !m[3].includes("."),
+);
+const KIT_DEMO_CEILING = 16;
+check(
+  "the design kit's retired values are demo data, and a fixed amount of it",
+  // The kit sits outside `tree`, so this is the only thing looking at it. Its
+  // off-scale values are the `RETIRED_SPACING` array, two `<Mono>` captions and
+  // the "now" shop-card demo — 16 on four lines. A ceiling rather than a ban,
+  // because the exception must not quietly become a habit.
+  kitOffScale.length <= KIT_DEMO_CEILING,
+  `now ${kitOffScale.length}: ${kitOffScale.slice(0, 6).map((m) => m[0]).join(", ")}`,
+);
+
+const sizes = between(button, "size: {", "},");
+check(
+  "🔴 the button's three sizes have three horizontal paddings",
+  // Phase 11's tie-breaks-down rule sent `lg` from px-5 to px-4, which is what
+  // `default` already is: two rungs, one padding. A ladder whose steps are
+  // indistinguishable is not a ladder, so this tie broke upward to px-6.
+  /sm: "h-8 gap-2 px-3"/.test(sizes) &&
+    /default: "h-11 gap-2 px-4 sm:h-10"/.test(sizes) &&
+    /lg: "h-12 gap-2 px-6"/.test(sizes),
+  sizes.replace(/\s+/g, " ").slice(0, 140),
+);
+
+const dialog = stripComments(read("src/components/ui/alert-dialog.tsx"));
+check(
+  "the dialog's full-bleed footer still cancels its content padding",
+  // `p-5` with `-mx-5 -mb-5` became `p-4` with `-mx-4 -mb-4`. They have to move
+  // together or the footer stops reaching the dialog's edges — and they did,
+  // *because* one uniform rule moved both. Per-site judgment is what breaks a
+  // relationship like this, which is the second argument for the rule.
+  /(?<![\w-])p-4(?![\w/-])/.test(between(dialog, "alert-dialog-content", "className")) ||
+    (/-mx-4 -mb-4/.test(dialog) && /gap-4 rounded-3xl border border-border bg-card p-4/.test(dialog)),
+  "expected p-4 on the content and -mx-4 -mb-4 on the footer",
+);
+
+// ---------------------------------------------------------------------------
+section("§17 two defects reported from a browser");
+// ---------------------------------------------------------------------------
+
+/**
+ * The first two findings in this plan that came from someone *looking at the
+ * page* rather than from a guard, which is worth saying plainly: fourteen
+ * sections of assertions above cover source text, and neither of these is a
+ * source-text mistake. One is a colour that cancels itself, the other is a
+ * number that was right twice in the same place.
+ */
+
+const ringOnItsOwnFill = [];
+for (const f of tree) {
+  f.src.split("\n").forEach((line, i) => {
+    const bg = [...line.matchAll(/(?<![\w:/-])bg-([a-z0-9[\]#-]+)(?![\w/-])/g)].map((m) => m[1]);
+    const ring = [...line.matchAll(/(?<![\w:/-])ring-([a-z0-9[\]#-]+)(?![\w/-])/g)]
+      .map((m) => m[1])
+      .filter((v) => !/^\d+$/.test(v) && v !== "offset");
+    const clash = ring.filter((r) => bg.includes(r));
+    if (clash.length) ringOnItsOwnFill.push(`${f.path}:${i + 1} ring-${clash[0]} on bg-${clash[0]}`);
+  });
+}
+check(
+  "🔴 no ring is the colour of the fill it surrounds",
+  // The navbar's count badge was `bg-white … ring-2 ring-white` on a pink bar
+  // over a white icon. A ring exists to put a gap between two shapes, and this
+  // one was made of the same thing as the shape — so it separated nothing and
+  // turned a 16px disc into a 20px one, which covered the bell behind it.
+  // The gap has to be the colour of what is *behind* both.
+  ringOnItsOwnFill.length === 0,
+  ringOnItsOwnFill.join(", "),
+);
+
+const navbar = stripComments(read("src/components/shared/Navbar.tsx"));
+check(
+  "…and the badge that had it is declared once, not twice",
+  // Two identical 150-character strings in one file. Phase 5 spent three
+  // phases on pairs like that drifting apart; this one was wrong in both
+  // copies at once, which is the other way it goes.
+  /const COUNT_BADGE\s*=/.test(navbar) &&
+    (navbar.match(/className=\{COUNT_BADGE\}/g) || []).length === 2 &&
+    !/ring-2 ring-white/.test(navbar),
+);
+check(
+  "the badge sits outside the icon's box and can hold two characters",
+  // `right-0 top-0` anchored it *inside* a 22px icon. `min-w-4 px-1` rather
+  // than `w-4` because "9+" at 12px bold is wider than a 16px circle and the
+  // disc has no `overflow-hidden` to hide the spill.
+  (() => {
+    // Scoped to the constant. `!/h-4 w-4/.test(navbar)` was the first attempt
+    // and it read the whole file — five unrelated 16px spinners live in there.
+    const badge = between(navbar, "const COUNT_BADGE", ";");
+    return (
+      /-right-1 -top-1/.test(badge) &&
+      /min-w-4/.test(badge) &&
+      // `\bw-4\b` was the second attempt and it matches inside `min-w-4` —
+      // the `-` before `w` is a non-word character, so `\b` sits right there.
+      !/(?<![\w-])w-4(?![\w-])/.test(badge) &&
+      !/right-0 top-0/.test(badge)
+    );
+  })(),
+  between(navbar, "const COUNT_BADGE", ";").replace(/\s+/g, " ").slice(0, 160),
+);
+
+const cuisineSection = stripComments(read("src/components/home/CategoriesSection.tsx"));
+const sectionMargins = [...cuisineSection.matchAll(/<section className="([^"]*)"/g)].map((m) => m[1]);
+check(
+  "🔴 the cuisine strip's hover clearance is absorbed by the gap, not stacked on it",
+  // Measured in a browser at 88 on a phone. The track's `pb-4` is real — the
+  // tiles lift 4px and `shadow-lg` reaches ~12 below, and `overflow-x-auto`
+  // would clip both. The wrapper's `pb-6` was not: it clipped nothing and
+  // showed nothing. What is left is invisible but not free, so the section's
+  // own margin takes it off the rhythm rather than adding to it. The arithmetic
+  // that used to be written out here is now §18's, against a rhythm this no
+  // longer needs to know the value of; all three branches still have to agree.
+  !/overflow-hidden pb-6/.test(cuisineSection) &&
+    sectionMargins.length === 3 &&
+    new Set(sectionMargins).size === 1,
+  `section margins: ${JSON.stringify(sectionMargins)}`,
+);
+
+const termsPage = stripComments(read("src/app/(main)/terms/page.tsx"));
+check(
+  "🔴 /terms' hero and its content container do not both pay for the same gap",
+  // Reported from a screenshot: 112px between the page title and the first
+  // heading. `py-16` on the hero put 64 below the h1 and `py-12` on the
+  // container below it put 48 above the next heading — two elements each
+  // paying in full for one gap. The hero keeps its top air and stops paying
+  // for the bottom, so the container's padding *is* the gap — at the same
+  // rhythm the homepage uses, which §18 asserts rather than restating here.
+  /<section className="relative pt-12 sm:pt-16">/.test(termsPage) &&
+    !/<section className="relative py-\d+">/.test(termsPage) &&
+    /container mx-auto px-4 py-8 sm:py-12/.test(termsPage),
+);
+check(
+  "…and every gap on that page is a §1.2 value",
+  // Heading → its content is 24; block → block inside a section is 32;
+  // section → section is 48 stepping to 64. The page had 16, 32, 48 and 64
+  // for the first of those and a flat 64 for the last.
+  (() => {
+    const headings = [...termsPage.matchAll(/<h[1-4][^>]*className="([^"]*)"/g)].map((m) => m[1]);
+    const headingGaps = headings
+      .map((c) => (c.match(/(?<![\w:-])mb-(\d+)(?![\w/-])/) || [])[1])
+      .filter(Boolean);
+    const sectionGaps = [...termsPage.matchAll(/className="[^"]*(?<![\w:-])mb-8 sm:mb-12(?![\w/-])[^"]*"/g)];
+    return (
+      headingGaps.length > 0 &&
+      headingGaps.every((g) => g === "6") &&
+      sectionGaps.length === 2 &&
+      !/(?<![\w:-])mb-16(?![\w/-])(?! )/.test(termsPage.replace(/sm:mb-16/g, ""))
+    );
+  })(),
+  "headings must be mb-6; the two section breaks must carry the page rhythm",
+);
+
+/**
+ * 🔴 The shape that turned up three times in one afternoon, once someone
+ * looked at the pages: **two elements each paying in full for the same gap.**
+ *
+ * - `/terms`: `py-16` on the hero band *and* `py-12` on the container under it.
+ * - `/privacy` and the GDPR page: `mb-12` on each chapter `<section>` *and*
+ *   `mt-8` on the heading that opens the next one — 80px between chapters
+ *   where §1.2 says 48.
+ * - the cuisine strip, in a different currency: `pb-6` on a wrapper over the
+ *   `pb-4` its child already had.
+ *
+ * None of the three is a wrong *value*. Every number involved is on the §1.2
+ * scale, which is why §16 passes over all of them and why this needed eyes.
+ * The rule is about ownership: one side of a boundary pays, and the section
+ * owns its own rhythm.
+ */
+const doublePaidGaps = [];
+for (const f of tree) {
+  const lines = f.src.split("\n");
+  lines.forEach((line, i) => {
+    if (!/<section[^>]*className="[^"]*(?<![\w:-])mb-\d/.test(line)) return;
+    for (let j = i + 1; j <= Math.min(i + 3, lines.length - 1); j++) {
+      if (/<h[1-6][^>]*className="[^"]*(?<![\w:-])mt-\d/.test(lines[j])) {
+        doublePaidGaps.push(`${f.path}:${j + 1}`);
+        break;
+      }
+      if (/<(?:div|section|main|p)\b/.test(lines[j])) break;
+    }
+  });
+}
+check(
+  "🔴 a section that states its own bottom gap has no heading paying for it again",
+  doublePaidGaps.length === 0,
+  `heading with a top margin under a section that already has one: ${doublePaidGaps.join(", ")}`,
+);
+
+/**
+ * And the values themselves, across the six static pages. Phase 9's two
+ * heading roles decide it: a section heading gets 24 to its content, a panel
+ * head gets 12 to its prose. It was 8, 12, 16, 24 and 32 before, plus a `mt-*`
+ * on the paragraph instead of a `mb-*` on the heading half the time, which is
+ * why the value could not be grepped.
+ */
+const STATIC_PAGES = [
+  "app/(main)/terms/page.tsx",
+  "app/(main)/privacy/page.tsx",
+  "app/(main)/available-countries/page.tsx",
+  "components/gdpr-compliance/GdprCompliancePage.tsx",
+  "components/about-deligo/AboutDeligo.tsx",
+  "components/faqs/FAQPage.tsx",
+  "components/contact-page/ContactPage.tsx",
+];
+const strayHeadingGaps = [];
+for (const path of STATIC_PAGES) {
+  const file = tree.find((f) => f.path === `src/${path}`);
+  if (!file) { strayHeadingGaps.push(`${path}: not found`); continue; }
+  file.src.split("\n").forEach((line, i) => {
+    const m = line.match(/<h[1-6][^>]*className="([^"]*)"/);
+    if (!m) return;
+    const mb = (m[1].match(/(?<![\w:-])mb-([\d.]+)(?![\w/-])/) || [])[1];
+    if (mb === undefined) return; // the subtitle under it owns the gap
+    // `mb-1` on a 14px label above its 14px caption is a label/value pair, not
+    // a heading over content — the small-type role Phase 11 named.
+    if (mb === "1" && /text-sm/.test(m[1])) return;
+    if (mb !== "3" && mb !== "6") strayHeadingGaps.push(`${path}:${i + 1} mb-${mb}`);
+  });
+}
+check(
+  "…and a heading on a static page gives its content 24, or its own prose 12",
+  strayHeadingGaps.length === 0,
+  `off-role heading gaps: ${strayHeadingGaps.join(", ")}`,
+);
+
+// ---------------------------------------------------------------------------
+section("§18  the section rhythm");
+// ---------------------------------------------------------------------------
+
+/**
+ * Browser round 5. Reported from a screenshot as "a lot of gap between the
+ * banner and Shop On DeliGo".
+ *
+ * Two findings, and only the second was the one that got pointed at.
+ *
+ * 1. **The hero was an outlier.** Every band sat 64 from the next. The hero sat
+ *    ~86, because its dots strip — `mt-3` + a 6px dot + `pb-1` — was stacked on
+ *    top of a rhythm that had already been paid. Exactly the shape §17 caught
+ *    three times elsewhere, and exactly the fix the cuisine strip already used
+ *    for its shadow clearance: the band deducts its own furniture from the gap.
+ * 2. **The rhythm was only ever half the gap.** Band bottom to the next band's
+ *    *content* was 64 + accent + 12 + heading + 24 ≈ 144. The section gap is the
+ *    number anyone counts; the heading block is the number nobody does. Both
+ *    came down — 48/64 → 32/48, and `SectionHeading`'s 24 → 16.
+ *
+ * Nothing below names 32, 48 or 16. The rhythm is read from the one place it is
+ * stated and everything else is asserted against *it*, because the whole reason
+ * this needed a screenshot is that every value involved was already legal.
+ */
+
+/** §1.2's ladder, in pixels. §16 enforces it as a denylist of the values that
+ *  are *not* on it; §18 needs the positive form to say "this is a legal gap". */
+const SCALE = [4, 8, 12, 16, 24, 32, 48, 64];
+
+/** `space-y-8 … sm:space-y-12` → { base: 32, sm: 48 }, in pixels. */
+const rhythm = (() => {
+  const m = /space-y-(\d+)[^"]*sm:space-y-(\d+)/.exec(homeContent);
+  return m ? { base: Number(m[1]) * 4, sm: Number(m[2]) * 4 } : null;
+})();
+/** `mb-4 sm:mb-8` → { base: 16, sm: 32 }. `sm` falls back to `base`. */
+const bottomMargin = (cls) => {
+  const base = /(?<![\w:-])mb-(\d+)(?![\w/-])/.exec(cls);
+  const sm = /(?<![\w:-])sm:mb-(\d+)(?![\w/-])/.exec(cls);
+  if (!base) return null;
+  return { base: Number(base[1]) * 4, sm: (sm ? Number(sm[1]) : Number(base[1])) * 4 };
+};
+/** One optical step. §16 already carries 142 sub-step values for exactly this
+ *  reason — a 6px dot cannot be made to sum to a scale value using scale
+ *  margins, and pretending otherwise is how a fudge becomes a pinned number. */
+const STEP = 4;
+
+check(
+  "🔴 the page states its section rhythm once, and on the scale",
+  rhythm !== null && SCALE.includes(rhythm.base) && SCALE.includes(rhythm.sm) && rhythm.base < rhythm.sm,
+  `rhythm: ${JSON.stringify(rhythm)}`,
+);
+
+const cuisineMargin = bottomMargin(sectionMargins[0] ?? "");
+check(
+  "🔴 the cuisine strip's own margin plus its clearance is the rhythm, exactly",
+  // `space-y` compiles inside `:where()`, so a plain `mb-*` on the child wins
+  // outright rather than adding to it. The track's `pb-4` is the clearance the
+  // tiles' shadow needs; 16 + 16 = 32 and 16 + 32 = 48. Read from the file, so
+  // moving the rhythm moves what this demands of the strip.
+  (() => {
+    const clearance = Number((/pb-(\d+)[^"]*sm:gap-8/.exec(cuisineSection) || [, 4])[1]) * 4;
+    return (
+      cuisineMargin !== null &&
+      cuisineMargin.base + clearance === rhythm.base &&
+      cuisineMargin.sm + clearance === rhythm.sm
+    );
+  })(),
+  `strip margin ${JSON.stringify(cuisineMargin)} against rhythm ${JSON.stringify(rhythm)}`,
+);
+
+const heroSectionClass = (/<section className="(group relative[^"]*)"/.exec(hero) || [, ""])[1];
+const heroMargin = bottomMargin(heroSectionClass);
+check(
+  "🔴 the hero deducts its dots strip from the rhythm instead of adding to it",
+  // The deduction has to be the *same* at both widths — the strip does not
+  // change size with the viewport, so a deduction that does is drift — and
+  // within one optical step of what the strip actually measures. Not "is 24":
+  // that number is a consequence of a 6px dot, and pinning it would make the
+  // next person's honest re-measurement look like a regression.
+  (() => {
+    if (!heroMargin || !rhythm) return false;
+    const dots = /mt-(\d+) flex justify-center gap-\d+ pb-(\d+)/.exec(hero);
+    const dotRow = /h-(\d+(?:\.\d+)?) w-12/.exec(hero);
+    if (!dots || !dotRow) return false;
+    const strip = Number(dots[1]) * 4 + Number(dotRow[1]) * 4 + Number(dots[2]) * 4;
+    const deduction = { base: rhythm.base - heroMargin.base, sm: rhythm.sm - heroMargin.sm };
+    return deduction.base === deduction.sm && Math.abs(deduction.base - strip) <= STEP;
+  })(),
+  `hero margin ${JSON.stringify(heroMargin)} against rhythm ${JSON.stringify(rhythm)}`,
+);
+
+check(
+  "…and it is the only band that pays for furniture of its own",
+  // ShopSection and RestaurantsSection carry nothing below their content, so
+  // they take the rhythm untouched. A margin appearing on one of them is
+  // either new furniture nobody mentioned or a gap being nudged by hand.
+  !/<section className="[^"]*(?<![\w:-])mb-\d/.test(shopSection) &&
+    !/<section className="[^"]*(?<![\w:-])mb-\d/.test(restaurants),
+);
+
+check(
+  "🔴 a section heading sits closer to its content than the bands sit to each other",
+  // The gap that was invisible in the report. It is not on the §1.2 section
+  // scale and should not be: it is a heading-to-content gap, and a heading that
+  // gives its content as much air as the page gives the next section does not
+  // read as belonging to it.
+  (() => {
+    const mb = /<div className="mb-(\d+) flex items-end/.exec(headingComponent);
+    if (!mb || !rhythm) return false;
+    const gap = Number(mb[1]) * 4;
+    return SCALE.includes(gap) && gap < rhythm.base;
+  })(),
+  `heading gap: ${headingWrapperClass}`,
+);
+
+check(
+  "…and the prose pages keep the wider one, deliberately",
+  // Two heading roles, two gaps: a chapter on a page that is *read* keeps 24,
+  // a band on a page that is *scanned* takes 16. Asserted so the two cannot
+  // quietly converge — the failure mode here is somebody "tidying" one to
+  // match the other and losing the distinction Phase 9 drew.
+  (() => {
+    const mb = /<div className="mb-(\d+) flex items-end/.exec(headingComponent);
+    return Boolean(mb) && Number(mb[1]) * 4 < 24;
+  })() && /<h[1-4][^>]*className="[^"]*(?<![\w:-])mb-6(?![\w/-])/.test(termsPage),
+);
+
+check(
+  "🔴 /terms breaks its chapters on the same rhythm the homepage uses",
+  // One rhythm, not a browse one and a prose one. It was 48/64 on both before
+  // and stayed in step by coincidence — both were typed, neither was derived.
+  (() => {
+    const m = /className="[^"]*(?<![\w:-])mb-(\d+) sm:mb-(\d+)(?![\w/-])/.exec(termsPage);
+    return Boolean(m) && Number(m[1]) * 4 === rhythm.base && Number(m[2]) * 4 === rhythm.sm;
+  })(),
 );
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

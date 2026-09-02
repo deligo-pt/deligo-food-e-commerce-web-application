@@ -48,7 +48,7 @@ export default function SuccessContent() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-neutral-950 px-4 transition-colors duration-200">
-        <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 p-6 text-center shadow-md border border-neutral-200 dark:border-neutral-800">
+        <div className="w-full max-w-md rounded-2xl bg-card p-6 text-center shadow-md border border-border">
           <h1 className="text-2xl font-bold text-red-600 dark:text-red-500">
             {t("orderCreationFailed")}
           </h1>

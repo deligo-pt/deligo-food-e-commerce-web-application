@@ -223,10 +223,10 @@ export default function VendorDetailsModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-250 max-h-[95vh] overflow-y-auto rounded-xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 shadow-xl dark:shadow-none"
+        className="w-full max-w-250 max-h-[95vh] overflow-y-auto rounded-xl bg-card border shadow-xl dark:shadow-none"
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-4 sm:px-6 md:px-8 sm:py-5 md:py-6">
+        <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border bg-card px-4 py-4 sm:px-6 md:px-8 sm:py-4 md:py-6">
           <div className="flex items-center gap-3 sm:gap-4">
             <Button
               size="icon"
@@ -256,7 +256,7 @@ export default function VendorDetailsModal({
               onClick={handleShareClick}
               title={t("share")}
               aria-label={t("share")}
-              className="rounded-full text-primary hover:bg-pink-50 dark:hover:bg-pink-950/20"
+              className="rounded-full text-primary hover:bg-primary/5 dark:hover:bg-pink-950/20"
             >
               <Share2 size={18} />
             </Button>
@@ -271,15 +271,15 @@ export default function VendorDetailsModal({
 
             {/* Share dropdown */}
             {shareMenuOpen && !copied && (
-              <div className="absolute right-0 top-12 z-50 min-w-47.5 overflow-hidden rounded-2xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl dark:shadow-none">
-                <p className="border-b border-gray-100 dark:border-neutral-800 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-neutral-500">
+              <div className="absolute right-0 top-12 z-50 min-w-47.5 overflow-hidden rounded-2xl border border-border bg-card shadow-xl dark:shadow-none">
+                <p className="border-b border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-neutral-500">
                   {t("shareVia")}
                 </p>
 
                 {/* Copy Link */}
                 <button
                   onClick={handleCopyLink}
-                  className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-neutral-300 transition hover:bg-pink-50 dark:hover:bg-pink-950/20 hover:text-pink-600 dark:hover:text-pink-400"
+                  className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-neutral-300 transition hover:bg-primary/5 dark:hover:bg-pink-950/20 hover:text-primary dark:hover:text-pink-400"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800">
                     <Copy size={15} />
@@ -301,10 +301,10 @@ export default function VendorDetailsModal({
                 {/* Email */}
                 <button
                   onClick={handleShareEmail}
-                  className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-neutral-300 transition hover:bg-pink-50 dark:hover:bg-pink-950/20 hover:text-pink-600 dark:hover:text-pink-400"
+                  className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-neutral-300 transition hover:bg-primary/5 dark:hover:bg-pink-950/20 hover:text-primary dark:hover:text-pink-400"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
-                    <Mail size={15} className="text-pink-600" />
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 dark:bg-pink-950/40">
+                    <Mail size={15} className="text-primary" />
                   </span>
                   {t("email")}
                 </button>
@@ -316,7 +316,7 @@ export default function VendorDetailsModal({
         {/* Content */}
         <div className="grid grid-cols-1 gap-6 p-4 sm:gap-8 sm:p-6 md:p-8 lg:grid-cols-2">
           {/* Left Column */}
-          <div className="space-y-4 sm:space-y-5 md:space-y-6">
+          <div className="space-y-4 sm:space-y-4 md:space-y-6">
             {/* Map */}
             <div className="relative overflow-hidden rounded-xl shadow-md">
               {loading ? (
@@ -333,8 +333,8 @@ export default function VendorDetailsModal({
                 </div>
               )}
 
-              <div className="absolute left-3 top-3 sm:left-4 sm:top-4 flex items-center gap-1.5 sm:gap-2 rounded-full bg-white/95 dark:bg-neutral-900/95 px-2 py-1 sm:px-3 sm:py-1.5 shadow-sm border dark:border-neutral-800">
-                <MapPin size={14} className="fill-pink-600 text-pink-600" />
+              <div className="absolute left-3 top-3 sm:left-4 sm:top-4 flex items-center gap-1.5 sm:gap-2 rounded-full bg-white/95 dark:bg-neutral-900/95 px-2 py-1 sm:px-3 sm:py-1.5 shadow-sm border">
+                <MapPin size={14} className="fill-primary text-primary" />
                 <span className="text-xs font-medium text-gray-900 dark:text-white">
                   {vendorData?.businessDetails?.businessName || t("vendor")}
                 </span>
@@ -343,7 +343,7 @@ export default function VendorDetailsModal({
 
             {/* Status Cards */}
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
+              <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-border bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
                 <div className="rounded-full bg-green-100 dark:bg-green-950/40 p-2 sm:p-3">
                   <Clock3 size={20} className="text-green-600 dark:text-green-400" />
                 </div>
@@ -362,12 +362,12 @@ export default function VendorDetailsModal({
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
-                <div className="rounded-full bg-pink-100 dark:bg-pink-950/40 p-2 sm:p-3">
-                  <UtensilsCrossed size={20} className="text-pink-600 dark:text-pink-400" />
+              <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-border bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
+                <div className="rounded-full bg-primary/10 dark:bg-pink-950/40 p-2 sm:p-3">
+                  <UtensilsCrossed size={20} className="text-primary dark:text-pink-400" />
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm font-bold text-pink-600 dark:text-pink-400">
+                  <p className="text-xs sm:text-sm font-bold text-primary dark:text-pink-400">
                     {t("preparationTime")}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-neutral-400">
@@ -379,9 +379,9 @@ export default function VendorDetailsModal({
             </div>
 
             {/* Address */}
-            <div className="rounded-xl border-l-4 border-pink-600 bg-gray-100 dark:bg-neutral-900 border dark:border-neutral-800 p-4 sm:p-6">
+            <div className="rounded-xl border-l-4 border-primary bg-gray-100 dark:bg-neutral-900 border dark:border-neutral-800 p-4 sm:p-6">
               <div className="flex gap-3 sm:gap-4">
-                <MapPin size={20} className="mt-1 text-pink-600 dark:text-pink-400 shrink-0" />
+                <MapPin size={20} className="mt-1 text-primary dark:text-pink-400 shrink-0" />
                 <div>
                   <h3 className="mb-1 text-xs sm:text-sm text-gray-500 dark:text-neutral-400">
                     {t("address")}
@@ -395,16 +395,16 @@ export default function VendorDetailsModal({
           </div>
 
           {/* Right Column */}
-          <div className="space-y-5 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <h2 className="mb-4 text-xl font-semibold text-pink-600 dark:text-pink-400">
+              <h2 className="mb-4 text-xl font-semibold text-primary dark:text-pink-400">
                 {t("contactInformation")}
               </h2>
               <div className="space-y-3">
                 {/* Phone */}
-                <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
-                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
-                    <Phone size={18} className="text-pink-600 dark:text-pink-400" />
+                <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-border bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-pink-950/40">
+                    <Phone size={18} className="text-primary dark:text-pink-400" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-neutral-400">
@@ -417,9 +417,9 @@ export default function VendorDetailsModal({
                 </div>
 
                 {/* Email */}
-                <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
-                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
-                    <Mail size={18} className="text-pink-600 dark:text-pink-400" />
+                <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-border bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-pink-950/40">
+                    <Mail size={18} className="text-primary dark:text-pink-400" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-neutral-400">
@@ -432,9 +432,9 @@ export default function VendorDetailsModal({
                 </div>
 
                 {/* NIF */}
-                <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
-                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
-                    <FileText size={18} className="text-pink-600 dark:text-pink-400" />
+                <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-border bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary/10 dark:bg-pink-950/40">
+                    <FileText size={18} className="text-primary dark:text-pink-400" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-neutral-400">
@@ -449,8 +449,8 @@ export default function VendorDetailsModal({
             </div>
 
             {/* Other Details */}
-            <div className="border-t border-gray-200 dark:border-neutral-800 pt-4 sm:pt-5">
-              <h2 className="mb-4 text-xl font-semibold text-pink-600 dark:text-pink-400">
+            <div className="border-t border-border pt-4 sm:pt-4">
+              <h2 className="mb-4 text-xl font-semibold text-primary dark:text-pink-400">
                 {t("otherDetails")}
               </h2>
               <div className="space-y-3 sm:space-y-4">
@@ -463,7 +463,7 @@ export default function VendorDetailsModal({
                       t("notProvided")}
                   </p>
                 </div>
-                <div className="rounded-lg bg-gray-100 dark:bg-neutral-800 p-3 sm:p-4 border dark:border-neutral-800 italic leading-relaxed text-gray-500 dark:text-neutral-400 text-sm sm:text-base">
+                <div className="rounded-lg bg-gray-100 dark:bg-neutral-800 p-3 sm:p-4 border italic leading-relaxed text-gray-500 dark:text-neutral-400 text-sm sm:text-base">
                   {t("euComplianceNotice")}
                 </div>
               </div>
@@ -474,7 +474,7 @@ export default function VendorDetailsModal({
         {/* Loading / Error overlay */}
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-neutral-950/60 backdrop-blur-sm rounded-xl">
-            <div className="rounded-lg bg-white dark:bg-neutral-900 border dark:border-neutral-800 p-4 shadow-lg text-sm sm:text-base text-gray-950 dark:text-white">
+            <div className="rounded-lg bg-card border p-4 shadow-lg text-sm sm:text-base text-gray-950 dark:text-white">
               {t("loadingVendorDetails")}
             </div>
           </div>

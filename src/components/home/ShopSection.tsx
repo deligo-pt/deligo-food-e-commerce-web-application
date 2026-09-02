@@ -163,7 +163,7 @@ export default function ShopSection() {
   return (
     <section>
       {/* Heading to content is 24 at every width (§1.2). The skeleton said
-          `mb-5 sm:mb-8` and the live header said a flat `mb-8`, so the whole
+          `mb-4 sm:mb-8` and the live header said a flat `mb-8`, so the whole
           section slid up 12px on mobile when the categories arrived. */}
       {/* Phase 7 #5. The prototype marks every section with a short accent rule
           and an uppercase label beside it. The rule ships; the label does not —
@@ -175,7 +175,7 @@ export default function ShopSection() {
       {/* {selectedCategory?.name === "RESTAURANT" && (
           <button
             onClick={() => setShowFilterModal(true)}
-            className="rounded-full border border-[#ffd9de] px-6 py-3 text-[#f9186b]"
+            className="rounded-full border border-primary/20 px-6 py-3 text-primary"
           >
             {t("filter")}
           </button>
@@ -190,7 +190,7 @@ export default function ShopSection() {
           const isActive = selectedCategory?._id === category._id;
           return (
             /* Plan.md Phase 3. This was `p-5 sm:p-7 lg:p-10` around a 160px
-               icon with `gap-10` — roughly 240px of card at `lg` to hold one
+               icon with `gap-8` — roughly 240px of card at `lg` to hold one
                word, most of it empty. It is now 24px of padding, a 64px icon
                and a 16px gap.
 

@@ -65,7 +65,15 @@ export function SectionHeading({
   skeletonWidth?: string
 }) {
   return (
-    <div className="mb-6 flex items-end justify-between gap-6">
+    /* 24 to its content until browser round 5, now 16. The section rhythm came
+       down from 48/64 to 32/48 in the same round, and leaving this at 24 would
+       have kept two thirds of the gap that was reported.
+
+       It is deliberately *not* the 24 that a heading on a static page still
+       gives its prose. Those pages are read; these bands are scanned, and a
+       grid wants its title closer to it than a chapter does. §18 asserts the
+       split exists rather than letting one drift into the other. */
+    <div className="mb-4 flex items-end justify-between gap-6">
       <div>
         {accent && (
           <span

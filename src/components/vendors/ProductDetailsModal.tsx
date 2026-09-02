@@ -467,7 +467,7 @@ export default function ProductDetailsModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative flex w-full max-w-145 flex-col overflow-hidden rounded-4xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 shadow-2xl dark:shadow-none"
+        className="relative flex w-full max-w-145 flex-col overflow-hidden rounded-4xl bg-card border shadow-2xl dark:shadow-none"
       >
         {/* Drag handle */}
         <div className="absolute left-1/2 top-3 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-gray-300 dark:bg-neutral-700" />
@@ -487,17 +487,17 @@ export default function ProductDetailsModal({
         <div className="max-h-[calc(100vh-140px)] flex-1 overflow-y-auto scrollbar-hide">
           {loading && (
             <div className="flex h-96 items-center justify-center p-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-600 border-t-transparent" />
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           )}
 
           {error && <div className="p-8 text-center text-red-500">{error}</div>}
 
           {!loading && !error && product && (
-            <div className="flex flex-col items-center px-8 pb-6 pt-10">
+            <div className="flex flex-col items-center px-8 pb-6 pt-8">
               {/* Image */}
               <div className="relative mb-6 h-64 w-64">
-                <div className="absolute inset-0 rounded-full bg-pink-500/10 blur-3xl" />
+                <div className="absolute inset-0 rounded-full bg-primary/10 blur-3xl" />
                 <div className="relative h-full w-full overflow-hidden rounded-full border-4 border-white shadow-xl">
                   <SafeImage
                     src={product.images?.[0]}
@@ -523,7 +523,7 @@ export default function ProductDetailsModal({
                     {product.name}
                   </h2>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                    <p className="text-2xl font-bold text-primary dark:text-pink-400">
                       {formatPrice(unitPrice, currency)}
                     </p>
                     {hasDiscount && (
@@ -534,8 +534,8 @@ export default function ProductDetailsModal({
                   </div>
                 </div>
                 {hasDiscount && (
-                  <div className="mt-3 flex items-center justify-end gap-1.5 text-pink-600 dark:text-pink-400">
-                    <Tag size={14} className="fill-pink-600/15" />
+                  <div className="mt-3 flex items-center justify-end gap-1.5 text-primary dark:text-pink-400">
+                    <Tag size={14} className="fill-primary/15" />
                     <span className="text-sm font-semibold">
                       Save{" "}
                       {formatPrice(
@@ -569,13 +569,13 @@ export default function ProductDetailsModal({
                             <div
                               key={`${opt.groupName}-${opt.label}`}
                               onClick={() => handleOptionClick(opt)}
-                              className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-100 dark:border-neutral-800 p-3 transition bg-white dark:bg-neutral-900 hover:bg-gray-50 dark:hover:bg-neutral-800"
+                              className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 transition bg-card hover:bg-gray-50 dark:hover:bg-neutral-800"
                             >
                               <div className="flex items-center gap-3">
                                 {isSelected ? (
                                   <CheckCircle
                                     size={20}
-                                    className="text-pink-600 dark:text-pink-400"
+                                    className="text-primary dark:text-pink-400"
                                   />
                                 ) : (
                                   <Circle size={20} className="text-gray-400 dark:text-neutral-500" />
@@ -590,7 +590,7 @@ export default function ProductDetailsModal({
                                     {formatPrice(opt.price, currency)}
                                   </span>
                                 )}
-                                <span className="font-medium text-pink-600 dark:text-pink-400">
+                                <span className="font-medium text-primary dark:text-pink-400">
                                   {formatPrice(
                                     applyProductDiscount(opt.price, product?.pricing),
                                     currency,
@@ -632,7 +632,7 @@ export default function ProductDetailsModal({
               </div>
 
               {/* Summary */}
-              <div className="mb-6 w-full rounded-3xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-6">
+              <div className="mb-6 w-full rounded-3xl border border-border bg-gray-50 dark:bg-neutral-900/50 p-6">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <span className="block text-xl font-semibold text-gray-900 dark:text-white">
@@ -642,7 +642,7 @@ export default function ProductDetailsModal({
                       ({t("inclVat")} -&nbsp;{formatPrice(vatAmount, currency)})
                     </span>
                   </div>
-                  <span className="shrink-0 whitespace-nowrap text-xl font-bold text-pink-600 dark:text-pink-400">
+                  <span className="shrink-0 whitespace-nowrap text-xl font-bold text-primary dark:text-pink-400">
                     {formatPrice(total, currency)}
                   </span>
                 </div>
@@ -650,9 +650,9 @@ export default function ProductDetailsModal({
 
               {/* Add-ons */}
               {addonGroups.length > 0 && (
-                <div className="mb-8 w-full space-y-5">
+                <div className="mb-8 w-full space-y-4">
                   <div className="flex items-center gap-2">
-                    <Sparkles size={18} className="text-pink-600 dark:text-pink-400" />
+                    <Sparkles size={18} className="text-primary dark:text-pink-400" />
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                       {t("customizeYourOrder")}
                     </h3>
@@ -678,13 +678,13 @@ export default function ProductDetailsModal({
                             return (
                               <div
                                 key={opt.sku}
-                                className="flex items-center justify-between rounded-lg border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
+                                className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
                               >
                                 <div className="flex items-center gap-2">
                                   <span className="text-gray-800 dark:text-neutral-200">
                                     {opt.name}
                                   </span>
-                                  <span className="text-sm font-medium text-pink-600 dark:text-pink-400">
+                                  <span className="text-sm font-medium text-primary dark:text-pink-400">
                                     +{formatPrice(opt.price, currency)}
                                   </span>
                                 </div>
@@ -739,7 +739,7 @@ export default function ProductDetailsModal({
 
         {/* Sticky Footer */}
         {!loading && !error && product && (
-          <div className="border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-8">
+          <div className="border-t border-border bg-card p-8">
             {isStoreClosed && (
               <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4">
                 <Moon
@@ -756,7 +756,7 @@ export default function ProductDetailsModal({
                 </div>
               </div>
             )}
-            {/* Plan.md Phase 2/3: this was `py-5 text-lg` — a 68px slab with an
+            {/* Plan.md Phase 2/3: this was `py-4 text-lg` — a 68px slab with an
                 18px label, the shape that started the whole design pass. It is
                 now the `lg` size (48px, 14px label) and keeps its gradient and
                 shine, which are bespoke to the primary CTA. The gradient still

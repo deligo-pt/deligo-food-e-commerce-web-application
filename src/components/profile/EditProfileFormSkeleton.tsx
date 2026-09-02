@@ -5,15 +5,15 @@ export default function EditProfileFormSkeleton() {
         {/* Breadcrumb */}
         <div className="mb-6 h-4 w-56 rounded bg-gray-200 dark:bg-neutral-800" />
 
-        <div className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           {/* Header */}
-          <div className="flex flex-col items-center border-b border-neutral-200/50 dark:border-neutral-800 py-10">
+          <div className="flex flex-col items-center border-b border-neutral-200/50 dark:border-neutral-800 py-8">
             <div className="h-32 w-32 rounded-full bg-gray-200 dark:bg-neutral-800" />
             <div className="mt-6 h-8 w-48 rounded bg-gray-200 dark:bg-neutral-800" />
             <div className="mt-3 h-4 w-72 rounded bg-gray-200 dark:bg-neutral-800" />
           </div>
 
-          <div className="space-y-10 p-8 md:p-12">
+          <div className="space-y-8 p-8 md:p-12">
             {/* Basic Information */}
             <section className="space-y-6">
               <div className="h-7 w-48 rounded bg-gray-200 dark:bg-neutral-800" />
@@ -62,7 +62,7 @@ export default function EditProfileFormSkeleton() {
               <div className="h-96 rounded-xl bg-gray-200 dark:bg-neutral-800" />
 
               {/* Location Confirmed */}
-              <div className="flex items-center gap-4 rounded-xl border border-gray-200 dark:border-neutral-800 p-4">
+              <div className="flex items-center gap-4 rounded-xl border border-border p-4">
                 <div className="h-12 w-12 rounded-full bg-gray-200 dark:bg-neutral-800" />
                 <div className="flex-1">
                   <div className="h-3 w-32 rounded bg-gray-200 dark:bg-neutral-800" />

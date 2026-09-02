@@ -25,7 +25,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   return (
     <a
       href={href}
-      className="block border border-gray-200 dark:border-neutral-800 rounded-md py-2 px-3 text-sm text-gray-600 dark:text-neutral-400 hover:border-pink-500 hover:text-pink-600 dark:hover:text-pink-500 transition-colors text-center bg-transparent"
+      className="block border border-border rounded-md py-2 px-3 text-sm text-gray-600 dark:text-neutral-400 hover:border-primary hover:text-primary dark:hover:text-pink-500 transition-colors text-center bg-transparent"
     >
       {children}
     </a>
@@ -34,7 +34,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 
 function PartHeading({ label, title }: { label: string; title: string }) {
   return (
-    <div className="mt-4 mb-10 border-l-4 border-primary pl-5">
+    <div className="mt-4 mb-8 border-l-4 border-primary pl-4">
       <span className="text-xs font-extrabold uppercase tracking-[0.06em] text-primary dark:text-pink-500">
         {label}
       </span>
@@ -56,7 +56,12 @@ function Section({
 }) {
   return (
     <section id={id} className="scroll-mt-24 mb-12">
-      <h3 className="text-xl md:text-2xl font-bold mt-8 mb-4 text-slate-900 dark:text-neutral-50">
+      {/* The chapter gap was 80: `mb-12` on the section below plus `mt-8` on
+          this heading — two elements each paying in full for one gap, which is
+          the third place that shape has turned up (`/terms`' hero, and the
+          cuisine strip's clearance). The section owns it, at §1.2's 48. The
+          heading keeps only the 24 between itself and its own body. */}
+      <h3 className="text-xl md:text-2xl font-bold mb-6 text-slate-900 dark:text-neutral-50">
         {title}
       </h3>
       <div className="text-gray-600 dark:text-neutral-300 leading-relaxed space-y-3">
@@ -124,7 +129,7 @@ export default function GdprCompliancePage() {
   return (
     <main className="bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       {/* Hero */}
-      <section className="bg-gray-50 dark:bg-neutral-900/50 py-16 border-b border-gray-200 dark:border-neutral-800">
+      <section className="bg-gray-50 dark:bg-neutral-900/50 py-16 border-b border-border">
         <div className="max-w-6xl mx-auto px-6">
           <h1 className="text-display font-extrabold text-gray-900 dark:text-neutral-50 mb-6">
             {t("gdprComplianceHeroTitle")}
@@ -138,7 +143,7 @@ export default function GdprCompliancePage() {
             {metaItems.map(({ Icon, label, value }) => (
               <div
                 key={label}
-                className="flex items-start gap-3 rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm dark:shadow-none"
+                className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-sm dark:shadow-none"
               >
                 <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary dark:text-pink-500" />
                 <div className="min-w-0">
@@ -159,7 +164,7 @@ export default function GdprCompliancePage() {
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Sidebar — desktop, sticky */}
           <aside className="lg:w-80 shrink-0">
-            <div className="lg:sticky lg:top-24 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm dark:shadow-none">
+            <div className="lg:sticky lg:top-24 bg-card border border-border rounded-xl p-6 shadow-sm dark:shadow-none">
               <span className="text-xs font-bold text-gray-400 dark:text-neutral-500 uppercase tracking-wider block mb-4">
                 {t("onThisPage")}
               </span>
@@ -182,7 +187,7 @@ export default function GdprCompliancePage() {
           <article className="flex-1 max-w-3xl">
             {/* Sidebar — mobile */}
             <div className="lg:hidden mb-8">
-              <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm dark:shadow-none">
+              <div className="bg-card border border-border rounded-xl p-6 shadow-sm dark:shadow-none">
                 <span className="text-xs font-bold text-gray-400 dark:text-neutral-500 uppercase tracking-wider block mb-4">
                   {t("onThisPage")}
                 </span>
@@ -210,7 +215,7 @@ export default function GdprCompliancePage() {
             <Section id="company" title={t("legalCompanyTitle")}>
               <p>{t("legalCompanyIntro")}</p>
               <p>{t("legalCompanyRole")}</p>
-              <ul className="list-disc pl-5 space-y-1">
+              <ul className="list-disc pl-4 space-y-1">
                 <li>{t("legalCompanyParty1")}</li>
                 <li>{t("legalCompanyParty2")}</li>
                 <li>{t("legalCompanyParty3")}</li>
@@ -219,7 +224,7 @@ export default function GdprCompliancePage() {
             </Section>
 
             <Section id="account" title={t("legalAccountTitle")}>
-              <ul className="list-disc pl-5 space-y-2">
+              <ul className="list-disc pl-4 space-y-2">
                 <TermItem term={t("legalAccountEligibilityTitle")}>
                   {t("legalAccountEligibilityText")}
                 </TermItem>
@@ -237,7 +242,7 @@ export default function GdprCompliancePage() {
 
               {/* Scrolls inside its own container rather than pushing the page
                   sideways on a narrow screen. */}
-              <div className="my-6 overflow-x-auto rounded-xl border border-gray-200 dark:border-neutral-800">
+              <div className="my-6 overflow-x-auto rounded-xl border border-border">
                 <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
                   <thead>
                     <tr className="bg-slate-900 dark:bg-neutral-800 text-white">
@@ -259,19 +264,19 @@ export default function GdprCompliancePage() {
                         className={
                           index % 2 === 1
                             ? "bg-gray-50 dark:bg-neutral-900/60"
-                            : "bg-white dark:bg-neutral-900"
+                            : "bg-card"
                         }
                       >
                         <th
                           scope="row"
-                          className="border-t border-gray-200 dark:border-neutral-800 px-4 py-3.5 text-left font-medium text-gray-900 dark:text-neutral-100"
+                          className="border-t border-border px-4 py-3.5 text-left font-medium text-gray-900 dark:text-neutral-100"
                         >
                           {row.component}
                         </th>
-                        <td className="border-t border-gray-200 dark:border-neutral-800 px-4 py-3.5 text-gray-600 dark:text-neutral-300">
+                        <td className="border-t border-border px-4 py-3.5 text-gray-600 dark:text-neutral-300">
                           {row.vat}
                         </td>
-                        <td className="border-t border-gray-200 dark:border-neutral-800 px-4 py-3.5 text-gray-600 dark:text-neutral-300">
+                        <td className="border-t border-border px-4 py-3.5 text-gray-600 dark:text-neutral-300">
                           {row.issuer}
                         </td>
                       </tr>
@@ -291,7 +296,7 @@ export default function GdprCompliancePage() {
 
             <Section id="invoicing" title={t("legalInvoicingTitle")}>
               <p>{t("legalInvoicingIntro")}</p>
-              <ul className="list-disc pl-5 space-y-1">
+              <ul className="list-disc pl-4 space-y-1">
                 <li>{t("legalInvoicingQr")}</li>
                 <li>{t("legalInvoicingAtcud")}</li>
               </ul>
@@ -299,7 +304,7 @@ export default function GdprCompliancePage() {
             </Section>
 
             <Section id="cancellations" title={t("legalCancelTitle")}>
-              <ul className="list-disc pl-5 space-y-2">
+              <ul className="list-disc pl-4 space-y-2">
                 <TermItem term={t("legalCancelPerishableTitle")}>
                   {t("legalCancelPerishableText")}
                 </TermItem>
@@ -314,7 +319,7 @@ export default function GdprCompliancePage() {
 
             <Section id="disputes" title={t("legalDisputesTitle")}>
               <p>{t("legalDisputesIntro")}</p>
-              <ul className="list-disc pl-5 space-y-1">
+              <ul className="list-disc pl-4 space-y-1">
                 <li>{t("legalDisputesComplaintsBook")}</li>
                 <li>{t("legalDisputesAdr")}</li>
               </ul>
@@ -341,7 +346,7 @@ export default function GdprCompliancePage() {
 
             <Section id="data-categories" title={t("legalDataTitle")}>
               <p>{t("legalDataIntro")}</p>
-              <ul className="list-disc pl-5 space-y-2">
+              <ul className="list-disc pl-4 space-y-2">
                 <TermItem term={t("legalDataIdentityTitle")}>
                   {t("legalDataIdentityText")}
                 </TermItem>
@@ -355,7 +360,7 @@ export default function GdprCompliancePage() {
                   {t("legalDataTechnicalText")}
                 </TermItem>
               </ul>
-              <div className="mt-4 flex items-start gap-3 rounded-lg border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900 p-4">
+              <div className="mt-4 flex items-start gap-3 rounded-lg border border-border bg-gray-50 dark:bg-neutral-900 p-4">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-gray-600 dark:text-neutral-400" />
                 <p className="text-sm text-gray-600 dark:text-neutral-400">
                   {t("legalDataFinancialNote")}
@@ -365,7 +370,7 @@ export default function GdprCompliancePage() {
 
             <Section id="legal-bases" title={t("legalBasesTitle")}>
               <p>{t("legalBasesIntro")}</p>
-              <ol className="list-decimal pl-5 space-y-2">
+              <ol className="list-decimal pl-4 space-y-2">
                 <TermItem term={t("legalBasesContractTitle")}>
                   {t("legalBasesContractText")}
                 </TermItem>
@@ -383,7 +388,7 @@ export default function GdprCompliancePage() {
 
             <Section id="sharing" title={t("legalSharingTitle")}>
               <p>{t("legalSharingIntro")}</p>
-              <ul className="list-disc pl-5 space-y-2">
+              <ul className="list-disc pl-4 space-y-2">
                 <TermItem term={t("legalSharingCouriersTitle")}>
                   {t("legalSharingCouriersText")}
                 </TermItem>
@@ -401,7 +406,7 @@ export default function GdprCompliancePage() {
 
             <Section id="rights" title={t("legalRightsTitle")}>
               <p>{t("legalRightsIntro")}</p>
-              <ul className="list-disc pl-5 space-y-2">
+              <ul className="list-disc pl-4 space-y-2">
                 <TermItem term={t("legalRightsAccessTitle")}>
                   {t("legalRightsAccessText")}
                 </TermItem>

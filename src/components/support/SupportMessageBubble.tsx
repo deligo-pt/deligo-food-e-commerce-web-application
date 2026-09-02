@@ -54,7 +54,7 @@ export default function SupportMessageBubble({
         className={`max-w-[78%] min-w-0 px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${
           outgoing
             ? "rounded-2xl rounded-br-md bg-linear-to-br from-primary to-primary-hover text-white"
-            : "rounded-2xl rounded-bl-md border border-gray-100 bg-white text-muted-foreground dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
+            : "rounded-2xl rounded-bl-md border border-border bg-card text-muted-foreground dark:text-neutral-300"
         }`}
       >
         {/* Above the text, as a chat draws it. `SafeImage` falls back to an
@@ -121,7 +121,7 @@ function Avatar({ initial, muted }: { initial: string; muted?: boolean }) {
       aria-hidden
       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
         muted
-          ? "border border-gray-200 bg-white text-primary dark:border-neutral-800 dark:bg-neutral-900 dark:text-pink-400"
+          ? "border border-border bg-card text-primary dark:text-pink-400"
           : "bg-linear-to-br from-primary to-primary-hover text-white"
       }`}
     >

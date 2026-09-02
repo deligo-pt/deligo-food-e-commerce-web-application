@@ -3,9 +3,9 @@ import { cardVariants } from "@/components/ui/card";
 
 export default function CategoriesPageSkeleton() {
   return (
-    <div className="animate-pulse mx-auto w-full max-w-7xl px-4 py-10 lg:px-16">
+    <div className="animate-pulse mx-auto w-full max-w-7xl px-4 py-8 lg:px-16">
       {/* Header */}
-      <div className="mb-10">
+      <div className="mb-8">
         <div className="mb-4 h-5 w-32 rounded bg-gray-200" />
 
         <div className="h-10 w-64 rounded bg-gray-200" />

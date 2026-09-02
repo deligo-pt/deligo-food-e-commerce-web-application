@@ -9,7 +9,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   return (
     <a
       href={href}
-      className="block border border-gray-200 dark:border-neutral-800 rounded-md py-2 px-3 text-sm text-gray-600 dark:text-neutral-400 hover:border-pink-500 hover:text-pink-600 dark:hover:text-pink-500 transition-colors text-center bg-transparent"
+      className="block border border-border rounded-md py-2 px-3 text-sm text-gray-600 dark:text-neutral-400 hover:border-primary hover:text-primary dark:hover:text-pink-500 transition-colors text-center bg-transparent"
     >
       {children}
     </a>
@@ -19,7 +19,12 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id} className="scroll-mt-20 mb-12">
-      <h2 className="text-2xl lg:text-display font-bold mt-8 mb-4 text-slate-900 dark:text-neutral-50">{title}</h2>
+      {/* The chapter gap was 80: `mb-12` on the section below plus `mt-8` on
+          this heading — two elements each paying in full for one gap, which is
+          the third place that shape has turned up (`/terms`' hero, and the
+          cuisine strip's clearance). The section owns it, at §1.2's 48. The
+          heading keeps only the 24 between itself and its own body. */}
+      <h2 className="text-2xl lg:text-display font-bold mb-6 text-slate-900 dark:text-neutral-50">{title}</h2>
       <div className="text-gray-600 dark:text-neutral-300 leading-relaxed space-y-3">{children}</div>
     </section>
   );
@@ -27,7 +32,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border border-gray-200 dark:border-neutral-800 rounded-xl p-5 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none">
+    <div className="border border-border rounded-xl p-4 bg-card shadow-sm dark:shadow-none">
       <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-neutral-200">{title}</h3>
       {children}
     </div>
@@ -40,7 +45,7 @@ export default function PrivacyPolicyPage() {
   return (
     <main className="bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       {/* Hero Section */}
-      <section className="bg-gray-50 dark:bg-neutral-900/50 py-16 border-b border-gray-200 dark:border-neutral-800">
+      <section className="bg-gray-50 dark:bg-neutral-900/50 py-16 border-b border-border">
         <div className="max-w-6xl mx-auto px-6">
           <h1 className="text-display font-extrabold text-gray-900 dark:text-neutral-50 mb-6">
             {t("privacyHeroTitle")}
@@ -56,7 +61,7 @@ export default function PrivacyPolicyPage() {
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Sidebar Navigation - Desktop sticky */}
           <aside className="lg:w-80 shrink-0">
-            <div className="lg:sticky lg:top-24 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm dark:shadow-none">
+            <div className="lg:sticky lg:top-24 bg-card border border-border rounded-xl p-6 shadow-sm dark:shadow-none">
               <span className="text-xs font-bold text-gray-400 dark:text-neutral-500 uppercase tracking-wider block mb-4">
                 {t("onThisPage")}
               </span>
@@ -88,7 +93,7 @@ export default function PrivacyPolicyPage() {
           <article className="flex-1 max-w-3xl">
             {/* Mobile Navigation */}
             <div className="lg:hidden mb-8">
-              <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm dark:shadow-none">
+              <div className="bg-card border border-border rounded-xl p-6 shadow-sm dark:shadow-none">
                 <span className="text-xs font-bold text-gray-400 dark:text-neutral-500 uppercase tracking-wider block mb-4">
                   {t("onThisPage")}
                 </span>
@@ -124,7 +129,7 @@ export default function PrivacyPolicyPage() {
             <Section id="data-we-collect" title={t("privacyDataCollectTitle")}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
                 <Card title={t("privacyDataYouProvideTitle")}>
-                  <ul className="list-disc pl-5 space-y-1 text-gray-600 dark:text-neutral-400">
+                  <ul className="list-disc pl-4 space-y-1 text-gray-600 dark:text-neutral-400">
                     <li>{t("privacyDataYouProvide1")}</li>
                     <li>{t("privacyDataYouProvide2")}</li>
                     <li>{t("privacyDataYouProvide3")}</li>
@@ -132,7 +137,7 @@ export default function PrivacyPolicyPage() {
                   </ul>
                 </Card>
                 <Card title={t("privacyDataAutoTitle")}>
-                  <ul className="list-disc pl-5 space-y-1 text-gray-600 dark:text-neutral-400">
+                  <ul className="list-disc pl-4 space-y-1 text-gray-600 dark:text-neutral-400">
                     <li>{t("privacyDataAuto1")}</li>
                     <li>{t("privacyDataAuto2")}</li>
                     <li>{t("privacyDataAuto3")}</li>
@@ -144,7 +149,7 @@ export default function PrivacyPolicyPage() {
             </Section>
 
             <Section id="how-we-use" title={t("privacyHowUseTitle")}>
-              <ul className="list-disc pl-5 space-y-1 text-gray-600 dark:text-neutral-300">
+              <ul className="list-disc pl-4 space-y-1 text-gray-600 dark:text-neutral-300">
                 <li>{t("privacyHowUse1")}</li>
                 <li>{t("privacyHowUse2")}</li>
                 <li>{t("privacyHowUse3")}</li>
@@ -155,7 +160,7 @@ export default function PrivacyPolicyPage() {
             </Section>
 
             <Section id="legal-bases" title={t("privacyLegalBasesTitle")}>
-              <ul className="list-disc pl-5 space-y-1 text-gray-600 dark:text-neutral-300">
+              <ul className="list-disc pl-4 space-y-1 text-gray-600 dark:text-neutral-300">
                 <li>{t("privacyLegalBases1")}</li>
                 <li>{t("privacyLegalBases2")}</li>
                 <li>{t("privacyLegalBases3")}</li>
@@ -164,7 +169,7 @@ export default function PrivacyPolicyPage() {
             </Section>
 
             <Section id="sharing" title={t("privacySharingTitle")}>
-              <ul className="list-disc pl-5 space-y-1 text-gray-600 dark:text-neutral-300">
+              <ul className="list-disc pl-4 space-y-1 text-gray-600 dark:text-neutral-300">
                 <li>{t("privacySharing1")}</li>
                 <li>{t("privacySharing2")}</li>
                 <li>{t("privacySharing3")}</li>
@@ -190,7 +195,7 @@ export default function PrivacyPolicyPage() {
 
             <Section id="rights" title={t("privacyRightsTitle")}>
               <p className="mb-4 text-gray-600 dark:text-neutral-300">{t("privacyRightsLead")}</p>
-              <ul className="list-disc pl-5 mb-6 space-y-1 text-gray-600 dark:text-neutral-300">
+              <ul className="list-disc pl-4 mb-6 space-y-1 text-gray-600 dark:text-neutral-300">
                 <li>{t("privacyRights1")}</li>
                 <li>{t("privacyRights2")}</li>
                 <li>{t("privacyRights3")}</li>
@@ -200,7 +205,7 @@ export default function PrivacyPolicyPage() {
             </Section>
 
             <Section id="deletion" title={t("privacyDeletionTitle")}>
-              <div className="bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 rounded-xl p-6 my-4">
+              <div className="bg-gray-50 dark:bg-neutral-900 border border-border rounded-xl p-6 my-4">
                 <p className="mb-4">{t("privacyDeletionText")}</p>
                 <p className="mb-4 italic text-gray-600 dark:text-neutral-400">{t("privacyDeletionRequestText")}</p>
                 <Button className="rounded-md bg-red-500 font-bold shadow-md hover:bg-red-700">
@@ -216,7 +221,7 @@ export default function PrivacyPolicyPage() {
 
             <Section id="changes" title={t("privacyChangesTitle")}>
               <p className="mb-6">{t("privacyChangesText")}</p>
-              <div className="bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-lg p-5">
+              <div className="bg-gray-50 dark:bg-neutral-900 border border-border rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <Shield className="w-5 h-5 text-gray-600 dark:text-neutral-400 mt-0.5" />
                   <div>

@@ -63,10 +63,10 @@ function ClearSessionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-3xl border border-transparent bg-white p-6 text-center shadow-2xl animate-scaleIn dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-none sm:p-8">
+      <div className="w-full max-w-md rounded-3xl border border-transparent bg-card p-6 text-center shadow-2xl motion-scale dark:border-neutral-800 dark:shadow-none sm:p-8">
         {/* Themed icon — pink brand tint, echoing the #f9186b accent used
             throughout the app */}
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#ffe4ee] dark:bg-primary/15">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 dark:bg-primary/15">
           <MonitorSmartphone className="h-8 w-8 text-primary" />
         </div>
 
@@ -148,19 +148,19 @@ export default function LoginPage() {
   } = useLoginFlow();
 
   return (
-    <main className="min-h-screen bg-[#f7f2f5] dark:bg-neutral-950 px-4 py-8 text-foreground dark:text-neutral-100 sm:px-6 lg:px-8 lg:py-10 transition-colors duration-200">
+    <main className="min-h-screen bg-[#f7f2f5] dark:bg-neutral-950 px-4 py-8 text-foreground dark:text-neutral-100 sm:px-6 lg:px-8 lg:py-8 transition-colors duration-200">
       {/* Explicit path back to the homepage */}
       <Link
         href="/"
-        className="mx-auto mb-5 flex w-full max-w-5xl items-center gap-2 text-sm font-medium text-foreground/70 dark:text-neutral-400 hover:text-primary dark:hover:text-primary transition-colors"
+        className="mx-auto mb-4 flex w-full max-w-5xl items-center gap-2 text-sm font-medium text-foreground/70 dark:text-neutral-400 hover:text-primary dark:hover:text-primary transition-colors"
       >
         <ArrowLeft size={16} />
         {t("returnToHome")}
       </Link>
 
-      <section className="mx-auto flex w-full max-w-5xl flex-col overflow-hidden rounded-4xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 shadow-[0_18px_70px_rgba(16,24,40,0.12)] dark:shadow-none lg:min-h-[calc(100vh-5rem)] lg:flex-row">
+      <section className="mx-auto flex w-full max-w-5xl flex-col overflow-hidden rounded-4xl bg-card border border-transparent dark:border-neutral-800 shadow-[0_18px_70px_rgba(16,24,40,0.12)] dark:shadow-none lg:min-h-[calc(100vh-5rem)] lg:flex-row">
         {/* Left side - same as before */}
-        <div className="flex items-center justify-center bg-primary px-6 py-12 text-center text-white sm:px-10 lg:min-h-full lg:w-[42%] lg:px-12 lg:py-16">
+        <div className="flex items-center justify-center bg-primary px-6 py-12 text-center text-white sm:px-8 lg:min-h-full lg:w-[42%] lg:px-12 lg:py-16">
           <div className="flex w-full max-w-sm flex-col items-center">
             <Link
               href="/"
@@ -188,7 +188,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="flex flex-1 items-start px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
+        <div className="flex flex-1 items-start px-4 py-8 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
           <div className="flex w-full flex-col">
             <div>
               <h2 className="text-2xl font-extrabold leading-tight tracking-[-0.03em] text-foreground dark:text-neutral-50 lg:text-display">
@@ -199,7 +199,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-6 border-b border-[#e3e3e3] dark:border-neutral-800 sm:mt-10">
+            <div className="mt-8 grid grid-cols-2 gap-6 border-b border-border sm:mt-8">
               <button
                 type="button"
                 onClick={() => changeMode("mobile")}
@@ -245,7 +245,7 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <div className="mt-8 space-y-5 sm:mt-10">
+            <div className="mt-8 space-y-4 sm:mt-8">
               <p className="text-base leading-6 text-muted-foreground dark:text-neutral-400">
                 {loginHint}
               </p>
@@ -256,7 +256,7 @@ export default function LoginPage() {
               {errorMessageKey || errorMessage ? (
                 <div
                   role="alert"
-                  className="rounded-2xl border border-[#ffd4dc] dark:border-red-950 bg-[#fff4f7] dark:bg-red-950/20 px-4 py-3 text-sm font-medium text-[#b81f57] dark:text-red-400"
+                  className="rounded-2xl border border-primary/20 dark:border-red-950 bg-[#fff4f7] dark:bg-red-950/20 px-4 py-3 text-sm font-medium text-[#b81f57] dark:text-red-400"
                 >
                   {errorMessageKey ? t(errorMessageKey) : errorMessage}
                 </div>
@@ -268,7 +268,7 @@ export default function LoginPage() {
                 </div>
               ) : null}
 
-              <div className="relative rounded-2xl border border-[#dcdcdc] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-4 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none sm:px-5">
+              <div className="relative rounded-2xl border border-[#dcdcdc] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-4 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none sm:px-4">
                 {step === "credentials" ? (
                   mode === "mobile" ? (
                     <div className="flex items-center gap-3 sm:gap-4">
@@ -337,8 +337,8 @@ export default function LoginPage() {
                 )}
 
                 {showCountryMenu && step === "credentials" ? (
-                  <div className="absolute left-4 top-[calc(100%-0.25rem)] z-20 mt-3 w-[calc(100%-2rem)] max-w-80 overflow-hidden rounded-3xl border border-[#e7e7e7] dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-[0_24px_60px_rgba(16,24,40,0.18)] dark:shadow-none">
-                    <div className="border-b border-[#efefef] dark:border-neutral-800 px-4 py-3">
+                  <div className="absolute left-4 top-[calc(100%-0.25rem)] z-20 mt-3 w-[calc(100%-2rem)] max-w-80 overflow-hidden rounded-3xl border border-border bg-card shadow-[0_24px_60px_rgba(16,24,40,0.18)] dark:shadow-none">
+                    <div className="border-b border-border px-4 py-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.06em] text-[#a0a0a0] dark:text-neutral-500">
                         {t("selectCountryCode")}
                       </p>
@@ -395,7 +395,7 @@ export default function LoginPage() {
                   only — the code is read when the OTP is requested, so an input
                   on the OTP step would silently do nothing. */}
               {step === "credentials" ? (
-                <div className="rounded-2xl border border-[#dcdcdc] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-4 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none sm:px-5">
+                <div className="rounded-2xl border border-[#dcdcdc] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-4 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none sm:px-4">
                   <div className="flex items-center gap-3 px-1">
                     <Gift size={18} className="text-muted-foreground dark:text-neutral-500" />
                     <input
@@ -430,7 +430,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={backToCredentials}
-                    className="focus-ring mt-1 inline-flex h-14 items-center justify-center gap-2 rounded-4xl border border-[#e1e1e1] dark:border-neutral-800 bg-white dark:bg-neutral-900 text-base font-semibold text-foreground dark:text-neutral-300 transition-colors hover:bg-[#fafafa] dark:hover:bg-neutral-800"
+                    className="focus-ring mt-1 inline-flex h-14 items-center justify-center gap-2 rounded-4xl border border-[#e1e1e1] dark:border-neutral-800 bg-card text-base font-semibold text-foreground dark:text-neutral-300 transition-colors hover:bg-[#fafafa] dark:hover:bg-neutral-800"
                   >
                     <ArrowLeft size={18} />
                     {t("changeDetails")}
@@ -502,7 +502,7 @@ export default function LoginPage() {
                     </span>
                     <span className="h-px flex-1 bg-[#e3e3e3] dark:bg-neutral-800" />
                   </div>
-                  <div className="mt-5 space-y-3">
+                  <div className="mt-4 space-y-3">
                     {/* Google draws its own button — see GoogleSignInButton for
                         why a custom one cannot obtain an ID token. */}
                     <GoogleSignInButton
@@ -534,7 +534,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowLanguageModal(true)}
-                  className="focus-ring inline-flex items-center gap-2 rounded-full bg-[#f5f5f5] dark:bg-neutral-800 px-5 py-3 text-base font-medium text-muted-foreground dark:text-neutral-350 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none"
+                  className="focus-ring inline-flex items-center gap-2 rounded-full bg-[#f5f5f5] dark:bg-neutral-800 px-4 py-3 text-base font-medium text-muted-foreground dark:text-neutral-350 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none"
                 >
                   <Globe size={18} />
                   {lang === "pt" ? "Português" : "English"}
@@ -561,7 +561,7 @@ export default function LoginPage() {
 
       {showLanguageModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4 backdrop-blur-[2px]">
-          <div className="w-full max-w-140 rounded-[28px] bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] dark:shadow-none sm:p-8">
+          <div className="w-full max-w-140 rounded-[28px] bg-card border border-transparent dark:border-neutral-800 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] dark:shadow-none sm:p-8">
             <div className="flex items-center justify-between gap-4">
               <h3 className="text-2xl font-extrabold tracking-[-0.03em] text-[#252525] dark:text-neutral-50">
                 {t("selectLanguage")}
@@ -584,10 +584,10 @@ export default function LoginPage() {
                   setShowLanguageModal(false);
                 }}
                 className={[
-                  "focus-ring flex w-full items-center justify-between rounded-3xl border px-5 py-5 text-left transition-all",
+                  "focus-ring flex w-full items-center justify-between rounded-3xl border px-4 py-4 text-left transition-all",
                   lang === "en"
                     ? "border-primary dark:border-primary bg-[#fff4f8] dark:bg-primary/10"
-                    : "border-[#f0f0f0] dark:border-neutral-800 bg-[#fafafa] dark:bg-neutral-950",
+                    : "border-border bg-[#fafafa] dark:bg-neutral-950",
                 ].join(" ")}
               >
                 <div className="flex items-center gap-4">
@@ -607,10 +607,10 @@ export default function LoginPage() {
                   setShowLanguageModal(false);
                 }}
                 className={[
-                  "focus-ring flex w-full items-center justify-between rounded-3xl border px-5 py-5 text-left transition-all",
+                  "focus-ring flex w-full items-center justify-between rounded-3xl border px-4 py-4 text-left transition-all",
                   lang === "pt"
                     ? "border-primary dark:border-primary bg-[#fff4f8] dark:bg-primary/10"
-                    : "border-[#f0f0f0] dark:border-neutral-800 bg-[#fafafa] dark:bg-neutral-950",
+                    : "border-border bg-[#fafafa] dark:bg-neutral-950",
                 ].join(" ")}
               >
                 <div className="flex items-center gap-4">

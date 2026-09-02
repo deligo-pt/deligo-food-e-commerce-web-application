@@ -93,7 +93,7 @@ export default function CartProductRow({
 
   return (
     <div
-      className="flex flex-col gap-4 rounded-2xl border border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/50 p-4 transition-all sm:flex-row"
+      className="flex flex-col gap-4 rounded-2xl border border-border bg-gray-50 dark:bg-neutral-900/50 p-4 transition-all sm:flex-row"
     >
       {/* Product image */}
       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-200 dark:bg-neutral-800">

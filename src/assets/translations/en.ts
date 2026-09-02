@@ -1837,7 +1837,7 @@ const en = {
   invoiceDiscount: "Discount",
   invoiceSubtotal: "Subtotal (incl. VAT)",
   invoiceOfferDiscount: "Offer discount",
-  invoiceServiceFee: "Service Fee",
+  invoiceServiceFee: "Service Fee (incl. VAT)",
   invoiceDeliveryFee: "Delivery fee (incl. VAT)",
   invoicePay: "Pay",
   invoiceAddress: "Address",

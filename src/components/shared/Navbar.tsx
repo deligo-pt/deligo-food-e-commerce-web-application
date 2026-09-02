@@ -78,6 +78,34 @@ type NavProfile = {
   deliveryAddresses?: NavAddress[];
 };
 
+/**
+ * The count on the bell and the cart.
+ *
+ * Reported from a screenshot: on the pink navbar the badge was a white blob
+ * with a digit in it and the bell almost invisible behind. Three things, all
+ * in one string that was written twice:
+ *
+ * - `ring-2 ring-white` on a `bg-white` badge. The ring exists to separate the
+ *   badge from the white icon under it, and it was the same colour as the
+ *   badge — so it separated nothing and made a 16px disc into a 20px one.
+ *   It is `ring-primary` now: the navbar's own ground, which is what a gap
+ *   between two white shapes has to be made of.
+ * - `right-0 top-0` anchors the disc *inside* the icon's 22px box, so a 20px
+ *   disc covered it. `-right-1 -top-1` puts it at the corner, 4px out, which
+ *   is on the §1.2 scale.
+ * - no `leading-none`, so a 12px digit inherited a 16px line-height and sat
+ *   low in a 16px circle.
+ *
+ * `w-4` is `min-w-4 px-1` too: at 12px bold, "9+" is wider than a 16px circle
+ * and the disc has no `overflow-hidden` to hide it. One digit still renders a
+ * circle; two characters grow it into a pill.
+ *
+ * Declared once because it was two identical strings in one file — the drift
+ * Phase 5 spent three phases chasing, in miniature.
+ */
+const COUNT_BADGE =
+  "absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-xs font-bold leading-none text-primary ring-2 ring-primary";
+
 export default function Navbar() {
   const { t } = useTranslation();
   const pathname = usePathname();
@@ -581,7 +609,7 @@ export default function Navbar() {
                 disabled={updatingAddressId === addr._id}
                 title={formatAddressFull(addr)}
                 className={`focus-ring flex w-full items-start gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-neutral-700/50 disabled:opacity-60 ${
-                  active ? "bg-pink-50 dark:bg-pink-950/20" : ""
+                  active ? "bg-primary/5 dark:bg-pink-950/20" : ""
                 }`}
               >
                 <MapPin
@@ -731,7 +759,7 @@ export default function Navbar() {
               value={localSearchTerm}
               onChange={onSearchChange}
               onKeyDown={onKeyDown}
-              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-11 text-base text-foreground dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-primary/50 transition-colors"
+              className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-12 text-base text-foreground dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-primary/50 transition-colors"
             />
             {localSearchTerm && (
               <ClearFilterButton onClear={clearSearch} />
@@ -753,7 +781,7 @@ export default function Navbar() {
               <span className="relative block">
                 <Bell size={22} />
                 {unreadCount > 0 && (
-                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-xs font-bold text-primary ring-2 ring-white">
+                  <span className={COUNT_BADGE}>
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -768,7 +796,7 @@ export default function Navbar() {
               <span className="relative block">
                 <ShoppingCart size={22} />
                 {vendorCount > 0 && (
-                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-white text-xs font-bold text-primary ring-2 ring-white">
+                  <span className={COUNT_BADGE}>
                     {vendorCount > 9 ? "9+" : vendorCount}
                   </span>
                 )}
@@ -859,7 +887,7 @@ export default function Navbar() {
             value={localSearchTerm}
             onChange={onSearchChange}
             onKeyDown={onKeyDown}
-            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-11 text-base text-foreground dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-primary/50 transition-colors"
+            className="w-full rounded-full border-0 bg-[#ffffff] dark:bg-neutral-800 py-2.5 pl-12 pr-12 text-base text-foreground dark:text-white outline-none ring-0 placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-primary/50 transition-colors"
           />
           {localSearchTerm && (
             <ClearFilterButton onClear={clearSearch} />

@@ -264,7 +264,7 @@ export default function CurrentLocationPage() {
   }
 
   return (
-    <section className="bg-[#f8f9fa] py-8">
+    <section className="bg-[#f8f9fa] py-8 dark:bg-neutral-950">
       <Toaster position="top-center" richColors />
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {/* Page Title */}
@@ -329,7 +329,7 @@ export default function CurrentLocationPage() {
                   onChange={handleSearchChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder") || "Search area..."}
-                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-10 outline-none focus:border-primary"
+                  className="w-full rounded-full border border-[#e3bdc3] py-4 pl-12 pr-8 outline-none focus:border-primary"
                   autoComplete="off"
                 />
                 {searchValue && <ClearFilterButton onClear={clearSearch} />}
@@ -392,7 +392,7 @@ export default function CurrentLocationPage() {
         </div>
 
         {/* Divider + Add New Address */}
-        <div className="mt-10">
+        <div className="mt-8">
           <hr className="border-t border-[#e3bdc3]" />
           <div className="mt-6 flex items-center justify-center">
             <Link

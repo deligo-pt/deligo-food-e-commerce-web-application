@@ -18,7 +18,7 @@ export default function TermsCategoryContent({ slug }: { slug: string }) {
         {/* Back to the categories index */}
         <Link
           href="/terms"
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-neutral-400 hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-neutral-400 hover:text-primary dark:hover:text-pink-400 transition-colors"
         >
           <ArrowLeft size={16} />
           {t("termsBackToCategories")}
@@ -33,19 +33,19 @@ export default function TermsCategoryContent({ slug }: { slug: string }) {
         </div>
 
         {/* Category-specific body */}
-        <div className="mt-8 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-neutral-800 p-6 md:p-10">
+        <div className="mt-8 bg-card rounded-2xl shadow-sm dark:shadow-none border border-border p-6 md:p-8">
           <p className="text-base leading-relaxed text-gray-600 dark:text-neutral-300">
             {t(category.bodyKey)}
           </p>
 
           {/* These terms supplement the general customer terms */}
-          <div className="mt-8 rounded-xl border border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-950 p-5">
+          <div className="mt-8 rounded-xl border border-border bg-gray-50 dark:bg-neutral-950 p-4">
             <p className="text-gray-600 dark:text-neutral-300 leading-relaxed">
               {t("termsCategorySupplementNote")}
             </p>
             <Link
               href="/terms"
-              className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-pink-600 dark:text-pink-400 hover:underline"
+              className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-primary dark:text-pink-400 hover:underline"
             >
               {t("termsViewGeneralTerms")}
             </Link>

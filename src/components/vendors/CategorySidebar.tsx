@@ -62,11 +62,11 @@ const CategorySidebar = memo(function CategorySidebar({
       style={{ top: headerHeight + 24 }}
       className="sticky hidden h-fit w-60 shrink-0 lg:block xl:w-64"
     >
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="rounded-2xl border border-border bg-card p-4">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
           {t("productCategories")}
         </h2>
-        <div className="mt-3 border-t border-gray-200 pt-3 dark:border-neutral-800">
+        <div className="mt-3 border-t border-border pt-3">
           <ul className="space-y-1">
             {groups.map((group) => {
               const isActive = group.id === activeId;
@@ -81,7 +81,7 @@ const CategorySidebar = memo(function CategorySidebar({
                     // height that would clip it. Bespoke shape, shared ring.
                     className={`focus-ring flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${
                       isActive
-                        ? "bg-pink-50 font-semibold text-pink-600 dark:bg-pink-950/30 dark:text-pink-400"
+                        ? "bg-primary/5 font-semibold text-primary dark:bg-pink-950/30 dark:text-pink-400"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white"
                     }`}
                   >
@@ -98,7 +98,7 @@ const CategorySidebar = memo(function CategorySidebar({
                     <span
                       className={`shrink-0 text-xs tabular-nums ${
                         isActive
-                          ? "text-pink-600/70 dark:text-pink-400/70"
+                          ? "text-primary/70 dark:text-pink-400/70"
                           : "text-gray-400 dark:text-neutral-500"
                       }`}
                     >

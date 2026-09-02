@@ -1830,7 +1830,7 @@ const pt = {
   invoiceDiscount: "Desconto",
   invoiceSubtotal: "Subtotal (IVA incl.)",
   invoiceOfferDiscount: "Desconto promocional",
-  invoiceServiceFee: "Taxa de Serviço",
+  invoiceServiceFee: "Taxa de Serviço (IVA incl.)",
   invoiceDeliveryFee: "Taxa de entrega (IVA incl.)",
   invoicePay: "A Pagar",
   invoiceAddress: "Morada",

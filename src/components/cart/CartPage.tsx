@@ -140,9 +140,9 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl px-6 py-10">
+      <div className="mx-auto max-w-7xl px-6 py-8">
         {/* Header skeleton */}
-        <div className="mb-10">
+        <div className="mb-8">
           <div className="mb-3 h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
           <div className="h-10 w-72 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
           <div className="mt-3 h-4 w-40 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
@@ -153,7 +153,7 @@ export default function CartPage() {
           {Array.from({ length: 2 }).map((_, idx) => (
             <div
               key={idx}
-              className="rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-sm"
+              className="rounded-3xl border border-border bg-card p-6 shadow-sm"
             >
               <div className="mb-6 flex items-start justify-between">
                 <div className="flex gap-4">
@@ -184,7 +184,7 @@ export default function CartPage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex animate-pulse items-center justify-between rounded-3xl bg-gray-200 dark:bg-neutral-800 px-6 py-5">
+              <div className="mt-4 flex animate-pulse items-center justify-between rounded-3xl bg-gray-200 dark:bg-neutral-800 px-6 py-4">
                 <div className="h-7 w-40 rounded bg-gray-300 dark:bg-neutral-700" />
                 <div className="h-10 w-24 rounded-xl bg-gray-300 dark:bg-neutral-700" />
               </div>
@@ -197,7 +197,7 @@ export default function CartPage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-7xl px-6 py-10">
+      <div className="mx-auto max-w-7xl px-6 py-8">
         <div className="rounded-2xl border border-red-200 dark:border-red-950 bg-red-50 dark:bg-red-950/20 p-6 text-red-500 dark:text-red-400">
           {error}
         </div>
@@ -206,8 +206,8 @@ export default function CartPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10 transition-colors duration-200">
-      <div className="mb-10">
+    <div className="mx-auto max-w-7xl px-6 py-8 transition-colors duration-200">
+      <div className="mb-8">
         <p className="mb-3 text-sm text-gray-500 dark:text-neutral-400">{t("cartBreadcrumb")}</p>
         <h1 className="text-2xl lg:text-display font-extrabold text-gray-900 dark:text-neutral-50">
           {t("myShoppingCart")}
