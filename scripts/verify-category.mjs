@@ -775,21 +775,84 @@ check(
   !/\*,\s*::before,\s*::after\s*\{[^}]*animation-duration/.test(css),
 );
 check(
-  "the grouped catalogue fades in over the skeleton",
-  /className="motion-fade"/.test(page),
+  "🔴 the grouped catalogue animates the frame where the skeleton becomes content",
+  // Was `/className="motion-fade"/` on the page — a spelling, not a claim, and
+  // it broke the moment browser round 6 moved the arrival off the wrapper and
+  // onto the cards. What it is *for* is that the catalogue does not hard-swap
+  // in; where the animation lives is the design's business, not this guard's.
+  //
+  // So: something animates the arrival, and it is not both at once. A wrapper
+  // that fades while its children stagger inside it pays for one arrival twice.
+  (() => {
+    const wrapperFades = /className="motion-fade"/.test(page);
+    const cardsStagger = /\breveal-group\b/.test(group);
+    return (wrapperFades || cardsStagger) && !(wrapperFades && cardsStagger);
+  })(),
+  "the catalogue must fade as a block or stagger as cards — one of the two",
 );
+/**
+ * Rewritten in Plan.md Phase 11. Both of these pinned the literal values —
+ * `mb-10 last:mb-0` and `gap-5` — which is precisely what the spacing sweep
+ * moved, in *both* files, together. The pair never drifted; the guard just
+ * knew one number.
+ *
+ * So they assert the fact they are named for instead: the skeleton's group
+ * wrapper and grid are *the same string* as the real one, read out of the two
+ * sources and compared to each other. That survives the next value change,
+ * and it is the only thing a drift check should ever have been asserting.
+ */
+const groupWrapper = /className="(mb-\d+ last:mb-0)"/;
+/**
+ * 🔴 The grid's **geometry**, wherever it sits in the class list.
+ *
+ * This used to anchor to the start of the attribute, which made it a check on
+ * the whole string rather than on the layout — and browser round 6 broke it by
+ * adding `reveal-group`, a class with no geometry at all, to the real grid. The
+ * skeleton and the content had not drifted by a single pixel; the guard just
+ * could not tell a layout change from a class being prepended.
+ *
+ * The claim is that the skeleton is shaped like the content. So the geometry is
+ * captured out of both and compared to each other, and whatever else either
+ * carries is checked separately for not being layout — see below.
+ */
+const groupGrid = /className="(?:[^"]*\s)?(mt-\d+ grid gap-\d+ md:grid-cols-2 xl:grid-cols-3)"/;
+/** Anything on the grid that is not the geometry above. */
+const gridExtras = (src) => {
+  const whole = /className="([^"]*\bgrid\b[^"]*xl:grid-cols-3)"/.exec(src)?.[1];
+  const geometry = src.match(groupGrid)?.[1];
+  if (!whole || !geometry) return null;
+  return whole.replace(geometry, "").trim();
+};
 check(
   "🔴 the skeleton is shaped like the content — headings and grid, same classes",
-  /mb-10 last:mb-0/.test(page) &&
+  groupWrapper.test(page) &&
     /flex items-baseline justify-between gap-4/.test(page) &&
-    /mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3/.test(page),
+    groupGrid.test(page),
 );
 check(
-  "the skeleton grid classes match the real one exactly",
+  "the skeleton grid's geometry matches the real one exactly",
   (() => {
-    const grid = /mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3/;
-    return grid.test(page) && grid.test(group);
+    const a = page.match(groupGrid);
+    const b = group.match(groupGrid);
+    const wa = page.match(groupWrapper);
+    const wb = group.match(groupWrapper);
+    return !!a && !!b && !!wa && !!wb && a[1] === b[1] && wa[1] === wb[1];
   })(),
+  "the skeleton and CategoryGroup must state the same wrapper and grid geometry",
+);
+check(
+  "…and whatever else either grid carries is not layout",
+  // The half the looser regex above gives up, bought back explicitly. A second
+  // spacing or sizing utility hiding in front of the geometry would shift one
+  // grid and not the other, and the comparison would still pass.
+  (() => {
+    const LAYOUT = /(?:^|\s)(?:[pm][trblxy]?-\d|gap-\d|grid-cols-|w-\d|h-\d|space-[xy]-\d)/;
+    return [page, group].every((src) => {
+      const extras = gridExtras(src);
+      return extras !== null && !LAYOUT.test(extras);
+    });
+  })(),
+  `page extras: "${gridExtras(page)}" | group extras: "${gridExtras(group)}"`,
 );
 check(
   "the skeleton is hidden from assistive tech",

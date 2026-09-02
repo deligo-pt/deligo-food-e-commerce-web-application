@@ -87,7 +87,7 @@ function Dropdown({
         className={`gap-2 rounded-2xl font-semibold shadow-sm ${
           active
             ? "border-primary bg-[#fff1f4] text-primary dark:border-pink-600 dark:bg-neutral-800 dark:text-pink-400"
-            : "border-border bg-white text-foreground hover:border-[#ffd9de] dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:hover:border-neutral-700"
+            : "border-border bg-card text-foreground hover:border-primary/20 dark:text-neutral-50 dark:hover:border-neutral-700"
         }`}
       >
         {label}
@@ -104,7 +104,7 @@ function Dropdown({
             onClick={close}
             aria-hidden="true"
           />
-          <div className="absolute left-0 z-20 mt-2 w-60 overflow-hidden rounded-2xl border border-border bg-white py-1 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="absolute left-0 z-20 mt-2 w-60 overflow-hidden rounded-2xl border border-border bg-card py-1 shadow-xl">
             {children(close)}
           </div>
         </>
@@ -132,7 +132,7 @@ function Toggle({
       className={`gap-2 rounded-2xl font-semibold shadow-sm ${
         checked
           ? "border-primary bg-[#fff1f4] text-primary dark:border-pink-600 dark:bg-neutral-800 dark:text-pink-400"
-          : "border-border bg-white text-foreground hover:border-[#ffd9de] dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50 dark:hover:border-neutral-700"
+          : "border-border bg-card text-foreground hover:border-primary/20 dark:text-neutral-50 dark:hover:border-neutral-700"
       }`}
     >
       {checked && <Check size={16} />}
@@ -298,7 +298,7 @@ export default function SearchFilters({
                 onKeyDown={(e) => e.key === "Enter" && commitPrice()}
                 placeholder={t("priceMin")}
                 aria-label={t("priceMin")}
-                className="w-full rounded-xl border border-border px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50"
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm dark:bg-neutral-950 dark:text-neutral-50"
               />
               <span className="text-muted-foreground dark:text-neutral-400">–</span>
               <input
@@ -312,7 +312,7 @@ export default function SearchFilters({
                 onKeyDown={(e) => e.key === "Enter" && commitPrice()}
                 placeholder={t("priceMax")}
                 aria-label={t("priceMax")}
-                className="w-full rounded-xl border border-border px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50"
+                className="w-full rounded-xl border border-border px-3 py-2 text-sm dark:bg-neutral-950 dark:text-neutral-50"
               />
             </div>
           )}

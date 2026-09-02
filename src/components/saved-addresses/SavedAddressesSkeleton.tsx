@@ -11,7 +11,7 @@ export default function SavedAddressesSkeleton() {
         {[1, 2, 3].map((item) => (
           <div
             key={item}
-            className="flex items-start gap-3 rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 sm:gap-4 sm:p-5"
+            className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4 sm:gap-4 sm:p-4"
           >
             <div className="h-10 w-10 shrink-0 rounded-full bg-gray-200 dark:bg-neutral-800" />
 
@@ -33,7 +33,7 @@ export default function SavedAddressesSkeleton() {
         ))}
 
         {/* Add Address Button */}
-        <div className="h-14 rounded-2xl border-2 border-dashed border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900" />
+        <div className="h-14 rounded-2xl border-2 border-dashed border-border bg-card" />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
 import { isOptimizableImageHost } from "@/lib/imageHosts";
@@ -8,6 +8,34 @@ import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useTranslation } from "@/hooks/useTranslation";
 import { usePrefersReducedMotion } from "@/hooks/useMotion";
+
+/**
+ * The banner's placeholder art, without a wrapper.
+ *
+ * It is rendered twice: in flow while the sponsorship request is out, and
+ * again as `.motion-image-floor` over the mounted carousel until the visible
+ * slide has decoded. The two have to be the same pixels — the moment the
+ * request answers, the first is unmounted and the second appears in its place,
+ * and any difference between them would read as a flicker at exactly the point
+ * where nothing has actually changed yet.
+ *
+ * The caller owns the box and the pulse. `animate-pulse` animates opacity, and
+ * so does the floor's fade-out; on one element the animation wins and the fade
+ * never happens, so they are kept one layer apart.
+ */
+function BannerSkeletonArt() {
+  return (
+    <>
+      <div className="absolute inset-0 bg-linear-to-r from-gray-100 dark:from-neutral-800 via-gray-200 dark:via-neutral-700 to-gray-100 dark:to-neutral-800" />
+      <div className="absolute left-6 top-6 h-9 w-40 rounded-full bg-white/80 dark:bg-neutral-900/80 lg:left-16 lg:top-8" />
+      <div className="absolute bottom-8 left-6 right-6 space-y-4 lg:left-16 lg:max-w-xl">
+        <div className="h-8 w-3/4 rounded-full bg-white/80 dark:bg-neutral-900/80 lg:h-11" />
+        <div className="h-4 w-full rounded-full bg-white/70 dark:bg-neutral-900/70" />
+        <div className="h-4 w-2/3 rounded-full bg-white/70 dark:bg-neutral-900/70" />
+      </div>
+    </>
+  );
+}
 
 type Sponsorship = {
   _id: string;
@@ -34,6 +62,24 @@ export default function HeroSection() {
   // or tabbed onto one.
   const [paused, setPaused] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
+  /**
+   * Which banners have actually decoded.
+   *
+   * Keyed by id rather than by index because `slides` is refetched and
+   * replaced wholesale when the language changes; an index would carry
+   * "already painted" over to whatever ended up in that position.
+   *
+   * `onLoad` is enough on its own here — `next/image` re-fires it from a ref
+   * when `img.complete` is already true, so an image served from cache is not
+   * left waiting for an event that fired before React attached the handler.
+   */
+  const [loadedIds, setLoadedIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+
+  const markLoaded = useCallback((id: string) => {
+    setLoadedIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -115,35 +161,54 @@ export default function HeroSection() {
   }, [loading, error, slides.length, t]);
 
   const hasSlides = slides.length > 0;
+  /* The floor covers whichever slide is showing, not only the first. Slides
+     other than the priority one are lazy and sit outside the viewport until
+     they are scrolled to, so arriving at one that has not loaded should show
+     the placeholder again rather than an empty frame. */
+  const currentLoaded = loadedIds.has(slides[selectedIndex]?._id ?? "");
 
   return (
-    <section className="group relative mt-6 sm:mt-8">
+    /* Browser round 5. The banner sat further from the next heading than any
+       other band did — ~86 against everyone else's 64 — and the difference was
+       this section's own dots strip: `mt-3` + a 6px dot + `pb-1` ≈ 22, stacked
+       on top of a rhythm that had already been paid. The same shape the cuisine
+       strip fixed for its shadow clearance, and the same fix: the band takes
+       its own furniture off the gap instead of adding to it.
+
+       The deduction is 24 at both widths — one step over the 22 the strip
+       actually measures, because a 6px dot cannot be made to sum to a scale
+       value with scale margins. §18 asserts the deduction is equal at both
+       breakpoints and within one optical step of the strip, not that it is 24. */
+    <section className="group relative mt-6 mb-2 sm:mt-8 sm:mb-6">
       {loading ? (
         <div>
           <div className="relative overflow-hidden rounded-4xl bg-gray-100 dark:bg-neutral-800">
             <div className="relative aspect-video animate-pulse lg:aspect-21/8">
-              <div className="absolute inset-0 bg-linear-to-r from-gray-100 dark:from-neutral-800 via-gray-200 dark:via-neutral-700 to-gray-100 dark:to-neutral-800" />
-              <div className="absolute left-6 top-6 h-9 w-40 rounded-full bg-white/80 dark:bg-neutral-900/80 lg:left-16 lg:top-8" />
-              <div className="absolute bottom-8 left-6 right-6 space-y-4 lg:left-16 lg:max-w-xl">
-                <div className="h-8 w-3/4 rounded-full bg-white/80 dark:bg-neutral-900/80 lg:h-11" />
-                <div className="h-4 w-full rounded-full bg-white/70 dark:bg-neutral-900/70" />
-                <div className="h-4 w-2/3 rounded-full bg-white/70 dark:bg-neutral-900/70" />
-              </div>
+              <BannerSkeletonArt />
             </div>
           </div>
-          <div className="mt-4 flex justify-center gap-3 pb-1">
+          <div className="mt-3 flex justify-center gap-3 pb-1">
             <span className="h-1.5 w-12 animate-pulse rounded-full bg-primary/20 dark:bg-pink-600/20" />
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/20 dark:bg-pink-600/20" />
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/20 dark:bg-pink-600/20" />
           </div>
         </div>
       ) : hasSlides ? (
-        /* `motion-fade` is Phase 6 #1: the banners replaced their skeleton by
-           hard-swapping in. The pause handlers cover the whole block, dots
-           included — onFocus/onBlur are React's focusin/focusout, so they
-           catch a dot being tabbed to without a listener on each one. */
+        /* Phase 6 #1 put `motion-fade` on this block, because the banners
+           replaced their skeleton by hard-swapping in. Browser round 3 moved
+           that job down onto the image itself: the skeleton is no longer
+           unmounted when the request answers, it stays as `.motion-image-floor`
+           until the artwork has decoded, so there is nothing left up here to
+           crossfade — the placeholder is still on screen, unchanged.
+
+           The dots keep the fade. They are the one part of this block that
+           really does appear the moment the request answers, and three pulsing
+           placeholders becoming five real controls is a swap worth softening.
+
+           The pause handlers cover the whole block, dots included — onFocus and
+           onBlur are React's focusin/focusout, so they catch a dot being tabbed
+           to without a listener on each one. */
         <div
-          className="motion-fade"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
           onFocus={() => setPaused(true)}
@@ -153,7 +218,7 @@ export default function HeroSection() {
             <div className="absolute inset-0 z-10 pointer-events-none" />
             <div className="overflow-hidden touch-pan-y" ref={emblaRef}>
               <div className="flex">
-                {slides.map((slide) => (
+                {slides.map((slide, index) => (
                   <div
                     key={slide._id}
                     className="relative aspect-video min-w-0 flex-[0_0_100%] lg:aspect-21/8"
@@ -162,16 +227,41 @@ export default function HeroSection() {
                       src={slide.bannerImage}
                       alt={slide.sponsorName}
                       fill
-                      priority={selectedIndex === 0}
+                      // Was `selectedIndex === 0`, which handed `priority` from
+                      // one slide to the next as the carousel advanced.
+                      // `priority` is a fetch hint read when the element mounts;
+                      // moving it afterwards preloads nothing and un-preloads
+                      // the LCP image. The first slide is the one that matters.
+                      priority={index === 0}
                       sizes="100vw"
                       // Every live banner is on Deligo's own storage, which the
                       // optimizer cannot fetch — see `OPTIMIZER_BYPASS_HOSTS`.
                       // Without this the hero renders blank on every page load.
                       unoptimized={!isOptimizableImageHost(slide.bannerImage)}
-                      className="object-cover object-center"
+                      data-loaded={loadedIds.has(slide._id)}
+                      onLoad={() => markLoaded(slide._id)}
+                      // A banner that 404s never fires `onLoad`, and the floor
+                      // above it would then shimmer forever — which reads as a
+                      // hang rather than as a failure. Clearing it shows the
+                      // empty frame the broken image actually is.
+                      onError={() => markLoaded(slide._id)}
+                      className="motion-image-in object-cover object-center"
                     />
                   </div>
                 ))}
+              </div>
+            </div>
+            {/* The floor sits above the sponsor pill rather than under it. The
+                placeholder draws a pill-shaped bar in the same corner, and a
+                real label over a fake one is the one thing that would give the
+                handover away. */}
+            <div
+              aria-hidden
+              data-loaded={currentLoaded}
+              className="motion-image-floor pointer-events-none absolute inset-0 z-30"
+            >
+              <div className="absolute inset-0 animate-pulse bg-gray-100 dark:bg-neutral-800">
+                <BannerSkeletonArt />
               </div>
             </div>
             <div className="pointer-events-none absolute inset-0 z-20 flex items-start px-6 pt-6 text-white lg:px-16 lg:pt-8">
@@ -183,7 +273,7 @@ export default function HeroSection() {
               </span>
             </div>
           </div>
-          <div className="mt-4 flex justify-center gap-3 pb-1">
+          <div className="motion-fade mt-3 flex justify-center gap-3 pb-1">
             {slides.map((slide, index) => (
               <button
                 key={slide._id}

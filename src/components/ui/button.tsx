@@ -71,7 +71,11 @@ const buttonVariants = cva(
       size: {
         sm: "h-8 gap-2 px-3",
         default: "h-11 gap-2 px-4 sm:h-10",
-        lg: "h-12 gap-2 px-5",
+        // Phase 11 rounds 20 to the nearest step and breaks ties downward — but
+        // 5 → 4 would have given `lg` the same horizontal padding as `default`,
+        // collapsing two rungs of a deliberate ladder into one. Where the tie
+        // erases a distinction, it breaks upward: 12 / 16 / 24.
+        lg: "h-12 gap-2 px-6",
         "icon-sm": "size-8",
         icon: "size-11 sm:size-10",
         "icon-lg": "size-12",

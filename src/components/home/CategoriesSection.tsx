@@ -172,7 +172,7 @@
 //         </h2>
 //         <Link
 //           href="/categories"
-//           className="flex items-center gap-2 text-xl font-bold leading-7 text-[#f9186b] hover:underline"
+//           className="flex items-center gap-2 text-xl font-bold leading-7 text-primary hover:underline"
 //         >
 //           {t("viewAll")} <ChevronRight size={20} />
 //         </Link>
@@ -190,8 +190,8 @@
 //               <div
 //                 className={`h-32 w-32 rounded-full p-1 shadow-md transition-all ${
 //                   isActive
-//                     ? "bg-[#f9186b] ring-4 ring-[#ffd9de]"
-//                     : "bg-[#e7e8e9] group-hover:bg-[#f9186b]"
+//                     ? "bg-primary ring-4 ring-[#ffd9de]"
+//                     : "bg-[#e7e8e9] group-hover:bg-primary"
 //                 }`}
 //               >
 //                 <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#ffffff]">
@@ -211,8 +211,8 @@
 //               <span
 //                 className={`text-center text-xs font-bold leading-4 tracking-[0.06em] uppercase transition-colors ${
 //                   isActive
-//                     ? "text-[#f9186b]"
-//                     : "text-[#191c1d] group-hover:text-[#f9186b]"
+//                     ? "text-primary"
+//                     : "text-[#191c1d] group-hover:text-primary"
 //                 }`}
 //               >
 //                 {category.name}
@@ -232,6 +232,7 @@ import Image from "next/image";
 import { isOptimizableImageHost } from "@/lib/imageHosts";
 import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useRevealOnScroll } from "@/hooks/useMotion";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
@@ -417,6 +418,28 @@ export default function CategoriesSection() {
     return () => window.removeEventListener("resize", updateScrollState);
   }, [cuisines, updateScrollState]);
 
+  const [revealRef, revealed] = useRevealOnScroll<HTMLDivElement>();
+
+  /**
+   * The track carries two refs. The scroll affordances measure it, and the
+   * reveal observes it — and it has to be this element rather than a wrapper,
+   * because the stagger keys off `.reveal-group > *` and the tiles are the
+   * direct children of exactly this one.
+   *
+   * `useRevealOnScroll` returns a callback ref rather than a ref object (the
+   * track does not exist on the render that runs the hook — it is behind the
+   * loading branch), so the two are merged here. `revealRef` is a `useState`
+   * setter and never changes identity, so this callback is stable and React
+   * does not detach and re-attach the ref on every render.
+   */
+  const trackRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      scrollRef.current = node;
+      revealRef(node);
+    },
+    [revealRef],
+  );
+
   const scrollByCards = (direction: "left" | "right") => {
     const el = scrollRef.current;
     if (!el) return;
@@ -445,16 +468,33 @@ export default function CategoriesSection() {
 
   if (loading && cuisines.length === 0) {
     return (
-      <section>
+    /* The gap below this section measured 88 on a phone and 104 on a desktop
+       against §1.2's 48/64 — very nearly double, and reported from a browser
+       rather than found by a guard.
+
+       Two causes. The scroll track carries `pb-4`, which is real: each circle
+       carries `shadow-md`, which reaches about 10 below it, and
+       `overflow-x-auto` would clip that without it. (Browser round 2 removed
+       the tile and its hover lift; the clearance is the shadow's now, and 16
+       still covers it.) The wrapper around it carried `pb-6` on top of that —
+       24px inside an `overflow-hidden` box whose child already contained its
+       own shadow, so it clipped nothing and showed nothing. Gone.
+
+       The 16 that remains is invisible but not free, so the section's bottom
+       margin absorbs it rather than stacking on it: `mb-8 sm:mb-12` against
+       the `space-y-8 sm:space-y-12` this would otherwise inherit. 16 + 16 =
+       48 and 16 + 48 = 64, which is what §1.2 asked for in the first place.
+       `space-y` compiles inside `:where()`, so a plain `mb-*` overrides it. */
+      <section className="mb-4 sm:mb-8">
         <SectionHeading loading skeletonWidth="w-72" />
-        <div className="overflow-hidden pb-6">
-          <div className="-mx-4 flex gap-4 overflow-hidden px-4 pb-4 sm:gap-6 lg:-mx-16 lg:px-16">
+        <div className="overflow-hidden">
+          <div className="-mx-4 flex gap-4 overflow-hidden px-4 pb-4 sm:gap-8 lg:-mx-16 lg:px-16">
             {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={index}
-                className="flex w-24 shrink-0 flex-col items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm sm:w-32 sm:p-4 dark:border-neutral-800"
+                className="flex w-24 shrink-0 flex-col items-center gap-2 sm:w-35 sm:gap-4"
               >
-                <div className="size-16 animate-pulse rounded-full bg-gray-200 sm:size-20 dark:bg-neutral-800" />
+                <div className="size-16 animate-pulse rounded-full bg-gray-200 sm:size-32 dark:bg-neutral-800" />
                 <div className="h-4 w-16 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
               </div>
             ))}
@@ -466,7 +506,7 @@ export default function CategoriesSection() {
 
   if (errorKey && cuisines.length === 0) {
     return (
-      <section>
+      <section className="mb-4 sm:mb-8">
         <SectionHeading>{t("whatsOnYourMind")}</SectionHeading>
         <div className="flex h-40 items-center justify-center">
           <div className="text-center text-red-500">{t(errorKey)}</div>
@@ -476,23 +516,26 @@ export default function CategoriesSection() {
   }
 
   return (
-    <section>
+    <section className="mb-4 sm:mb-8">
       {/* Phase 5 #2 again, in the file next door. The skeleton header said
-          `mb-5 sm:mb-10` and this one said a flat `mb-10`, so the row slid 16px
+          `mb-4 sm:mb-8` and this one said a flat `mb-8`, so the row slid 16px
           up on mobile when the cuisines landed. Phase 9 made that class of bug
           impossible here: all three branches render one component. */}
       {/* <button
           onClick={() => setIsModalOpen(true)}
           onMouseEnter={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 text-xl font-bold leading-7 text-[#f9186b] hover:underline cursor-pointer"
+          className="flex items-center gap-2 text-xl font-bold leading-7 text-primary hover:underline cursor-pointer"
         >
           {t("viewAll")} <ChevronRight size={20} />
         </button> */}
       <SectionHeading>{t("whatsOnYourMind")}</SectionHeading>
 
-      {/* Phase 6 #1 — the track fades in over its skeleton instead of
-          replacing it between two frames. */}
-      <div className="motion-fade relative">
+      {/* Phase 6 #1 put `motion-fade` here so the track faded in over its
+          skeleton rather than replacing it between two frames. Browser round 4
+          moved that job down onto the tiles: they stagger in one after another
+          instead of the row appearing at once, and fading this container while
+          its children animate inside it would animate the same arrival twice. */}
+      <div className="relative">
         {/* Desktop-only arrow buttons (touch devices swipe instead). */}
         <Button
           type="button"
@@ -521,15 +564,16 @@ export default function CategoriesSection() {
           className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-4 bg-gradient-to-l from-[#f8f9fa] to-transparent transition-opacity dark:from-neutral-950 sm:hidden ${canScrollRight ? "opacity-100" : "opacity-0"}`}
         />
 
-        <div className="overflow-hidden pb-6">
+        <div className="overflow-hidden">
         <div
-          ref={scrollRef}
+          ref={trackRef}
+          data-revealed={revealed}
           onScroll={updateScrollState}
           onMouseDown={handleMouseDown}
           onMouseLeave={handleMouseLeave}
           onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove}
-          className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pb-4 sm:gap-6 lg:-mx-16 lg:scroll-px-16 lg:px-16 select-none cursor-grab active:cursor-grabbing [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          className="reveal-group -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pb-4 sm:gap-8 lg:-mx-16 lg:scroll-px-16 lg:px-16 select-none cursor-grab active:cursor-grabbing [scrollbar-none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           {cuisines.map((cuisine) => {
             const cuisineLabel = cuisine.name?.trim() || cuisine.slug;
@@ -546,55 +590,62 @@ export default function CategoriesSection() {
                  selected state that the pink ring was showing to sighted users
                  only. Children are <span>s because a <button> holds phrasing
                  content. */
-              /* Plan.md Phase 7 #3. The circle used to float on the page
-                 background with a label under it, which made the rail read as
-                 a row of pictures rather than a row of choices — and left
-                 `aria-pressed` with nowhere to show up but a ring. It sits in
-                 a surface tile now, the same hairline-and-lift as the vendor
-                 card, and the tile's border carries the selected state.
+              /* 🔴 Browser round 2 — Phase 7 #3 reversed on sight, 1 Sep 2026.
 
-                 The width was `calc((100vw-5rem)/4)` — an arbitrary value
-                 tuned to fit exactly four circles. A tile is wider than the
-                 circle inside it, so the formula could not survive; `w-24
-                 sm:w-32` shows a little over three and lets the fourth peek,
-                 which is what says "this scrolls". */
+                 Phase 7 put the circle in a surface tile, reasoning that a
+                 bare circle made the rail read as a row of pictures rather
+                 than a row of choices, and that `aria-pressed` had nowhere to
+                 show but a ring. Both halves were wrong in the browser.
+
+                 A tile is wider than the circle inside it and has to hold a
+                 label as well, so the circle had to shrink to 80 to fit — and
+                 the whole strip is *made of* circles. Shrinking the only thing
+                 anyone looks at, to make room for a box drawn around it, spent
+                 the row's entire visual budget on chrome. The fixed `w-32` then
+                 wrapped "PORTUGUESE FOOD" onto two lines, so the tiles did not
+                 even share a height.
+
+                 So: no box, 128px circle, and the width is content-driven again
+                 — `sm:w-auto sm:min-w-35`, which holds the short labels on a
+                 common rhythm and lets a long one stay on one line. The pink
+                 fill plus a soft `ring-4` carries the selected state, which is
+                 what it did before Phase 7 and what the ring is for.
+
+                 What does *not* come back is the `<div onClick>` (see above),
+                 the hex literals — `bg-primary` and `ring-primary/20` say the
+                 same thing from §1.4 — or `calc((100vw-5rem)/4)`. The circle
+                 is the design; the div was never part of it. */
               <button
                 key={cuisine._id}
                 type="button"
                 onClick={() => handleCuisineClick(cuisineLabel)}
                 aria-pressed={isActive}
-                /* Phase 8 note: this tile deliberately does *not* take `cardVariants`.
-                 It is 96px wide holding a 64px circle; the card shell's 22px
-                 radius and `p-4 sm:p-6` would leave it a squircle with no
-                 slack. Phase 2 drew the same line for buttons — a control
-                 below the smallest size is not that component, and forcing it
-                 in is consistency that ignores scale. What it does share is
-                 the colours: `bg-card` and `border-border`, from the same
-                 tokens the shell uses. */
-                className={`focus-ring motion-press group flex w-24 shrink-0 snap-start cursor-pointer select-none flex-col items-center gap-3 rounded-2xl border bg-card p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:w-32 sm:p-4 ${isActive
-                    ? "border-primary"
-                    : "border-border dark:border-neutral-800"
-                  }`}
+                /* Phase 8 said this tile must not take `cardVariants`, because
+                 a 96px box is below the shell's smallest usable size. That
+                 still holds — and now it holds trivially, because there is no
+                 box. `rounded-2xl` stays only so `focus-ring` has a shape to
+                 draw around; nothing paints inside it. */
+                className="focus-ring motion-press group flex w-24 shrink-0 snap-start cursor-pointer select-none flex-col items-center gap-2 rounded-2xl sm:w-auto sm:min-w-35 sm:gap-4"
               >
                 <span
-                  className={`block size-16 rounded-full p-1 transition-all duration-300 sm:size-20 ${isActive
-                      ? "bg-primary"
+                  className={`block size-16 rounded-full p-1 shadow-md transition-all duration-300 sm:size-32 ${isActive
+                      ? "bg-primary ring-4 ring-primary/20"
                       : "bg-[#e7e8e9] dark:bg-neutral-800 group-hover:bg-primary"
                     }`}
                 >
-                  <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white transition-all duration-300 dark:border-neutral-900 dark:bg-neutral-900">
+                  <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-white bg-card transition-all duration-300 dark:border-neutral-900 sm:border-4">
                     {cuisine.imageUrl ? (
                       <Image
                         alt={cuisineLabel}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        height={80}
-                        width={80}
+                        height={128}
+                        width={128}
                         src={cuisine.imageUrl}
                         unoptimized={!isOptimizableImageHost(cuisine.imageUrl)}
                       />
                     ) : (
                       <Utensils
-                        size={28}
+                        size={40}
                         className={`transition-all duration-300 ${isActive
                             ? "text-primary dark:text-pink-500 scale-110"
                             : "text-muted-foreground dark:text-neutral-300 group-hover:text-primary group-hover:scale-110"
@@ -632,14 +683,14 @@ export default function CategoriesSection() {
       {isModalOpen && (
         <div
           onClick={() => setIsModalOpen(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 motion-fade"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md bg-white dark:bg-neutral-900 border dark:border-neutral-800 rounded-2xl shadow-2xl max-h-[80vh] flex flex-col overflow-hidden animate-scaleIn"
+            className="relative w-full max-w-md bg-card border rounded-2xl shadow-2xl max-h-[80vh] flex flex-col overflow-hidden motion-scale"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <h3 className="text-xl font-bold text-foreground dark:text-neutral-100">
                 {t("allCategories")}
               </h3>
@@ -667,8 +718,8 @@ export default function CategoriesSection() {
                       setIsModalOpen(false);
                     }}
                     className={`focus-ring group flex w-full items-center justify-between rounded-xl border p-4 transition-all duration-300 cursor-pointer ${isActive
-                        ? "border-primary bg-[#ffd9de]/30 dark:bg-pink-950/20 text-primary dark:text-pink-500"
-                        : "border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 hover:bg-[#ffd9de]/10 dark:hover:bg-neutral-800 hover:border-[#ffd9de] text-foreground dark:text-neutral-200"
+                        ? "border-primary bg-primary/5 dark:bg-pink-950/20 text-primary dark:text-pink-500"
+                        : "border-border bg-white dark:bg-neutral-900/50 hover:bg-primary/5 dark:hover:bg-neutral-800 hover:border-primary/20 text-foreground dark:text-neutral-200"
                       }`}
                   >
                     <div className="flex items-center gap-4">

@@ -34,7 +34,7 @@ export default function Loader({
       role="status"
       aria-live="polite"
       className={[
-        "flex flex-col items-center justify-center gap-5",
+        "flex flex-col items-center justify-center gap-4",
         fullScreen
           ? "min-h-[70vh] w-full bg-[#f8f9fa] dark:bg-neutral-950"
           : "",

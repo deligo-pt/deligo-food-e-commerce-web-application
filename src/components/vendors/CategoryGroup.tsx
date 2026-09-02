@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useRevealOnScroll } from "@/hooks/useMotion";
 import { categoryDomId, type CategoryGroup as Group } from "@/lib/categoryModel";
 
 interface CategoryGroupProps<P> {
@@ -48,6 +49,13 @@ interface CategoryGroupProps<P> {
  * including four distinct products all named "Organic Green Tea"). Composing a
  * key is no longer buying anything.
  *
+ * ## The grid is a reveal group
+ *
+ * Its cards fade in 50ms apart when the group scrolls into view. Fade only —
+ * no travel — because a card in this grid renders a price; see the note on the
+ * grid itself. A caller that renders something with no money in it can drop
+ * `data-travel="none"` and get the rise as well.
+ *
  * ## Layout
  *
  * Heading left, count right — the arrangement the mobile app uses, carried over
@@ -62,9 +70,10 @@ export default function CategoryGroup<P>({
 }: CategoryGroupProps<P>) {
   const { t } = useTranslation();
   const count = group.products.length;
+  const [gridRef, revealed] = useRevealOnScroll<HTMLDivElement>();
 
   return (
-    <div className="mb-10 last:mb-0">
+    <div className="mb-8 last:mb-0">
       <div className="flex items-baseline justify-between gap-4">
         {/*
           `t()` takes one key and does no interpolation, so the count is composed
@@ -83,7 +92,29 @@ export default function CategoryGroup<P>({
         </span>
       </div>
 
-      <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {/*
+        The cards arrive one after another, 50ms apart — and **without the
+        rise**, which is the whole reason this is allowed here at all.
+
+        `reveal-group` translates its children, and §11 bars a transform from
+        any file that renders a price: a number that moves while it is being
+        read is a number that can be misread. Every card in this grid ends in a
+        price. `data-travel="none"` swaps the animation for opacity alone, so
+        the sequencing survives and the objection does not apply — the variant
+        satisfies the rule rather than carving an exception out of it.
+
+        Per group rather than once for the whole catalogue, and keyed to the
+        observer rather than to the fetch. Phase 6's objection to a stagger here
+        was that a list the customer is already looking at appears to lag; a
+        group that staggers as it scrolls into view never does, because they
+        arrive together.
+      */}
+      <div
+        ref={gridRef}
+        data-revealed={revealed}
+        data-travel="none"
+        className="reveal-group mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+      >
         {group.products.map((product) => (
           <div key={productKey(product)}>{renderProduct(product)}</div>
         ))}

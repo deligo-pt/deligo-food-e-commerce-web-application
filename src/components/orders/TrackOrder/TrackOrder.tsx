@@ -391,7 +391,7 @@ export default function TrackOrder() {
   if (loading) {
     return (
       <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-foreground dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-24">
+        <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-16">
           <div className="animate-pulse space-y-6">
             <div className="h-100 bg-gray-200 dark:bg-neutral-800 rounded-4xl" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -408,7 +408,7 @@ export default function TrackOrder() {
   if (error || !order) {
     return (
       <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-foreground dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-24 text-center">
+        <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-16 text-center">
           <p className="text-red-500 dark:text-red-400">{error || "Order not found"}</p>
         </div>
       </main>
@@ -513,7 +513,7 @@ export default function TrackOrder() {
 
   return (
     <main className="bg-[#f8f9fa] dark:bg-neutral-950 text-foreground dark:text-neutral-100 min-h-screen font-sans overflow-x-hidden transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-24">
+      <div className="max-w-7xl mx-auto px-4 md:px-16 py-8 mb-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column */}
           <div className="lg:col-span-7 space-y-6">
@@ -576,9 +576,16 @@ export default function TrackOrder() {
               <DeliveryCodeCard code={order.deliveryOtp.code} />
             )}
 
-            {/* Rider Details Card (Dynamic Live view) */}
+            {/* Rider Details Card (Dynamic Live view).
+                Phase 12 took two animations off this block: an entrance fade on
+                the card and a spring scale on the rider photo. They were spelled
+                `animate-fadeIn` and `animate-scaleIn`, which is why §11's
+                "no motion in cart, payment or orders" assertion had never seen
+                them — it only matched `motion-*` and `reveal-group`. This page
+                is where someone checks what they are being charged and where
+                their food is; the denylist means it, so it applies here too. */}
             {order.deliveryPartnerId && (
-              <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex flex-col md:flex-row items-center justify-between gap-6 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-[#008080] animate-fadeIn transition-all duration-500 hover:shadow-lg">
+              <div className="bg-card rounded-3xl shadow-md p-6 flex flex-col md:flex-row items-center justify-between gap-6 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-[#008080] transition-all duration-500 hover:shadow-lg">
                 <div className="flex items-center gap-4 w-full md:w-auto">
                   <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-[#008080] bg-gray-100 dark:bg-neutral-950 shrink-0">
                     {order.deliveryPartnerId.profilePhoto ? (
@@ -586,7 +593,7 @@ export default function TrackOrder() {
                       <img
                         src={order.deliveryPartnerId.profilePhoto}
                         alt="Rider"
-                        className="w-full h-full object-cover animate-scaleIn"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-[#e0f2f1] dark:bg-teal-950/20 text-[#008080]">
@@ -625,8 +632,8 @@ export default function TrackOrder() {
 
             {/* Restaurant & Delivery Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800">
-                <div className="h-12 w-12 rounded-full bg-[#ffd9de] dark:bg-pink-950/30 flex items-center justify-center shrink-0">
+              <div className="bg-card rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800">
+                <div className="h-12 w-12 rounded-full bg-primary/20 dark:bg-pink-950/30 flex items-center justify-center shrink-0">
                   <Utensils className="w-6 h-6 text-primary dark:text-pink-400" />
                 </div>
                 <div className="space-y-1 min-w-0">
@@ -686,8 +693,8 @@ export default function TrackOrder() {
 
               {/* Where the order ends up: an address for delivery, a time and a
                   counter for pickup. */}
-              <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-l-primary dark:border-l-primary">
-                <div className="h-12 w-12 rounded-full bg-[#ffd9df] dark:bg-pink-950/30 flex items-center justify-center shrink-0">
+              <div className="bg-card rounded-3xl shadow-md p-6 flex gap-4 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-l-primary dark:border-l-primary">
+                <div className="h-12 w-12 rounded-full bg-primary/20 dark:bg-pink-950/30 flex items-center justify-center shrink-0">
                   {isPickup ? (
                     <Clock className="w-6 h-6 text-primary dark:text-pink-400" />
                   ) : (
@@ -719,9 +726,9 @@ export default function TrackOrder() {
 
             {/* Order Items & Bill Summary */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              <div className="md:col-span-5 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
+              <div className="md:col-span-5 bg-card rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-[#ffd9de] dark:bg-pink-950/30 rounded-xl">
+                  <div className="p-2 bg-primary/20 dark:bg-pink-950/30 rounded-xl">
                     <ShoppingBag className="w-5 h-5 text-primary dark:text-pink-400" />
                   </div>
                   <h4 className="text-sm font-semibold text-muted-foreground dark:text-neutral-400">
@@ -749,9 +756,9 @@ export default function TrackOrder() {
                   ))}
                 </div>
               </div>
-              <div className="md:col-span-7 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
+              <div className="md:col-span-7 bg-card rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-[#ffd9df] dark:bg-pink-950/30 rounded-xl">
+                  <div className="p-2 bg-primary/20 dark:bg-pink-950/30 rounded-xl">
                     <Receipt className="w-5 h-5 text-primary dark:text-pink-400" />
                   </div>
                   <h4 className="text-sm font-semibold text-muted-foreground dark:text-neutral-400 uppercase tracking-wider">
@@ -819,7 +826,7 @@ export default function TrackOrder() {
                       <span>-€{offerDiscount.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="pt-4 mt-2 border-t border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
+                  <div className="pt-4 mt-2 border-t border-border flex justify-between items-center">
                     <span className="text-xl font-extrabold text-foreground dark:text-neutral-50">
                       {t("totalAmount")}
                     </span>
@@ -882,7 +889,7 @@ export default function TrackOrder() {
           </div>
 
           {/* Right Column: Timeline */}
-          <aside className="lg:col-span-5 bg-white dark:bg-neutral-900 rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6 h-full min-h-175 transition-colors duration-200">
+          <aside className="lg:col-span-5 bg-card rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6 h-full min-h-175 transition-colors duration-200">
             <div className="flex justify-between items-start mb-8">
               <div>
                 <h2 className="text-xl font-extrabold text-foreground dark:text-neutral-50">
@@ -898,7 +905,7 @@ export default function TrackOrder() {
                   was already what navigated. The link now carries the shape and
                   the shared focus ring. */}
               <Link href="/help-center" className="focus-ring rounded-full active:scale-95">
-                <span className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm text-primary-foreground shadow-lg transition-all sm:h-10">
+                <span className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm text-primary-foreground shadow-lg transition-all sm:h-10">
                   <Headphones className="w-4 h-4" />
                   <span className="font-bold">{t("support")}</span>
                 </span>
@@ -913,7 +920,7 @@ export default function TrackOrder() {
                 return (
                   <div
                     key={step.key}
-                    className="relative flex gap-6 pb-10 last:pb-0"
+                    className="relative flex gap-6 pb-8 last:pb-0"
                   >
                     {idx < steps.length - 1 && (
                       <div
@@ -925,7 +932,7 @@ export default function TrackOrder() {
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shadow-md ${isCompleted || isCurrent
                         ? "bg-primary dark:bg-pink-600 text-white"
                         : "bg-[#f3f4f5] dark:bg-neutral-950 text-muted-foreground dark:text-neutral-500 border border-[#e3bdc3] dark:border-neutral-800"
-                        } ${isCurrent ? "border-4 border-[#ffd9de] dark:border-pink-950/40" : ""}`}
+                        } ${isCurrent ? "border-4 border-primary/20 dark:border-pink-950/40" : ""}`}
                     >
                       <Icon className="w-5 h-5" />
                     </div>
@@ -949,7 +956,7 @@ export default function TrackOrder() {
                           collected pickup order — telling a customer holding
                           their food that something was still happening. */}
                       {isCurrent && !isCompletedStatus(step.key) && !isTerminatedStatus(step.key) && (
-                        <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-[#ffd9de] dark:bg-pink-950/40 text-primary dark:text-pink-400 rounded-full text-xs font-bold">
+                        <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-primary/20 dark:bg-pink-950/40 text-primary dark:text-pink-400 rounded-full text-xs font-bold">
                           <span className="w-1.5 h-1.5 bg-primary dark:bg-pink-500 rounded-full animate-pulse" />
                           {t("inProgress")}
                         </span>

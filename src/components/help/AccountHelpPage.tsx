@@ -83,7 +83,7 @@ export default function AccountHelpPage() {
           <HelpAccordion items={questions} showIcon={false} />
         </div>
 
-        <section className="mt-10">
+        <section className="mt-8">
           <h2 className="mb-3 text-xl font-bold text-foreground dark:text-neutral-50">
             {t("manageAccount")}
           </h2>
@@ -104,7 +104,7 @@ export default function AccountHelpPage() {
           </div>
         </section>
 
-        <div className="mt-10 text-center">
+        <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground dark:text-neutral-400">
             {t("stillNeedHelp")}
           </p>

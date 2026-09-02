@@ -304,7 +304,7 @@ export default function EditAddressPage({ addressId }: Props) {
           {/* Map + GPS — full width */}
           <div className="flex flex-col gap-6">
             {/* Quick Instant GPS Update Card (Original Functionality preserved) */}
-            <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
+            <div className="rounded-2xl bg-card border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
               <h2 className="mb-2 text-xl font-bold text-foreground dark:text-neutral-50">
                 {t("myCurrentLocation") || "My Current Location"}
               </h2>
@@ -333,7 +333,7 @@ export default function EditAddressPage({ addressId }: Props) {
             </div>
 
             {/* Interactive Location Confirmation Card */}
-            <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
+            <div className="rounded-2xl bg-card border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
               <div className="mb-6">
                 <h2 className="mb-2 text-xl font-bold text-foreground dark:text-neutral-50">
                   {t("confirmLocation")}
@@ -355,14 +355,14 @@ export default function EditAddressPage({ addressId }: Props) {
                   onChange={handleSearchChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder={t("searchAreaPlaceholder")}
-                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-10 outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-primary dark:focus:border-primary"
+                  className="w-full rounded-full border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 py-4 pl-12 pr-8 outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-primary dark:focus:border-primary"
                   autoComplete="off"
                 />
                 {searchValue && <ClearFilterButton onClear={clearSearch} />}
 
                 {/* Suggestions Dropdown */}
                 {showSuggestions && suggestions.length > 0 && (
-                  <ul className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl dark:shadow-none">
+                  <ul className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#e3bdc3] dark:border-neutral-800 bg-card shadow-xl dark:shadow-none">
                     {suggestions.map((s, idx) => (
                       <li key={s.placeId}>
                         <button

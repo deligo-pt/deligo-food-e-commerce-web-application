@@ -180,9 +180,9 @@ export default function LocationPromptModal() {
       <div className="relative w-full max-w-md overflow-hidden rounded-4xl bg-white p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-gray-100 transition-all duration-300 transform scale-100 animate-in fade-in zoom-in-95">
         <div className="flex flex-col items-center text-center">
           {/* Animated illustration */}
-          <div className="relative mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-tr from-[#ffd9de] to-[#fff2f3]">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ffd9de]/50 opacity-75 duration-1000" />
-            <span className="absolute inline-flex h-20 w-20 animate-pulse rounded-full bg-[#ffd9de]/70" />
+          <div className="relative mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-tr from-primary/20 to-[#fff2f3]">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/10 opacity-75 duration-1000" />
+            <span className="absolute inline-flex h-20 w-20 animate-pulse rounded-full bg-primary/15" />
             {isRequesting ? (
               <Loader2 className="relative h-12 w-12 animate-spin text-primary" />
             ) : (

@@ -26,6 +26,7 @@
  * `serviceChargeVatAmount: 0.23`.
  */
 
+import { readFileSync } from "node:fs";
 import { register } from "node:module";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -144,6 +145,69 @@ section("The whole breakdown reconciles with what was charged");
     Math.abs(itemsSubtotal + itemsTax + getServiceChargeGross(REAL) - 2.83) > 0.005);
   check("the service row's caption is part of its own figure",
     getServiceChargeVat(REAL) < getServiceChargeGross(REAL));
+}
+
+section("The invoice says which rows already contain their VAT");
+{
+  /**
+   * 🔴 Reported from a printed invoice: "Service Fee" alone, between
+   * "Subtotal (incl. VAT)" and "Delivery fee (incl. VAT)".
+   *
+   * The figure was never wrong — `getServiceChargeGross` has been adding the
+   * backend's `serviceChargeVatAmount` all along, which is exactly why the two
+   * rows either side of it say so. Only the caption was missing, and the row
+   * that lost it is the one a reader is least able to check: a subtotal can be
+   * added up from the items above it, a service fee cannot.
+   *
+   * Asserted as a relationship across the three rows rather than as three
+   * strings. The invoice prints exactly three gross figures, they are captioned
+   * by the same convention, and that convention is per-language — "(incl. VAT)"
+   * in English, "(IVA incl.)" in Portuguese. What must hold is that the three
+   * agree with each other inside each dictionary, whatever the wording becomes.
+   */
+  const readDict = (lang) =>
+    readFileSync(join(here, "..", `src/assets/translations/${lang}.ts`), "utf8");
+  const GROSS_ROWS = ["invoiceSubtotal", "invoiceServiceFee", "invoiceDeliveryFee"];
+
+  for (const lang of ["en", "pt"]) {
+    const dict = readDict(lang);
+    const labels = GROSS_ROWS.map((key) => {
+      const m = new RegExp(`^  ${key}: "([^"]*)",`, "m").exec(dict);
+      return m ? m[1] : null;
+    });
+
+    check(
+      `[${lang}] every gross row on the invoice is captioned`,
+      labels.every((l) => l !== null && /\(.*\)/.test(l)),
+      `${GROSS_ROWS.map((k, i) => `${k}=${labels[i] ?? "MISSING"}`).join(" | ")}`,
+    );
+
+    // The parenthesised part of each, compared to the others. Three rows that
+    // each say it differently is the same defect one step along.
+    const captions = labels.map((l) => (l ? /\(([^)]*)\)/.exec(l)?.[1] : null));
+    check(
+      `[${lang}] …and all three say it the same way`,
+      captions.every((c) => c && c === captions[0]),
+      `captions: ${captions.join(" / ")}`,
+    );
+  }
+
+  // The rows that are NOT gross must not claim to be. `invoiceTotalPrice` is
+  // the pre-discount list price and `invoiceDiscount` is a deduction; captioning
+  // either would be asserting something about VAT that this invoice does not
+  // compute.
+  for (const lang of ["en", "pt"]) {
+    const dict = readDict(lang);
+    const netish = ["invoiceTotalPrice", "invoiceDiscount", "invoicePay"].map((key) => {
+      const m = new RegExp(`^  ${key}: "([^"]*)",`, "m").exec(dict);
+      return m ? m[1] : "";
+    });
+    check(
+      `[${lang}] no VAT caption on a row that is not a gross figure`,
+      netish.every((l) => !/\(/.test(l)),
+      netish.join(" | "),
+    );
+  }
 }
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

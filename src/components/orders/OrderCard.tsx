@@ -28,7 +28,7 @@ const REFUND_CHIP: Record<
     icon: CheckCircle,
   },
   in_progress: {
-    className: "bg-pink-50 dark:bg-pink-950/30 text-primary dark:text-pink-400",
+    className: "bg-primary/5 dark:bg-pink-950/30 text-primary dark:text-pink-400",
     icon: HandCoins,
   },
   not_eligible: {
@@ -159,11 +159,11 @@ export default function OrderCard({
   };
 
   return (
-    <div className="rounded-xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm transition-colors duration-200">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm transition-colors duration-200">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex gap-3">
-          <div className="relative h-12 w-12 overflow-hidden rounded-full border border-gray-100 dark:border-neutral-800">
+          <div className="relative h-12 w-12 overflow-hidden rounded-full border border-border">
             <SafeImage
               src={image}
               alt={restaurant}
@@ -185,7 +185,7 @@ export default function OrderCard({
                   order has no rider and no address, so two cards that look
                   alike can mean very different things to the customer. */}
               {isPickup && (
-                <span className="flex items-center gap-1 rounded-full bg-pink-50 px-2 py-0.5 font-semibold text-primary dark:bg-pink-950/30 dark:text-pink-400">
+                <span className="flex items-center gap-1 rounded-full bg-primary/5 px-2 py-0.5 font-semibold text-primary dark:bg-pink-950/30 dark:text-pink-400">
                   <Store size={11} />
                   {t("selfPickup")}
                 </span>
@@ -198,7 +198,7 @@ export default function OrderCard({
           <span className="font-semibold text-primary dark:text-pink-400">{price}</span>
 
           {status === "accepted" ? (
-            <div className="flex items-center gap-1 rounded-full bg-pink-50 dark:bg-pink-950/30 px-2 py-1 text-xs text-primary dark:text-pink-400">
+            <div className="flex items-center gap-1 rounded-full bg-primary/5 dark:bg-pink-950/30 px-2 py-1 text-xs text-primary dark:text-pink-400">
               <CheckCircle size={12} />
               {t("accepted")}
             </div>
@@ -304,7 +304,7 @@ export default function OrderCard({
       </div>
 
       {/* Actions */}
-      <div className="mt-5">
+      <div className="mt-4">
         {status === "delivered" ? (
           <Button
             variant={isRated ? "outline" : "default"}

@@ -167,7 +167,7 @@ export default function CartStoreCard({
   };
 
   return (
-    <div className="rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm transition-colors duration-200 sm:p-6">
+    <div className="rounded-3xl border border-border bg-card p-4 shadow-sm transition-colors duration-200 sm:p-6">
       {/* Actions get their own row above the identity block. They used to be
           pinned to the card's top-right corner, which worked while the control
           was a 56px switch; a captioned button plus a delete button is wide
@@ -215,8 +215,8 @@ export default function CartStoreCard({
       </div>
 
       {/* Store identity — avatar, name and meta, centred as a column. */}
-      <div className="mb-5 flex flex-col items-center text-center">
-        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-4 border-pink-100 dark:border-pink-950 sm:h-20 sm:w-20">
+      <div className="mb-4 flex flex-col items-center text-center">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-4 border-primary/10 dark:border-pink-950 sm:h-20 sm:w-20">
           <SafeImage
             src={image}
             alt={businessName}
@@ -238,7 +238,7 @@ export default function CartStoreCard({
               {rating > 0 ? rating.toFixed(1) : t("new")}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/20 px-2.5 py-1.5">
+          <div className="flex items-center gap-1.5 rounded-xl bg-primary/5 dark:bg-pink-950/20 px-2.5 py-1.5">
             <UtensilsCrossed size={14} className="text-primary dark:text-pink-400" />
             <span className="text-sm font-semibold text-primary dark:text-pink-400">
               {items.length} {t("items")} · €{storeTotal.toFixed(2)}
@@ -314,7 +314,7 @@ export default function CartStoreCard({
               toast.error(t("activateToCheckout"));
             }
           }}
-          className={`relative flex items-center justify-between gap-3 overflow-hidden rounded-3xl px-4 py-4 text-white transition cursor-pointer sm:px-6 sm:py-5 ${
+          className={`relative flex items-center justify-between gap-3 overflow-hidden rounded-3xl px-4 py-4 text-white transition cursor-pointer sm:px-6 sm:py-4 ${
             hasActive
               ? "cart-cta bg-linear-to-r from-primary to-primary-hover hover:from-primary-hover hover:to-[#b01254]"
               : "cursor-not-allowed bg-gray-400 dark:bg-neutral-750"

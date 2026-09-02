@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bike, Moon, Plus, Star, Store, UtensilsCrossed } from "lucide-react";
+import { Bike, Moon, Plus, Star, UtensilsCrossed } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useProfile, useActiveAddressCoords } from "@/hooks/queries/useProfile";
@@ -42,6 +42,7 @@ import { formatCuisine } from "@/lib/cuisine";
 import { currencySymbol } from "@/lib/currency";
 import { formatDiscountValue, hasProductDiscount } from "@/lib/productPricing";
 import SafeImage from "@/components/shared/SafeImage";
+import VendorHeroImage from "./VendorHeroImage";
 import { Button } from "@/components/ui/button";
 
 function getDistanceKm(
@@ -208,7 +209,7 @@ const MenuProductCard = memo(function MenuProductCard({
     // takes ~260px off the grid, leaving the text column around 90px at `md`.
     // Stacking gives both the full cell width instead of splitting it.
     <div
-      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-none ${
+      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition dark:shadow-none ${
         storeClosed ? "" : "hover:shadow-lg dark:hover:bg-neutral-800/30"
       }`}
     >
@@ -225,7 +226,7 @@ const MenuProductCard = memo(function MenuProductCard({
           fallbackIcon={<UtensilsCrossed className="h-10 w-10" />}
         />
         {discountValue && (
-          <span className="absolute left-3 top-3 rounded-full bg-pink-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
+          <span className="absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-white shadow-sm">
             {discountValue} {t("off")}
           </span>
         )}
@@ -244,7 +245,7 @@ const MenuProductCard = memo(function MenuProductCard({
 
         <div className="mt-4 flex items-end justify-between gap-3 pt-1">
           <div className="min-w-0">
-            <p className="truncate text-xl font-bold text-pink-600 dark:text-pink-400">
+            <p className="truncate text-xl font-bold text-primary dark:text-pink-400">
               {formatPrice(finalPrice, currency)}
             </p>
             {hasDiscount && (
@@ -529,29 +530,36 @@ export default function VendorDetailsPage({
         <section className="mb-6">
           <div className="relative overflow-hidden rounded-3xl shadow-lg">
             <div className="relative h-62.5 md:h-90">
-              <SafeImage
+              {/* The banner and its placeholder, extracted. It carries
+                  `motion-image-in`, which scales, and §11 bars a transform from
+                  a file that renders a price — this one renders sixteen. The
+                  boundary is the point: nothing that renders money goes in
+                  `VendorHeroImage`. */}
+              <VendorHeroImage
                 src={heroImage}
                 alt={vendor.businessDetails.businessName}
-                priority
-                sizes="100vw"
-                className={`object-cover ${isStoreClosed ? "grayscale" : ""}`}
-                fallbackIcon={<Store className="h-14 w-14" />}
+                dimmed={isStoreClosed}
               />
+              {/* Everything below stays stacked above the placeholder in
+                  document order. The gradient, the closed badge and the info
+                  panel are content that has already arrived; covering them to
+                  hide an image that has not would trade a real thing for an
+                  absent one. */}
               <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
               {/* Same treatment the listing card carries, so arriving here from
                   a dimmed card reads as continuity rather than a state change.
                   Sits above the gradient but clear of the info panel, which is
                   anchored to the bottom-left. */}
               {isStoreClosed && (
-                <div className="pointer-events-none absolute inset-0 flex items-start justify-center bg-black/40 pt-10 md:pt-16">
-                  <span className="flex items-center gap-2 rounded-full bg-black/70 px-5 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
+                <div className="pointer-events-none absolute inset-0 flex items-start justify-center bg-black/40 pt-8 md:pt-16">
+                  <span className="flex items-center gap-2 rounded-full bg-black/70 px-4 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
                     <Moon size={18} />
                     {t("currentlyClosed")}
                   </span>
                 </div>
               )}
               <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8">
-                <div className="rounded-2xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 p-5 shadow-xl dark:shadow-none">
+                <div className="rounded-2xl bg-card border p-4 shadow-xl dark:shadow-none">
                   <div className="mb-1 flex items-center gap-2">
                     <h1 className="text-2xl lg:text-display font-bold text-gray-900 dark:text-white">
                       {vendor.businessDetails.businessName}
@@ -605,7 +613,7 @@ export default function VendorDetailsPage({
         )}
 
         {isStoreClosed && (
-          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-5">
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4">
             <Moon
               size={22}
               className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500"
@@ -648,20 +656,20 @@ export default function VendorDetailsPage({
             />
 
           {/* The skeleton is shaped like what replaces it: two groups, each a
-              heading row over the same grid, using the *same* `mb-10`, `mt-4`,
-              `gap-5` and column classes as `CategoryGroup`. A skeleton that
+              heading row over the same grid, using the *same* `mb-8`, `mt-4`,
+              `gap-4` and column classes as `CategoryGroup`. A skeleton that
               only draws cards costs a jump the moment the headings arrive —
               content shifting under a cursor that was already moving toward
               it. Anything changed in one of these has to change in both. */}
           {catalogueLoading && (
             <div aria-hidden>
               {Array.from({ length: 2 }).map((_, group) => (
-                <div key={group} className="mb-10 last:mb-0">
+                <div key={group} className="mb-8 last:mb-0">
                   <div className="flex items-baseline justify-between gap-4">
                     <div className="h-7 w-40 animate-pulse rounded-lg bg-gray-100 dark:bg-neutral-800" />
                     <div className="h-5 w-16 animate-pulse rounded-lg bg-gray-100 dark:bg-neutral-800" />
                   </div>
-                  <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {Array.from({ length: 3 }).map((_, card) => (
                       <div
                         key={card}
@@ -697,20 +705,21 @@ export default function VendorDetailsPage({
               --------------------------------------------------------------- */}
           {!catalogueLoading && !productsError && (
             categoryGroups.length === 0 ? (
-              <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
+              <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border p-6 text-center text-gray-500 dark:text-neutral-400">
                 {t("noProductsFound")}
               </div>
             ) : (
-              // Fades the grouped catalogue in over the skeleton it replaces,
-              // and is a no-op under `prefers-reduced-motion: reduce`. Applied
-              // to the wrapper, once, rather than per group — a stagger down a
-              // list the customer is already looking at reads as lag, not
-              // polish.
+              // Phase 6 faded the whole catalogue in here, once, and said why:
+              // "a stagger down a list the customer is already looking at reads
+              // as lag, not polish." Browser round 6 was asked for the stagger
+              // anyway, and the objection is answered rather than overruled —
+              // the sequencing is now per *group* and fires when that group
+              // scrolls into view, so nothing cascades down a menu already on
+              // screen. See `CategoryGroup`.
               //
-              // This was `category-enter`, a page-local class that did the same
-              // thing with a 4px lift. Phase 6 made it a system primitive; two
-              // classes for one idea is how the seven pinks happened.
-              <div className="motion-fade">
+              // The wrapper's own fade is gone with it. Fading a container while
+              // its children animate inside it pays for one arrival twice.
+              <div>
                 {categoryGroups.map((group) => (
                   <CategoryGroup
                     key={group.id}

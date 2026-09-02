@@ -366,8 +366,11 @@ export default function EditProfileFormPage() {
     return <EditProfileFormSkeleton />;
   }
 
+  /* Phase 12. The skeleton above is swapped out in a single frame;
+     `motion-fade` is that same swap over 300ms. Opacity only, once, and
+     it opts out under prefers-reduced-motion with the rest of the set. */
   return (
-    <section className="bg-[#f8f9fa] dark:bg-neutral-950 py-8 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
+    <section className="motion-fade bg-[#f8f9fa] dark:bg-neutral-950 py-8 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-250 px-4">
         <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground dark:text-neutral-400">
           <span>{t("home")}</span>
@@ -379,10 +382,10 @@ export default function EditProfileFormPage() {
           </span>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
-          <div className="flex flex-col items-center border-b border-neutral-200/50 dark:border-neutral-800 bg-linear-to-b from-neutral-50 dark:from-neutral-800/10 to-transparent py-10">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="flex flex-col items-center border-b border-neutral-200/50 dark:border-neutral-800 bg-linear-to-b from-neutral-50 dark:from-neutral-800/10 to-transparent py-8">
             <div className="relative">
-              <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white dark:border-neutral-800 shadow-lg flex items-center justify-center bg-pink-50 dark:bg-pink-950/30">
+              <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white dark:border-neutral-800 shadow-lg flex items-center justify-center bg-primary/5 dark:bg-pink-950/30">
                 {imagePreview ? (
                   <Image
                     src={imagePreview}
@@ -425,7 +428,7 @@ export default function EditProfileFormPage() {
             <p className="text-sm text-[#5a4044] dark:text-neutral-400">{t("manageAccountInfo")}</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-10 p-8 md:p-12 bg-white dark:bg-neutral-900">
+          <form onSubmit={handleSubmit} className="space-y-8 p-8 md:p-12 bg-card">
             {/* Basic Information */}
             <section className="space-y-6">
               <div className="flex items-center gap-3">
@@ -440,7 +443,7 @@ export default function EditProfileFormPage() {
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
+                    className="w-full rounded border border-border bg-card px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                   />
                 </div>
                 <div>
@@ -451,7 +454,7 @@ export default function EditProfileFormPage() {
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
+                    className="w-full rounded border border-border bg-card px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                   />
                 </div>
               </div>
@@ -465,7 +468,7 @@ export default function EditProfileFormPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
+                      className="flex-1 rounded border border-border bg-card px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                     />
                     {!emailOtpSent ? (
                       <Button
@@ -484,7 +487,7 @@ export default function EditProfileFormPage() {
                           value={emailOtp}
                           onChange={(e) => setEmailOtp(e.target.value)}
                           onKeyDown={handleOtpKeyDown(handleVerifyEmailOtp)}
-                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
+                          className="w-24 rounded border border-border bg-card px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                         />
                         <Button
                           type="button"
@@ -514,7 +517,7 @@ export default function EditProfileFormPage() {
                       placeholder={t("mobilePlaceholder")}
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}
-                      className="flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
+                      className="flex-1 rounded border border-border bg-card px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                     />
                     {!mobileOtpSent ? (
                       <Button
@@ -533,7 +536,7 @@ export default function EditProfileFormPage() {
                           value={mobileOtp}
                           onChange={(e) => setMobileOtp(e.target.value)}
                           onKeyDown={handleOtpKeyDown(handleVerifyMobileOtp)}
-                          className="w-24 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
+                          className="w-24 rounded border border-border bg-card px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                         />
                         <Button
                           type="button"
@@ -562,7 +565,7 @@ export default function EditProfileFormPage() {
                   type="text"
                   value={nif}
                   onChange={(e) => setNif(e.target.value)}
-                  className="w-full rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
+                  className="w-full rounded border border-border bg-card px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                 />
               </div>
             </section>
@@ -573,7 +576,7 @@ export default function EditProfileFormPage() {
                 variant="ghost"
                 size="lg"
                 onClick={() => window.history.back()}
-                className="px-8 font-bold text-primary hover:bg-transparent hover:text-pink-700 dark:hover:bg-transparent dark:hover:text-pink-300"
+                className="px-8 font-bold text-primary hover:bg-transparent hover:text-primary-hover dark:hover:bg-transparent dark:hover:text-pink-300"
               >
                 {t("cancel")}
               </Button>

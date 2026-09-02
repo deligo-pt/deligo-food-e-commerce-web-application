@@ -59,7 +59,7 @@ export default function RefundBanner({ state }: { state: RefundState }) {
       role="status"
       aria-live="polite"
       data-refund-state={state}
-      className={`flex flex-col items-center gap-4 rounded-3xl border border-transparent bg-white p-6 text-center shadow-md transition-colors duration-200 md:flex-row md:gap-6 md:p-8 md:text-left dark:bg-neutral-900 dark:border-neutral-800 border-l-4 dark:border-l-4 ${accent}`}
+      className={`flex flex-col items-center gap-4 rounded-3xl border border-transparent bg-card p-6 text-center shadow-md transition-colors duration-200 md:flex-row md:gap-6 md:p-8 md:text-left dark:border-neutral-800 border-l-4 dark:border-l-4 ${accent}`}
     >
       {/* Completed is a solid green disc and in-progress the money bag, the
           same pairing the app uses — the two states must not be

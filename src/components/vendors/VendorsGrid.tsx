@@ -42,7 +42,7 @@ function VendorCardSkeleton() {
       <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
         <div className="h-7 w-2/3 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
         <div className="h-4 w-1/2 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-        <div className="mt-auto flex items-center gap-4 border-t border-border pt-3 dark:border-neutral-800">
+        <div className="mt-auto flex items-center gap-4 border-t border-border pt-3">
           <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
           <div className="h-5 w-32 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
         </div>

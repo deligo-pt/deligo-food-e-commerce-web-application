@@ -119,7 +119,7 @@ const PRIMARY_ACTION_CLASS = cn(
 /** Circular control — the pagination arrows and the mark-all-read button. */
 const ICON_BUTTON_CLASS = cn(
   buttonVariants({ size: "icon", variant: "outline" }),
-  "shrink-0 rounded-full text-primary hover:bg-pink-50 dark:text-pink-400 dark:hover:bg-pink-950/30 cursor-pointer",
+  "shrink-0 rounded-full text-primary hover:bg-primary/5 dark:text-pink-400 dark:hover:bg-pink-950/30 cursor-pointer",
 );
 
 const formatRelativeTime = (
@@ -401,8 +401,11 @@ export default function NotificationsPage() {
     );
   }
 
+  /* Phase 12. The skeleton above is swapped out in a single frame;
+     `motion-fade` is that same swap over 300ms. Opacity only, once, and
+     it opts out under prefers-reduced-motion with the rest of the set. */
   return (
-    <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-8 transition-colors duration-200">
+    <div className="motion-fade min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-8 transition-colors duration-200">
       {/* Same container as the orders page — its sibling in the account area,
           which was 100px wider and inset differently. */}
       <div className="mx-auto max-w-5xl px-4 md:px-8">
@@ -450,7 +453,7 @@ export default function NotificationsPage() {
                 className={`focus-ring flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition cursor-pointer ${
                   isActive
                     ? "border-primary bg-primary text-white dark:border-pink-600 dark:bg-pink-600"
-                    : "border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-muted-foreground dark:text-neutral-300 hover:bg-pink-50 hover:border-pink-200 dark:hover:bg-neutral-800 dark:hover:border-neutral-700"
+                    : "border-border bg-card text-muted-foreground dark:text-neutral-300 hover:bg-primary/5 hover:border-primary/20 dark:hover:bg-neutral-800 dark:hover:border-neutral-700"
                 }`}
               >
                 {label}
@@ -475,7 +478,7 @@ export default function NotificationsPage() {
           className={`space-y-4 transition-opacity ${pageLoading ? "opacity-50 pointer-events-none" : ""}`}
         >
           {filteredNotifications.length === 0 ? (
-            <div className="flex h-75 items-center justify-center rounded-xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-center text-muted-foreground dark:text-neutral-400 shadow-sm">
+            <div className="flex h-75 items-center justify-center rounded-xl border border-border bg-card text-center text-muted-foreground dark:text-neutral-400 shadow-sm">
               {t("noNotifications")}
             </div>
           ) : (
@@ -508,7 +511,7 @@ export default function NotificationsPage() {
                   // inside the rounded corner instead of needing its own
                   // radius, and `pl-6` keeps the content clear of it — read and
                   // unread rows still start their text on the same x.
-                  className={`relative flex gap-4 overflow-hidden rounded-xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 pl-6 shadow-sm transition-shadow hover:shadow-md ${
+                  className={`relative flex gap-4 overflow-hidden rounded-xl border border-border bg-card p-4 pl-6 shadow-sm transition-shadow hover:shadow-md ${
                     isUnread ? "cursor-pointer" : ""
                   } ${isMarkingThis ? "opacity-60 pointer-events-none" : ""}`}
                   onClick={() => {
@@ -526,7 +529,7 @@ export default function NotificationsPage() {
                   <div
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
                       isUnread
-                        ? "bg-pink-50 dark:bg-pink-950/30"
+                        ? "bg-primary/5 dark:bg-pink-950/30"
                         : "bg-gray-100 dark:bg-neutral-800"
                     }`}
                   >
@@ -589,7 +592,7 @@ export default function NotificationsPage() {
                     {/* Type badge. `rounded-full` to match the pill language
                         the order cards and filter chips already use. */}
                     <div className="mt-3">
-                      <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-primary dark:text-pink-400">
+                      <span className="rounded-full bg-primary/5 dark:bg-pink-950/30 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-primary dark:text-pink-400">
                         {getTypeLabel(notification.type, t)}
                       </span>
                     </div>
@@ -708,7 +711,7 @@ export default function NotificationsPage() {
                         "shrink-0 rounded-full font-semibold cursor-pointer",
                         currentPage === item
                           ? ""
-                          : "hover:bg-pink-50 dark:hover:bg-pink-950/30",
+                          : "hover:bg-primary/5 dark:hover:bg-pink-950/30",
                       )}
                     >
                       {item}

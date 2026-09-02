@@ -49,7 +49,7 @@ export default function DeleteAccountPage() {
 
   return (
     <div className="min-h-screen bg-[#e1e3e4] dark:bg-neutral-950 px-4 py-4 md:py-8 transition-colors duration-200">
-      <div className="mx-auto max-w-lg rounded-3xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-xl dark:shadow-none md:p-8">
+      <div className="mx-auto max-w-lg rounded-3xl bg-card border border-transparent dark:border-neutral-800 p-6 shadow-xl dark:shadow-none md:p-8">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl lg:text-display font-black text-primary dark:text-primary">
@@ -145,7 +145,7 @@ export default function DeleteAccountPage() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="relative mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 text-center shadow-2xl dark:shadow-none md:p-8">
+          <div className="relative mx-auto w-full max-w-md rounded-2xl bg-card border border-transparent dark:border-neutral-800 p-6 text-center shadow-2xl dark:shadow-none md:p-8">
             <Button
               size="icon-sm"
               variant="ghost"

@@ -35,7 +35,7 @@ export default function NotificationsSkeleton() {
           {[1, 2, 3, 4, 5].map((item) => (
             <div
               key={item}
-              className="flex gap-4 rounded-xl border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 pl-6 shadow-sm"
+              className="flex gap-4 rounded-xl border border-border bg-card p-4 pl-6 shadow-sm"
             >
               <div className="h-11 w-11 shrink-0 rounded-full bg-gray-200 dark:bg-neutral-800" />
 
