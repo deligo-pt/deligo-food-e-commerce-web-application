@@ -149,7 +149,7 @@ export default function LocationPicker({
     <div className="space-y-4">
       <div
         ref={mapRef}
-        className="h-87.5 w-full overflow-hidden rounded-2xl border border-pink-200 dark:border-neutral-800 shadow-sm"
+        className="h-87.5 w-full overflow-hidden rounded-2xl border border-primary/20 dark:border-neutral-800 shadow-sm"
       />
 
       <div className="rounded-xl border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 p-4 transition-colors duration-200">

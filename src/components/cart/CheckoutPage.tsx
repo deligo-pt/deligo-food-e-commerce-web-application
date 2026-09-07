@@ -777,9 +777,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       </h1>
       <p className="mt-2 text-gray-500 dark:text-neutral-400">{t("completeOrderDetails")}</p>
 
-      <div className="mt-8 mb-8 overflow-hidden rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
+      <div className="mt-8 mb-8 overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
         <div className="p-6">
-          <div className="flex flex-col gap-5 md:flex-row md:items-center">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="relative h-24 w-24 overflow-hidden rounded-2xl bg-gray-100 dark:bg-neutral-800">
               <SafeImage
                 src={vendorImage}
@@ -793,7 +793,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 {businessName || t("store")}
               </h2>
               <div className="mt-3 flex flex-wrap gap-3">
-                <div className="flex items-center gap-2 rounded-xl bg-pink-50 dark:bg-pink-950/30 px-3 py-2 text-primary dark:text-pink-400">
+                <div className="flex items-center gap-2 rounded-xl bg-primary/5 dark:bg-pink-950/30 px-3 py-2 text-primary dark:text-pink-400">
                   <ShoppingBag size={16} />
                   <span className="font-medium">
                     {vendorItems.length} {t("products")}
@@ -809,7 +809,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
             {vendor?.userId && (
               <Link
                 href={`/vendors/${vendor.userId}`}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-primary px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white dark:border-pink-500 dark:text-pink-400 dark:hover:bg-pink-600 dark:hover:text-white"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-primary px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white dark:border-pink-500 dark:text-pink-400 dark:hover:bg-pink-600 dark:hover:text-white"
               >
                 <Plus size={16} />
                 {t("addMoreItems")}
@@ -820,9 +820,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-12">
-        <div className="space-y-5 lg:col-span-8">
+        <div className="space-y-4 lg:col-span-8">
           {vendorItems.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-gray-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-12 text-center">
+            <div className="rounded-3xl border border-dashed border-gray-300 dark:border-neutral-800 bg-card p-12 text-center">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-neutral-50">{t("noProductsFound")}</h3>
               <p className="mt-2 text-gray-500 dark:text-neutral-400">{t("vendorHasNoProducts")}</p>
             </div>
@@ -830,10 +830,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
             vendorItems.map((item) => (
               <div
                 key={`${item.productId}-${item.variationSku ?? "default"}`}
-                className="overflow-hidden rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm"
+                className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm"
               >
-                <div className="p-5">
-                  <div className="flex flex-col gap-5 sm:flex-row">
+                <div className="p-4">
+                  <div className="flex flex-col gap-4 sm:flex-row">
                     <div className="relative h-28 w-full overflow-hidden rounded-2xl sm:w-28 bg-gray-100 dark:bg-neutral-800">
                       <SafeImage
                         src={item.image}
@@ -869,7 +869,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                                       €{addon.unitPrice.toFixed(2)} × {addon.quantity}
                                     </span>
                                   </div>
-                                  <div className="flex shrink-0 items-center rounded-full border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                                  <div className="flex shrink-0 items-center rounded-full border border-gray-200 dark:border-neutral-700 bg-card">
                                     <Button
                                       type="button"
                                       size="icon-sm"
@@ -921,7 +921,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                         </Button>
                       </div>
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex items-center rounded-2xl border border-gray-200 dark:border-neutral-800">
+                        <div className="flex items-center rounded-2xl border border-border">
                           <Button
                             size="icon"
                             variant="ghost"
@@ -969,8 +969,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         </div>
 
         <div className="lg:col-span-4">
-          <div className="sticky top-24 overflow-hidden rounded-3xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
-            <div className="border-b border-gray-100 dark:border-neutral-800 p-6">
+          <div className="sticky top-24 overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+            <div className="border-b border-border p-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-neutral-50">
                 {t("orderSummary")}
               </h3>
@@ -991,7 +991,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                   -€{summary.discount.toFixed(2)}
                 </span>
               </div>
-              <div className="border-t border-dashed border-gray-200 dark:border-neutral-800 pt-4">
+              <div className="border-t border-dashed border-border pt-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <span className="block text-xl font-bold text-gray-900 dark:text-neutral-50">
@@ -1010,7 +1010,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
             {/* Self-pickup sits between the summary and the instructions, the
                 same slot the mobile app puts it in. */}
-            <div className="border-t border-gray-100 dark:border-neutral-800 p-6">
+            <div className="border-t border-border p-6">
               <button
                 type="button"
                 onClick={handleToggleSelfPickup}
@@ -1018,8 +1018,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 aria-pressed={isSelfPickup}
                 className={`focus-ring flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
                   isSelfPickup
-                    ? "border-primary bg-pink-50/50 dark:border-pink-400 dark:bg-pink-950/20"
-                    : "border-gray-200 dark:border-neutral-800"
+                    ? "border-primary bg-primary/5 dark:border-pink-400 dark:bg-pink-950/20"
+                    : "border-border"
                 }`}
               >
                 <span
@@ -1060,7 +1060,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 <button
                   type="button"
                   onClick={() => setShowPickupPicker(true)}
-                  className="focus-ring mt-3 flex w-full items-center gap-3 rounded-2xl border border-primary p-4 text-left transition hover:bg-pink-50/50 dark:border-pink-400 dark:hover:bg-pink-950/20"
+                  className="focus-ring mt-3 flex w-full items-center gap-3 rounded-2xl border border-primary p-4 text-left transition hover:bg-primary/5 dark:border-pink-400 dark:hover:bg-pink-950/20"
                 >
                   <Clock size={18} className="shrink-0 text-primary dark:text-pink-400" />
                   <span
@@ -1089,7 +1089,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 collected order. `instructions` is local-only state and is not
                 sent to /checkout, so nothing is lost by dropping it here. */}
             {!isSelfPickup && (
-              <div className="border-t border-gray-100 dark:border-neutral-800 p-6">
+              <div className="border-t border-border p-6">
                 <label className="mb-2 block font-semibold text-gray-900 dark:text-neutral-50">
                   {t("deliveryInstructions")}
                 </label>
@@ -1098,12 +1098,12 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
                   placeholder={t("deliveryInstructionsPlaceholder")}
-                  className="w-full rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 outline-none transition focus:border-pink-500 dark:focus:border-pink-400 text-gray-900 dark:text-neutral-50 placeholder:text-gray-400 dark:placeholder:text-neutral-600"
+                  className="w-full rounded-2xl border border-border bg-card p-4 outline-none transition focus:border-primary dark:focus:border-pink-400 text-gray-900 dark:text-neutral-50 placeholder:text-gray-400 dark:placeholder:text-neutral-600"
                 />
               </div>
             )}
 
-            <div className="border-t border-gray-100 dark:border-neutral-800 p-6">
+            <div className="border-t border-border p-6">
               <Button
                 size="lg"
                 onClick={handleProceedToCheckout}

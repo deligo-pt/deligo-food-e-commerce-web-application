@@ -94,9 +94,9 @@ export default function PaymentMethodPage() {
   return (
     <div className="bg-[#f6f6f6] dark:bg-neutral-950 px-4 py-8 sm:py-12 transition-colors duration-200">
       <div className="mx-auto max-w-3xl">
-        <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           {/* Header */}
-          <div className="border-b border-gray-200 dark:border-neutral-800 px-5 py-6 sm:px-8">
+          <div className="border-b border-border px-4 py-6 sm:px-8">
             <h1 className="text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
               {t("paymentMethods")}
             </h1>
@@ -110,7 +110,7 @@ export default function PaymentMethodPage() {
               there is nothing to manage and nothing to invite them to do here,
               since a card can only be saved during a checkout. */}
           {authed && (
-            <div className="border-b border-gray-200 dark:border-neutral-800 px-5 py-6 sm:px-8">
+            <div className="border-b border-border px-4 py-6 sm:px-8">
               <h2 className="mb-3 text-xl font-semibold text-foreground dark:text-neutral-50">
                 {t("savedCards")}
               </h2>
@@ -145,7 +145,7 @@ export default function PaymentMethodPage() {
                     return (
                       <li
                         key={card.id}
-                        className={`flex items-center gap-3 rounded-xl border border-gray-200 dark:border-neutral-800 px-4 py-3.5 transition ${
+                        className={`flex items-center gap-3 rounded-xl border border-border px-4 py-3.5 transition ${
                           isRemoving ? "pointer-events-none opacity-60" : ""
                         }`}
                       >
@@ -194,18 +194,18 @@ export default function PaymentMethodPage() {
           )}
 
           {/* Accepted methods */}
-          <div className="px-5 pt-6 sm:px-8">
+          <div className="px-4 pt-6 sm:px-8">
             <h2 className="text-xl font-semibold text-foreground dark:text-neutral-50">
               {t("acceptedPaymentMethods")}
             </h2>
           </div>
-          <ul className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 sm:p-8 sm:pt-4">
+          <ul className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 sm:p-8 sm:pt-4">
             {paymentMethods.map((method) => {
               const Icon = method.icon;
               return (
                 <li
                   key={method.id}
-                  className="flex items-center gap-4 rounded-xl border border-[#e6e6e6] dark:border-neutral-800 bg-white dark:bg-neutral-900/40 px-4 py-4 transition-colors hover:border-primary/40 dark:hover:border-primary/40"
+                  className="flex items-center gap-4 rounded-xl border border-border bg-white dark:bg-neutral-900/40 px-4 py-4 transition-colors hover:border-primary/40 dark:hover:border-primary/40"
                 >
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff0f5] dark:bg-pink-950/20">
                     <Icon className="h-5 w-5 text-primary dark:text-pink-400" />
@@ -232,7 +232,7 @@ export default function PaymentMethodPage() {
           </ul>
 
           {/* Secure note */}
-          <div className="border-t border-gray-200 dark:border-neutral-800 bg-[#fafafa] dark:bg-neutral-950/50 px-5 py-5 sm:px-8">
+          <div className="border-t border-border bg-[#fafafa] dark:bg-neutral-950/50 px-4 py-4 sm:px-8">
             <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
               <Lock className="h-3.5 w-3.5 shrink-0" />
               <span>{t("paymentInfoSecure")}</span>

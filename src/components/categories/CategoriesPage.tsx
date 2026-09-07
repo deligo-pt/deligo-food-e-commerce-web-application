@@ -136,9 +136,12 @@ export default function CategoriesPage() {
     return <CategoriesPageSkeleton />;
   }
 
+  /* Phase 12. The skeleton above is replaced in one frame; `motion-fade` is
+     that same swap over 300ms. It is opacity only, it fires once, and it is
+     the primitive Phase 6 already put on three homepage bands. */
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-10 lg:px-16">
-      <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
+    <main className="motion-fade mx-auto w-full max-w-7xl px-4 py-8 lg:px-16">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <Link
             href="/"
@@ -167,16 +170,25 @@ export default function CategoriesPage() {
       ) : (
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {categories.map((category) => (
-            <article
+            <button
               key={category._id}
+              type="button"
               onClick={() => handleCategoryClick(category)}
               /* Plan.md Phase 8. Was `rounded-3xl bg-white` over a permanent
                  `0 10px 40px` shadow with no border at all — a fourth shell,
                  for a tile that is the same thing as the cuisine tile on the
-                 homepage. `p-5` went with it; 20 is not on the §1.2 scale. */
+                 homepage. `p-4` went with it; 20 is not on the §1.2 scale.
+
+                 Phase 12. It was an `<article onClick>` — no `tabIndex`, no
+                 `onKeyDown`, no `role`, so a keyboard could not reach it at
+                 all, while the identical tile on the homepage already was a
+                 `<button>`. Phase 12 went looking for somewhere to put a press
+                 state and found that this tile could not be pressed. It is the
+                 control it always looked like now, which is what §7 did for the
+                 two homepage rows; `focus-ring` is the shared ring those use. */
               className={cn(
                 cardVariants({ variant: "interactive", padding: "card" }),
-                "group flex cursor-pointer flex-col items-center gap-4 text-center",
+                "focus-ring motion-press group flex cursor-pointer flex-col items-center gap-4 text-center",
               )}
             >
               <div className="h-28 w-28 rounded-full bg-[#e7e8e9] p-1 shadow-md transition-all group-hover:bg-primary">
@@ -210,7 +222,7 @@ export default function CategoriesPage() {
                   </p>
                 ) : null}
               </div>
-            </article>
+            </button>
           ))}
         </div>
       )}

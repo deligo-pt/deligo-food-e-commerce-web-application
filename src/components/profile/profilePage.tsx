@@ -211,16 +211,19 @@ export default function AccountPage() {
     [profile.name.firstName, profile.name.lastName].filter(Boolean).join(" ") ||
     t("unnamedUser");
 
+  /* Phase 12. The skeleton above is swapped out in a single frame;
+     `motion-fade` is that same swap over 300ms. Opacity only, once, and
+     it opts out under prefers-reduced-motion with the rest of the set. */
   return (
-    <section className="bg-[#f7f7f7] dark:bg-neutral-950 p-4 md:p-6 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
+    <section className="motion-fade bg-[#f7f7f7] dark:bg-neutral-950 p-4 md:p-6 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
           {/* LEFT */}
           <div className="space-y-4">
-            <div className="rounded-xl bg-white dark:bg-neutral-900 p-6 shadow-sm border border-gray-100 dark:border-neutral-800">
+            <div className="rounded-xl bg-card p-6 shadow-sm border border-border">
               <div className="flex flex-col items-center">
                 <div className="relative">
-                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950/40">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 dark:bg-pink-950/40">
                     {profile.profilePhoto ? (
                       <Image
                         src={profile.profilePhoto}
@@ -231,7 +234,7 @@ export default function AccountPage() {
                         height={96}
                       />
                     ) : (
-                      <User className="h-10 w-10 text-pink-700 dark:text-pink-400" />
+                      <User className="h-10 w-10 text-primary dark:text-pink-400" />
                     )}
                   </div>
                 </div>
@@ -260,7 +263,7 @@ export default function AccountPage() {
 
                 <Link href="/edit-profile" className="w-full">
                   {" "}
-                  <span className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition">
+                  <span className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition">
                     <Edit size={16} />
                     {t("editProfile")}
                   </span>
@@ -271,14 +274,14 @@ export default function AccountPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4">
               <Link href="/vouchers">
-                <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-gray-100 dark:border-neutral-800 transition hover:shadow-md cursor-pointer">
+                <div className="rounded-xl bg-card p-4 text-center shadow-sm border border-border transition hover:shadow-md cursor-pointer">
                   <Ticket className="mx-auto mb-2 text-primary dark:text-pink-400" />
                   <h3 className="font-bold text-gray-900 dark:text-neutral-50">{voucherCount}</h3>
                   <p className="text-sm text-gray-500 dark:text-neutral-400">{t("vouchers")}</p>
                 </div>
               </Link>
 
-              <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-gray-100 dark:border-neutral-800">
+              <div className="rounded-xl bg-card p-4 text-center shadow-sm border border-border">
                 <Gift className="mx-auto mb-2 text-primary dark:text-pink-400" />
                 <h3 className="font-bold text-gray-900 dark:text-neutral-50">{rewardPoints}</h3>
                 <p className="text-sm text-gray-500 dark:text-neutral-400">{t("rewardPoints")}</p>
@@ -298,7 +301,7 @@ export default function AccountPage() {
               <Button
                 size="sm"
                 onClick={() => setShowProModal(true)}
-                className="mt-4 rounded-full bg-white text-primary hover:bg-pink-50"
+                className="mt-4 rounded-full bg-white text-primary hover:bg-primary/5"
               >
                 {t("learnMore")}
               </Button>
@@ -312,19 +315,19 @@ export default function AccountPage() {
                 {t("ordersAndPayments")}
               </h3>
 
-              <div className="overflow-hidden rounded-xl bg-white dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 shadow-sm">
+              <div className="overflow-hidden rounded-xl bg-card border border-border shadow-sm">
                 {orderItems.map((item, index) => {
                   const Icon = item.icon;
 
                   const path = item.path;
                   const content = (
                     <div
-                      className={`flex cursor-pointer items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors ${
-                        index !== orderItems.length - 1 ? "border-b border-gray-100 dark:border-neutral-800" : ""
+                      className={`flex cursor-pointer items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors ${
+                        index !== orderItems.length - 1 ? "border-b border-border" : ""
                       }`}
                     >
                       <div className="flex items-center gap-4">
-                        <div className="rounded-full bg-pink-100 dark:bg-pink-950/40 p-3">
+                        <div className="rounded-full bg-primary/10 dark:bg-pink-950/40 p-3">
                           <Icon className="h-5 w-5 text-primary dark:text-pink-400" />
                         </div>
                         <div>
@@ -362,7 +365,7 @@ export default function AccountPage() {
 
                   const path = item.path;
                   const content = (
-                    <div className="flex cursor-pointer items-center justify-between rounded-xl bg-white dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 p-5 shadow-sm transition hover:shadow-md">
+                    <div className="flex cursor-pointer items-center justify-between rounded-xl bg-card border border-border p-4 shadow-sm transition hover:shadow-md">
                       <div className="flex items-center gap-3">
                         <div className="rounded-lg bg-gray-100 dark:bg-neutral-800 p-2 text-gray-600 dark:text-neutral-300">
                           <Icon size={18} />
@@ -415,9 +418,9 @@ export default function AccountPage() {
           />
 
           {/* Panel */}
-          <div className="relative z-10 w-full max-w-md mx-4 rounded-2xl bg-white dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 shadow-2xl overflow-hidden">
+          <div className="relative z-10 w-full max-w-md mx-4 rounded-2xl bg-card border border-border shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-primary to-pink-400 px-6 pt-8 pb-10 text-center">
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary to-pink-400 px-6 pt-8 pb-8 text-center">
               <Star className="absolute -bottom-6 -right-6 h-28 w-28 opacity-10" />
               <Star className="absolute -top-4 -left-4 h-20 w-20 opacity-10" />
               <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/20">
@@ -430,7 +433,7 @@ export default function AccountPage() {
             </div>
 
             {/* Features list */}
-            <div className="px-6 py-6 space-y-4 bg-white dark:bg-neutral-900">
+            <div className="px-6 py-6 space-y-4 bg-card">
               {[
                 { emoji: "🚚", key: "proFreeDelivery" },
                 { emoji: "🎟️", key: "proExclusiveVouchers" },
@@ -438,7 +441,7 @@ export default function AccountPage() {
                 { emoji: "🎁", key: "proBonusRewardPoints" },
               ].map((f) => (
                 <div key={f.key} className="flex items-center gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-50 dark:bg-pink-950/40 text-xl">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/5 dark:bg-pink-950/40 text-xl">
                     {f.emoji}
                   </div>
                   <div>
@@ -450,7 +453,7 @@ export default function AccountPage() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-100 dark:border-neutral-800 px-6 py-4 bg-gray-50 dark:bg-neutral-900/80">
+            <div className="border-t border-border px-6 py-4 bg-gray-50 dark:bg-neutral-900/80">
               <Button
                 variant="secondary"
                 onClick={() => setShowProModal(false)}

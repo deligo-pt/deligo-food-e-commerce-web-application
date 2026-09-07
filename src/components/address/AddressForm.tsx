@@ -360,7 +360,7 @@ export default function AddressForm({
   };
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none md:p-8">
+    <div className="rounded-2xl bg-card border border-transparent dark:border-neutral-800 p-6 shadow-sm dark:shadow-none md:p-8">
       <Toaster position="top-center" richColors />
       <div className="mb-8">
         <h2 className="mb-2 text-xl font-bold text-foreground dark:text-neutral-50">
@@ -531,7 +531,7 @@ export default function AddressForm({
 
 
       {/* Coordinates Card */}
-      <div className="mb-8 rounded-2xl border border-[#e3bdc3] dark:border-neutral-800 bg-[#fafafa] dark:bg-[#fafafa]/5 p-5">
+      <div className="mb-8 rounded-2xl border border-[#e3bdc3] dark:border-neutral-800 bg-[#fafafa] dark:bg-[#fafafa]/5 p-4">
         <div className="mb-4 flex items-center gap-2">
           <Navigation size={18} className="text-primary" />
           <h3 className="font-semibold text-foreground dark:text-neutral-200">
@@ -543,7 +543,7 @@ export default function AddressForm({
             <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground dark:text-neutral-400">
               {t("latitude")}
             </p>
-            <p className="rounded-lg bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800/50 px-4 py-3 font-mono text-sm text-foreground dark:text-neutral-300">
+            <p className="rounded-lg bg-card border border-transparent dark:border-neutral-800/50 px-4 py-3 font-mono text-sm text-foreground dark:text-neutral-300">
               {coordinates ? coordinates.lat.toFixed(6) : "—"}
             </p>
           </div>
@@ -551,7 +551,7 @@ export default function AddressForm({
             <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground dark:text-neutral-400">
               {t("longitude")}
             </p>
-            <p className="rounded-lg bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800/50 px-4 py-3 font-mono text-sm text-foreground dark:text-neutral-300">
+            <p className="rounded-lg bg-card border border-transparent dark:border-neutral-800/50 px-4 py-3 font-mono text-sm text-foreground dark:text-neutral-300">
               {coordinates ? coordinates.lng.toFixed(6) : "—"}
             </p>
           </div>

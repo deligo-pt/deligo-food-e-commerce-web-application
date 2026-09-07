@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bike, Moon, Plus, Star, Store, UtensilsCrossed } from "lucide-react";
+import { Bike, Moon, Plus, Star, UtensilsCrossed } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useProfile, useActiveAddressCoords } from "@/hooks/queries/useProfile";
@@ -42,6 +42,10 @@ import { formatCuisine } from "@/lib/cuisine";
 import { currencySymbol } from "@/lib/currency";
 import { formatDiscountValue, hasProductDiscount } from "@/lib/productPricing";
 import SafeImage from "@/components/shared/SafeImage";
+import VendorHeroImage from "./VendorHeroImage";
+import ProductQuantityStepper from "./ProductQuantityStepper";
+import { useCartQuantities } from "@/hooks/useCartQuantities";
+import { useCartCache } from "@/hooks/queries/useCart";
 import { Button } from "@/components/ui/button";
 
 function getDistanceKm(
@@ -161,10 +165,37 @@ interface Product {
     currency: string;
   };
   category?: { name: string };
+  /**
+   * Both arrive on `GET /products` already — verified against the live list:
+   * every one of the 45 products carries `variations` and `addonGroups`, so
+   * the card can decide whether a dish is addable in one tap without a second
+   * request per card.
+   */
+  variations?: { name: string; options: unknown[] }[];
+  /** ObjectIds only; the groups themselves (and their `minSelectable`) come
+   *  from `/add-ons/:id`, which the modal fetches and a card must not. */
+  addonGroups?: string[];
   // `isFeatured` is the vendor's own curation flag from GET /products. It is
   // the only merchandising signal the API exposes — there is no order-count or
   // popularity metric — so the tab is labelled "Featured" for what it is.
   meta?: { isFeatured?: boolean };
+}
+
+/**
+ * Can this dish go into the cart from the grid, in one tap?
+ *
+ * Only when there is nothing to choose. A variation is an unanswered question
+ * — which size, which plate — and an add-on group may carry
+ * `minSelectable > 0`, which the modal refuses to add without. Reading that
+ * limit means one `/add-ons/:id` request per group, per card, so the card does
+ * not read it: a product with any add-on group keeps the `+` that opens the
+ * modal.
+ *
+ * On the live catalogue that is 30 of 45 products addable inline, 12 held back
+ * by variations and 3 by add-on groups.
+ */
+function isOneTapAddable(product: Product): boolean {
+  return !product.variations?.length && !product.addonGroups?.length;
 }
 
 
@@ -174,16 +205,23 @@ function formatPrice(price: number, currency: string) {
   return `${currency}${price.toFixed(2)}`;
 }
 
-// Memoized menu row — only re-renders when its product or the select handler
-// changes, so unrelated parent state (delivery-time estimate, category tab,
-// modal open/close) no longer re-renders the whole grid.
+// Memoized menu row — only re-renders when its product, its cart quantity or
+// the handlers change, so unrelated parent state (delivery-time estimate,
+// category tab, modal open/close) no longer re-renders the whole grid.
 const MenuProductCard = memo(function MenuProductCard({
   product,
   onSelect,
+  cartQuantity,
+  onCartChanged,
   storeClosed = false,
 }: {
   product: Product;
   onSelect: (productId: string) => void;
+  /** How many of this line the cart holds. `0` when it holds none. */
+  cartQuantity: number;
+  /** Awaited by the stepper, so its optimistic number survives until the
+   *  refetch it triggered has actually landed. */
+  onCartChanged: () => Promise<unknown>;
   // When the store is closed the menu stays browsable but nothing in the row is
   // actionable: the add button is disabled and the hover affordance is dropped,
   // so the card never invites a click it won't honour. Customers can still see
@@ -200,32 +238,52 @@ const MenuProductCard = memo(function MenuProductCard({
   const hasDiscount = hasProductDiscount(pricing);
   // "10%" or "€0.60" — the badge's word comes from `t("off")` beside it.
   const discountValue = formatDiscountValue(pricing, currency);
+  // The cart endpoints key on the Mongo `_id`; the business `productId`
+  // (PROD-XXXX) is rejected as an "Invalid Id". The modal is opened by the
+  // business id, because that is what `/products/:id` and the `?product=` deep
+  // link both take — so the card carries both, deliberately.
+  const cartId = product._id ?? product.productId;
+  const oneTap = isOneTapAddable(product);
 
   return (
-    // Vertical: image on top, then name, description, price. The horizontal
-    // card this replaces gave its image a fixed 128px and let the text take the
-    // rest — which worked at full width and stops working once the sidebar
-    // takes ~260px off the grid, leaving the text column around 90px at `md`.
-    // Stacking gives both the full cell width instead of splitting it.
+    // Vertical: image on top, then name and price. The description line was
+    // removed by request — it is in the details modal, and dropping it is most
+    // of what lets the card shrink and the grid gain a column.
+    /*
+      The whole card opens the detail — image, name, price, the padding
+      between them. Everything except the quantity control, which stops the
+      click before it gets here (see `ProductQuantityStepper`).
+
+      A `div` with an `onClick` and no `role`, deliberately. This is the
+      "clickable card" pattern: the card itself is a convenience for pointers,
+      and the **name below is a real `<button>`** carrying the same action —
+      so the card is one tab stop, announces itself as a button named after
+      the dish, and works on Enter. Making the card the button instead would
+      nest the stepper's buttons inside it, which is invalid and lands
+      keyboard focus somewhere no browser agrees on.
+
+      Still openable while the store is closed: reading a dish is not ordering
+      it, and the modal disables its own add button.
+    */
     <div
-      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-none ${
+      onClick={() => onSelect(product.productId)}
+      className={`group flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition dark:shadow-none ${
         storeClosed ? "" : "hover:shadow-lg dark:hover:bg-neutral-800/30"
       }`}
     >
-      {/* 4:3 rather than a fixed height, so every card in a row shows the same
-          crop whatever the column width works out to. */}
       <div className="relative aspect-4/3 w-full overflow-hidden">
         <SafeImage
           src={product.images?.[0]}
           alt={product.name}
-          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
+          // Four columns at the widest breakpoint, two on a phone.
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className={`object-cover transition-transform duration-300 ${
             storeClosed ? "" : "group-hover:scale-[1.04]"
           }`}
-          fallbackIcon={<UtensilsCrossed className="h-10 w-10" />}
+          fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
         />
         {discountValue && (
-          <span className="absolute left-3 top-3 rounded-full bg-pink-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
+          <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-white shadow-sm">
             {discountValue} {t("off")}
           </span>
         )}
@@ -234,17 +292,27 @@ const MenuProductCard = memo(function MenuProductCard({
       {/* `flex-1` + `h-full` on the card make every card in a row the same
           height, with the price row pinned to the bottom — so a two-line name
           next to a one-line name does not leave the prices misaligned. */}
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="line-clamp-2 font-semibold text-gray-900 dark:text-white">
-          {product.name}
+      <div className="flex flex-1 flex-col p-3">
+        {/* The card's keyboard equivalent. It carries the same action as the
+            card around it, so a pointer and a Tab key reach the detail the
+            same way — and `text-start` because a button centres its text. */}
+        <h3 className="line-clamp-2 text-sm font-semibold text-gray-900 dark:text-white">
+          <button
+            type="button"
+            onClick={(event) => {
+              // The card behind it would otherwise fire the same handler twice.
+              event.stopPropagation();
+              onSelect(product.productId);
+            }}
+            className="cursor-pointer text-start"
+          >
+            {product.name}
+          </button>
         </h3>
-        <p className="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-neutral-400">
-          {product.description || t("deliciousMenuItem")}
-        </p>
 
-        <div className="mt-4 flex items-end justify-between gap-3 pt-1">
+        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
           <div className="min-w-0">
-            <p className="truncate text-xl font-bold text-pink-600 dark:text-pink-400">
+            <p className="truncate text-base font-bold text-primary dark:text-pink-400">
               {formatPrice(finalPrice, currency)}
             </p>
             {hasDiscount && (
@@ -253,15 +321,33 @@ const MenuProductCard = memo(function MenuProductCard({
               </p>
             )}
           </div>
-          <Button
-            size="icon"
-            onClick={() => onSelect(product.productId)}
-            disabled={storeClosed}
-            aria-label={storeClosed ? t("storeClosedTitle") : t("addToCart")}
-            className="shrink-0 rounded-xl hover:scale-105 disabled:hover:scale-100"
-          >
-            <Plus size={18} />
-          </Button>
+
+          {/*
+            One tap only where there is nothing to ask. A dish with a variation
+            or an add-on group keeps the `+` that opens the modal — it is the
+            only place a size can be chosen or a required add-on satisfied, and
+            a card that added one blind would build a cart line the customer
+            never agreed to.
+          */}
+          {oneTap ? (
+            <ProductQuantityStepper
+              productId={cartId}
+              productName={product.name}
+              quantity={cartQuantity}
+              disabled={storeClosed}
+              onCartChanged={onCartChanged}
+            />
+          ) : (
+            <Button
+              size="icon"
+              onClick={() => onSelect(product.productId)}
+              disabled={storeClosed}
+              aria-label={storeClosed ? t("storeClosedTitle") : t("addToCart")}
+              className="size-9 shrink-0 rounded-xl hover:scale-105 disabled:hover:scale-100"
+            >
+              <Plus size={16} />
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -394,6 +480,16 @@ export default function VendorDetailsPage({
     [categoryGroups],
   );
 
+  // Signed in? The cart only exists for an account, so a guest's grid renders
+  // every card in its `+` state and the query is never fired. Declared here
+  // rather than beside the profile query below because the card needs it.
+  const authed = typeof window !== "undefined" && !!getAccessToken();
+
+  // One cart read for the whole grid. Each card receives a number, so a change
+  // to one line re-renders one card — see `useCartQuantities`.
+  const cartQuantities = useCartQuantities(authed);
+  const { invalidate: invalidateCart } = useCartCache();
+
   // A category group draws its products with the page's own card, passed down as
   // a render prop. That is what keeps `MenuProductCard` — and with it every
   // price, discount badge and add-to-cart path — untouched by this feature.
@@ -402,10 +498,12 @@ export default function VendorDetailsPage({
       <MenuProductCard
         product={product}
         onSelect={handleSelectProduct}
+        cartQuantity={cartQuantities.get(product._id ?? product.productId) ?? 0}
+        onCartChanged={invalidateCart}
         storeClosed={isStoreClosed}
       />
     ),
-    [handleSelectProduct, isStoreClosed],
+    [cartQuantities, handleSelectProduct, invalidateCart, isStoreClosed],
   );
   const categoryProductKey = useCallback(
     (product: Product) => product.productId ?? product.id,
@@ -414,7 +512,6 @@ export default function VendorDetailsPage({
 
   // Resolve delivery coords from the shared, cached profile (GPS fallback),
   // waiting on the profile query so we don't lock in a wrong estimate early.
-  const authed = typeof window !== "undefined" && !!getAccessToken();
   const { isLoading: profileLoading } = useProfile({ enabled: authed });
   const activeCoords = useActiveAddressCoords();
   const { coords: geoCoords, permissionStatus } = useLocationStore();
@@ -529,29 +626,36 @@ export default function VendorDetailsPage({
         <section className="mb-6">
           <div className="relative overflow-hidden rounded-3xl shadow-lg">
             <div className="relative h-62.5 md:h-90">
-              <SafeImage
+              {/* The banner and its placeholder, extracted. It carries
+                  `motion-image-in`, which scales, and §11 bars a transform from
+                  a file that renders a price — this one renders sixteen. The
+                  boundary is the point: nothing that renders money goes in
+                  `VendorHeroImage`. */}
+              <VendorHeroImage
                 src={heroImage}
                 alt={vendor.businessDetails.businessName}
-                priority
-                sizes="100vw"
-                className={`object-cover ${isStoreClosed ? "grayscale" : ""}`}
-                fallbackIcon={<Store className="h-14 w-14" />}
+                dimmed={isStoreClosed}
               />
+              {/* Everything below stays stacked above the placeholder in
+                  document order. The gradient, the closed badge and the info
+                  panel are content that has already arrived; covering them to
+                  hide an image that has not would trade a real thing for an
+                  absent one. */}
               <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
               {/* Same treatment the listing card carries, so arriving here from
                   a dimmed card reads as continuity rather than a state change.
                   Sits above the gradient but clear of the info panel, which is
                   anchored to the bottom-left. */}
               {isStoreClosed && (
-                <div className="pointer-events-none absolute inset-0 flex items-start justify-center bg-black/40 pt-10 md:pt-16">
-                  <span className="flex items-center gap-2 rounded-full bg-black/70 px-5 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
+                <div className="pointer-events-none absolute inset-0 flex items-start justify-center bg-black/40 pt-8 md:pt-16">
+                  <span className="flex items-center gap-2 rounded-full bg-black/70 px-4 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
                     <Moon size={18} />
                     {t("currentlyClosed")}
                   </span>
                 </div>
               )}
               <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8">
-                <div className="rounded-2xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 p-5 shadow-xl dark:shadow-none">
+                <div className="rounded-2xl bg-card border p-4 shadow-xl dark:shadow-none">
                   <div className="mb-1 flex items-center gap-2">
                     <h1 className="text-2xl lg:text-display font-bold text-gray-900 dark:text-white">
                       {vendor.businessDetails.businessName}
@@ -605,7 +709,7 @@ export default function VendorDetailsPage({
         )}
 
         {isStoreClosed && (
-          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-5">
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4">
             <Moon
               size={22}
               className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500"
@@ -648,20 +752,20 @@ export default function VendorDetailsPage({
             />
 
           {/* The skeleton is shaped like what replaces it: two groups, each a
-              heading row over the same grid, using the *same* `mb-10`, `mt-4`,
-              `gap-5` and column classes as `CategoryGroup`. A skeleton that
+              heading row over the same grid, using the *same* `mb-8`, `mt-4`,
+              `gap-4` and column classes as `CategoryGroup`. A skeleton that
               only draws cards costs a jump the moment the headings arrive —
               content shifting under a cursor that was already moving toward
               it. Anything changed in one of these has to change in both. */}
           {catalogueLoading && (
             <div aria-hidden>
               {Array.from({ length: 2 }).map((_, group) => (
-                <div key={group} className="mb-10 last:mb-0">
+                <div key={group} className="mb-8 last:mb-0">
                   <div className="flex items-baseline justify-between gap-4">
                     <div className="h-7 w-40 animate-pulse rounded-lg bg-gray-100 dark:bg-neutral-800" />
                     <div className="h-5 w-16 animate-pulse rounded-lg bg-gray-100 dark:bg-neutral-800" />
                   </div>
-                  <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
                     {Array.from({ length: 3 }).map((_, card) => (
                       <div
                         key={card}
@@ -697,20 +801,21 @@ export default function VendorDetailsPage({
               --------------------------------------------------------------- */}
           {!catalogueLoading && !productsError && (
             categoryGroups.length === 0 ? (
-              <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border dark:border-neutral-800 p-6 text-center text-gray-500 dark:text-neutral-400">
+              <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border p-6 text-center text-gray-500 dark:text-neutral-400">
                 {t("noProductsFound")}
               </div>
             ) : (
-              // Fades the grouped catalogue in over the skeleton it replaces,
-              // and is a no-op under `prefers-reduced-motion: reduce`. Applied
-              // to the wrapper, once, rather than per group — a stagger down a
-              // list the customer is already looking at reads as lag, not
-              // polish.
+              // Phase 6 faded the whole catalogue in here, once, and said why:
+              // "a stagger down a list the customer is already looking at reads
+              // as lag, not polish." Browser round 6 was asked for the stagger
+              // anyway, and the objection is answered rather than overruled —
+              // the sequencing is now per *group* and fires when that group
+              // scrolls into view, so nothing cascades down a menu already on
+              // screen. See `CategoryGroup`.
               //
-              // This was `category-enter`, a page-local class that did the same
-              // thing with a 4px lift. Phase 6 made it a system primitive; two
-              // classes for one idea is how the seven pinks happened.
-              <div className="motion-fade">
+              // The wrapper's own fade is gone with it. Fading a container while
+              // its children animate inside it pays for one arrival twice.
+              <div>
                 {categoryGroups.map((group) => (
                   <CategoryGroup
                     key={group.id}

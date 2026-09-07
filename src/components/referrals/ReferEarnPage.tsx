@@ -109,7 +109,7 @@ export default function ReferEarnPage() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f8f9fa] dark:bg-neutral-950 px-4 transition-colors duration-200 text-gray-900 dark:text-neutral-100">
-        <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 p-6 text-center shadow-md border border-neutral-200 dark:border-neutral-800 text-red-500 dark:text-red-400">
+        <div className="w-full max-w-md rounded-2xl bg-card p-6 text-center shadow-md border border-border text-red-500 dark:text-red-400">
           {error}
         </div>
       </div>
@@ -117,8 +117,8 @@ export default function ReferEarnPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-10 transition-colors duration-200 text-gray-900 dark:text-neutral-100">
-      <div className="mx-auto max-w-5xl px-4 animate-fadeIn">
+    <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-8 transition-colors duration-200 text-gray-900 dark:text-neutral-100">
+      <div className="mx-auto max-w-5xl px-4 motion-fade">
         {/* Breadcrumbs */}
         <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground dark:text-neutral-400">
           <span>{t("home")}</span>
@@ -131,14 +131,14 @@ export default function ReferEarnPage() {
         </div>
 
         {/* Hero Section */}
-        <section className="mb-10 flex justify-center">
-          <div className="w-full max-w-xl rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-sm border border-neutral-200 dark:border-neutral-800 md:p-8">
+        <section className="mb-8 flex justify-center">
+          <div className="w-full max-w-xl rounded-2xl bg-card p-6 shadow-sm border border-border md:p-8">
             <div className="flex flex-col items-center text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-pink-50 dark:bg-pink-950/40">
-                <Gift className="h-8 w-8 text-pink-600 dark:text-pink-400" />
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/5 dark:bg-pink-950/40">
+                <Gift className="h-8 w-8 text-primary dark:text-pink-400" />
               </div>
 
-              <h1 className="mb-5 text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
+              <h1 className="mb-4 text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
                 {t("yourReferralCode")}
               </h1>
 
@@ -147,8 +147,8 @@ export default function ReferEarnPage() {
                   onClick={handleCopy}
                   className={`focus-ring flex w-full items-center justify-between rounded-xl border-2 border-dashed p-4 transition-all duration-200 ${
                     copied
-                      ? "border-pink-600 dark:border-pink-500 bg-pink-50 dark:bg-pink-950/10"
-                      : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/30 hover:border-pink-600 dark:hover:border-pink-500"
+                      ? "border-primary dark:border-pink-500 bg-primary/5 dark:bg-pink-950/10"
+                      : "border-border bg-white dark:bg-neutral-900/30 hover:border-primary dark:hover:border-pink-500"
                   }`}
                 >
                   <span className="text-xl font-extrabold tracking-[0.2em] text-primary dark:text-pink-400 md:text-2xl">
@@ -156,7 +156,7 @@ export default function ReferEarnPage() {
                   </span>
 
                   {copied ? (
-                    <Check className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                    <Check className="h-5 w-5 text-primary dark:text-pink-400" />
                   ) : (
                     <Copy className="h-5 w-5 text-neutral-500 dark:text-neutral-400" />
                   )}
@@ -176,8 +176,8 @@ export default function ReferEarnPage() {
         </section>
 
         {/* Stats */}
-        <section className="mb-12 grid grid-cols-1 gap-5 md:grid-cols-3">
-          <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-neutral-200 dark:border-neutral-800">
+        <section className="mb-12 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="rounded-xl bg-card p-4 text-center shadow-sm border border-border">
             <Clock3 className="mx-auto mb-3 h-8 w-8 text-primary dark:text-pink-400" />
             <h3 className="mb-0 text-2xl font-bold text-primary dark:text-pink-400">
               {referralData?.summary.pendingInvites ?? 0}
@@ -187,7 +187,7 @@ export default function ReferEarnPage() {
             </p>
           </div>
 
-          <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-neutral-200 dark:border-neutral-800">
+          <div className="rounded-xl bg-card p-4 text-center shadow-sm border border-border">
             <Users className="mx-auto mb-3 h-8 w-8 text-primary dark:text-pink-400" />
             <h3 className="mb-0 text-2xl font-bold text-primary dark:text-pink-400">
               {referralData?.summary.successfulInvites ?? 0}
@@ -197,7 +197,7 @@ export default function ReferEarnPage() {
             </p>
           </div>
 
-          <div className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-neutral-200 dark:border-neutral-800">
+          <div className="rounded-xl bg-card p-4 text-center shadow-sm border border-border">
             <Wallet className="mx-auto mb-3 h-8 w-8 text-primary dark:text-pink-400" />
             <h3 className="mb-0 text-2xl font-bold text-primary dark:text-pink-400">
               €{referralData?.summary.totalEarned ?? 0}
@@ -209,7 +209,7 @@ export default function ReferEarnPage() {
         </section>
 
         {/* How It Works */}
-        <section className="rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-sm border border-neutral-200 dark:border-neutral-800 md:p-8">
+        <section className="rounded-2xl bg-card p-6 shadow-sm border border-border md:p-8">
           <h2 className="mb-8 text-center text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
             {t("howItWorks")}
           </h2>

@@ -38,12 +38,12 @@ const upcomingCountries = [
 export default function SelectCountryPage() {
   const { t } = useTranslation();
   return (
-    <div className="min-h-screen bg-[#f7f7f7] dark:bg-neutral-950 px-4 py-10 transition-colors duration-200 text-gray-900 dark:text-neutral-100">
+    <div className="min-h-screen bg-[#f7f7f7] dark:bg-neutral-950 px-4 py-8 transition-colors duration-200 text-gray-900 dark:text-neutral-100">
       <div className="mx-auto max-w-md">
         {/* Header */}
-        <div className="mb-10 text-center">
+        <div className="mb-8 text-center">
           <h1 className="text-2xl lg:text-display font-bold text-slate-900 dark:text-neutral-50">{t("selectCountry")}</h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
+          <p className="mt-4 text-sm text-slate-500 dark:text-neutral-400">
             {t("selectCountryDescription")}
           </p>
         </div>
@@ -54,7 +54,7 @@ export default function SelectCountryPage() {
             {t("availableCountries")}
           </p>
 
-          <button className="focus-ring flex w-full items-center justify-between rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 px-5 py-5 shadow-sm dark:shadow-none transition hover:shadow-md dark:hover:bg-neutral-800/30">
+          <button className="focus-ring flex w-full items-center justify-between rounded-2xl bg-card border border-transparent dark:border-neutral-800 px-4 py-4 shadow-sm dark:shadow-none transition hover:shadow-md dark:hover:bg-neutral-800/30">
             <div className="flex items-center gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 dark:bg-neutral-950">
                 <CountryFlag
@@ -82,7 +82,7 @@ export default function SelectCountryPage() {
             {upcomingCountries.map((country) => (
               <div
                 key={country.name}
-                className="flex items-center justify-between rounded-2xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 px-5 py-5 shadow-sm dark:shadow-none"
+                className="flex items-center justify-between rounded-2xl bg-card border border-transparent dark:border-neutral-800 px-4 py-4 shadow-sm dark:shadow-none"
               >
                 <div className="flex items-center gap-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 dark:bg-neutral-950">

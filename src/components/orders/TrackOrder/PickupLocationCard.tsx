@@ -58,9 +58,9 @@ export default function PickupLocationCard({
     : null;
 
   return (
-    <div className="rounded-3xl border border-transparent bg-white p-6 shadow-md dark:border-neutral-800 dark:bg-neutral-900">
+    <div className="rounded-3xl border border-transparent bg-card p-6 shadow-md dark:border-neutral-800">
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#ffd9de] dark:bg-pink-950/30">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/20 dark:bg-pink-950/30">
           <MapPin className="h-6 w-6 text-primary dark:text-pink-400" />
         </div>
         <div className="min-w-0 flex-1 space-y-1">
@@ -86,7 +86,7 @@ export default function PickupLocationCard({
           href={directionsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
         >
           <Navigation className="h-4 w-4" />
           {t("getDirections")}

@@ -168,7 +168,7 @@ const RestaurantCard = memo(function RestaurantCard({
         )}
       </div>
 
-      {/* `p-5 sm:p-8` was 20 and 32; neither is on the §1.2 scale. And the
+      {/* `p-4 sm:p-8` was 20 and 32; neither is on the §1.2 scale. And the
           three children carried `mb-2`, `mb-4 sm:mb-6` and `pt-4 sm:pt-6`
           between them — three margins doing what one `gap` does, each free to
           drift from the others. */}
@@ -206,7 +206,7 @@ const RestaurantCard = memo(function RestaurantCard({
             — §1.4 gives pink to action *and* availability, so painting both in
             it distinguished neither. Closed is untouched: the same muted
             #9aa0a6 it has always been. */}
-        <div className="mt-auto flex min-w-0 items-center gap-4 border-t border-border pt-3 text-sm font-semibold dark:border-neutral-800">
+        <div className="mt-auto flex min-w-0 items-center gap-4 border-t border-border pt-3 text-sm font-semibold">
           <span
             className={`flex shrink-0 items-center gap-2 ${
               isClosed ? "text-[#9aa0a6] dark:text-neutral-500" : "text-success"
@@ -467,7 +467,7 @@ export default function RestaurantsSection() {
               <div className="flex flex-col gap-3 p-4 sm:p-6">
                 <div className="h-7 w-2/3 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
                 <div className="h-4 w-1/2 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-                <div className="flex items-center gap-4 border-t border-border pt-3 dark:border-neutral-800">
+                <div className="flex items-center gap-4 border-t border-border pt-3">
                   <div className="h-5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
                   <div className="h-5 w-32 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
                 </div>
@@ -552,8 +552,8 @@ export default function RestaurantsSection() {
 
   return (
     <section>
-      {/* Phase 5 #2 again. `mb-6 sm:mb-10` in the skeleton against a flat
-          `mb-10` here: the heading jumped 16px on mobile the moment the vendors
+      {/* Phase 5 #2 again. `mb-6 sm:mb-8` in the skeleton against a flat
+          `mb-8` here: the heading jumped 16px on mobile the moment the vendors
           arrived. Phase 9 retired that whole class of bug in this file — all
           three branches are one component now. */}
       <SectionHeading
@@ -608,8 +608,8 @@ export default function RestaurantsSection() {
           </div>
         )}
 
-      {/* Plan.md Phase 5 #2. The skeleton above was `gap-6 lg:gap-10` and this
-          was a flat `gap-10`, so every card jumped 16px sideways the moment the
+      {/* Plan.md Phase 5 #2. The skeleton above was `gap-6 lg:gap-8` and this
+          was a flat `gap-8`, so every card jumped 16px sideways the moment the
           data landed — on mobile and tablet, which is most of the traffic. Both
           are now the §1.2 grid gap, written identically.
 

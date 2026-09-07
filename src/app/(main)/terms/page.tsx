@@ -70,7 +70,7 @@ export default function TermsPage() {
   }) => (
     <Link
       href={href}
-      className="group bg-white dark:bg-neutral-900 p-6 rounded-xl border border-gray-200 dark:border-neutral-800 shadow-sm dark:shadow-none hover:shadow-md transition-all hover:-translate-y-1"
+      className="group bg-card p-6 rounded-xl border border-border shadow-sm dark:shadow-none hover:shadow-md transition-all hover:-translate-y-1"
     >
       <div className="flex items-center gap-3 mb-2">
         <span className="text-2xl">{icon}</span>
@@ -91,7 +91,7 @@ export default function TermsPage() {
   }) => (
     <div className="bg-gray-50 dark:bg-neutral-950 p-6 rounded-xl border border-gray-100 dark:border-neutral-800/80 hover:shadow-md dark:hover:shadow-none transition">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-primary/10 flex items-center justify-center text-pink-600 dark:text-pink-400 text-xl">
+        <div className="w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/10 flex items-center justify-center text-primary dark:text-pink-400 text-xl">
           {icon}
         </div>
         <h4 className="text-xl font-semibold text-gray-800 dark:text-neutral-200">{title}</h4>
@@ -102,8 +102,14 @@ export default function TermsPage() {
 
   return (
     <main className="bg-gray-50 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
-      {/* Hero Section */}
-      <section className="relative py-20">
+      {/* Hero Section.
+
+          The gap under this title measured 112: `py-16` here (64 below the
+          h1) plus `py-12` on the container beneath it (48 above the next
+          heading). Two elements each paying in full for the same gap. The
+          hero keeps its top air and stops paying for the bottom; the
+          container's padding is the whole of it now, at §1.2's 48/64. */}
+      <section className="relative pt-12 sm:pt-16">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-display font-extrabold tracking-tight text-gray-900 dark:text-neutral-50">
             {t("termsHeroTitle")}
@@ -112,16 +118,16 @@ export default function TermsPage() {
       </section>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-12 max-w-6xl">
+      <div className="container mx-auto px-4 py-8 sm:py-12 max-w-6xl">
         {/* Introduction */}
-        <div className="max-w-3xl mb-16">
-          <h2 className="text-2xl lg:text-display font-bold mb-4 text-gray-900 dark:text-neutral-50">{t("termsIntroTitle")}</h2>
+        <div className="max-w-3xl mb-8 sm:mb-12">
+          <h2 className="text-2xl lg:text-display font-bold mb-6 text-gray-900 dark:text-neutral-50">{t("termsIntroTitle")}</h2>
           <p className="text-base text-gray-600 dark:text-neutral-300">{t("termsIntroDescription")}</p>
         </div>
 
         {/* Categories Grid */}
-        <section className="mb-24">
-          <h3 className="text-2xl font-bold mb-8 text-gray-700 dark:text-neutral-300">
+        <section className="mb-8 sm:mb-12">
+          <h3 className="text-2xl font-bold mb-6 text-gray-700 dark:text-neutral-300">
             {t("termsCategoriesHeading")}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -132,9 +138,9 @@ export default function TermsPage() {
         </section>
 
         {/* Customer Terms Section */}
-        <section className="bg-white dark:bg-neutral-900 rounded-2xl shadow-md dark:shadow-none border border-transparent dark:border-neutral-800 p-6 md:p-10 lg:p-12">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-2xl lg:text-display font-bold mb-4 text-gray-900 dark:text-neutral-50">
+        <section className="bg-card rounded-2xl shadow-md dark:shadow-none border border-transparent dark:border-neutral-800 p-6 md:p-8 lg:p-12">
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <h2 className="text-2xl lg:text-display font-bold mb-6 text-gray-900 dark:text-neutral-50">
               {t("termsCustomerSectionTitle")}
             </h2>
             <p className="text-gray-600 dark:text-neutral-400">

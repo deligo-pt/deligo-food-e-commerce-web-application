@@ -152,8 +152,11 @@ export default function SavedAddressesPage() {
     );
   }
 
+  /* Phase 12. The skeleton above is swapped out in a single frame;
+     `motion-fade` is that same swap over 300ms. Opacity only, once, and
+     it opts out under prefers-reduced-motion with the rest of the set. */
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
+    <div className="motion-fade mx-auto max-w-2xl px-4 py-6 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       {/* Header. No manual refresh control: the list already re-fetches on
           window focus and after every mutation, so the button gave the user
           nothing to observe. */}
@@ -188,9 +191,9 @@ export default function SavedAddressesPage() {
                   handleSetActiveAddress(address._id);
                 }
               }}
-              className={`flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all sm:gap-4 sm:p-5 ${isActiveAddress
-                ? "border border-pink-200 dark:border-pink-900/50 bg-pink-50 dark:bg-pink-950/20"
-                : "border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/30 hover:border-pink-300 dark:hover:border-pink-500/30 hover:bg-pink-50/40 dark:hover:bg-pink-950/5"
+              className={`flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all sm:gap-4 sm:p-4 ${isActiveAddress
+                ? "border border-primary/20 dark:border-pink-900/50 bg-primary/5 dark:bg-pink-950/20"
+                : "border border-border bg-white dark:bg-neutral-900/30 hover:border-primary/30 dark:hover:border-pink-500/30 hover:bg-primary/5 dark:hover:bg-pink-950/5"
                 } ${updatingId === address._id || deletingId === address._id
                   ? "pointer-events-none opacity-70"
                   : ""
@@ -278,14 +281,14 @@ export default function SavedAddressesPage() {
         })}
 
         {addresses.length === 0 && (
-          <div className="rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 text-center text-sm text-gray-500 dark:text-neutral-400">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-gray-500 dark:text-neutral-400">
             {t("noSavedAddressesFound")}
           </div>
         )}
 
         <Link
           href="/add-address"
-          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-pink-300 dark:border-pink-500/40 bg-white dark:bg-neutral-900/30 px-4 py-4 text-sm font-semibold text-primary dark:text-pink-400 transition-all hover:border-primary dark:hover:border-pink-400 hover:bg-pink-50/60 dark:hover:bg-pink-950/10"
+          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/30 dark:border-pink-500/40 bg-white dark:bg-neutral-900/30 px-4 py-4 text-sm font-semibold text-primary dark:text-pink-400 transition-all hover:border-primary dark:hover:border-pink-400 hover:bg-primary/5 dark:hover:bg-pink-950/10"
         >
           <Plus className="h-4 w-4" />
           {t("addNewAddress")}

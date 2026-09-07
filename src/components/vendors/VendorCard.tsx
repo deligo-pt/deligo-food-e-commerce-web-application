@@ -278,7 +278,7 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
             — §1.4 gives pink to action *and* availability, so painting both in
             it distinguished neither. Closed is untouched: the same muted
             #9aa0a6 it has always been. */}
-        <div className="mt-auto flex min-w-0 items-center gap-4 border-t border-border pt-3 text-sm font-semibold dark:border-neutral-800">
+        <div className="mt-auto flex min-w-0 items-center gap-4 border-t border-border pt-3 text-sm font-semibold">
           <span
             className={`flex shrink-0 items-center gap-2 ${
               isClosed ? "text-[#9aa0a6] dark:text-neutral-500" : "text-success"

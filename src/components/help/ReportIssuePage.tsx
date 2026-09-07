@@ -86,13 +86,15 @@ export default function ReportIssuePage() {
               actionLabel={t("browseStores")}
             />
           ) : (
-            <ul className="space-y-3">
+            /* Phase 12. `<ReportIssueSkeleton />` above is swapped for this in
+               one frame; `motion-fade` is that swap over 300ms. */
+            <ul className="motion-fade space-y-3">
               {orders.map((order) => (
                 <li key={order._id ?? order.orderId}>
                   <button
                     type="button"
                     onClick={() => openChatFor(order)}
-                    className="focus-ring group flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 text-left transition-all hover:border-primary/30 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-pink-500/30 dark:hover:shadow-none"
+                    className="focus-ring group flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-md dark:hover:border-pink-500/30 dark:hover:shadow-none"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-base font-bold text-foreground dark:text-neutral-50">
@@ -139,7 +141,7 @@ function Empty({
   actionLabel: string;
 }) {
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-gray-200 bg-white px-6 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900">
+    <div className="flex flex-col items-center rounded-2xl border border-border bg-card px-6 py-12 text-center">
       <ShoppingBag
         aria-hidden
         className="h-10 w-10 text-primary dark:text-pink-400"
@@ -149,7 +151,7 @@ function Empty({
       </p>
       <Link
         href={actionHref}
-        className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover dark:bg-pink-600 dark:hover:bg-pink-700"
+        className="mt-4 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover dark:bg-pink-600 dark:hover:bg-pink-700"
       >
         {actionLabel}
       </Link>

@@ -74,10 +74,10 @@ export default function FAQPage() {
     const [open, setOpen] = useState(false);
 
     return (
-      <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm dark:shadow-none">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:shadow-none">
         <button
           onClick={() => setOpen(!open)}
-          className="focus-ring flex w-full items-center justify-between gap-4 p-5 text-left"
+          className="focus-ring flex w-full items-center justify-between gap-4 p-4 text-left"
         >
           <span className="font-semibold text-slate-900 dark:text-neutral-100">{question}</span>
           <ChevronDown
@@ -87,7 +87,7 @@ export default function FAQPage() {
           />
         </button>
         {open && (
-          <div className="border-t border-slate-100 dark:border-neutral-800 px-5 py-4 text-slate-600 dark:text-neutral-300 bg-slate-50/50 dark:bg-neutral-950/20">
+          <div className="border-t border-border px-4 py-4 text-slate-600 dark:text-neutral-300 bg-slate-50/50 dark:bg-neutral-950/20">
             {answer}
           </div>
         )}
@@ -114,7 +114,7 @@ export default function FAQPage() {
           shared back bar instead of butting against it (same as the contact
           page). */}
       <section className="mx-auto max-w-7xl px-4 pt-2 md:px-8">
-        <div className="rounded-3xl bg-linear-to-r from-primary via-primary-hover to-primary px-6 py-16 text-center md:py-20">
+        <div className="rounded-3xl bg-linear-to-r from-primary via-primary-hover to-primary px-6 py-16 text-center md:py-16">
           {/* Hero is the pink gradient — knockout, no white plate. */}
           <Logo size={96} variant="mark" className="mx-auto mb-8" />
           <h1 className="text-2xl font-bold text-white lg:text-display">
@@ -123,14 +123,14 @@ export default function FAQPage() {
           <p className="mt-4 text-base text-white/85">
             {t("faqSubtitle")}
           </p>
-          <div className="mx-auto mt-10 max-w-2xl">
+          <div className="mx-auto mt-8 max-w-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-neutral-500" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("faqSearchPlaceholder")}
-                className="h-14 w-full rounded-2xl border-0 bg-white dark:bg-neutral-900 pl-12 pr-11 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-14 w-full rounded-2xl border-0 bg-card pl-12 pr-12 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-primary/30"
               />
               {search && <ClearFilterButton onClear={() => setSearch("")} />}
             </div>
@@ -146,10 +146,10 @@ export default function FAQPage() {
             return (
               <div
                 key={category.id}
-                className="rounded-3xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 transition hover:shadow-lg dark:hover:shadow-none dark:hover:bg-neutral-800/30"
+                className="rounded-3xl border border-border bg-card p-6 transition hover:shadow-lg dark:hover:shadow-none dark:hover:bg-neutral-800/30"
               >
                 <Icon className="mb-4 h-8 w-8 text-primary" />
-                <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-neutral-100">{category.title}</h3>
+                <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-neutral-100">{category.title}</h3>
                 <p className="text-slate-500 dark:text-neutral-400">
                   {category.faqs.length} {t("faqQuestions")}
                 </p>
@@ -160,7 +160,7 @@ export default function FAQPage() {
       </section>
 
       {/* FAQs List */}
-      <section className="mx-auto max-w-7xl px-6 pb-20">
+      <section className="mx-auto max-w-7xl px-6 pb-16">
         <div className="space-y-12">
           {filteredCategories.map((category) => {
             const Icon = category.icon;

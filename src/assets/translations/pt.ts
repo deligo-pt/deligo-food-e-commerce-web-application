@@ -196,6 +196,11 @@ const pt = {
   removeFromCart: "Remover",
   removeFromCartConfirm:
     "Tem a certeza de que pretende remover \u201c{product}\u201d do seu carrinho?",
+  // O seletor de quantidade no cartão do produto. Mostra apenas o número, pelo
+  // que o nome acessível tem de dizer o que é e que ao premir abre os
+  // controlos.
+  changeQuantity: "Alterar a quantidade de \u201c{product}\u201d",
+  removedFromCart: "\u201c{product}\u201d removido do seu carrinho",
   new: "Novo",
 
   goToCheckout: "Ir para Checkout",
@@ -1830,7 +1835,7 @@ const pt = {
   invoiceDiscount: "Desconto",
   invoiceSubtotal: "Subtotal (IVA incl.)",
   invoiceOfferDiscount: "Desconto promocional",
-  invoiceServiceFee: "Taxa de Serviço",
+  invoiceServiceFee: "Taxa de Serviço (IVA incl.)",
   invoiceDeliveryFee: "Taxa de entrega (IVA incl.)",
   invoicePay: "A Pagar",
   invoiceAddress: "Morada",

@@ -44,7 +44,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 transition-colors duration-200">
       <div className="mx-auto max-w-5xl px-4 py-8 md:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-8">
           <h1 className="text-2xl lg:text-display font-bold text-neutral-900 dark:text-neutral-50">
             {t("settings")}
           </h1>
@@ -60,7 +60,7 @@ export default function SettingsPage() {
               {t("appSettings")}
             </h2>
 
-            <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm transition-colors duration-200">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-colors duration-200">
               <ToggleRow
                 icon={<Moon size={22} />}
                 title={t("darkMode")}
@@ -99,7 +99,7 @@ export default function SettingsPage() {
               {t("orderPreferences")}
             </h2>
 
-            <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm transition-colors duration-200">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-colors duration-200">
               <LinkRow
                 icon={<Clock3 size={22} />}
                 title={t("defaultDeliveryTime")}
@@ -123,11 +123,11 @@ export default function SettingsPage() {
               {t("legal")}
             </h2>
 
-            <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm transition-colors duration-200">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-colors duration-200">
               <ExternalRow title={t("termsOfService")} href="/terms" />
               <ExternalRow title={t("privacyPolicy")} href="/privacy" />
 
-              <div className="flex items-center justify-between px-5 py-5">
+              <div className="flex items-center justify-between px-4 py-4">
                 <span className="font-medium text-neutral-900 dark:text-neutral-100">
                   {t("about")}
                 </span>
@@ -143,8 +143,8 @@ export default function SettingsPage() {
               {t("account")}
             </h2>
 
-            <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm transition-colors duration-200">
-              <button className="focus-ring flex w-full items-center gap-4 p-5 text-left transition hover:bg-red-50 dark:hover:bg-red-950/20">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-colors duration-200">
+              <button className="focus-ring flex w-full items-center gap-4 p-4 text-left transition hover:bg-red-50 dark:hover:bg-red-950/20">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/40">
                   <Trash2 size={18} className="text-red-600 dark:text-red-400" />
                 </div>
@@ -181,9 +181,9 @@ function ToggleRow({
   onChange: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 px-5 py-5 last:border-b-0">
+    <div className="flex items-center justify-between border-b border-border px-4 py-4 last:border-b-0">
       <div className="flex items-center gap-4">
-        <div className="text-pink-600">{icon}</div>
+        <div className="text-primary">{icon}</div>
 
         <div>
           <p className="font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
@@ -194,7 +194,7 @@ function ToggleRow({
       <button
         onClick={onChange}
         className={`focus-ring relative h-7 w-12 rounded-full transition cursor-pointer ${
-          checked ? "bg-pink-600" : "bg-neutral-300 dark:bg-neutral-700"
+          checked ? "bg-primary" : "bg-neutral-300 dark:bg-neutral-700"
         }`}
       >
         <span
@@ -227,12 +227,12 @@ function LinkRow({
   if (disabled) {
     return (
       <div
-        className={`flex w-full items-center justify-between px-5 py-5 opacity-60 ${
-          !isLast ? "border-b border-neutral-100 dark:border-neutral-800" : ""
+        className={`flex w-full items-center justify-between px-4 py-4 opacity-60 ${
+          !isLast ? "border-b border-border" : ""
         }`}
       >
         <div className="flex items-center gap-4">
-          <div className="text-pink-600">{icon}</div>
+          <div className="text-primary">{icon}</div>
 
           <div>
             <p className="font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
@@ -249,12 +249,12 @@ function LinkRow({
 
   return (
     <button
-      className={`focus-ring group flex w-full items-center justify-between px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors ${
-        !isLast ? "border-b border-neutral-100 dark:border-neutral-800" : ""
+      className={`focus-ring group flex w-full items-center justify-between px-4 py-4 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors ${
+        !isLast ? "border-b border-border" : ""
       }`}
     >
       <div className="flex items-center gap-4">
-        <div className="text-pink-600">{icon}</div>
+        <div className="text-primary">{icon}</div>
 
         <div>
           <p className="font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
@@ -291,10 +291,10 @@ function LanguageRow() {
       <button
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        className="focus-ring group flex w-full items-center justify-between px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
+        className="focus-ring group flex w-full items-center justify-between px-4 py-4 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
       >
         <div className="flex items-center gap-4">
-          <div className="text-pink-600">
+          <div className="text-primary">
             <Languages size={22} />
           </div>
 
@@ -313,7 +313,7 @@ function LanguageRow() {
       </button>
 
       {open && (
-        <div className="border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-800/30">
+        <div className="border-t border-border bg-neutral-50/60 dark:bg-neutral-800/30">
           {LANGUAGES.map((l) => (
             <button
               key={l.code}
@@ -321,12 +321,12 @@ function LanguageRow() {
                 setLang(l.code);
                 setOpen(false);
               }}
-              className="focus-ring flex w-full items-center justify-between py-3.5 pl-16 pr-5 text-left text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
+              className="focus-ring flex w-full items-center justify-between py-3.5 pl-16 pr-4 text-left text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
             >
-              <span className={lang === l.code ? "font-semibold text-pink-600" : ""}>
+              <span className={lang === l.code ? "font-semibold text-primary" : ""}>
                 {l.label}
               </span>
-              {lang === l.code && <Check size={16} className="text-pink-600" />}
+              {lang === l.code && <Check size={16} className="text-primary" />}
             </button>
           ))}
         </div>
@@ -339,7 +339,7 @@ function ExternalRow({ title, href }: { title: string; href: string }) {
   return (
     <Link
       href={href}
-      className="flex w-full items-center justify-between border-b border-neutral-100 dark:border-neutral-800 px-5 py-5 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors last:border-b-0"
+      className="flex w-full items-center justify-between border-b border-border px-4 py-4 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors last:border-b-0"
     >
       <span className="font-medium text-neutral-900 dark:text-neutral-100">{title}</span>
 

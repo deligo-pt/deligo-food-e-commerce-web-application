@@ -63,7 +63,7 @@ export default function OrderSearchBar({
           placeholder={t("searchOrdersPlaceholder")}
           autoComplete="off"
           enterKeyHint="search"
-          className="w-full rounded-full border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-2.5 pl-12 pr-11 text-base text-foreground dark:text-neutral-100 outline-none placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-primary/50 transition-colors [&::-webkit-search-cancel-button]:appearance-none"
+          className="w-full rounded-full border border-border bg-card py-2.5 pl-12 pr-12 text-base text-foreground dark:text-neutral-100 outline-none placeholder:text-black/45 dark:placeholder:text-white/40 focus:ring-2 focus:ring-primary/50 transition-colors [&::-webkit-search-cancel-button]:appearance-none"
         />
         {value.length > 0 && <ClearFilterButton onClear={() => onChange("")} />}
       </div>

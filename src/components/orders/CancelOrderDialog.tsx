@@ -118,7 +118,7 @@ export default function CancelOrderDialog({
           <div
             role="radiogroup"
             aria-labelledby="cancel-reason-question"
-            className="divide-y divide-gray-100 dark:divide-neutral-800 border-y border-gray-100 dark:border-neutral-800"
+            className="divide-y divide-gray-100 dark:divide-neutral-800 border-y border-border"
           >
             {CANCEL_REASON_OPTIONS.map((option) => {
               const isSelected = selectedReason === option.id;

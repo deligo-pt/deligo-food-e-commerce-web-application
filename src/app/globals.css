@@ -149,18 +149,25 @@ body {
   font-family: var(--font-plus-jakarta-sans), sans-serif;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* ---------------------------------------------------------------------------
+   Plan.md Phase 12.
 
-@keyframes scaleIn {
+   `@keyframes fadeIn` used to live here with `.animate-fadeIn` — opacity plus
+   a 10px rise over 500ms, on six elements. That is `motion-fade` with
+   different numbers, which is the shape the seven pinks had: one idea, two
+   spellings, and the second one invisible to the guard because §11's
+   enumeration only ever matched `.motion-*` and `.reveal-group`. Retired; the
+   six call sites ask for `motion-fade` and lose the 10px rise, which the
+   system spends on `reveal-group` instead.
+
+   `scaleIn` survives because a dialog entrance genuinely is not a fade — it
+   comes from the middle rather than from below, and the spring curve is what
+   makes a modal feel placed rather than dropped. What it did not have, in
+   either spelling, was a `prefers-reduced-motion` opt-out. It has one now, and
+   it is named `motion-scale` so that the system's primitives all read as one
+   set and the guard's enumeration cannot miss the next one.
+   --------------------------------------------------------------------------- */
+@keyframes motion-scale {
   from {
     transform: scale(0.9);
     opacity: 0;
@@ -171,12 +178,16 @@ body {
   }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.motion-scale {
+  animation: motion-scale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-.animate-scaleIn {
-  animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+@media (prefers-reduced-motion: reduce) {
+  /* `forwards` is not needed to keep it visible: the element has no opacity of
+     its own, so with the animation off it simply renders at 1. */
+  .motion-scale {
+    animation: none;
+  }
 }
 
 /* Attention cue for the Add-to-Cart CTA: it stays idle, then every cycle gives
@@ -260,7 +271,13 @@ body {
 }
 
 .closing-banner {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* Phase 12: this referenced `@keyframes fadeIn`, which the same phase
+     deleted — the animation would have silently stopped rather than broken
+     loudly, which is why the guard below now checks that every `animation:`
+     names a keyframe that exists. It keeps its own 400ms and curve and takes
+     the one entrance keyframe the system has; what it loses is the 10px rise,
+     the same thing the six `animate-fadeIn` call sites lost. */
+  animation: motion-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .closing-clock {
@@ -491,7 +508,29 @@ body {
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
+  /* Opaque, and it was translucent — Plan.md Phase 10, §5 question 6, answered
+     31 Aug 2026.
+
+     `oklch(1 0 0 / 10%)` is 10% white, so it had no colour of its own: it
+     composited to #2e2e2e on a card (#171717), #232323 on the page ground
+     (#0a0a0a), #3c3c3c on a muted surface (#262626), and to whatever the
+     photograph underneath happened to be over an image. One token, four
+     colours. The app's answer was to not use it — 286 call sites hand-typed
+     `dark:border-neutral-800` instead, which is a flat #262626.
+
+     So the token takes the value the app was already drawing. That makes the
+     dark half of the sweep exact at all 209 sites it touched, and it makes the
+     hairline the same colour wherever it is drawn, which is the part
+     translucency could never do. What moves: the two `border-border` surfaces
+     that had no neutral-800 override (#2e2e2e → #262626, 8/255) and every
+     uncoloured hairline the base layer paints.
+
+     One consequence, checked rather than assumed: on a #262626 surface this
+     border is now invisible. Exactly one element in the tree draws a hairline
+     on `dark:bg-neutral-800` — VendorDetailsModal's note block — and it was
+     already `dark:border-neutral-800` on `dark:bg-neutral-800`, so it was
+     invisible before this change too. Nothing new disappears. */
+  --border: #262626;
   --input: oklch(1 0 0 / 15%);
   --warning: #f6c344;
   --warning-foreground: #191c1d;
@@ -645,8 +684,39 @@ body {
   opacity: 0;
 }
 
+/* `backwards`, not `both` — and the difference is a bug, not a preference.
+   `both` also persists the *last* keyframe once the animation ends, and an
+   animation's declarations outrank every normal author rule in the cascade.
+   The final frame here is `transform: none`, so it went on outranking
+   `.motion-press:active { transform: scale(0.97) }` forever: every card in a
+   revealed grid had a dead press state, and nothing reported it because both
+   classes were correct on their own. `backwards` still applies the *first*
+   keyframe through the stagger delay — which is the half this needs, so the
+   ninth card is not visible while it waits its turn — and then hands the
+   element back. Nothing sets opacity or transform on these children
+   afterwards, so the resting state is unchanged. */
 .reveal-group[data-revealed="true"] > * {
-  animation: motion-reveal 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: motion-reveal 350ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* The fade-only reveal — same stagger, same timing, no travel.
+
+   `reveal-group` translates its children, and §11's denylist bars a transform
+   from any file that renders a price: a number that moves while being read is a
+   number that can be misread. That rule is why the vendor menu had a flat
+   crossfade and no sequencing at all, and asking for the homepage's arrival on
+   a page full of prices is asking for the one thing the rule forbids.
+
+   This is the half of it that was never in question. The stagger is the effect
+   that was wanted; the 8px rise is the part that moves the price. Dropping the
+   travel keeps the sequencing and takes the objection away entirely, so the
+   variant is not an exception to the rule — it is the rule being satisfied.
+
+   No new keyframe and no new class name: `motion-fade` already *is* opacity 0
+   to 1, and reusing it here means the delays, the easing, the duration and the
+   reduced-motion opt-out all keep applying from the rules above. */
+.reveal-group[data-travel="none"][data-revealed="true"] > * {
+  animation-name: motion-fade;
 }
 
 .reveal-group[data-revealed="true"] > *:nth-child(2) {
@@ -674,6 +744,66 @@ body {
   animation-delay: 400ms;
 }
 
+/* 4 — image arrival. Browser round 3.
+
+   The hero's skeleton used to be swapped out when the *request* answered, not
+   when the *artwork* did: `loading` went false on the `/sponsorships` response,
+   the skeleton unmounted, and `motion-fade` then faded in a container whose
+   `<Image fill>` had painted nothing yet. The slide has no background of its
+   own, so what crossfaded in was an empty box, and the banner arrived after it
+   with no transition at all. The animation was on the wrong event.
+
+   These two are one idea in two halves, and they are keyed off `data-loaded`
+   rather than mount so that they fire on the thing that actually matters:
+
+   - `.motion-image-floor` is the placeholder holding the frame. It dissolves.
+   - `.motion-image-in` is the artwork underneath, which starts blurred and
+     slightly over-scaled and settles as the floor clears.
+
+   ## This is a reveal, not a blur-up
+
+   A real blur-up shows a low-resolution copy of the artwork *while the full
+   one downloads*, and needs one to exist: `next/image` generates `blurDataURL`
+   only for statically imported files, and the API's sponsorship object carries
+   a URL and nothing else. So nothing here is visible earlier than it was —
+   the arrival is softened, not brought forward. Showing the artwork sooner
+   needs a `blurDataURL` (an LQIP or a blurhash) on the backend's response, and
+   `placeholder="blur"` works on `unoptimized` images, so the optimizer bypass
+   in `imageHosts.ts` is not what stands in the way. Only the data is.
+
+   ## Blur, not opacity
+
+   The first slide carries `priority`, which makes it the page's LCP element,
+   and LCP is recorded when the element becomes *visible*. Fading it up from
+   `opacity: 0` would push that metric out by the length of the animation for
+   no visual gain over blurring an already-opaque image. The floor fades; the
+   photograph never does. */
+.motion-image-in {
+  filter: blur(20px);
+  transform: scale(1.04);
+  transition-property: filter, transform;
+  transition-duration: 600ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.motion-image-in[data-loaded="true"] {
+  filter: blur(0);
+  transform: scale(1);
+}
+
+/* Shorter than the blur on purpose: the floor should be gone while the picture
+   is still resolving, so the two read as one handover rather than two steps. */
+.motion-image-floor {
+  opacity: 1;
+  transition-property: opacity;
+  transition-duration: 400ms;
+  transition-timing-function: ease-out;
+}
+
+.motion-image-floor[data-loaded="true"] {
+  opacity: 0;
+}
+
 /* The opt-out. One block, every primitive named in it.
 
    `.reveal-group` is the one that needs more than `animation: none` — its
@@ -696,5 +826,32 @@ body {
   .reveal-group[data-revealed="true"] > * {
     opacity: 1;
     animation: none;
+  }
+
+  /* Named explicitly rather than left to the rule above. That one is `animation:
+     none`, a shorthand at (0,2,0); the fade-only variant sets `animation-name`
+     at (0,3,0) and wins the longhand back. It happens to still be inert — the
+     shorthand reset the duration to 0s — but "correct because two specificities
+     cancelled out" is not something to leave standing in an accessibility
+     opt-out. */
+  .reveal-group[data-travel="none"][data-revealed="true"] > * {
+    animation-name: none;
+  }
+
+  /* Both attribute states named for the same reason `.reveal-group` names
+     both: `.motion-image-in[data-loaded="true"]` is the more specific
+     selector, so turning the transition off without also clearing the base
+     `blur(20px)` would leave a permanently soft banner rather than a still
+     one. The floor still hides itself when the image lands — it just stops
+     taking 400ms about it. */
+  .motion-image-in,
+  .motion-image-in[data-loaded="true"] {
+    filter: none;
+    transform: none;
+    transition-property: none;
+  }
+
+  .motion-image-floor {
+    transition-property: none;
   }
 }

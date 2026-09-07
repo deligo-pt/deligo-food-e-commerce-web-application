@@ -180,7 +180,7 @@ export default function SupportMessageList({
             type="button"
             disabled={isFetching}
             onClick={() => setLimit((size) => size + SUPPORT_MESSAGE_PAGE_SIZE)}
-            className="cursor-pointer gap-2 rounded-full font-semibold text-primary hover:bg-pink-50 hover:text-primary dark:text-pink-400 dark:hover:bg-pink-950/30"
+            className="cursor-pointer gap-2 rounded-full font-semibold text-primary hover:bg-primary/5 hover:text-primary dark:text-pink-400 dark:hover:bg-pink-950/30"
           >
             {isFetching && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {t("loadOlderMessages")}
@@ -196,7 +196,7 @@ export default function SupportMessageList({
               aria-hidden
               className="absolute inset-x-0 top-1/2 h-px bg-gray-200 dark:bg-neutral-800"
             />
-            <span className="relative rounded-full border border-gray-200 bg-[#f8f9fa] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
+            <span className="relative rounded-full border border-border bg-[#f8f9fa] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:bg-neutral-950 dark:text-neutral-400">
               {day.label}
             </span>
           </div>

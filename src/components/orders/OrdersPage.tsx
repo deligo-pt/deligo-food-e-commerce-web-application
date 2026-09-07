@@ -443,7 +443,7 @@ export default function OrdersPage() {
           }
         />
 
-        <div className="mb-8 flex border-b border-neutral-200 dark:border-neutral-800">
+        <div className="mb-8 flex border-b border-border">
           <button
             onClick={() => setActiveTab("ongoing")}
             className={`focus-ring relative flex-1 py-4 text-center font-medium transition-colors ${
@@ -478,7 +478,7 @@ export default function OrdersPage() {
         {activeTab === "ongoing" ? (
           <div className="space-y-6">
             {visibleOngoing.length === 0 ? (
-              <div className="flex h-75 flex-col items-center justify-center gap-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-xs px-4 text-center">
+              <div className="flex h-75 flex-col items-center justify-center gap-3 rounded-xl bg-card border border-border shadow-xs px-4 text-center">
                 {renderEmptyState("ongoing")}
               </div>
             ) : (
@@ -524,7 +524,7 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-6">
             {visibleHistory.length === 0 ? (
-              <div className="flex h-75 flex-col items-center justify-center gap-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-xs px-4 text-center">
+              <div className="flex h-75 flex-col items-center justify-center gap-3 rounded-xl bg-card border border-border shadow-xs px-4 text-center">
                 {renderEmptyState("history")}
               </div>
             ) : (
@@ -580,9 +580,9 @@ export default function OrdersPage() {
       </div>      {/* Rating Modal */}
       {activeRatingOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 dark:bg-black/60 p-4 backdrop-blur-xs transition-all duration-300">
-          <div className="relative flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 border border-transparent dark:border-neutral-800 shadow-2xl transition-all duration-300 max-h-[90vh]">
+          <div className="relative flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-card border border-transparent dark:border-neutral-800 shadow-2xl transition-all duration-300 max-h-[90vh]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <div>
                 <h3 className="text-xl font-bold text-foreground dark:text-neutral-50">
                   {t("rateYourOrder")}
@@ -603,11 +603,11 @@ export default function OrdersPage() {
             </div>
 
             {/* Modal Scrollable Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white dark:bg-neutral-900">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-card">
               {/* Product / Food Rating Section */}
-              <div className="rounded-2xl border border-pink-100/55 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-5 space-y-4 shadow-xs">
-                <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-2">
-                  <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-primary dark:text-pink-400 uppercase tracking-wider">
+              <div className="rounded-2xl border border-primary/10 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-4 space-y-4 shadow-xs">
+                <div className="flex items-center justify-between border-b border-border pb-2">
+                  <span className="rounded-full bg-primary/5 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-primary dark:text-pink-400 uppercase tracking-wider">
                     {t("foodReview")}
                   </span>
                 </div>
@@ -651,9 +651,9 @@ export default function OrdersPage() {
 
               {/* Rider / Delivery Partner Rating Section */}
               {activeRatingOrder.deliveryPartnerId && (
-                <div className="rounded-2xl border border-pink-100/55 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-5 space-y-4 shadow-xs">
-                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-2">
-                    <span className="rounded-full bg-pink-50 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-primary dark:text-pink-400 uppercase tracking-wider">
+                <div className="rounded-2xl border border-primary/10 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-4 space-y-4 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-border pb-2">
+                    <span className="rounded-full bg-primary/5 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-primary dark:text-pink-400 uppercase tracking-wider">
                       {t("deliveryReview")}
                     </span>
                   </div>
@@ -698,7 +698,7 @@ export default function OrdersPage() {
             </div>
 
             {/* Modal Footer Actions */}
-            <div className="flex items-center justify-end gap-3 border-t border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-950 px-6 py-4">
+            <div className="flex items-center justify-end gap-3 border-t border-border bg-gray-50 dark:bg-neutral-950 px-6 py-4">
               <Button
                 type="button"
                 variant="ghost"

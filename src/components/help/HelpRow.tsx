@@ -12,7 +12,7 @@ import { ChevronRight, type LucideIcon } from "lucide-react";
  * `pink` is the default and the other two are the exception they look like.
  */
 const TINTS = {
-  pink: "bg-pink-50 text-primary dark:bg-pink-950/40 dark:text-pink-400",
+  pink: "bg-primary/5 text-primary dark:bg-pink-950/40 dark:text-pink-400",
   blue: "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400",
   green: "bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400",
 } as const;
@@ -30,7 +30,7 @@ export interface HelpRowProps {
 }
 
 const SHELL =
-  "group flex w-full items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 text-left transition-all hover:border-primary/30 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-pink-500/30 dark:hover:shadow-none";
+  "group flex w-full items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-md dark:hover:border-pink-500/30 dark:hover:shadow-none";
 
 /**
  * One tappable row: tinted icon circle, title, description, chevron.

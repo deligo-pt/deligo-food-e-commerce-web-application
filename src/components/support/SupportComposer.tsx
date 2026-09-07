@@ -130,9 +130,9 @@ export default function SupportComposer({
   };
 
   return (
-    <div className="shrink-0 border-t border-gray-100 bg-white px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-900">
+    <div className="shrink-0 border-t border-border bg-card px-3 py-2.5">
       {attachment && (
-        <div className="mb-2 flex items-center gap-2 rounded-xl border border-gray-200 bg-[#f8f9fa] px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950">
+        <div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-[#f8f9fa] px-3 py-2 dark:bg-neutral-950">
           {uploading ? (
             <Loader2
               aria-hidden
@@ -182,7 +182,7 @@ export default function SupportComposer({
           onClick={() => fileInputRef.current?.click()}
           disabled={attachment !== null}
           aria-label={t("attachFile")}
-          className="shrink-0 cursor-pointer rounded-full border-primary/30 text-primary hover:bg-pink-50 hover:text-primary dark:border-pink-500/30 dark:text-pink-400 dark:hover:bg-pink-950/30"
+          className="shrink-0 cursor-pointer rounded-full border-primary/30 text-primary hover:bg-primary/5 hover:text-primary dark:border-pink-500/30 dark:text-pink-400 dark:hover:bg-pink-950/30"
         >
           <Plus className="h-4.5 w-4.5" />
         </Button>

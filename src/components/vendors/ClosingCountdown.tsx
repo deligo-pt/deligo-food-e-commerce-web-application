@@ -58,7 +58,7 @@ export default function ClosingCountdown({
 
   return (
     <div
-      className="closing-banner mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-pink-200 bg-pink-50 px-4 py-3 dark:border-pink-900/40 dark:bg-pink-950/20"
+      className="closing-banner mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 dark:border-pink-900/40 dark:bg-pink-950/20"
       role="status"
       aria-live="polite"
     >

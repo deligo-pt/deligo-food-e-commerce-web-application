@@ -11,7 +11,7 @@ export default function ReportIssueSkeleton() {
       {[1, 2, 3, 4].map((row) => (
         <li
           key={row}
-          className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+          className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4"
         >
           <div className="min-w-0 flex-1">
             <div className="h-5 w-56 max-w-full rounded bg-gray-200 dark:bg-neutral-800" />

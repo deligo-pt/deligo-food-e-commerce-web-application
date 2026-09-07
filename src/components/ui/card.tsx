@@ -36,21 +36,22 @@ import { cva, type VariantProps } from "class-variance-authority"
  * itself every time a pointer crossed it. A permanent shadow is the second —
  * weight already spent, leaving none to spend when the pointer does arrive.
  *
- * ## `bg-card`, and the one thing left hand-typed
+ * ## `bg-card` and `border-border` — both are tokens now
  *
  * `--card` is `oklch(1 0 0)` light and `oklch(0.205 0 0)` dark, which convert
  * to `#ffffff` and `#171717` — and `#171717` is Tailwind's `neutral-900`
  * exactly. So `bg-card` is pixel-identical to the `bg-white
- * dark:bg-neutral-900` this replaces, at every call site, in both themes.
+ * dark:bg-neutral-900` it replaced, at every call site, in both themes.
  *
- * `dark:border-neutral-800` is *not* the same trade and is deliberately still
- * spelled out here. `--border` in dark mode is `oklch(1 0 0 / 10%)` —
- * translucent white, which composites differently over a card than over an
- * image. Whether it gains an opaque dark value is §5 open question 6, and
- * until that is answered this keeps the colour the app already draws.
+ * `dark:border-neutral-800` used to be spelled out on the base line below.
+ * `--border` was `oklch(1 0 0 / 10%)` in dark — translucent white, which
+ * composites differently over a card than over an image, so the token did not
+ * name a colour and this kept the one the app actually drew. Phase 10 answered
+ * §5 question 6 by giving the token the opaque `#262626` that 286 call sites
+ * were hand-typing. The override is gone because the token now *is* it.
  */
 export const cardVariants = cva(
-  "rounded-3xl border border-border bg-card dark:border-neutral-800",
+  "rounded-3xl border border-border bg-card",
   {
     variants: {
       variant: {

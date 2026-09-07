@@ -28,6 +28,8 @@ export default function SafeImage({
   sizes = DEFAULT_SIZES,
   className = "object-cover",
   fallbackIcon,
+  onSettled,
+  dataLoaded,
 }: {
   src?: string | null;
   alt: string;
@@ -35,6 +37,27 @@ export default function SafeImage({
   sizes?: string;
   className?: string;
   fallbackIcon: ReactNode;
+  /**
+   * Called once the image has either decoded or failed — the signal a
+   * placeholder needs in order to get out of the way.
+   *
+   * One callback for both outcomes on purpose. A caller holding a shimmer up
+   * until the picture arrives has to be told when it is *not* going to arrive,
+   * or it shimmers forever, which reads as a hang rather than as a missing
+   * image. The two cases are distinguishable from the render — the fallback
+   * icon is on screen — so a second callback would buy nothing.
+   *
+   * Fires immediately for a missing `src`, where the fallback is the final
+   * state from the first frame.
+   */
+  onSettled?: () => void;
+  /**
+   * Mirrored onto the `<img>` as `data-loaded`, for a caller whose CSS keys a
+   * reveal off it (`.motion-image-in`). Passed rather than tracked here because
+   * the placeholder and the image are two elements and one state; owning it in
+   * the caller keeps them from disagreeing.
+   */
+  dataLoaded?: boolean;
 }) {
   const [errored, setErrored] = useState(false);
 
@@ -43,6 +66,11 @@ export default function SafeImage({
       <div
         role="img"
         aria-label={alt}
+        // A ref callback rather than an effect: this branch is also reached on
+        // the very first render when `src` is absent, and the repo forbids
+        // state-syncing effects. `onSettled` is expected to be idempotent —
+        // the caller's is a set-once flag.
+        ref={onSettled ? () => void onSettled() : undefined}
         className="flex h-full w-full items-center justify-center bg-gray-100 dark:bg-neutral-800 text-gray-300 dark:text-neutral-600"
       >
         {fallbackIcon}
@@ -58,7 +86,15 @@ export default function SafeImage({
       priority={priority}
       sizes={sizes}
       unoptimized={!isOptimizableImageHost(src)}
-      onError={() => setErrored(true)}
+      data-loaded={dataLoaded}
+      onLoad={onSettled}
+      onError={() => {
+        setErrored(true);
+        // The fallback branch above calls this too, on the render that follows.
+        // Calling it here as well means a caller that only wants "stop waiting"
+        // is told at the moment of failure rather than one render later.
+        onSettled?.();
+      }}
       className={className}
     />
   );

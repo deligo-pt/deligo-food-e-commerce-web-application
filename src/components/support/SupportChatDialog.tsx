@@ -157,13 +157,13 @@ export default function SupportChatDialog() {
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
 
         <Dialog.Content
-          className="fixed inset-0 z-50 flex flex-col bg-white text-gray-900 outline-none duration-200 dark:bg-neutral-900 dark:text-neutral-100
+          className="fixed inset-0 z-50 flex flex-col bg-card text-gray-900 outline-none duration-200 dark:text-neutral-100
             data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom
             data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom
             md:inset-y-0 md:left-auto md:right-0 md:w-[420px] md:border-l md:border-gray-200 md:shadow-2xl dark:md:border-neutral-800
             md:data-open:slide-in-from-right md:data-closed:slide-out-to-right"
         >
-          <header className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-neutral-800">
+          <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
             {/* The gradient and the letter are the app's, but who they stand
                 for is a guess the model makes carefully: `activeHandler` is the
                 only field that plausibly drives the header, and anything it
@@ -192,7 +192,7 @@ export default function SupportChatDialog() {
                 ("End chat", "Resolve") that suggests this did. */}
             <Dialog.Close
               aria-label={t("close")}
-              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-primary/30 text-primary transition-colors hover:bg-pink-50 dark:border-pink-500/30 dark:text-pink-400 dark:hover:bg-pink-950/30"
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-primary/30 text-primary transition-colors hover:bg-primary/5 dark:border-pink-500/30 dark:text-pink-400 dark:hover:bg-pink-950/30"
             >
               <X className="h-4.5 w-4.5" />
             </Dialog.Close>

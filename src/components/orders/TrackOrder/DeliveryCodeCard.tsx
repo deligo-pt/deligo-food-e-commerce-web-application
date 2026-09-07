@@ -54,9 +54,9 @@ export default function DeliveryCodeCard({ code }: DeliveryCodeCardProps) {
   };
 
   return (
-    <div className="rounded-3xl border border-transparent bg-white p-6 shadow-md dark:border-neutral-800 dark:bg-neutral-900">
+    <div className="rounded-3xl border border-transparent bg-card p-6 shadow-md dark:border-neutral-800">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ffd9de] dark:bg-pink-950/30">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 dark:bg-pink-950/30">
           <Bike className="h-5 w-5 text-primary dark:text-pink-400" />
         </div>
         <h3 className="text-xl font-bold text-foreground dark:text-neutral-50">
@@ -77,7 +77,7 @@ export default function DeliveryCodeCard({ code }: DeliveryCodeCardProps) {
               // repeat ("300873" has two zeroes), so the position is the only
               // stable identity available — and the only one needed.
               key={index}
-              className="flex h-14 w-11 items-center justify-center rounded-xl border-2 border-primary bg-pink-50 text-2xl font-extrabold tabular-nums text-primary dark:border-pink-400 dark:bg-pink-950/20 dark:text-pink-400"
+              className="flex h-14 w-11 items-center justify-center rounded-xl border-2 border-primary bg-primary/5 text-2xl font-extrabold tabular-nums text-primary dark:border-pink-400 dark:bg-pink-950/20 dark:text-pink-400"
             >
               {char}
             </span>

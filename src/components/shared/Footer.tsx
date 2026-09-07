@@ -126,11 +126,11 @@ export default function Footer() {
     "mb-4 md:mb-6 text-xs font-extrabold uppercase tracking-[0.06em] text-foreground dark:text-white";
 
   return (
-    <footer className="w-full border-t border-[#e3bdc3]/20 dark:border-neutral-800 bg-[#e1e3e4] dark:bg-neutral-900 px-6 py-12 sm:px-8 sm:py-14 md:py-16 lg:px-16 lg:py-20 transition-colors duration-200">
+    <footer className="w-full border-t border-[#e3bdc3]/20 dark:border-neutral-800 bg-[#e1e3e4] dark:bg-neutral-900 px-6 py-12 sm:px-8 sm:py-12 md:py-16 lg:px-16 lg:py-16 transition-colors duration-200">
       {/* On mobile: Brand spans full width, then Company | Support sit side by
           side (2 cols), then the app section spans full width — avoids one very
           tall stacked column. On md+ it's the original 12-col row. */}
-      <div className="mb-10 grid w-full grid-cols-2 gap-x-8 gap-y-10 md:mb-16 md:grid-cols-12 md:gap-10 lg:gap-16">
+      <div className="mb-8 grid w-full grid-cols-2 gap-x-8 gap-y-8 md:mb-16 md:grid-cols-12 md:gap-8 lg:gap-16">
         {/* Brand */}
         <div className="col-span-2 md:col-span-4">
           <Link
@@ -211,7 +211,7 @@ export default function Footer() {
         {/* App Store Badges */}
         <div className="col-span-2 md:col-span-4">
           <h4 className={headingClass}>{t("getTheApp")}</h4>
-          <p className="mb-5 max-w-md text-base leading-6 text-muted-foreground dark:text-neutral-400">
+          <p className="mb-4 max-w-md text-base leading-6 text-muted-foreground dark:text-neutral-400">
             {t("mobileExperience")}
           </p>
           <div className="flex flex-row flex-wrap gap-3 sm:flex-col">

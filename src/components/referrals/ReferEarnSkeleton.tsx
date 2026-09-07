@@ -1,6 +1,6 @@
 export default function ReferEarnSkeleton() {
   return (
-    <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-10 transition-colors duration-200">
+    <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 py-8 transition-colors duration-200">
       <div className="mx-auto max-w-5xl px-4 animate-pulse">
         {/* Breadcrumbs Placeholder */}
         <div className="mb-6 flex items-center gap-2">
@@ -12,12 +12,12 @@ export default function ReferEarnSkeleton() {
         </div>
 
         {/* Hero Section */}
-        <section className="mb-10 flex justify-center">
-          <div className="w-full max-w-xl rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-sm border border-neutral-200 dark:border-neutral-800 md:p-8">
+        <section className="mb-8 flex justify-center">
+          <div className="w-full max-w-xl rounded-2xl bg-card p-6 shadow-sm border border-border md:p-8">
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 h-16 w-16 rounded-full bg-gray-200 dark:bg-neutral-800" />
 
-              <div className="mb-5 h-8 w-56 rounded bg-gray-200 dark:bg-neutral-800" />
+              <div className="mb-4 h-8 w-56 rounded bg-gray-200 dark:bg-neutral-800" />
 
               <div className="mb-6 w-full max-w-sm">
                 <div className="h-16 w-full rounded-xl bg-gray-200 dark:bg-neutral-800" />
@@ -29,11 +29,11 @@ export default function ReferEarnSkeleton() {
         </section>
 
         {/* Stats */}
-        <section className="mb-12 grid grid-cols-1 gap-5 md:grid-cols-3">
+        <section className="mb-12 grid grid-cols-1 gap-4 md:grid-cols-3">
           {[1, 2, 3].map((item) => (
             <div
               key={item}
-              className="rounded-xl bg-white dark:bg-neutral-900 p-5 text-center shadow-sm border border-neutral-200 dark:border-neutral-800"
+              className="rounded-xl bg-card p-4 text-center shadow-sm border border-border"
             >
               <div className="mx-auto mb-3 h-8 w-8 rounded-full bg-gray-200 dark:bg-neutral-800" />
               <div className="mx-auto mb-2 h-8 w-20 rounded bg-gray-200 dark:bg-neutral-800" />
@@ -43,7 +43,7 @@ export default function ReferEarnSkeleton() {
         </section>
 
         {/* How It Works */}
-        <section className="rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-sm border border-neutral-200 dark:border-neutral-800 md:p-8">
+        <section className="rounded-2xl bg-card p-6 shadow-sm border border-border md:p-8">
           <div className="mx-auto mb-8 h-8 w-56 rounded bg-gray-200 dark:bg-neutral-800" />
 
           <div className="grid gap-8 md:grid-cols-3">

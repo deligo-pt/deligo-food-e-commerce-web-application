@@ -128,7 +128,7 @@ export default function VouchersPageContent() {
   return (
     <section className="w-full bg-[#f8f9fa] dark:bg-neutral-950 px-8 py-12 min-h-screen transition-colors duration-200">
       {/* Header */}
-      <div className="mb-10">
+      <div className="mb-8">
         <h1 className="mb-2 text-2xl lg:text-display font-bold text-foreground dark:text-neutral-50">
           {t("vouchers")}
         </h1>
@@ -137,7 +137,7 @@ export default function VouchersPageContent() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-8 flex gap-8 border-b border-[#e7e8e9] dark:border-neutral-800">
+      <div className="mb-8 flex gap-8 border-b border-border">
         <button
           onClick={() => setActiveTab("available")}
           className={`focus-ring relative pb-4 text-sm font-semibold transition-colors duration-150 ${
@@ -179,7 +179,7 @@ export default function VouchersPageContent() {
         !error &&
         activeTab === "expired" &&
         expiredOffers.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center animate-fadeIn">
+          <div className="flex flex-col items-center justify-center py-16 text-center motion-fade">
             <div className="mb-6 flex h-32 w-32 items-center justify-center rounded-full bg-[#e7e8e9] dark:bg-neutral-800">
               <Ticket size={60} className="text-gray-400 dark:text-neutral-500" />
             </div>
@@ -202,7 +202,7 @@ export default function VouchersPageContent() {
           <div
             className={cn(
               cardVariants(),
-              "animate-fadeIn p-8 text-center text-gray-900 dark:text-neutral-100",
+              "motion-fade p-8 text-center text-gray-900 dark:text-neutral-100",
             )}
           >
             {t("noAvailableVouchers")}
@@ -211,16 +211,23 @@ export default function VouchersPageContent() {
 
       {/* Cards */}
       {!loading && !error && displayedOffers.length > 0 && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 animate-fadeIn">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 motion-fade">
           {displayedOffers.map((offer) => (
             <div
               key={offer._id}
               /* Phase 8. A sixth shell, with its own radius, its own hex
                  border and two hand-mixed shadows — one of them a pink-tinted
-                 hover that no other card in the app has. */
-              className={cn(
-                cardVariants({ variant: "interactive", padding: "card" }),
-              )}
+                 hover that no other card in the app has.
+
+                 Phase 12 took the `interactive` variant off it. That variant
+                 means "the whole card is the control — it navigates, or it
+                 selects", and this card does neither: the only thing clickable
+                 in it is the copy-code button below. It lifted 4px and took a
+                 shadow when a pointer crossed it, promising a press that did
+                 not exist. The phase set out to find where motion was missing
+                 and this is the other half of the same question — a surface
+                 that moved without being a control. */
+              className={cn(cardVariants({ padding: "card" }))}
             >
               <div className="mb-4 flex items-start gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary dark:bg-pink-600">
@@ -254,7 +261,7 @@ export default function VouchersPageContent() {
                 </Button>
               </div>
 
-              <div className="mt-4 flex items-center justify-between border-t border-[#e7e8e9] dark:border-neutral-800 pt-4">
+              <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
                 <div className="flex items-center gap-1 text-xs text-muted-foreground dark:text-neutral-400">
                   <Clock3 size={12} />
                   <span>{getRemainingDays(offer.expiresAt)}</span>

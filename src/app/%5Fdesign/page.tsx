@@ -178,14 +178,14 @@ const SPACING = [
   { px: 64, cls: "16", use: "Section to section (desktop)" },
 ];
 
-const RETIRED_SPACING = ["p-5", "sm:p-7", "lg:p-10", "gap-10", "sm:mb-10", "py-2.5", "px-2.5"];
+const RETIRED_SPACING = ["p-5", "sm:p-7", "lg:p-10", "gap-10", "sm:mb-10", "mb-24", "py-20", "pr-11"];
 
 /** Reads straight off the real component — these are its size keys, not a
  *  redrawing of them, so the row below cannot drift from `button.tsx`. */
 const BUTTON_SIZES = [
   { key: "sm", name: "sm", h: "32", pad: 12, cls: "h-8 px-3" },
   { key: "default", name: "default", h: "44 → 40 at sm", pad: 16, cls: "h-11 px-4 sm:h-10" },
-  { key: "lg", name: "lg", h: "48", pad: 20, cls: "h-12 px-5" },
+  { key: "lg", name: "lg", h: "48", pad: 24, cls: "h-12 px-6" },
 ] as const;
 
 const BRAND = "#f9186b";
@@ -199,7 +199,7 @@ const TOKENS = [
   { name: "--primary", hex: BRAND, meaning: "Brand. Action and availability only." },
   { name: "--foreground", hex: FOREGROUND, meaning: "Primary text." },
   { name: "--muted-foreground", hex: MUTED_FOREGROUND, meaning: "Secondary text. Replaces 12 greys." },
-  { name: "--border", hex: BORDER, meaning: "Hairlines." },
+  { name: "--border", hex: BORDER, meaning: "Hairlines. Opaque #262626 in dark since Phase 10; it was 10% white." },
   { name: "--warning", hex: WARNING, meaning: "Rating star only." },
 ];
 
@@ -312,7 +312,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-24 border-t border-gray-200 py-12 dark:border-neutral-800">
+    <section id={id} className="scroll-mt-24 border-t border-border py-12">
       <div className="mb-6 max-w-2xl">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           <span className="mr-3 font-mono text-base text-gray-400 dark:text-neutral-600">{n}</span>
@@ -339,7 +339,7 @@ function Card({
       ? "border-amber-300 dark:border-amber-500/40"
       : tone === "after"
         ? "border-emerald-300 dark:border-emerald-500/40"
-        : "border-gray-200 dark:border-neutral-800";
+        : "border-border";
 
   const labelClass =
     tone === "now"
@@ -349,7 +349,7 @@ function Card({
         : "text-gray-500 dark:text-neutral-400";
 
   return (
-    <div className={`rounded-xl border bg-white p-4 dark:bg-neutral-900 ${toneClass}`}>
+    <div className={`rounded-xl border bg-card p-4 ${toneClass}`}>
       <p className={`mb-4 text-xs font-bold uppercase tracking-wider ${labelClass}`}>{label}</p>
       {children}
     </div>
@@ -446,7 +446,7 @@ export default function DesignSpecPage() {
       {/* ---------------------------------------------------------- *
        * Sticky bar: nav, live viewport readout, theme switch
        * ---------------------------------------------------------- */}
-      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/90">
+      <header className="sticky top-0 z-30 border-b border-border bg-white/90 backdrop-blur-md dark:bg-neutral-950/90">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-6 py-3">
           <p className="text-sm font-bold">
             Deligo design spec
@@ -484,7 +484,7 @@ export default function DesignSpecPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 pb-24">
+      <main className="mx-auto max-w-6xl px-6 pb-16">
         {/* ---------------------------------------------------------- *
          * Intro
          * ---------------------------------------------------------- */}
@@ -514,12 +514,12 @@ export default function DesignSpecPage() {
           title="Type scale"
           intro="Six steps, nothing between them — and as of Phase 4 the tree uses nothing else. 18, 30, 36, 48 and 60 are gone, along with every arbitrary px size bar the two that draw the 404 numeral."
         >
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
             {TYPE_SCALE.map((step, i) => (
               <div
                 key={step.px}
                 className={`flex flex-col gap-3 p-6 sm:flex-row sm:items-baseline sm:gap-8 ${
-                  i > 0 ? "border-t border-gray-100 dark:border-neutral-800" : ""
+                  i > 0 ? "border-t border-border" : ""
                 }`}
               >
                 <div className="w-40 shrink-0">
@@ -591,7 +591,7 @@ export default function DesignSpecPage() {
           intro="Eight values, all multiples of four. Drawn to scale below, then applied so the numbers connect to something you can see."
         >
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-            <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="rounded-xl border border-border bg-card p-6">
               <div className="space-y-3">
                 {SPACING.map((s) => (
                   <div key={s.px} className="flex items-center gap-4">
@@ -612,7 +612,7 @@ export default function DesignSpecPage() {
                 ))}
               </div>
 
-              <div className="mt-6 border-t border-gray-100 pt-4 dark:border-neutral-800">
+              <div className="mt-6 border-t border-border pt-4">
                 <p className="text-xs text-gray-500 dark:text-neutral-500">
                   Retired:{" "}
                   {RETIRED_SPACING.map((r) => (
@@ -650,7 +650,7 @@ export default function DesignSpecPage() {
           title="Colour"
           intro="Five tokens replace 107 hex literals. Contrast ratios are computed live against the surface each colour actually sits on, not quoted from a table."
         >
-          <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-emerald-300 bg-white p-4 dark:border-emerald-500/40 dark:bg-neutral-900">
+          <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-emerald-300 bg-card p-4 dark:border-emerald-500/40">
             <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
               Phase 1 wiring check
             </p>
@@ -670,12 +670,12 @@ export default function DesignSpecPage() {
               and this page have drifted apart.
             </p>
           </div>
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
             {TOKENS.map((token, i) => (
               <div
                 key={token.name}
-                className={`flex flex-col gap-4 p-5 sm:flex-row sm:items-center ${
-                  i > 0 ? "border-t border-gray-100 dark:border-neutral-800" : ""
+                className={`flex flex-col gap-4 p-4 sm:flex-row sm:items-center ${
+                  i > 0 ? "border-t border-border" : ""
                 }`}
               >
                 <span
@@ -879,7 +879,7 @@ export default function DesignSpecPage() {
                 <div className="text-center">
                   <Button size="lg">Primary CTA</Button>
                   <p className="mt-2 font-mono text-xs text-gray-500 dark:text-neutral-500">
-                    h-12 px-5
+                    h-12 px-6
                   </p>
                   <p className="text-xs text-emerald-600 dark:text-emerald-400">48px — thumb size</p>
                 </div>
@@ -912,7 +912,7 @@ export default function DesignSpecPage() {
                   real card, not an impression of it. */}
               <div
                 ref={nowCardRef}
-                className="group flex cursor-pointer items-center gap-4 rounded-4xl border-2 border-transparent bg-white p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all duration-300 hover:shadow-2xl sm:gap-6 sm:p-7 lg:gap-10 lg:p-10 dark:bg-neutral-900"
+                className="group flex cursor-pointer items-center gap-4 rounded-4xl border-2 border-transparent bg-card p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all duration-300 hover:shadow-2xl sm:gap-6 sm:p-7 lg:gap-10 lg:p-10"
               >
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-100 shadow-inner sm:h-28 sm:w-28 sm:rounded-3xl lg:h-40 lg:w-40 dark:bg-neutral-800">
                   <Store className="size-8 text-gray-400 dark:text-neutral-500" />
@@ -937,7 +937,7 @@ export default function DesignSpecPage() {
               <button
                 type="button"
                 ref={afterCardRef}
-                className="motion-press group flex w-full cursor-pointer items-center gap-4 rounded-4xl border-2 border-transparent bg-white p-4 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-2xl focus-visible:outline-2 focus-visible:outline-offset-2 sm:p-6 dark:bg-neutral-900"
+                className="motion-press group flex w-full cursor-pointer items-center gap-4 rounded-4xl border-2 border-transparent bg-card p-4 text-left shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-2xl focus-visible:outline-2 focus-visible:outline-offset-2 sm:p-6"
                 style={{ outlineColor: BRAND }}
               >
                 <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-100 shadow-inner dark:bg-neutral-800">
@@ -1147,13 +1147,13 @@ export default function DesignSpecPage() {
 
               <Card label="Press state — scale 0.97 over 120ms">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="cursor-pointer rounded-xl border border-gray-200 p-4 text-sm dark:border-neutral-800">
+                  <div className="cursor-pointer rounded-xl border border-border p-4 text-sm">
                     <p className="font-semibold">No feedback</p>
                     <p className="mt-1 text-xs text-gray-500 dark:text-neutral-500">
                       What a tap feels like today.
                     </p>
                   </div>
-                  <div className="motion-press cursor-pointer rounded-xl border border-gray-200 p-4 text-sm dark:border-neutral-800">
+                  <div className="motion-press cursor-pointer rounded-xl border border-border p-4 text-sm">
                     <p className="font-semibold">Press me</p>
                     <p className="mt-1 text-xs text-gray-500 dark:text-neutral-500">
                       Hold to see the press.
@@ -1174,7 +1174,7 @@ export default function DesignSpecPage() {
         {/* ---------------------------------------------------------- *
          * Closing note
          * ---------------------------------------------------------- */}
-        <section className="border-t border-gray-200 py-12 dark:border-neutral-800">
+        <section className="border-t border-border py-12">
           <div className="max-w-2xl">
             <h2 className="text-xl font-semibold">Before this ships</h2>
             <p className="mt-3 text-sm leading-6 text-gray-600 dark:text-neutral-400">

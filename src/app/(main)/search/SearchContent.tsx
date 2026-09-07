@@ -176,7 +176,7 @@ function DishCard({
 
 function ResultsGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {children}
     </div>
   );
@@ -374,7 +374,7 @@ export default function SearchContent() {
         {/* Shown even with nothing asked for, so browsing can start from a
             filter rather than requiring a word to be typed first. */}
         {filterBar}
-        <div className="py-20 text-center">
+        <div className="py-16 text-center">
           <h1 className="text-2xl font-bold text-foreground dark:text-neutral-50">
             {t("searchPromptTitle")}
           </h1>
@@ -417,7 +417,7 @@ export default function SearchContent() {
     return (
       <main className="w-full px-4 py-8 lg:px-16">
         {filterBar}
-        <div className="py-20 text-center">
+        <div className="py-16 text-center">
           <p className="text-muted-foreground dark:text-neutral-400">
             {t("failedToLoadSearchResults")}
           </p>
@@ -454,7 +454,7 @@ export default function SearchContent() {
       </div>
 
       {hits.length === 0 ? (
-        <div className="py-20 text-center">
+        <div className="py-16 text-center">
           <SearchX
             className="mx-auto h-10 w-10 text-gray-300 dark:text-neutral-600"
             aria-hidden="true"

@@ -37,7 +37,7 @@ export default function ContactPage() {
           shared back bar instead of butting against it, and matches the rounded
           gradient blocks used further down the page. */}
       <section className="mx-auto max-w-7xl px-4 pt-2 md:px-8">
-        <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-primary via-primary-hover to-primary px-6 py-16 text-center md:py-20">
+        <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-primary via-primary-hover to-primary px-6 py-16 text-center md:py-16">
           <div className="mb-8 flex justify-center">
             {/* Hero is the pink gradient — knockout, no white plate. */}
             <Logo size={96} variant="mark" />
@@ -47,7 +47,7 @@ export default function ContactPage() {
             {t("contactPageTitle")}
           </h1>
 
-          <p className="mx-auto mt-6 max-w-3xl text-base text-white/85 md:text-xl">
+          <p className="mx-auto mt-4 max-w-3xl text-base text-white/85 md:text-xl">
             {t("contactPageSubtitle")}
           </p>
         </div>
@@ -64,7 +64,7 @@ export default function ContactPage() {
                 key={card.title}
                 className="rounded-3xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
                   <Icon className="h-7 w-7 text-primary" />
                 </div>
 
@@ -82,9 +82,9 @@ export default function ContactPage() {
       </section>
 
       {/* Location Card */}
-      <section className="mx-auto max-w-7xl px-4 pb-20 md:px-8">
-        <div className="overflow-hidden rounded-3xl bg-linear-to-r from-primary to-primary-hover p-6 text-white sm:p-10">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
+      <section className="mx-auto max-w-7xl px-4 pb-16 md:px-8">
+        <div className="overflow-hidden rounded-3xl bg-linear-to-r from-primary to-primary-hover p-6 text-white sm:p-8">
+          <div className="grid items-center gap-8 lg:grid-cols-2">
             <div>
               <div className="mb-4 flex items-center gap-3">
                 <MapPin className="h-8 w-8" />
@@ -103,7 +103,7 @@ export default function ContactPage() {
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   href={`mailto:${t("contactEmailDetail1")}`}
-                  className="rounded-xl bg-white px-6 py-3 font-medium text-primary transition hover:bg-pink-50"
+                  className="rounded-xl bg-white px-6 py-3 font-medium text-primary transition hover:bg-primary/5"
                 >
                   {t("contactEmailButton")}
                 </Link>
@@ -129,9 +129,9 @@ export default function ContactPage() {
       </section>
 
       {/* CTA */}
-      <section className="pb-20">
+      <section className="pb-16">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="rounded-3xl bg-linear-to-r from-primary via-primary-hover to-primary px-6 py-14 text-center text-white sm:px-8">
+          <div className="rounded-3xl bg-linear-to-r from-primary via-primary-hover to-primary px-6 py-12 text-center text-white sm:px-8">
             <h2 className="text-2xl font-bold lg:text-display">
               {t("contactCtaTitle")}
             </h2>

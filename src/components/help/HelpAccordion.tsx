@@ -56,7 +56,7 @@ export default function HelpAccordion({
         return (
           <div
             key={item.question}
-            className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"
+            className="overflow-hidden rounded-2xl border border-border bg-card"
           >
             <button
               type="button"

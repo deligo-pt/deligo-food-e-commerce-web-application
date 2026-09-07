@@ -50,9 +50,9 @@ export default function PickupCodeCard({ code, isReady }: PickupCodeCardProps) {
   };
 
   return (
-    <div className="rounded-3xl border border-transparent bg-white p-6 shadow-md dark:border-neutral-800 dark:bg-neutral-900">
+    <div className="rounded-3xl border border-transparent bg-card p-6 shadow-md dark:border-neutral-800">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ffd9de] dark:bg-pink-950/30">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 dark:bg-pink-950/30">
           <Store className="h-5 w-5 text-primary dark:text-pink-400" />
         </div>
         <h3 className="text-xl font-bold text-foreground dark:text-neutral-50">
@@ -65,7 +65,7 @@ export default function PickupCodeCard({ code, isReady }: PickupCodeCardProps) {
             the code the same wide, readable rhythm the mobile app uses — this
             is meant to be read aloud across a counter. */}
         <p
-          className="rounded-2xl bg-pink-50 px-6 py-4 text-display font-extrabold tracking-[0.2em] tabular-nums text-primary dark:bg-pink-950/20 dark:text-pink-400"
+          className="rounded-2xl bg-primary/5 px-6 py-4 text-display font-extrabold tracking-[0.2em] tabular-nums text-primary dark:bg-pink-950/20 dark:text-pink-400"
           aria-label={`${t("yourPickupCode")}: ${code.split("").join(" ")}`}
         >
           {code}
