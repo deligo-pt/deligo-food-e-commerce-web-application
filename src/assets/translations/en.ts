@@ -192,6 +192,11 @@ const en = {
   removeFromCart: "Remove",
   removeFromCartConfirm:
     "Are you sure you want to remove \u201c{product}\u201d from your cart?",
+  // The product card's stepper. It shows the line quantity as a bare number,
+  // so the accessible name has to say both what the number is and that
+  // pressing it opens the controls.
+  changeQuantity: "Change quantity of \u201c{product}\u201d",
+  removedFromCart: "Removed \u201c{product}\u201d from your cart",
   new: "New",
 
   goToCheckout: "Go to Checkout",

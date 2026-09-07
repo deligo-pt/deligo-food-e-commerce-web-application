@@ -196,6 +196,11 @@ const pt = {
   removeFromCart: "Remover",
   removeFromCartConfirm:
     "Tem a certeza de que pretende remover \u201c{product}\u201d do seu carrinho?",
+  // O seletor de quantidade no cartão do produto. Mostra apenas o número, pelo
+  // que o nome acessível tem de dizer o que é e que ao premir abre os
+  // controlos.
+  changeQuantity: "Alterar a quantidade de \u201c{product}\u201d",
+  removedFromCart: "\u201c{product}\u201d removido do seu carrinho",
   new: "Novo",
 
   goToCheckout: "Ir para Checkout",

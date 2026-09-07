@@ -814,11 +814,19 @@ const groupWrapper = /className="(mb-\d+ last:mb-0)"/;
  * The claim is that the skeleton is shaped like the content. So the geometry is
  * captured out of both and compared to each other, and whatever else either
  * carries is checked separately for not being layout — see below.
+ *
+ * The column counts are `\d+` rather than the numbers themselves. Spelling them
+ * out made *changing the density* look identical to the two files drifting
+ * apart — the grid went to `2 / 3 / 4` in one edit and this reported a
+ * mismatch that did not exist. What is being asserted is that the two agree,
+ * and the equality check below is what asserts it; freezing the values here
+ * only meant the guard had to be edited to state the same thing again.
  */
-const groupGrid = /className="(?:[^"]*\s)?(mt-\d+ grid gap-\d+ md:grid-cols-2 xl:grid-cols-3)"/;
+const groupGrid =
+  /className="(?:[^"]*\s)?(mt-\d+ grid grid-cols-\d+ gap-\d+ md:grid-cols-\d+ xl:grid-cols-\d+)"/;
 /** Anything on the grid that is not the geometry above. */
 const gridExtras = (src) => {
-  const whole = /className="([^"]*\bgrid\b[^"]*xl:grid-cols-3)"/.exec(src)?.[1];
+  const whole = /className="([^"]*\bgrid\b[^"]*xl:grid-cols-\d+)"/.exec(src)?.[1];
   const geometry = src.match(groupGrid)?.[1];
   if (!whole || !geometry) return null;
   return whole.replace(geometry, "").trim();
@@ -898,7 +906,13 @@ check(
 );
 check(
   "cards in a row share a height, so their prices line up",
-  /flex flex-1 flex-col p-4/.test(page),
+  // `flex-1` inside a `flex-col` card is the whole mechanism: the text block
+  // grows to fill whatever the tallest card in the row set, so the price row
+  // it ends with lands on the same line across the row. The padding rides
+  // along in the same class list and is not part of the claim — it was `p-4`
+  // and is `p-3` since the description moved into the modal, and the prices
+  // line up exactly as before.
+  /flex flex-1 flex-col p-\d+/.test(page),
 );
 check(
   "the card still renders backend money verbatim",

@@ -62,6 +62,14 @@ interface CategoryGroupProps<P> {
  * class-for-class from the menu-section component this replaced, because that
  * shape was already approved. No description line: that was removed by request
  * and stays removed.
+ *
+ * ## Density
+ *
+ * Two columns on a phone, three from `md`, four from `xl` — up from one/two/
+ * three. The cards afford it because the dish description moved into the
+ * details modal: without that block of body text a card is name and price, and
+ * the image can be smaller without the card looking empty. Two columns on a
+ * phone is the point of the change; the rest follows from it.
  */
 export default function CategoryGroup<P>({
   group,
@@ -113,7 +121,7 @@ export default function CategoryGroup<P>({
         ref={gridRef}
         data-revealed={revealed}
         data-travel="none"
-        className="reveal-group mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+        className="reveal-group mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
       >
         {group.products.map((product) => (
           <div key={productKey(product)}>{renderProduct(product)}</div>
