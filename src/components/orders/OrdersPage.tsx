@@ -2,19 +2,20 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import OrderCard from "./OrderCard";
 import CancelOrderDialog from "./CancelOrderDialog";
 import OrdersPageSkeleton from "./OrdersPageSkeleton";
 import OrderSearchBar from "./OrderSearchBar";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useOrderSearch } from "@/hooks/useOrderSearch";
-import {
-  useOrders,
-  useRatings,
-  useInvalidateOrders,
-} from "@/hooks/queries/useOrders";
-import { Star, X } from "lucide-react";
+import { useOrders, useInvalidateOrders } from "@/hooks/queries/useOrders";
+import { getRatingStatus, hasUnratedParts } from "@/lib/ratingStatus";
+import { createRating } from "@/lib/ratings";
+import { resolveLocalized } from "@/lib/localizedField";
+import type { ProductRatingItem, RateableOrderItem } from "@/types/rating";
+import { Star, UtensilsCrossed, X } from "lucide-react";
+import SafeImage from "@/components/shared/SafeImage";
 import { toast } from "sonner";
 import { canCancelOrder, getRefundState } from "@/lib/refund";
 import { isPickupOrder } from "@/lib/orderTimeline";
@@ -30,19 +31,38 @@ interface StarRatingProps {
   value: number;
   onChange: (val: number) => void;
   size?: number;
+  /**
+   * What is being scored — a dish's name, or "the rider".
+   *
+   * Required, because these buttons had no accessible name at all: five
+   * identical icon buttons announced as nothing, and with a row of them per
+   * product there would now be no way to tell which order they belong to.
+   * The group carries the subject; each button carries its own value.
+   */
+  label: string;
+  /** `t("rateStars")` — "Rate {count} out of 5", already looked up. */
+  starLabel: string;
 }
 
-function StarRating({ value, onChange, size = 28 }: StarRatingProps) {
+function StarRating({
+  value,
+  onChange,
+  size = 28,
+  label,
+  starLabel,
+}: StarRatingProps) {
   const [hoverValue, setHoverValue] = useState<number | null>(null);
 
   return (
-    <div className="flex gap-1.5">
+    <div className="flex gap-1.5" role="group" aria-label={label}>
       {[1, 2, 3, 4, 5].map((star) => {
         const active = hoverValue !== null ? star <= hoverValue : star <= value;
         return (
           <button
             key={star}
             type="button"
+            aria-label={starLabel.replace("{count}", String(star))}
+            aria-pressed={star === value}
             onClick={() => onChange(star)}
             onMouseEnter={() => setHoverValue(star)}
             onMouseLeave={() => setHoverValue(null)}
@@ -64,7 +84,7 @@ function StarRating({ value, onChange, size = 28 }: StarRatingProps) {
 }
 
 export default function OrdersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<"ongoing" | "history">("ongoing");
   // Local, not synced to the URL. An order history is private and single-user,
   // so a shareable `?search=` buys nothing — and reading search params here
@@ -73,140 +93,135 @@ export default function OrdersPage() {
   // Cached + deduped. Keyed on language, so a switch refetches while React
   // Query keeps the current list on screen — no manual silent-refetch needed.
   const { data: orders = [], isLoading: loading } = useOrders<any>();
-  const { data: ratings = [], isPending: ratingsLoading } = useRatings<any>();
   const invalidateOrders = useInvalidateOrders();
   const [activeRatingOrder, setActiveRatingOrder] = useState<any | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
 
-  // Food Rating State
-  const [foodRating, setFoodRating] = useState<number>(0);
-  const [foodQuality, setFoodQuality] = useState<number>(0);
-  const [packaging, setPackaging] = useState<number>(0);
+  // One score and one note per product, keyed by the product's `_id` — which
+  // is both what `order.items[].productId` holds and what the payload wants.
+  // The previous shape was a single score for the whole order; the endpoint
+  // has no field for that any more.
+  const [productScores, setProductScores] = useState<Record<string, number>>({});
+  const [productReviews, setProductReviews] = useState<Record<string, string>>({});
 
-  // Delivery Rating State
+  // The rider. One score, one note, and never a rider id — the backend takes
+  // that from the order, and sending one fails the whole request.
   const [deliveryRating, setDeliveryRating] = useState<number>(0);
-  const [deliverySpeed, setDeliverySpeed] = useState<number>(0);
-  const [riderBehavior, setRiderBehavior] = useState<number>(0);
+  const [deliveryReview, setDeliveryReview] = useState<string>("");
 
   const [submittingRating, setSubmittingRating] = useState<boolean>(false);
 
 
-  const handleSubmitReview = async () => {
-    if (!activeRatingOrder) return;
+  /**
+   * What the open modal is asking about, derived rather than stored.
+   *
+   * A half-rated order opens with only the outstanding half on screen: an
+   * order whose products are rated but whose rider is not shows the rider
+   * block alone, and says why the other is missing. That state is real — there
+   * is a live order in it — and it is the state the previous single boolean
+   * could not express.
+   */
+  const ratingSubject = useMemo(() => {
+    if (!activeRatingOrder) return null;
+    const status = getRatingStatus(activeRatingOrder);
+    const items: RateableOrderItem[] = activeRatingOrder.items ?? [];
+    return {
+      items,
+      showProducts: !status.isProductRated && items.length > 0,
+      showDelivery:
+        !status.isDeliveryRated && Boolean(activeRatingOrder.deliveryPartnerId),
+      productsAlreadyRated: status.isProductRated,
+      deliveryAlreadyRated:
+        status.isDeliveryRated && Boolean(activeRatingOrder.deliveryPartnerId),
+    };
+  }, [activeRatingOrder]);
 
-    if (
-      foodRating === 0 &&
-      (activeRatingOrder.deliveryPartnerId ? deliveryRating === 0 : true)
-    ) {
+  /**
+   * The products the customer has scored, and whether that is all of them.
+   *
+   * **All or none, and the reason is that ratings are immutable.**
+   * `isProductRated` only turns true once *every* product in the order is
+   * rated, so a partial submission leaves the block on screen next time —
+   * showing the already-rated items again, with no per-product flag to hide
+   * them. Submitting one of those a second time is a duplicate, the request is
+   * rejected whole, and the item the customer actually meant to rate is lost
+   * with it. Requiring the full set costs a 2-item order one extra tap and
+   * makes that dead end unreachable.
+   */
+  const scoredProducts = useMemo<ProductRatingItem[]>(() => {
+    if (!ratingSubject?.showProducts) return [];
+    return ratingSubject.items
+      .filter((item) => (productScores[item.productId] ?? 0) > 0)
+      .map((item) => {
+        const review = productReviews[item.productId]?.trim();
+        return {
+          productId: item.productId,
+          rating: productScores[item.productId],
+          // Omitted rather than sent empty. The server defaults it to "".
+          ...(review ? { review } : {}),
+        };
+      });
+  }, [ratingSubject, productScores, productReviews]);
+
+  const allProductsScored =
+    !ratingSubject?.showProducts ||
+    scoredProducts.length === ratingSubject.items.length;
+  const someProductsScored = scoredProducts.length > 0;
+  const deliveryScored = Boolean(ratingSubject?.showDelivery) && deliveryRating > 0;
+
+  // Submittable when the rider alone is scored, or when every product is.
+  // Anything in between is the dead end above.
+  const canSubmitRating =
+    (deliveryScored || someProductsScored) &&
+    (allProductsScored || !someProductsScored);
+
+  const handleSubmitReview = async () => {
+    if (!activeRatingOrder || !ratingSubject) return;
+
+    if (someProductsScored && !allProductsScored) {
+      toast.error(t("rateEveryItem"));
+      return;
+    }
+    if (!deliveryScored && !someProductsScored) {
       toast.error(t("provideAtLeastOneRating"));
       return;
     }
 
     setSubmittingRating(true);
-
     try {
-      let productStatus = "SKIPPED";
-      let driverStatus = "SKIPPED";
+      // One request. The previous implementation posted twice and reconciled
+      // the outcomes by hand, including a check that string-matched "already
+      // rated" against the server's English prose — which never fired for a
+      // customer reading Portuguese.
+      await createRating({
+        orderId: activeRatingOrder._id,
+        productRatings: someProductsScored ? scoredProducts : undefined,
+        deliveryRating: deliveryScored
+          ? {
+              rating: deliveryRating,
+              ...(deliveryReview.trim() ? { review: deliveryReview.trim() } : {}),
+            }
+          : undefined,
+      });
 
-      const submitSingleRating = async (payload: any) => {
-        try {
-          const response = await apiClient.post(
-            "/ratings/create-rating",
-            payload,
-          );
-          const message = response.data?.message?.toLowerCase() || "";
-          if (
-            message.includes("already rated") ||
-            message.includes("already submitted")
-          ) {
-            return "ALREADY_RATED";
-          }
-          return "SUCCESS";
-        } catch (err: any) {
-          const errMsg = err.response?.data?.message?.toLowerCase() || "";
-          const status = err.response?.status;
-          if (
-            status === 409 ||
-            (status === 400 &&
-              (errMsg.includes("already rated") ||
-                errMsg.includes("already submitted")))
-          ) {
-            return "ALREADY_RATED";
-          }
-          throw err;
-        }
-      };
-
-      // 1. Submit Product Rating
-      if (foodRating > 0) {
-        const productPayload = {
-          ratingType: "PRODUCT",
-          rating: foodRating,
-          orderId: activeRatingOrder._id,
-          subRatings: {
-            foodQuality: foodQuality || foodRating,
-            packaging: packaging || foodRating,
-          },
-        };
-        productStatus = await submitSingleRating(productPayload);
-      }
-
-      // 2. Submit Delivery Partner Rating (if applicable)
-      if (activeRatingOrder.deliveryPartnerId && deliveryRating > 0) {
-        const driverPayload = {
-          ratingType: "DELIVERY_PARTNER",
-          rating: deliveryRating,
-          orderId: activeRatingOrder._id,
-          subRatings: {
-            deliverySpeed: deliverySpeed || deliveryRating,
-            riderBehavior: riderBehavior || deliveryRating,
-          },
-        };
-        driverStatus = await submitSingleRating(driverPayload);
-      }
-
-      console.log("Rating Statuses:", { productStatus, driverStatus });
-
-      if (
-        productStatus === "ALREADY_RATED" &&
-        (driverStatus === "ALREADY_RATED" || driverStatus === "SKIPPED")
-      ) {
-        toast.info(t("alreadyRated") || "You have already rated this order.");
-      } else if (productStatus === "SUCCESS" || driverStatus === "SUCCESS") {
-        toast.success(
-          t("ratingsSubmitted") || "Thank you! Your feedback helps us improve.",
-        );
-      } else {
-        toast.success(
-          t("ratingsSubmitted") || "Thank you! Your feedback helps us improve.",
-        );
-      }
-
+      toast.success(t("ratingsSubmitted"));
       setActiveRatingOrder(null);
-
-      // Refresh ratings + orders so the UI reflects the new rating.
+      // Refreshes `ratingStatus` and `isRated`, which is what restyles the
+      // card — there is no second ratings list to invalidate any more.
       await invalidateOrders();
     } catch (error) {
+      // The server names the offending field in `errorSources`, and
+      // `getApiErrorMessage` already prefers that over the generic validation
+      // wrapper and already resolves a bilingual message. That matters more
+      // than usual here: ratings are immutable with no delete endpoint, so the
+      // success path could never be rehearsed against the live API — the first
+      // real submission is the test, and a failure has to name its field.
       console.error("Failed to submit rating", error);
-      toast.error(
-        getApiErrorMessage(error, "Failed to submit rating. Please try again."),
-      );
+      toast.error(getApiErrorMessage(error, t("failedToSubmitRating")));
     } finally {
       setSubmittingRating(false);
     }
   };
-
-  const isOrderRated = useCallback(
-    (orderId: string) =>
-      ratings.some(
-        (r: any) =>
-          r.orderId === orderId ||
-          (r.orderId &&
-            typeof r.orderId === "object" &&
-            r.orderId._id === orderId),
-      ),
-    [ratings],
-  );
 
   /**
    * Opens the rating modal on a clean slate.
@@ -216,12 +231,10 @@ export default function OrdersPage() {
    * first one's scores.
    */
   const openRatingModal = useCallback((order: any) => {
-    setFoodRating(0);
-    setFoodQuality(0);
-    setPackaging(0);
+    setProductScores({});
+    setProductReviews({});
     setDeliveryRating(0);
-    setDeliverySpeed(0);
-    setRiderBehavior(0);
+    setDeliveryReview("");
     setActiveRatingOrder(order);
   }, []);
 
@@ -237,11 +250,13 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (!pendingRatingOrderId) return;
-    // Both lists are needed before answering: the orders to find the one to
-    // rate, the ratings to know whether it has been rated already. Acting on a
-    // half-loaded page would reopen the modal for an order the customer has
-    // already reviewed.
-    if (loading || ratingsLoading) return;
+    // The orders are needed before answering — both to find the one to rate
+    // and to know what is left to rate on it. Acting on a half-loaded page
+    // would reopen the modal for an order already fully reviewed.
+    //
+    // One list, not two. This used to wait on a separate ratings request as
+    // well; the answer now travels on the order.
+    if (loading) return;
 
     const target = orders.find(
       (order: any) => order.orderId === pendingRatingOrderId,
@@ -260,17 +275,15 @@ export default function OrdersPage() {
     // the value has to be read rather than awaited.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab("history");
-    // Already rated: no modal. The card carries the same answer in place —
-    // "Feedback Submitted", disabled — which is more honest than a dialog that
-    // would submit a second review.
-    if (isOrderRated(target._id)) return;
+    // Nothing left to rate: no modal. The card carries the same answer in
+    // place — "Feedback Submitted", disabled — which is more honest than a
+    // dialog that would submit a second review.
+    if (!hasUnratedParts(target)) return;
     openRatingModal(target);
   }, [
     pendingRatingOrderId,
     loading,
-    ratingsLoading,
     orders,
-    isOrderRated,
     openRatingModal,
     clearOrderRatingRequest,
   ]);
@@ -569,7 +582,13 @@ export default function OrdersPage() {
                     // reads "Collected" here too, rather than the "Delivered"
                     // it used to print under a chip saying otherwise.
                     progressText={statusLabel}
-                    isRated={isOrderRated(order._id)}
+                    // The order's own answer, not one derived from a
+                    // separate ratings list. That derivation treated any
+                    // rating on an order as "done", so an order whose
+                    // products were rated but whose rider was not showed
+                    // "Feedback Submitted", disabled, with no way to finish
+                    // it — there is a live order in exactly that state.
+                    isRated={!hasUnratedParts(order)}
                     onRateOrder={() => openRatingModal(order)}
                   />
                 );
@@ -604,53 +623,93 @@ export default function OrdersPage() {
 
             {/* Modal Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-card">
-              {/* Product / Food Rating Section */}
-              <div className="rounded-2xl border border-primary/10 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-4 space-y-4 shadow-xs">
-                <div className="flex items-center justify-between border-b border-border pb-2">
-                  <span className="rounded-full bg-primary/5 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-primary dark:text-pink-400 uppercase tracking-wider">
-                    {t("foodReview")}
-                  </span>
-                </div>
-
-                {/* Overall Food Rating */}
-                <div className="flex flex-col items-center justify-center py-2 space-y-2">
-                  <span className="text-xs font-medium text-gray-400 dark:text-neutral-500 uppercase tracking-wide">
-                    {t("overallRating")}
-                  </span>
-                  <StarRating
-                    value={foodRating}
-                    onChange={setFoodRating}
-                    size={32}
-                  />
-                </div>
-
-                {/* Sub-ratings: quality & packaging */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between border-t border-gray-100/80 dark:border-neutral-800 pt-3">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
-                      {t("foodQuality")}
+              {/* One block per product. The endpoint takes one score per
+                  product and has no field for a single order-wide score, so
+                  this is the shape of the request rendered. */}
+              {ratingSubject?.showProducts && (
+                <div className="rounded-2xl border border-primary/10 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-4 space-y-4 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-border pb-2">
+                    <span className="rounded-full bg-primary/5 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-primary dark:text-pink-400 uppercase tracking-wider">
+                      {t("foodReview")}
                     </span>
-                    <StarRating
-                      value={foodQuality}
-                      onChange={setFoodQuality}
-                      size={20}
-                    />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
-                      {t("packaging")}
-                    </span>
-                    <StarRating
-                      value={packaging}
-                      onChange={setPackaging}
-                      size={20}
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {/* Rider / Delivery Partner Rating Section */}
-              {activeRatingOrder.deliveryPartnerId && (
+                  {ratingSubject.items.map((item) => {
+                    const name = resolveLocalized(item.name, i18n.language);
+                    return (
+                      <div
+                        key={item.productId}
+                        className="space-y-3 border-t border-gray-100/80 dark:border-neutral-800 pt-3 first:border-t-0 first:pt-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          {/* The name beside it is the accessible one, so the
+                              picture is decorative — an empty `alt`, not the
+                              dish's name announced twice. */}
+                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border">
+                            <SafeImage
+                              src={item.image}
+                              alt=""
+                              sizes="40px"
+                              fallbackIcon={<UtensilsCrossed className="h-4 w-4" />}
+                            />
+                          </div>
+                          <span className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
+                            {name}
+                          </span>
+                        </div>
+                        <StarRating
+                          value={productScores[item.productId] ?? 0}
+                          onChange={(val) =>
+                            setProductScores((prev) => ({
+                              ...prev,
+                              [item.productId]: val,
+                            }))
+                          }
+                          size={26}
+                          label={name}
+                          starLabel={t("rateStars")}
+                        />
+                        <textarea
+                          rows={2}
+                          value={productReviews[item.productId] ?? ""}
+                          onChange={(e) =>
+                            setProductReviews((prev) => ({
+                              ...prev,
+                              [item.productId]: e.target.value,
+                            }))
+                          }
+                          aria-label={t("productReviewLabel").replace(
+                            "{product}",
+                            name,
+                          )}
+                          placeholder={t("reviewPlaceholder")}
+                          className="focus-ring w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 dark:placeholder:text-neutral-500"
+                        />
+                      </div>
+                    );
+                  })}
+
+                  {/* All-or-none, and the customer is told before they press
+                      rather than by a rejected request. See `scoredProducts`. */}
+                  {someProductsScored && !allProductsScored ? (
+                    <p className="text-xs font-medium text-primary dark:text-pink-400">
+                      {t("rateEveryItem")}
+                    </p>
+                  ) : null}
+                </div>
+              )}
+
+              {/* Why the block above is missing, rather than a silent gap. */}
+              {ratingSubject?.productsAlreadyRated ? (
+                <p className="text-sm text-gray-500 dark:text-neutral-400">
+                  {t("productsAlreadyRated")}
+                </p>
+              ) : null}
+
+              {/* The rider. Absent on every self-pickup order, because there
+                  is no rider on one — the condition is the order's own
+                  `deliveryPartnerId`, never a guess from the status. */}
+              {ratingSubject?.showDelivery && (
                 <div className="rounded-2xl border border-primary/10 dark:border-neutral-800 bg-linear-to-b from-[#fafbfc] to-[#f4f6f8] dark:from-neutral-950/60 dark:to-neutral-950/30 p-4 space-y-4 shadow-xs">
                   <div className="flex items-center justify-between border-b border-border pb-2">
                     <span className="rounded-full bg-primary/5 dark:bg-pink-950/30 px-2.5 py-0.5 text-xs font-semibold text-primary dark:text-pink-400 uppercase tracking-wider">
@@ -658,7 +717,6 @@ export default function OrdersPage() {
                     </span>
                   </div>
 
-                  {/* Overall Delivery Rating */}
                   <div className="flex flex-col items-center justify-center py-2 space-y-2">
                     <span className="text-xs font-medium text-gray-400 dark:text-neutral-500 uppercase tracking-wide">
                       {t("overallRating")}
@@ -667,34 +725,27 @@ export default function OrdersPage() {
                       value={deliveryRating}
                       onChange={setDeliveryRating}
                       size={32}
+                      label={t("yourRider")}
+                      starLabel={t("rateStars")}
                     />
                   </div>
 
-                  {/* Sub-ratings: speed & rider behavior */}
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between border-t border-gray-100/80 dark:border-neutral-800 pt-3">
-                      <span className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
-                        {t("deliverySpeed")}
-                      </span>
-                      <StarRating
-                        value={deliverySpeed}
-                        onChange={setDeliverySpeed}
-                        size={20}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-gray-700 dark:text-neutral-200">
-                        {t("riderBehavior")}
-                      </span>
-                      <StarRating
-                        value={riderBehavior}
-                        onChange={setRiderBehavior}
-                        size={20}
-                      />
-                    </div>
-                  </div>
+                  <textarea
+                    rows={2}
+                    value={deliveryReview}
+                    onChange={(e) => setDeliveryReview(e.target.value)}
+                    aria-label={t("deliveryReviewLabel")}
+                    placeholder={t("reviewPlaceholder")}
+                    className="focus-ring w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 dark:placeholder:text-neutral-500"
+                  />
                 </div>
               )}
+
+              {ratingSubject?.deliveryAlreadyRated ? (
+                <p className="text-sm text-gray-500 dark:text-neutral-400">
+                  {t("deliveryAlreadyRated")}
+                </p>
+              ) : null}
             </div>
 
             {/* Modal Footer Actions */}
@@ -712,13 +763,7 @@ export default function OrdersPage() {
               <Button
                 type="button"
                 onClick={handleSubmitReview}
-                disabled={
-                  submittingRating ||
-                  (foodRating === 0 &&
-                    (activeRatingOrder.deliveryPartnerId
-                      ? deliveryRating === 0
-                      : true))
-                }
+                disabled={submittingRating || !canSubmitRating}
                 className="min-w-30 gap-2 font-semibold"
               >
                 {submittingRating ? (

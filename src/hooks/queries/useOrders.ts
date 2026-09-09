@@ -91,7 +91,6 @@ export const orderKeys = {
   // full order list, and must never be served to the orders page from cache.
   // Not language-keyed either — the projection contains no localized field.
   statusIndex: ["orders", "status-index"] as const,
-  ratings: ["ratings", "all"] as const,
 };
 
 export function useOrders<T = unknown>(options?: { enabled?: boolean }) {
@@ -231,17 +230,6 @@ export function useInvalidateOrderStatusIndex() {
   );
 }
 
-export function useRatings<T = unknown>(options?: { enabled?: boolean }) {
-  return useQuery({
-    queryKey: orderKeys.ratings,
-    queryFn: async ({ signal }) => {
-      const res = await apiClient.get("/ratings/get-all-ratings", { signal });
-      return (res.data?.data ?? []) as T[];
-    },
-    enabled: options?.enabled ?? true,
-  });
-}
-
 /**
  * Re-order: replay a past order's items back into the cart.
  *
@@ -282,12 +270,17 @@ export function useReorder() {
   };
 }
 
-/** Invalidate orders + ratings (e.g. after submitting a rating). */
+/**
+ * Invalidate the customer's orders — after a cancellation, or a rating.
+ *
+ * It used to invalidate a second `["ratings", "all"]` query as well, because
+ * `/orders` derived "has this been rated?" by scanning
+ * `/ratings/get-all-ratings`. It no longer does: the answer is on the order
+ * itself as `ratingStatus` and `isRated`, so refreshing the orders **is**
+ * refreshing the rating state. One request, one cache key, and no way for the
+ * two to disagree about the same order.
+ */
 export function useInvalidateOrders() {
   const queryClient = useQueryClient();
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: orderKeys.all }),
-      queryClient.invalidateQueries({ queryKey: orderKeys.ratings }),
-    ]);
+  return () => queryClient.invalidateQueries({ queryKey: orderKeys.all });
 }

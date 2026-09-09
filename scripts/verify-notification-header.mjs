@@ -738,9 +738,19 @@ section("The wiring the rule depends on");
   check("the orders page consumes the pending rating request",
     /pendingRatingOrderId/.test(ordersPage) && /clearOrderRatingRequest\(\)/.test(ordersPage));
 
-  check("and waits for both lists before acting on it",
-    /if \(loading \|\| ratingsLoading\) return;/.test(ordersPage),
-    "acting early would reopen the modal for an already-rated order");
+  // Was "waits for both lists". There is one list now: the rating state moved
+  // onto the order itself (`ratingStatus` / `isRated`), so the separate
+  // `/ratings/get-all-ratings` query — and the second loading flag this used to
+  // name — are gone. The rule survives the change because it was never about
+  // *two* requests; it is about not acting on a half-loaded page, and about
+  // asking the order rather than a derived list.
+  check("and waits for the orders before acting on it",
+    /if \(loading\) return;/.test(ordersPage) && !/ratingsLoading/.test(ordersPage),
+    "acting early would reopen the modal for an order with nothing left to rate");
+
+  check("and decides what is left to rate from the order, not from a ratings list",
+    /hasUnratedParts\(/.test(ordersPage) && !/get-all-ratings/.test(ordersPage),
+    "deriving it from the customer's ratings treated any one rating as finished, which stranded every half-rated order behind a disabled button");
 
   check("every kind the rule can return has a glyph",
     ["delivery", "pickup", "promo", "security", "delivered", "generic"]

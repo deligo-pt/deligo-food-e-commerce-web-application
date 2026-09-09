@@ -352,13 +352,21 @@ const en = {
   foodReview: "Food Review",
   deliveryReview: "Delivery Review",
   overallRating: "Overall Rating",
+  // Added in Phase 3, when the modal became one score per product. `{count}`
+  // is substituted by the caller — `t()` takes a key and nothing else.
+  rateStars: "Rate {count} out of 5",
+  reviewPlaceholder: "Add a note (optional)",
+  productReviewLabel: "Review for {product}",
+  deliveryReviewLabel: "Review for the rider",
+  // Shown before the request, not after a rejection: a partial product
+  // submission cannot be completed later, because nothing flags an individual
+  // product as rated and re-sending one is a duplicate the server refuses.
+  rateEveryItem: "Rate every item, or leave them all blank and rate the rider.",
+  productsAlreadyRated: "You have already rated the items in this order.",
+  deliveryAlreadyRated: "You have already rated the rider for this order.",
+  failedToSubmitRating: "Failed to submit rating. Please try again.",
   thankYou: "Thank You!",
-  alreadyRated: "You have already rated this order.",
   ratingsSubmitted: "Your feedback helps us improve.",
-  foodQuality: "Food Quality",
-  packaging: "Packaging",
-  deliverySpeed: "Delivery Speed",
-  riderBehavior: "Rider Behavior",
   submitReview: "Submit Review",
   cancel: "Cancel",
   orderAgain: "Order Again",
