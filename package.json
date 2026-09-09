@@ -22,7 +22,8 @@
     "verify:orders-page": "node --no-warnings scripts/verify-orders-page.mjs",
     "verify:category": "node --no-warnings scripts/verify-category.mjs",
     "verify:design": "node --no-warnings scripts/verify-design-system.mjs",
-    "verify:pickup": "node scripts/verify-pickup-contract.mjs"
+    "verify:pickup": "node scripts/verify-pickup-contract.mjs",
+    "verify:rating": "node --no-warnings scripts/verify-rating.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",

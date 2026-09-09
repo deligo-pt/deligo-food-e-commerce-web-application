@@ -72,6 +72,18 @@ interface OrderCardProps {
   progress: number;
   progressText: string;
   image?: string;
+  /**
+   * Whether there is **nothing left to rate** on this order — not whether a
+   * rating exists.
+   *
+   * The difference is the bug this card used to show. The caller derived this
+   * by scanning the customer's ratings and treating any one rating on an order
+   * as finished, so an order whose products were rated but whose rider was not
+   * rendered a disabled "Feedback Submitted" and could never be completed. It
+   * now comes from the order's own `ratingStatus` / `isRated` via
+   * `hasUnratedParts`, which counts a half-rated order as still rateable and a
+   * self-pickup order's absent rider as nothing outstanding.
+   */
   isRated?: boolean;
   onRateOrder?: (dbId: string) => void;
   /**
