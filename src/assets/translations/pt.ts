@@ -34,6 +34,7 @@ const pt = {
 
   sponsorship: "Patrocínio",
   sponsorships: "Patrocínios",
+  opensInNewTab: "abre num novo separador",
   shopOnDeligo: "Comprar no DeliGo",
 
   unableToLoadShopCategories:
