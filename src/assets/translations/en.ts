@@ -31,6 +31,7 @@ const en = {
 
   sponsorship: "Sponsorship",
   sponsorships: "Sponsorships",
+  opensInNewTab: "opens in a new tab",
   shopOnDeligo: "Shop On DeliGo",
 
   unableToLoadShopCategories:

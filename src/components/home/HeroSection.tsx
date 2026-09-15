@@ -42,9 +42,25 @@ type Sponsorship = {
   sponsorName: string;
   sponsorType?: string;
   bannerImage: string;
+  /** The sponsor's own website, when the admin gave one. */
+  url?: string;
   isActive: boolean;
   isDeleted: boolean;
 };
+
+/** The sponsor link, only when it is a web address — the field is typed by an
+ *  admin, and anything else (a `javascript:` URL) must not become a link. */
+function sponsorHref(url?: string): string | undefined {
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.protocol === "https:" || parsed.protocol === "http:"
+      ? parsed.href
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 type SponsorshipResponse = {
   data: Sponsorship[];
@@ -218,11 +234,9 @@ export default function HeroSection() {
             <div className="absolute inset-0 z-10 pointer-events-none" />
             <div className="overflow-hidden touch-pan-y" ref={emblaRef}>
               <div className="flex">
-                {slides.map((slide, index) => (
-                  <div
-                    key={slide._id}
-                    className="relative aspect-video min-w-0 flex-[0_0_100%] lg:aspect-21/8"
-                  >
+                {slides.map((slide, index) => {
+                  const href = sponsorHref(slide.url);
+                  const image = (
                     <Image
                       src={slide.bannerImage}
                       alt={slide.sponsorName}
@@ -247,8 +261,31 @@ export default function HeroSection() {
                       onError={() => markLoaded(slide._id)}
                       className="motion-image-in object-cover object-center"
                     />
-                  </div>
-                ))}
+                  );
+                  return (
+                    <div
+                      key={slide._id}
+                      className="relative aspect-video min-w-0 flex-[0_0_100%] lg:aspect-21/8"
+                    >
+                      {href ? (
+                        // The sponsor's site, in a new tab. A drag that swipes
+                        // the carousel also ends in a click; Embla cancels that
+                        // click itself (its drag handler's capture listener).
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer sponsored"
+                          aria-label={`${slide.sponsorName} — ${t("opensInNewTab")}`}
+                          className="focus-ring absolute inset-0 block rounded-4xl"
+                        >
+                          {image}
+                        </a>
+                      ) : (
+                        image
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
             {/* The floor sits above the sponsor pill rather than under it. The
