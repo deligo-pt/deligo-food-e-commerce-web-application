@@ -562,19 +562,19 @@ const en = {
 
   chefPreparingMeal: "Chef is preparing your meal",
 
-  waitingRestaurantConfirmation: "Waiting for restaurant confirmation",
+  waitingRestaurantConfirmation: "Waiting for confirmation",
 
   accepted: "Accepted",
   pending: "Pending",
   loadingMap: "Loading map...",
 
-  restaurant: "Restaurant",
+  restaurant: "Partner",
 
   restaurantPlaceholder: "Restaurant",
   locationPlaceholder: "Location",
 
   restaurantAddressPending:
-    "Restaurant address will appear after order confirmation",
+    "The pickup address will appear after order confirmation",
 
   restaurantAddressComingSoon: "Address coming soon",
 
@@ -595,9 +595,23 @@ const en = {
   reorderAddedToCart: "Items added to your cart",
   reorderFailed: "Could not re-order these items",
 
-  storeClosedTitle: "This restaurant is closed",
-  storeClosedNotice: "You can browse the menu, but ordering is unavailable until it reopens.",
-  storeClosedCannotOrder: "This restaurant is closed right now — you can't order from it yet.",
+  // Closed vendors, per kind. Portuguese decides the shape: "o restaurante" is
+  // masculine, "a loja" feminine, so the sentence changes and not just a noun.
+  storeClosedTitleRestaurant: "This restaurant is closed",
+  storeClosedTitleStore: "This store is closed",
+  storeClosedTitlePartner: "This partner is closed",
+  storeClosedNoticeRestaurant:
+    "You can browse the menu, but ordering is unavailable until it reopens.",
+  storeClosedNoticeStore:
+    "You can browse the products, but ordering is unavailable until it reopens.",
+  storeClosedNoticePartner:
+    "You can browse what they offer, but ordering is unavailable until it reopens.",
+  storeClosedCannotOrderRestaurant:
+    "This restaurant is closed right now — you can't order from it yet.",
+  storeClosedCannotOrderStore:
+    "This store is closed right now — you can't order from it yet.",
+  storeClosedCannotOrderPartner:
+    "This partner is closed right now — you can't order from it yet.",
 
   closingSoon: "We're Closing Soon",
   orderWithin: "Order within",
@@ -623,18 +637,18 @@ const en = {
   // city. Without this key it rendered the literal lowercase word "location".
   location: "Location",
   orderWasCancelled: "Order was cancelled",
-  orderWasRejected: "Order was rejected by the restaurant",
+  orderWasRejected: "Your order was rejected",
   orderHasBeenDelivered: "Order has been delivered",
   riderIsHeadingToYourLocation: "Rider is heading to your location",
 
   orderPending: "Order Pending",
-  waitingRestaurantResponse: "Waiting for restaurant response",
+  waitingRestaurantResponse: "Waiting for the partner to respond",
 
   orderAccepted: "Order Accepted",
-  restaurantAcceptedOrder: "Restaurant accepted your order",
+  restaurantAcceptedOrder: "Your order was accepted",
 
   preparing: "Preparing",
-  restaurantPreparingMeal: "Restaurant is preparing your meal",
+  restaurantPreparingMeal: "Your order is being prepared",
 
   readyForPickup: "Ready for Pickup",
   orderReadyForPickup: "Your order is ready for pickup",
@@ -655,12 +669,12 @@ const en = {
     "Your payment has been successfully refunded to your account.",
   refundNotEligible: "No Refund",
   refundNotEligibleDescription:
-    "The restaurant had already accepted this order when it was cancelled, so it is not eligible for a refund.",
+    "The partner had already accepted this order when it was cancelled, so it is not eligible for a refund.",
 
   cancelOrder: "Cancel Order",
   cancelOrderTitle: "Cancel this order?",
   cancelOrderDescription:
-    "If the restaurant has not accepted your order yet, you will be refunded. Once they have accepted it, no refund is due.",
+    "If the partner has not accepted your order yet, you will be refunded. Once they have accepted it, no refund is due.",
   cancelReason: "Reason",
   cancelReasonPlaceholder: "Tell us why you are cancelling",
   cancelReasonQuestion: "Why do you want to cancel this order?",
@@ -1464,7 +1478,7 @@ const en = {
 
   // Orders page search (searches Ongoing and History together).
   searchOrdersLabel: "Search your orders",
-  searchOrdersPlaceholder: "Search by order ID, item, or restaurant",
+  searchOrdersPlaceholder: "Search by order ID, item, or partner",
   noMatchingOrders: "No matching orders here.",
   // Composed with a number in JSX — "3 in History" — because t() does not
   // interpolate. Kept as fragments for that reason, not as full sentences.

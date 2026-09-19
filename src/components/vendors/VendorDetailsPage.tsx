@@ -27,6 +27,7 @@ const VendorDetailsModal = dynamic(() => import("./VendorDetailsModal"), {
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
 import ClosingCountdown from "./ClosingCountdown";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getVendorKind, vendorCopyKey, type VendorKind } from "@/lib/vendorKind";
 import {
   useVendor,
   useVendorProducts,
@@ -214,6 +215,7 @@ const MenuProductCard = memo(function MenuProductCard({
   cartQuantity,
   onCartChanged,
   storeClosed = false,
+  vendorKind = "partner",
 }: {
   product: Product;
   onSelect: (productId: string) => void;
@@ -227,6 +229,8 @@ const MenuProductCard = memo(function MenuProductCard({
   // so the card never invites a click it won't honour. Customers can still see
   // what's on offer, which is the point of letting them in here at all.
   storeClosed?: boolean;
+  /** Restaurant, store or neither — decides what the closed label calls it. */
+  vendorKind?: VendorKind;
 }) {
   const { t } = useTranslation();
   // Guard against a product record with missing/partial pricing — an unguarded
@@ -335,6 +339,7 @@ const MenuProductCard = memo(function MenuProductCard({
               productName={product.name}
               quantity={cartQuantity}
               disabled={storeClosed}
+              vendorKind={vendorKind}
               onCartChanged={onCartChanged}
             />
           ) : (
@@ -342,7 +347,11 @@ const MenuProductCard = memo(function MenuProductCard({
               size="icon"
               onClick={() => onSelect(product.productId)}
               disabled={storeClosed}
-              aria-label={storeClosed ? t("storeClosedTitle") : t("addToCart")}
+              aria-label={
+                storeClosed
+                  ? t(vendorCopyKey("storeClosedTitle", vendorKind))
+                  : t("addToCart")
+              }
               className="size-9 shrink-0 rounded-xl hover:scale-105 disabled:hover:scale-100"
             >
               <Plus size={16} />
@@ -396,6 +405,9 @@ export default function VendorDetailsPage({
   // browsable and only ordering is withdrawn — and a store can also close while
   // this page is open. Only an explicit `false` counts as closed.
   const isStoreClosed = vendor?.businessDetails?.isStoreOpen === false;
+  // Restaurant, store, or neither — the vendor's own record decides the words
+  // on the closed banner and on the disabled add buttons.
+  const vendorKind = getVendorKind(vendor?.businessDetails?.businessType);
 
   const handleSelectProduct = useCallback(
     (productId: string) => setSelectedProductId(productId),
@@ -501,9 +513,10 @@ export default function VendorDetailsPage({
         cartQuantity={cartQuantities.get(product._id ?? product.productId) ?? 0}
         onCartChanged={invalidateCart}
         storeClosed={isStoreClosed}
+        vendorKind={vendorKind}
       />
     ),
-    [cartQuantities, handleSelectProduct, invalidateCart, isStoreClosed],
+    [cartQuantities, handleSelectProduct, invalidateCart, isStoreClosed, vendorKind],
   );
   const categoryProductKey = useCallback(
     (product: Product) => product.productId ?? product.id,
@@ -716,10 +729,10 @@ export default function VendorDetailsPage({
             />
             <div>
               <p className="font-semibold text-amber-900 dark:text-amber-300">
-                {t("storeClosedTitle")}
+                {t(vendorCopyKey("storeClosedTitle", vendorKind))}
               </p>
               <p className="mt-1 text-sm text-amber-800 dark:text-amber-400/80">
-                {t("storeClosedNotice")}
+                {t(vendorCopyKey("storeClosedNotice", vendorKind))}
               </p>
             </div>
           </div>

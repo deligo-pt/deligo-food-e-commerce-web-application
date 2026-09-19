@@ -24,6 +24,7 @@ import { getAccessToken } from "@/lib/authCookies";
 import { useCartCache } from "@/hooks/queries/useCart";
 import { activateAddedOrder } from "@/lib/cartActivation";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
 import { currencySymbol } from "@/lib/currency";
 import {
   applyProductDiscount,
@@ -73,7 +74,15 @@ interface Product {
   // one source of truth, and it stays correct however the modal was opened.
   vendorId?: {
     userId?: string;
-    businessDetails?: { isStoreOpen?: boolean };
+    businessDetails?: {
+      isStoreOpen?: boolean;
+      // Two shapes, both live: a string on the vendor lists, an object here.
+      // `getVendorKind` reads either.
+      businessType?:
+        | string
+        | { slug?: string | null; name?: { en?: string | null } | string | null }
+        | null;
+    };
   };
 }
 
@@ -343,13 +352,18 @@ export default function ProductDetailsModal({
   const isStoreClosed =
     product?.vendorId?.businessDetails?.isStoreOpen === false;
 
+  // What this vendor is called. A cosmetics store was being told "This
+  // restaurant is closed — you can browse the menu"; the vendor's own record
+  // says which noun belongs here.
+  const vendorKind = getVendorKind(product?.vendorId?.businessDetails?.businessType);
+
   const handleAddToCart = async () => {
     if (!product) return;
 
     // The store can close between page load and this click (the backend flips
     // this on a schedule), so re-check rather than trusting the disabled state.
     if (isStoreClosed) {
-      toast.error(t("storeClosedCannotOrder"));
+      toast.error(t(vendorCopyKey("storeClosedCannotOrder", vendorKind)));
       return;
     }
 
@@ -748,10 +762,10 @@ export default function ProductDetailsModal({
                 />
                 <div>
                   <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">
-                    {t("storeClosedTitle")}
+                    {t(vendorCopyKey("storeClosedTitle", vendorKind))}
                   </p>
                   <p className="mt-0.5 text-sm text-amber-800 dark:text-amber-400/80">
-                    {t("storeClosedNotice")}
+                    {t(vendorCopyKey("storeClosedNotice", vendorKind))}
                   </p>
                 </div>
               </div>

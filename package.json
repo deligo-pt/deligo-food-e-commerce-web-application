@@ -23,6 +23,7 @@
     "verify:category": "node --no-warnings scripts/verify-category.mjs",
     "verify:design": "node --no-warnings scripts/verify-design-system.mjs",
     "verify:pickup": "node scripts/verify-pickup-contract.mjs",
+    "verify:vendor-noun": "node --no-warnings scripts/verify-vendor-noun.mjs",
     "verify:rating": "node --no-warnings scripts/verify-rating.mjs"
   },
   "dependencies": {

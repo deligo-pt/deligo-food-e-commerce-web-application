@@ -8,6 +8,7 @@ import { getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { setCartLineQuantity } from "@/lib/cartLineQuantity";
 import { useTranslation } from "@/hooks/useTranslation";
+import { vendorCopyKey, type VendorKind } from "@/lib/vendorKind";
 import { Button } from "@/components/ui/button";
 
 /** How long a burst of taps is collected before one request is sent.
@@ -26,6 +27,9 @@ interface ProductQuantityStepperProps {
   quantity: number;
   /** The store is closed: browsable, not orderable. */
   disabled?: boolean;
+  /** Restaurant, store or neither — what the disabled control calls the
+   *  vendor. The screen knows; this control does not. */
+  vendorKind?: VendorKind;
   /** Re-read the cart once a change has landed. Awaited, so the local number
    *  is only handed back to the server's after the refetch has resolved —
    *  otherwise the card flashes the pre-change quantity. */
@@ -77,6 +81,7 @@ export default function ProductQuantityStepper({
   productName,
   quantity,
   disabled = false,
+  vendorKind = "partner",
   onCartChanged,
 }: ProductQuantityStepperProps) {
   const { t } = useTranslation();
@@ -205,7 +210,9 @@ export default function ProductQuantityStepper({
           schedule(1);
         }}
         disabled={disabled}
-        aria-label={disabled ? t("storeClosedTitle") : t("addToCart")}
+        aria-label={
+          disabled ? t(vendorCopyKey("storeClosedTitle", vendorKind)) : t("addToCart")
+        }
         className="size-9 shrink-0 rounded-xl hover:scale-105 disabled:hover:scale-100"
       >
         <Plus size={16} />
