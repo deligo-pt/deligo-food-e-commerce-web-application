@@ -607,6 +607,13 @@ const pt = {
   reorderFailed: "Não foi possível encomendar estes artigos novamente",
 
   // Fechados, por tipo de parceiro — em português muda a frase, não só o nome.
+  // Offers: the free item a buy-and-reward offer gives (Sep 2026 API).
+  freeWithOffer: "Grátis",
+  freeItem: "Item grátis",
+  chooseYourFreeItem: "Escolha o seu item grátis",
+  buyAndRewardSummary: "Leve {buy}, receba {free} grátis",
+  rewardReceived: "Recebeu {item} grátis",
+
   storeClosedTitleRestaurant: "Este restaurante está fechado",
   storeClosedTitleStore: "Esta loja está fechada",
   storeClosedTitlePartner: "Este parceiro está fechado",

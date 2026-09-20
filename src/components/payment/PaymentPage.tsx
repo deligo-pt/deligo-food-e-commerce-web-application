@@ -61,9 +61,18 @@ interface CheckoutItem {
   // document — so this field's shape depends on which call produced the summary.
   name: LocalizedField;
   image: string;
-  itemSummary: { quantity: number; grandTotal: number };
+  itemSummary: {
+    quantity: number;
+    grandTotal: number;
+    /** The offer's discount on this whole line. */
+    totalPromoDiscount?: number;
+  };
   productPricing: { priceAfterProductDiscount: number };
   addons?: CartAddon[];
+  /** A free item the offer added to the checkout. It is a real line with a
+   *  price of zero — the discount that pays for it is in `totalOfferDiscount`
+   *  (customer-offer-api.md, "FIXED_PRODUCT" and "CUSTOMER_CHOICE"). */
+  isPromoRewardLine?: boolean;
 }
 
 interface OrderCalculation {
@@ -122,11 +131,35 @@ interface SavedAddress {
   detailedAddress?: string;
 }
 
+/** What a buy-and-reward offer gave the customer, echoed back after applying. */
+interface RewardSnapshot {
+  buyQuantity: number;
+  rewardQuantity: number;
+  freeQty: number;
+  rewardType: "SAME_PRODUCT" | "FIXED_PRODUCT" | "CUSTOMER_CHOICE";
+  productId: string;
+  productName: LocalizedField;
+  variationSku: string | null;
+  /** `true` when the free item was added as its own line rather than making an
+   *  item already in the cart free. */
+  wasInsertedAsNewLine: boolean;
+  /** Customer-choice only: what could have been picked. */
+  selectedFromOptions?: { productId: string; productName: LocalizedField }[];
+}
+
 interface OfferApplied {
   promoId: string;
   title: LocalizedField;
   discountValue: number;
   code: string;
+  rewardSnapshot?: RewardSnapshot | null;
+}
+
+/** One free item a CUSTOMER_CHOICE offer lets the customer pick. The API sends
+ *  ids only; the names come from the store's product list. */
+interface RewardOption {
+  productId: string;
+  variationSku?: string;
 }
 
 interface CheckoutSummary {
@@ -297,7 +330,16 @@ interface AvailableOffer {
   // bilingual document — resolve before rendering.
   title: LocalizedField;
   description: LocalizedField;
-  offerType: "PERCENT" | "FLAT";
+  offerType: "PERCENT" | "FLAT" | "BUY_AND_REWARD";
+  /** Present on BUY_AND_REWARD offers: how many to buy, and what is free. */
+  buyAndReward?: {
+    buy?: { quantity?: number };
+    reward?: {
+      type?: "SAME_PRODUCT" | "FIXED_PRODUCT" | "CUSTOMER_CHOICE";
+      quantity?: number;
+      options?: RewardOption[];
+    };
+  } | null;
   isAutoApply: boolean;
   code: string;
   discountValue: number;
@@ -306,6 +348,29 @@ interface AvailableOffer {
   expiresAt: string;
   isEligible: boolean;
   message: LocalizedField;
+}
+
+/**
+ * The free items a customer-choice offer lets you pick, or `null` for every
+ * other offer.
+ *
+ * `CUSTOMER_CHOICE` is the only kind that takes a `selectedReward`, and it
+ * **requires** one; the others refuse it outright. So this doubles as the test
+ * for "does this offer need a choice before it can be applied".
+ */
+function rewardOptionsOf(offer: AvailableOffer): RewardOption[] | null {
+  const reward = offer.buyAndReward?.reward;
+  if (reward?.type !== "CUSTOMER_CHOICE") return null;
+  const options = reward.options ?? [];
+  return options.length > 0 ? options : null;
+}
+
+/** A reward option is a product **and** a variation: the same product with two
+ *  variations is two different rewards, and the API matches on both. */
+function rewardOptionKey(option: RewardOption): string {
+  return option.variationSku
+    ? `${option.productId}::${option.variationSku}`
+    : option.productId;
 }
 
 export default function PaymentPage() {
@@ -349,6 +414,20 @@ export default function PaymentPage() {
   const [offersError, setOffersError] = useState("");
   const [manualCode, setManualCode] = useState("");
   const [applyingOfferId, setApplyingOfferId] = useState<string | null>(null);
+  /**
+   * The free item chosen for a customer-choice offer, keyed by the offer.
+   *
+   * Held here rather than inside the row so that switching offers clears it:
+   * a `selectedReward` belongs to one offer's option list and the API rejects
+   * a product that is not on it.
+   */
+  const [rewardChoice, setRewardChoice] = useState<{
+    offerId: string;
+    option: RewardOption;
+  } | null>(null);
+  /** Names for the reward options, which the offer sends as bare ids. Loaded
+   *  from the store's product list when the offers modal opens. */
+  const [rewardNames, setRewardNames] = useState<Record<string, string>>({});
   const [offerApplyError, setOfferApplyError] = useState("");
   const [isRemovingOffer, setIsRemovingOffer] = useState(false);
   // Separate from `offerApplyError`, which only renders inside the offer modal —
@@ -446,6 +525,55 @@ export default function PaymentPage() {
     loadAddresses();
   }, []);
 
+  /**
+   * Names for the reward options.
+   *
+   * The offer carries its choices as bare ids — `{ productId, variationSku }`
+   * — so a picker built from it alone would offer three unlabelled buttons.
+   * The store's own product list has the names, and the checkout knows the
+   * store. Best effort: a list that cannot be read leaves the generic label,
+   * which is still a working choice.
+   */
+  const loadRewardNames = async (offers: AvailableOffer[]) => {
+    const needed = offers.flatMap((offer) => rewardOptionsOf(offer) ?? []);
+    if (needed.length === 0) return;
+    if (!summary) return;
+    const vendorMongoId = getVendorLookupIds(summary.vendorId).mongoId;
+    if (!vendorMongoId) return;
+
+    try {
+      const res = await apiClient.get("/products/open", {
+        params: { vendorId: vendorMongoId, page: 1, limit: 100 },
+      });
+      const products: {
+        _id?: string;
+        id?: string;
+        name?: LocalizedField;
+        variations?: { options?: { sku?: string; label?: string }[] }[];
+      }[] = Array.isArray(res.data?.data) ? res.data.data : [];
+
+      const names: Record<string, string> = {};
+      for (const option of needed) {
+        const product = products.find(
+          (candidate) => (candidate._id ?? candidate.id) === option.productId,
+        );
+        if (!product) continue;
+        const base = resolveLocalized(product.name, lang);
+        // The variation is part of the reward, so it is part of its name:
+        // "Organic Green Tea - Medium" is a different free item from the large.
+        const variation = option.variationSku
+          ? product.variations
+              ?.flatMap((group) => group.options ?? [])
+              .find((candidate) => candidate.sku === option.variationSku)?.label
+          : undefined;
+        names[rewardOptionKey(option)] = variation ? `${base} — ${variation}` : base;
+      }
+      setRewardNames(names);
+    } catch {
+      // Names are a nicety; the choice still works without them.
+    }
+  };
+
   const handleOpenOfferModal = async () => {
     if (!summary) return;
     setShowOfferModal(true);
@@ -461,7 +589,9 @@ export default function PaymentPage() {
       // The list is mapped during render, where a try/catch can't reach — so a
       // non-array payload has to be rejected here, not there.
       const payload = res.data?.data;
-      setAvailableOffers(Array.isArray(payload) ? payload : []);
+      const offers: AvailableOffer[] = Array.isArray(payload) ? payload : [];
+      setAvailableOffers(offers);
+      void loadRewardNames(offers);
     } catch (err) {
       setOffersError(getApiErrorMessage(err, "Failed to load offers"));
     } finally {
@@ -469,7 +599,21 @@ export default function PaymentPage() {
     }
   };
 
-  const applyOffer = async (offer?: AvailableOffer, codeOverride?: string) => {
+  /**
+   * Applies an offer — and, for a customer-choice offer, the free item the
+   * customer picked.
+   *
+   * `selectedReward` is **required** for `CUSTOMER_CHOICE` and **rejected**
+   * for every other kind, so it is sent only when the offer asks for it
+   * (customer-offer-api.md; the API answers "Please select a reward product
+   * for this offer." and "A selected reward is not applicable for this offer."
+   * respectively — both measured on 20 Sep 2026).
+   */
+  const applyOffer = async (
+    offer?: AvailableOffer,
+    codeOverride?: string,
+    reward?: RewardOption,
+  ) => {
     if (!summary) return;
 
     let identifier: string;
@@ -489,11 +633,24 @@ export default function PaymentPage() {
       const res = await apiClient.post("/offers/validate-apply-offer", {
         checkoutId: summary._id,
         offerIdentifier: identifier,
+        // Omitted entirely unless the offer takes one: an unexpected
+        // `selectedReward` is refused.
+        ...(reward
+          ? {
+              selectedReward: {
+                productId: reward.productId,
+                // The option's variation has to match exactly, and must be
+                // absent when the option has none.
+                ...(reward.variationSku ? { variationSku: reward.variationSku } : {}),
+              },
+            }
+          : {}),
       });
 
       setSummary(res.data.data);
       setShowOfferModal(false);
       setManualCode("");
+      setRewardChoice(null);
     } catch (err) {
       setOfferApplyError(getApiErrorMessage(err, "Failed to apply offer"));
     } finally {
@@ -502,16 +659,18 @@ export default function PaymentPage() {
   };
 
   /**
-   * Removes the applied voucher.
+   * Removes the applied offer.
    *
-   * WORKAROUND: the API has no way to un-apply an offer — `validate-apply-offer`
-   * only ever sets one, and the delete/toggle-status routes act on the offer
-   * itself in admin scope (they'd disable the voucher for every customer, not
-   * just this checkout). So the only lever is rebuilding the checkout from the
-   * cart, which yields a fresh, offer-free checkout.
+   * `POST /offers/validate-apply-offer` with an **empty** `offerIdentifier`
+   * un-applies it and returns the checkout at the prices it had before: the
+   * discount gone, any free reward line gone, `offer.isApplied` false
+   * (customer-offer-api.md, "Removing an offer" — measured 20 Sep 2026).
    *
-   * The cost is a new checkoutId and an abandoned old checkout. Replace this
-   * with a single call once the backend exposes a proper remove endpoint.
+   * This replaces a workaround that rebuilt the whole checkout from the cart,
+   * because the API had no way to un-apply. That cost a new `checkoutId` on
+   * every removal, abandoned the old checkout, and — since a checkout binds to
+   * the customer's active address — had to be kept away from the address flow.
+   * None of that is needed now.
    */
   const removeOffer = async () => {
     if (!summary || isRemovingOffer) return;
@@ -520,22 +679,17 @@ export default function PaymentPage() {
     setRemoveOfferError("");
 
     try {
-      const res = await apiClient.post("/checkout", { useCart: true });
-      const newCheckoutId = res.data?.data?._id;
-      if (!newCheckoutId) {
-        throw new Error("Checkout response did not include an id");
-      }
-
-      // `replace`, not `push`: the old checkoutId still carries the offer, so
-      // leaving it in history would let Back silently restore the discount.
-      router.replace(`${pathname}?checkoutId=${newCheckoutId}`);
+      const res = await apiClient.post("/offers/validate-apply-offer", {
+        checkoutId: summary._id,
+        offerIdentifier: "",
+      });
+      setSummary(res.data.data);
+      setRewardChoice(null);
     } catch (err) {
       setRemoveOfferError(getApiErrorMessage(err, t("failedToRemoveVoucher")));
+    } finally {
       setIsRemovingOffer(false);
     }
-    // On success the flag stays set through the navigation and is cleared by the
-    // fetch effect when the new checkoutId lands — otherwise the button would
-    // flicker back to enabled while the old summary is still on screen.
   };
 
   /**
@@ -952,9 +1106,18 @@ export default function PaymentPage() {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-neutral-50">
-                        {resolveLocalized(item.name, lang)}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-gray-900 dark:text-neutral-50">
+                          {resolveLocalized(item.name, lang)}
+                        </p>
+                        {/* Added by the offer, at no cost — say so, or it
+                            reads as something the customer forgot ordering. */}
+                        {item.isPromoRewardLine && (
+                          <span className="rounded-md bg-green-100 px-2 py-1 text-xs font-bold uppercase tracking-wide text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            {t("freeWithOffer")}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500 dark:text-neutral-400">
                         {t("basePrice")} €
                         {item.productPricing.priceAfterProductDiscount.toFixed(
@@ -979,8 +1142,16 @@ export default function PaymentPage() {
                         </ul>
                       )}
                     </div>
-                    <p className="font-bold text-gray-900 dark:text-neutral-50">
-                      €{item.itemSummary.grandTotal.toFixed(2)}
+                    <p
+                      className={`font-bold ${
+                        item.isPromoRewardLine
+                          ? "text-green-700 dark:text-green-400"
+                          : "text-gray-900 dark:text-neutral-50"
+                      }`}
+                    >
+                      {item.isPromoRewardLine
+                        ? t("free")
+                        : `€${item.itemSummary.grandTotal.toFixed(2)}`}
                     </p>
                   </div>
                 ))}
@@ -1062,8 +1233,12 @@ export default function PaymentPage() {
                   <div className="flex justify-between rounded-lg bg-green-50 dark:bg-green-950/20 px-3 py-2">
                     <span className="flex items-center gap-1.5 text-green-700 dark:text-green-400 font-medium">
                       <Tag className="h-3.5 w-3.5" />
+                      {/* A buy-and-reward offer has no promo code, and the
+                          row used to print "(undefined)" beside its name. */}
                       {appliedOffer
-                        ? `${resolveLocalized(appliedOffer.title, lang)} (${appliedOffer.code})`
+                        ? appliedOffer.code
+                          ? `${resolveLocalized(appliedOffer.title, lang)} (${appliedOffer.code})`
+                          : resolveLocalized(appliedOffer.title, lang)
                         : t("offerDiscount")}
                     </span>
                     <span className="font-semibold text-green-700 dark:text-green-400">
@@ -1084,9 +1259,25 @@ export default function PaymentPage() {
                         <span className="truncate text-sm font-semibold text-green-700 dark:text-green-400">
                           {resolveLocalized(appliedOffer.title, lang)}
                         </span>
-                        <span className="shrink-0 rounded bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 text-xs font-bold text-green-700 dark:text-green-300">
-                          {appliedOffer.code}
-                        </span>
+                        {/* A buy-and-reward offer has no promo code. */}
+                        {appliedOffer.code && (
+                          <span className="shrink-0 rounded bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 text-xs font-bold text-green-700 dark:text-green-300">
+                            {appliedOffer.code}
+                          </span>
+                        )}
+                        {/* What the offer actually gave, which its title
+                            alone does not say. */}
+                        {appliedOffer.rewardSnapshot?.productName && (
+                          <span className="shrink-0 truncate text-xs text-green-700/80 dark:text-green-400/80">
+                            {t("rewardReceived").replace(
+                              "{item}",
+                              resolveLocalized(
+                                appliedOffer.rewardSnapshot.productName,
+                                lang,
+                              ),
+                            )}
+                          </span>
+                        )}
                       </div>
                       <div className="flex shrink-0 items-center gap-3">
                         <Button
@@ -1467,9 +1658,21 @@ export default function PaymentPage() {
                             </p>
                             <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-neutral-500">
                               <span className="font-medium text-primary dark:text-pink-400">
-                                {offer.offerType === "PERCENT"
-                                  ? `${offer.discountValue}% off`
-                                  : `€${offer.discountValue} off`}
+                                {offer.offerType === "BUY_AND_REWARD"
+                                  ? t("buyAndRewardSummary")
+                                      .replace(
+                                        "{buy}",
+                                        String(offer.buyAndReward?.buy?.quantity ?? 0),
+                                      )
+                                      .replace(
+                                        "{free}",
+                                        String(
+                                          offer.buyAndReward?.reward?.quantity ?? 0,
+                                        ),
+                                      )
+                                  : offer.offerType === "PERCENT"
+                                    ? `${offer.discountValue}% off`
+                                    : `€${offer.discountValue} off`}
                               </span>
                               {offer.minOrderAmount > 0 && (
                                 <span>Min. €{offer.minOrderAmount}</span>
@@ -1484,15 +1687,69 @@ export default function PaymentPage() {
                                 {resolveLocalized(offer.message, lang)}
                               </p>
                             )}
+
+                            {/* Customer-choice offers: the free item is the
+                                customer's to pick, and the API will not apply
+                                the offer without it. */}
+                            {offer.isEligible && rewardOptionsOf(offer) && (
+                              <div className="mt-2">
+                                <p className="mb-1 text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                  {t("chooseYourFreeItem")}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {rewardOptionsOf(offer)!.map((option) => {
+                                    const key = rewardOptionKey(option);
+                                    const chosen =
+                                      rewardChoice?.offerId === offer._id &&
+                                      rewardOptionKey(rewardChoice.option) === key;
+                                    return (
+                                      <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() =>
+                                          setRewardChoice({
+                                            offerId: offer._id,
+                                            option,
+                                          })
+                                        }
+                                        aria-pressed={chosen}
+                                        className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                                          chosen
+                                            ? "border-primary bg-primary/10 text-primary dark:border-pink-500 dark:bg-pink-950/30 dark:text-pink-300"
+                                            : "border-border text-gray-600 hover:border-primary/40 dark:text-neutral-300"
+                                        }`}
+                                      >
+                                        {rewardNames[key] ?? t("freeItem")}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
 
                         {/* Apply button */}
                         <Button
                           size="sm"
-                          onClick={() => applyOffer(offer)}
+                          onClick={() =>
+                            applyOffer(
+                              offer,
+                              undefined,
+                              rewardOptionsOf(offer)
+                                ? (rewardChoice?.offerId === offer._id
+                                    ? rewardChoice.option
+                                    : undefined)
+                                : undefined,
+                            )
+                          }
                           disabled={
-                            !offer.isEligible || applyingOfferId === offer._id
+                            !offer.isEligible ||
+                            applyingOfferId === offer._id ||
+                            // A customer-choice offer cannot be applied until
+                            // the customer has chosen: the API refuses it.
+                            (Boolean(rewardOptionsOf(offer)) &&
+                              rewardChoice?.offerId !== offer._id)
                           }
                           className="shrink-0 font-semibold"
                         >

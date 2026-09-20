@@ -597,6 +597,13 @@ const en = {
 
   // Closed vendors, per kind. Portuguese decides the shape: "o restaurante" is
   // masculine, "a loja" feminine, so the sentence changes and not just a noun.
+  // Offers: the free item a buy-and-reward offer gives (Sep 2026 API).
+  freeWithOffer: "Free",
+  freeItem: "Free item",
+  chooseYourFreeItem: "Choose your free item",
+  buyAndRewardSummary: "Buy {buy}, get {free} free",
+  rewardReceived: "You got {item} free",
+
   storeClosedTitleRestaurant: "This restaurant is closed",
   storeClosedTitleStore: "This store is closed",
   storeClosedTitlePartner: "This partner is closed",
