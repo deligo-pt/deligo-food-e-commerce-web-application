@@ -20,6 +20,10 @@ import {
 import SafeImage from "@/components/shared/SafeImage";
 import Loader from "@/components/shared/Loader";
 import { toast } from "sonner";
+import {
+  DELIVERY_NOTES_KEY,
+  outgoingDeliveryNotes,
+} from "@/lib/deliveryNotes";
 import { apiClient, getApiErrorKey, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
 import {
@@ -691,6 +695,17 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
           : {}),
       });
       const checkoutId = response.data.data._id;
+
+      // What the customer typed for the courier. `/checkout` has no field for
+      // it — the order does, as `deliveryNotes` — so it rides across in
+      // sessionStorage to the payment page, which shows it back as "Rider
+      // Instructions" and sends it when the order is created. Until now this
+      // text was local state on a screen the customer then left.
+      sessionStorage.setItem(
+        DELIVERY_NOTES_KEY,
+        outgoingDeliveryNotes(instructions, { isPickup: isSelfPickup }),
+      );
+
       // Redirect to payment page under the same vendor route
       router.push(
         `/cart/checkout/${vendorId}/payment?checkoutId=${checkoutId}`,

@@ -16,6 +16,7 @@
     "verify:vat": "node --no-warnings scripts/verify-vat.mjs",
     "verify:product-pricing": "node --no-warnings scripts/verify-product-pricing.mjs",
     "verify:search": "node --no-warnings scripts/verify-search.mjs",
+    "verify:search-places": "node --no-warnings scripts/verify-search-places.mjs",
     "verify:order-search": "node --no-warnings scripts/verify-order-search.mjs",
     "verify:profile-form": "node --no-warnings scripts/verify-profile-form.mjs",
     "verify:delivery-code": "node --no-warnings scripts/verify-delivery-code.mjs",
@@ -25,7 +26,8 @@
     "verify:pickup": "node scripts/verify-pickup-contract.mjs",
     "verify:offers": "node --no-warnings scripts/verify-offers.mjs",
     "verify:vendor-noun": "node --no-warnings scripts/verify-vendor-noun.mjs",
-    "verify:rating": "node --no-warnings scripts/verify-rating.mjs"
+    "verify:rating": "node --no-warnings scripts/verify-rating.mjs",
+    "verify:rider-instructions": "node --no-warnings scripts/verify-rider-instructions.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",

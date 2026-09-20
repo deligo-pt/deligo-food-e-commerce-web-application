@@ -51,6 +51,11 @@ import { formatPickupMoment } from "@/lib/pickupTime";
 import type { CartAddon } from "@/types/cart";
 import { useSavedCards } from "@/hooks/queries/usePaymentTokens";
 import { payWithSavedCard } from "@/services/paymentTokenApi";
+import {
+  DELIVERY_NOTES_KEY,
+  MAX_RIDER_INSTRUCTIONS,
+  outgoingDeliveryNotes,
+} from "@/lib/deliveryNotes";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -408,6 +413,25 @@ export default function PaymentPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentError, setPaymentError] = useState("");
 
+  /**
+   * What the customer wants the rider to know — the app's "Rider Instructions
+   * (Optional)" box, under the delivery address.
+   *
+   * Seeded from the instructions typed on the cart page, which until now went
+   * nowhere: `/checkout` has no field for them, so they were local state on a
+   * screen the customer then left. They survive the hop in `sessionStorage`,
+   * the same place the pending order already lives, and are cleared by the
+   * return page when the order is created.
+   *
+   * They reach the order as `deliveryNotes` — the field `create-order` already
+   * takes, and which this page has been sending as `""` since it was written.
+   */
+  const [riderInstructions, setRiderInstructions] = useState("");
+  useEffect(() => {
+    const carried = sessionStorage.getItem(DELIVERY_NOTES_KEY);
+    if (carried) setRiderInstructions(carried.slice(0, MAX_RIDER_INSTRUCTIONS));
+  }, []);
+
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [availableOffers, setAvailableOffers] = useState<AvailableOffer[]>([]);
   const [offersLoading, setOffersLoading] = useState(false);
@@ -736,6 +760,17 @@ export default function PaymentPage() {
 
   const handlePlaceOrder = async () => {
     if (!summary) return;
+
+    // Trimmed once, here, so both payment paths send the same string and a box
+    // holding only spaces is no instruction at all. Pickup never sends one:
+    // the field is not rendered, and a note left over from a delivery the
+    // customer switched away from would follow them to a counter.
+    // (`isPickup` is derived further down, after the loading guard, so the
+    // test is spelled out here rather than reaching forward to it.)
+    const notes = outgoingDeliveryNotes(riderInstructions, {
+      isPickup: summary.fulfillmentType === "PICKUP",
+    });
+
     try {
       setIsPlacingOrder(true);
       setPaymentError("");
@@ -748,6 +783,13 @@ export default function PaymentPage() {
         await payWithSavedCard({
           checkoutSummaryId: summary._id,
           paymentTokenId: selectedCardId,
+          // This path creates the order server-side, so there is no
+          // `create-order` of ours to attach the note to — it has to travel
+          // here or not at all. Sent only when there is something to say, so a
+          // customer who types nothing makes exactly the request this endpoint
+          // has always received. Whether the backend stores it is ⚠️ unverified:
+          // it takes one one-click order on a real card to find out.
+          ...(notes ? { deliveryNotes: notes } : {}),
         });
 
         // Straight to the orders list, not the tracking page. Nothing is read
@@ -793,7 +835,7 @@ export default function PaymentPage() {
         JSON.stringify({
           checkoutSummaryId: summary._id,
           paymentToken,
-          deliveryNotes: "",
+          deliveryNotes: notes,
         }),
       );
       window.location.href = redirectUrl;
@@ -1053,25 +1095,63 @@ export default function PaymentPage() {
                   two sets of coordinates, which showed the customer a distance
                   that did not match what they were charged for. Rendered
                   exactly as returned: no rounding, no unit conversion. */}
-              {(hasDeliveryDistance || hasDeliveryEta) && (
-                <div className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-primary/20 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
-                  <MapPinned className="h-5 w-5 shrink-0 text-primary dark:text-pink-400" />
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-neutral-100">{t("distanceAndTime")}</p>
-                    <p className="text-sm text-gray-500 dark:text-neutral-400">
-                      {hasDeliveryDistance && (
-                        <>
-                          {t("deliveryDistance")}: {delivery.distance} km
-                        </>
-                      )}
-                      {hasDeliveryDistance && hasDeliveryEta && " • "}
-                      {hasDeliveryEta && (
-                        <>
-                          {t("estimatedTime")}: {delivery.estimatedTime} min
-                        </>
-                      )}
-                    </p>
-                  </div>
+              {/* The card's second row, on the same two columns as the
+                  addresses above it: what the delivery *is* on the left, what
+                  the customer wants done with it on the right. The instructions
+                  were under the address at first, which pushed the fee and the
+                  distance a screen down on a phone and left the right column
+                  twice the height of the left. */}
+              {(hasDeliveryDistance || hasDeliveryEta || !isPickup) && (
+                <div className="mt-6 grid gap-6 md:grid-cols-2">
+                  {(hasDeliveryDistance || hasDeliveryEta) && (
+                    <div className="flex items-center gap-3 rounded-lg border border-dashed border-primary/20 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
+                      <MapPinned className="h-5 w-5 shrink-0 text-primary dark:text-pink-400" />
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-neutral-100">{t("distanceAndTime")}</p>
+                        <p className="text-sm text-gray-500 dark:text-neutral-400">
+                          {hasDeliveryDistance && (
+                            <>
+                              {t("deliveryDistance")}: {delivery.distance} km
+                            </>
+                          )}
+                          {hasDeliveryDistance && hasDeliveryEta && " • "}
+                          {hasDeliveryEta && (
+                            <>
+                              {t("estimatedTime")}: {delivery.estimatedTime} min
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Only on a delivery: a collected order has no rider to
+                      instruct. Same dashed frame as the panel beside it so the
+                      two read as one row rather than a box next to a form. */}
+                  {!isPickup && (
+                    <div className="rounded-lg border border-dashed border-primary/20 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <label
+                          htmlFor="rider-instructions"
+                          className="font-medium text-gray-900 dark:text-neutral-100"
+                        >
+                          {t("riderInstructions")}
+                        </label>
+                        <span className="text-sm text-gray-500 dark:text-neutral-400">
+                          ({t("optional")})
+                        </span>
+                      </div>
+                      <textarea
+                        id="rider-instructions"
+                        rows={2}
+                        maxLength={MAX_RIDER_INSTRUCTIONS}
+                        value={riderInstructions}
+                        onChange={(e) => setRiderInstructions(e.target.value)}
+                        placeholder={t("riderInstructionsPlaceholder")}
+                        className="w-full rounded-lg border border-border bg-card p-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary dark:text-neutral-50 dark:placeholder:text-neutral-600 dark:focus:border-pink-400"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

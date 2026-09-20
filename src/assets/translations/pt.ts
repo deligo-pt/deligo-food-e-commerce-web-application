@@ -521,6 +521,8 @@ const pt = {
   deliveryAddress: "Morada de Entrega",
 
   optional: "opcional",
+  riderInstructions: "Instruções para o estafeta",
+  riderInstructionsPlaceholder: "ex.: Deixar à porta, tocar duas vezes",
   required: "obrigatório",
   chooseUpTo: "Escolha até",
   selectRequiredAddons: "Selecione as opções obrigatórias",
@@ -1785,6 +1787,9 @@ const pt = {
   searchPromptHint:
     "Escreva o nome de um restaurante, loja ou prato para ver resultados.",
   sortRelevance: "Relevância",
+  // Search: the vendors row above the dish results (Sep 2026).
+  placesSectionTitle: "Lojas e restaurantes",
+  dishesSectionTitle: "Pratos",
   searchResultsFor: "Resultados da pesquisa para",
   searchingFor: "A pesquisar por",
   resultLabel: "resultado",

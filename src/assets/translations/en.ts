@@ -512,6 +512,8 @@ const en = {
   deliveryAddress: "Delivery Address",
 
   optional: "optional",
+  riderInstructions: "Rider Instructions",
+  riderInstructionsPlaceholder: "e.g. Leave at the door, ring the bell twice",
   required: "required",
   chooseUpTo: "Choose up to",
   selectRequiredAddons: "Please select the required options",
@@ -1802,6 +1804,9 @@ const en = {
   searchPromptHint:
     "Type the name of a restaurant, store or dish to see results.",
   sortRelevance: "Relevance",
+  // Search: the vendors row above the dish results (Sep 2026).
+  placesSectionTitle: "Stores & restaurants",
+  dishesSectionTitle: "Dishes",
   searchResultsFor: "Search results for",
   searchingFor: "Searching for",
   resultLabel: "result",
