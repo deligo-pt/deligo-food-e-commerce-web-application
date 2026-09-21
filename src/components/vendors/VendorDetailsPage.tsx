@@ -43,6 +43,8 @@ import { formatCuisine } from "@/lib/cuisine";
 import { currencySymbol } from "@/lib/currency";
 import { formatDiscountValue, hasProductDiscount } from "@/lib/productPricing";
 import SafeImage from "@/components/shared/SafeImage";
+import ShareButton from "@/components/shared/ShareButton";
+import { productIdFromParam, productShareText, productShareUrl } from "@/lib/share";
 import VendorHeroImage from "./VendorHeroImage";
 import ProductQuantityStepper from "./ProductQuantityStepper";
 import { useCartQuantities } from "@/hooks/useCartQuantities";
@@ -216,6 +218,8 @@ const MenuProductCard = memo(function MenuProductCard({
   onCartChanged,
   storeClosed = false,
   vendorKind = "partner",
+  vendorUserId,
+  storeName,
 }: {
   product: Product;
   onSelect: (productId: string) => void;
@@ -231,6 +235,10 @@ const MenuProductCard = memo(function MenuProductCard({
   storeClosed?: boolean;
   /** Restaurant, store or neither — decides what the closed label calls it. */
   vendorKind?: VendorKind;
+  /** The store's `V-…` id from the route — the one the share link needs. */
+  vendorUserId: string;
+  /** Named in the shared line, when the store record has loaded. */
+  storeName?: string;
 }) {
   const { t } = useTranslation();
   // Guard against a product record with missing/partial pricing — an unguarded
@@ -291,6 +299,19 @@ const MenuProductCard = memo(function MenuProductCard({
             {discountValue} {t("off")}
           </span>
         )}
+        {/* Opposite the discount badge, so the two never meet. Shares the
+            dish's own deep link — the store with this dish already open —
+            and stays available while the store is closed: showing someone a
+            dish is not ordering it. */}
+        <ShareButton
+          className="absolute right-2 top-2"
+          label={`${t("share")} ${product.name}`}
+          getShareData={() => ({
+            title: product.name,
+            text: productShareText(t("shareItemIntro"), product.name, storeName),
+            url: productShareUrl(window.location.origin, vendorUserId, product.productId),
+          })}
+        />
       </div>
 
       {/* `flex-1` + `h-full` on the card make every card in a row the same
@@ -396,8 +417,10 @@ export default function VendorDetailsPage({
   // Read once, as the initial state — the modal owns it from then on, so
   // closing it does not immediately reopen from a URL that has not changed.
   const searchParams = useSearchParams();
+  // Only the id: a link pasted together with its share message carries the
+  // message in this parameter too (see `productIdFromParam`).
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    () => searchParams.get("product"),
+    () => productIdFromParam(searchParams.get("product")),
   );
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
@@ -408,6 +431,9 @@ export default function VendorDetailsPage({
   // Restaurant, store, or neither — the vendor's own record decides the words
   // on the closed banner and on the disabled add buttons.
   const vendorKind = getVendorKind(vendor?.businessDetails?.businessType);
+  // A string rather than the vendor object, so the memoised cards compare it
+  // by value and a vendor refetch does not re-render the whole grid.
+  const storeName = vendor?.businessDetails?.businessName;
 
   const handleSelectProduct = useCallback(
     (productId: string) => setSelectedProductId(productId),
@@ -514,9 +540,19 @@ export default function VendorDetailsPage({
         onCartChanged={invalidateCart}
         storeClosed={isStoreClosed}
         vendorKind={vendorKind}
+        vendorUserId={vendorId}
+        storeName={storeName}
       />
     ),
-    [cartQuantities, handleSelectProduct, invalidateCart, isStoreClosed, vendorKind],
+    [
+      cartQuantities,
+      handleSelectProduct,
+      invalidateCart,
+      isStoreClosed,
+      vendorKind,
+      vendorId,
+      storeName,
+    ],
   );
   const categoryProductKey = useCallback(
     (product: Product) => product.productId ?? product.id,

@@ -33,6 +33,7 @@ import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import SafeImage from "@/components/shared/SafeImage";
 import Loader from "@/components/shared/Loader";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useStore } from "@/stores/translationStore";
 import { resolveAddonName } from "@/lib/cart";
 import { resolveLocalized, type LocalizedField } from "@/lib/localizedField";
@@ -464,6 +465,16 @@ export default function PaymentPage() {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [switchingAddressId, setSwitchingAddressId] = useState<string | null>(null);
   const [addressError, setAddressError] = useState("");
+
+  // Escape closes each of the page's three sheets exactly as its ✕ does —
+  // including the address sheet refusing to close while an address is being
+  // switched, since its ✕ refuses too. Declared up here, above the loading
+  // and error returns, as hooks must be.
+  useEscapeToClose(showOfferModal, () => setShowOfferModal(false));
+  useEscapeToClose(showAddressModal, () => setShowAddressModal(false), {
+    disabled: Boolean(switchingAddressId),
+  });
+  useEscapeToClose(showSupportModal, () => setShowSupportModal(false));
 
   // Who the order is going to. Neither the checkout summary nor a saved
   // address carries a recipient name — `deliveryAddress` is street/city/geo

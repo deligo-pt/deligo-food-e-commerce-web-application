@@ -512,6 +512,11 @@ const en = {
   deliveryAddress: "Delivery Address",
 
   optional: "optional",
+  otpVerifiedTitle: "Verified successfully",
+  otpVerifiedBody: "Your code has been verified.",
+  otpVerifiedSecure: "Verified and secure",
+  shareFailed: "Couldn't share this item. Please try again.",
+  shareItemIntro: "Found this on DeliGo:",
   riderInstructions: "Rider Instructions",
   riderInstructionsPlaceholder: "e.g. Leave at the door, ring the bell twice",
   required: "required",

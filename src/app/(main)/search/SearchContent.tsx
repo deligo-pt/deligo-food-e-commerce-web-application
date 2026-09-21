@@ -4,6 +4,8 @@ import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UtensilsCrossed, SearchX } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
+import ShareButton from "@/components/shared/ShareButton";
+import { productShareText, productShareUrl, type ShareData } from "@/lib/share";
 import { currencySymbol } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -93,13 +95,17 @@ function DishCard({
   hit,
   onOpen,
   onPrefetch,
+  onShareData,
   busy,
 }: {
   hit: SearchHit;
   onOpen: (hit: SearchHit) => void;
   onPrefetch: (hit: SearchHit) => void;
+  /** The dish's link — its store looked up first, since a hit does not carry it. */
+  onShareData: (hit: SearchHit) => Promise<ShareData>;
   busy: boolean;
 }) {
+  const { t } = useTranslation();
   const cuisines = hit.cuisine?.map(formatCuisineLabel).filter(Boolean) ?? [];
 
   return (
@@ -135,6 +141,15 @@ function DishCard({
           alt={hit.name}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
+        />
+        {/* Starts the store lookup on press-down, so the link is usually
+            ready by the time the click lands — the same lookup hovering the
+            card already warms. */}
+        <ShareButton
+          className="absolute right-2 top-2"
+          label={`${t("share")} ${hit.name}`}
+          onPrepare={() => onPrefetch(hit)}
+          getShareData={() => onShareData(hit)}
         />
       </div>
 
@@ -344,6 +359,19 @@ export default function SearchContent() {
   const { resolve, prefetch } = useProductDestination();
   const [openingProductId, setOpeningProductId] = useState<string | null>(null);
 
+  // A shared dish lands where a clicked one does: its store, with the dish up.
+  const shareDataFor = useCallback(
+    async (hit: SearchHit): Promise<ShareData> => {
+      const destination = await resolve(hit.productId);
+      return {
+        title: hit.name,
+        text: productShareText(t("shareItemIntro"), hit.name, formatRestaurantLabel(hit)),
+        url: productShareUrl(window.location.origin, destination.vendorUserId, hit.productId),
+      };
+    },
+    [resolve, t],
+  );
+
   const openHit = useCallback(
     async (hit: SearchHit) => {
       setOpeningProductId(hit.productId);
@@ -550,6 +578,7 @@ export default function SearchContent() {
                 hit={hit}
                 onOpen={openHit}
                 onPrefetch={(target) => prefetch(target.productId)}
+                onShareData={shareDataFor}
                 busy={openingProductId === hit.productId}
               />
             ))}

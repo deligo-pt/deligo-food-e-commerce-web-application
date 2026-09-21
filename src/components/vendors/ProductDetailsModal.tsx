@@ -24,6 +24,7 @@ import { getAccessToken } from "@/lib/authCookies";
 import { useCartCache } from "@/hooks/queries/useCart";
 import { activateAddedOrder } from "@/lib/cartActivation";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
 import { currencySymbol } from "@/lib/currency";
 import {
@@ -131,6 +132,10 @@ export default function ProductDetailsModal({
   // The cart page and the navbar badge both read the `useCart` query, so a
   // single invalidation after adding updates the icon and the page together.
   const { invalidate: invalidateCart } = useCartCache();
+  // Escape does what the ✕ does. Declared before the `!isOpen` early return,
+  // as every hook here must be. The ✕ stays live while adding to the cart, so
+  // Escape does too.
+  useEscapeToClose(isOpen, onClose, { layer: 999 });
 
   // Addon groups are auth-only and referenced by id on the product, so fetch
   // and populate them once the product loads (skipped for guests, who must log

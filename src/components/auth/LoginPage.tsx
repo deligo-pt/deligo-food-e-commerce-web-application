@@ -9,6 +9,7 @@ import {
   Globe,
   Gift,
   KeyRound,
+  LockKeyhole,
   LoaderCircle,
   Mail,
   MonitorSmartphone,
@@ -19,6 +20,8 @@ import Logo from "@/components/shared/Logo";
 import { COUNTRY_OPTIONS, type CountryOption } from "../../data/countryCodes";
 import { FacebookMark } from "./BrandIcons";
 import GoogleSignInButton from "./GoogleSignInButton";
+import OtpInput from "./OtpInput";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import SocialButton from "./SocialButton";
 import { useTheme } from "@/hooks/useTheme";
 // Inlined by Next at build time. Empty is handled: GoogleSignInButton falls
@@ -59,6 +62,9 @@ function ClearSessionModal({
   onRemove: () => void;
   t: (key: string) => string;
 }) {
+  // Escape is Cancel — never "Remove session", which signs another device out.
+  useEscapeToClose(open, () => onOpenChange(false));
+
   if (!open) return null;
 
   return (
@@ -120,6 +126,7 @@ export default function LoginPage() {
     otp,
     isSendingOtp,
     isVerifyingOtp,
+    otpVerified,
     isResendingOtp,
     errorMessage,
     errorMessageKey,
@@ -146,6 +153,9 @@ export default function LoginPage() {
     backToCredentials,
     clearSessionAndRetry,
   } = useLoginFlow();
+
+  // The language sheet closes on Escape, as on its ✕ and its backdrop.
+  useEscapeToClose(showLanguageModal, () => setShowLanguageModal(false));
 
   return (
     <main className="min-h-screen bg-[#f7f2f5] dark:bg-neutral-950 px-4 py-8 text-foreground dark:text-neutral-100 sm:px-6 lg:px-8 lg:py-8 transition-colors duration-200">
@@ -319,19 +329,22 @@ export default function LoginPage() {
                   )
                 ) : (
                   <div className="flex items-center gap-3 px-1">
-                    <KeyRound size={18} className="text-muted-foreground dark:text-neutral-500" />
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
+                    {/* Fades rather than unmounting when the code is
+                        accepted: it keeps its width, so the square the tiles
+                        gather into forms exactly where the row was. */}
+                    <KeyRound
+                      size={18}
+                      className={`shrink-0 text-muted-foreground transition-opacity duration-200 dark:text-neutral-500 ${otpVerified ? "opacity-0" : ""}`}
+                    />
+                    {/* Four tiles over one real input: autofill, paste and
+                        backspace behave exactly as they did in the plain
+                        field this replaced. See `OtpInput`. */}
+                    <OtpInput
                       value={otp}
-                      onChange={(event) =>
-                        setOtp(
-                          event.target.value.replace(/\D/g, "").slice(0, 6),
-                        )
-                      }
-                      placeholder={t("enterOtp")}
-                      className="w-full border-0 bg-transparent text-base text-muted-foreground dark:text-neutral-200 outline-none placeholder:text-muted-foreground dark:placeholder:text-neutral-500"
+                      onChange={setOtp}
+                      label={t("enterOtp")}
+                      disabled={isVerifyingOtp}
+                      verified={otpVerified}
                     />
                   </div>
                 )}
@@ -425,6 +438,27 @@ export default function LoginPage() {
                     t("sendOtp")
                   )}
                 </button>
+              ) : otpVerified ? (
+                /* The verified moment's words, rising in as the badge
+                   settles (`.otp-verified-copy` in globals.css). A status
+                   region, so the result is announced: the tiles and the badge
+                   are drawings. No button: the page moves on by itself when
+                   the moment ends, so a Continue would only repeat that. */
+                <div
+                  role="status"
+                  className="otp-verified-copy flex flex-col items-center gap-2 pt-1 text-center"
+                >
+                  <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {t("otpVerifiedTitle")}
+                  </p>
+                  <p className="text-sm text-muted-foreground dark:text-neutral-400">
+                    {t("otpVerifiedBody")}
+                  </p>
+                  <p className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                    <LockKeyhole size={14} aria-hidden="true" />
+                    {t("otpVerifiedSecure")}
+                  </p>
+                </div>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <button
@@ -453,7 +487,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {step === "otp" ? (
+              {step === "otp" && !otpVerified ? (
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                   <button
                     type="button"

@@ -855,3 +855,425 @@ body {
     transition-property: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   The login code (`components/auth/OtpInput.tsx`), after the reference video
+   the owner supplied (21 Sep 2026), read frame by frame.
+
+   Every length is a custom property on the stage, so the tiles, the square
+   they gather into and the badge they fold into are all worked out from one
+   tile size and two gaps — and change together at the `sm` breakpoint.
+   Placement uses the individual `translate` property and animation uses
+   `transform`, so the two compose instead of one overwriting the other.
+
+   Ordinals: tile 1 is the first digit. It gathers to the top-left, 2 to the
+   bottom-left, 3 to the top-right, 4 to the bottom-right — the video's 8 4 0 2
+   becoming 8 0 / 4 2.
+   --------------------------------------------------------------------------- */
+.otp-stage {
+  --otp-s: 3rem;
+  --otp-g: 0.5rem;
+  --otp-gap: 1.5rem;
+  --otp-ok: #10b981;
+  --otp-ok-soft: rgb(16 185 129 / 0.1);
+  --otp-pitch: calc(var(--otp-s) + var(--otp-g));
+  --otp-step: calc(var(--otp-s) + var(--otp-gap));
+}
+
+/* Range syntax, as Tailwind v4 writes its own `sm`: 40rem is 640px. */
+@media (width >= 40rem) {
+  .otp-stage {
+    --otp-s: 3.5rem;
+    --otp-g: 0.75rem;
+  }
+}
+
+/* ── Typing ─────────────────────────────────────────────────────────────── */
+
+@keyframes otp-digit {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The ring a filled tile hands on, erased around its edge. `pathLength` is
+   100, so the offset runs 0 → 100 whatever the tile's size. */
+@keyframes otp-trace {
+  from {
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  to {
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: 100;
+    opacity: 0.6;
+  }
+}
+
+@keyframes otp-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.otp-digit-in {
+  animation: otp-digit 260ms ease-out both;
+}
+
+.otp-trace {
+  animation: otp-trace 520ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.otp-caret {
+  animation: otp-caret 1s steps(1) infinite;
+}
+
+/* A paste or an autofill fills every tile at once; they settle one after
+   another on the system's 50ms step. Keyed off `data-batch`, so a single
+   typed digit is never made to wait for its position. */
+.otp-tile-frame:nth-child(2) > .otp-tile[data-batch="true"] .otp-digit-in,
+.otp-tile-frame:nth-child(2) > .otp-tile[data-batch="true"] .otp-trace {
+  animation-delay: 50ms;
+}
+.otp-tile-frame:nth-child(3) > .otp-tile[data-batch="true"] .otp-digit-in,
+.otp-tile-frame:nth-child(3) > .otp-tile[data-batch="true"] .otp-trace {
+  animation-delay: 100ms;
+}
+.otp-tile-frame:nth-child(4) > .otp-tile[data-batch="true"] .otp-digit-in,
+.otp-tile-frame:nth-child(4) > .otp-tile[data-batch="true"] .otp-trace {
+  animation-delay: 150ms;
+}
+
+/* ── The verified moment ─────────────────────────────────────────────────
+   One timeline, started when the server accepts the code:
+      0 – 540ms   the row tilts apart and settles into a square
+    540 – 940ms   the four links draw: top, then the sides, then the bottom
+   1000 – 1220ms  everything turns green
+   1300 – 1800ms  the square folds into one tile at its centre
+   1450 – 2050ms  that tile becomes the badge; rings and sparks go out
+   1850 – 2370ms  the copy under it rises in (LoginPage)
+   `VERIFIED_HOLD_MS` in `lib/otp.ts` is this timeline's length. */
+
+.otp-tile-frame:nth-child(1) {
+  --otp-i: 0;
+  --otp-col: 0;
+  --otp-row: 0;
+  --otp-tilt: -9deg;
+  --otp-spin: 40deg;
+}
+.otp-tile-frame:nth-child(2) {
+  --otp-i: 1;
+  --otp-col: 0;
+  --otp-row: 1;
+  --otp-tilt: 7deg;
+  --otp-spin: -30deg;
+}
+.otp-tile-frame:nth-child(3) {
+  --otp-i: 2;
+  --otp-col: 1;
+  --otp-row: 0;
+  --otp-tilt: -6deg;
+  --otp-spin: 25deg;
+}
+.otp-tile-frame:nth-child(4) {
+  --otp-i: 3;
+  --otp-col: 1;
+  --otp-row: 1;
+  --otp-tilt: 9deg;
+  --otp-spin: -45deg;
+}
+
+/* From its place in the row to its corner of the square (the square hangs
+   below the row, so the first digit does not move vertically), and from there
+   to the square's centre. */
+.otp-tile-frame {
+  --otp-gx: calc((var(--otp-col) - 0.5) * var(--otp-step) - (var(--otp-i) - 1.5) * var(--otp-pitch));
+  --otp-gy: calc(var(--otp-row) * var(--otp-step));
+  --otp-cx: calc((1.5 - var(--otp-i)) * var(--otp-pitch));
+  --otp-cy: calc(var(--otp-step) / 2);
+}
+
+@keyframes otp-gather {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  15% {
+    transform: translate(calc(var(--otp-gx) * 0.55), calc(var(--otp-gy) * 0.45 - 0.5rem))
+      rotate(var(--otp-tilt));
+  }
+  30%,
+  72% {
+    transform: translate(var(--otp-gx), var(--otp-gy)) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--otp-cx), var(--otp-cy)) rotate(var(--otp-spin)) scale(0.45);
+    opacity: 0;
+  }
+}
+
+.otp-stage[data-verified="true"] .otp-tile-frame {
+  animation: otp-gather 1800ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@keyframes otp-tile-ok {
+  to {
+    border-color: var(--otp-ok);
+    color: var(--otp-ok);
+    background-color: var(--otp-ok-soft);
+    box-shadow: 0 0 0 4px var(--otp-ok-soft);
+  }
+}
+
+.otp-stage[data-verified="true"] .otp-tile {
+  animation: otp-tile-ok 220ms ease-out 1000ms both;
+}
+
+/* The links: placed with `translate`, drawn with `transform`. */
+.otp-link-top {
+  translate: calc(var(--otp-gap) / -2) calc(var(--otp-s) / 2 - 1px);
+  transform-origin: 0 50%;
+}
+.otp-link-bottom {
+  translate: calc(var(--otp-gap) / -2) calc(var(--otp-step) + var(--otp-s) / 2 - 1px);
+  transform-origin: 100% 50%;
+}
+.otp-link-left {
+  translate: calc(var(--otp-step) / -2 - 1px) var(--otp-s);
+  transform-origin: 50% 0;
+}
+.otp-link-right {
+  translate: calc(var(--otp-step) / 2 - 1px) var(--otp-s);
+  transform-origin: 50% 0;
+}
+
+@keyframes otp-link-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes otp-link-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.otp-stage[data-verified="true"] .otp-link-top {
+  animation: otp-link-x 160ms ease-out 540ms both;
+}
+.otp-stage[data-verified="true"] .otp-link-left,
+.otp-stage[data-verified="true"] .otp-link-right {
+  animation: otp-link-y 160ms ease-out 660ms both;
+}
+.otp-stage[data-verified="true"] .otp-link-bottom {
+  animation: otp-link-x 160ms ease-out 780ms both;
+}
+
+/* Brand pink while they draw, green with the tiles, gone as the square folds. */
+@keyframes otp-links {
+  0%,
+  62% {
+    color: var(--primary);
+    opacity: 1;
+  }
+  70%,
+  84% {
+    color: var(--otp-ok);
+    opacity: 1;
+  }
+  100% {
+    color: var(--otp-ok);
+    opacity: 0;
+  }
+}
+
+.otp-stage[data-verified="true"] .otp-links {
+  animation: otp-links 1550ms linear both;
+}
+
+/* The badge, its rings and its sparks share one origin: the square's centre. */
+.otp-burst {
+  translate: 0 calc(var(--otp-s) + var(--otp-gap) / 2);
+}
+.otp-ring,
+.otp-badge,
+.otp-spark {
+  translate: -50% -50%;
+}
+
+@keyframes otp-badge {
+  from {
+    transform: rotate(-35deg) scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.otp-stage[data-verified="true"] .otp-badge {
+  animation: otp-badge 380ms cubic-bezier(0.22, 1, 0.36, 1) 1450ms both;
+}
+
+/* Drawn at rest, so with reduced motion the tick is simply there. */
+.otp-badge-check {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+@keyframes otp-check {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.otp-stage[data-verified="true"] .otp-badge-check {
+  animation: otp-check 320ms ease-out 1750ms both;
+}
+
+/* The rings end where they rest, faint, so reduced motion shows them too. */
+.otp-ring-inner {
+  opacity: 0.35;
+}
+.otp-ring-outer {
+  opacity: 0.18;
+}
+
+@keyframes otp-ring-inner {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  45% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+}
+
+@keyframes otp-ring-outer {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  45% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.18;
+  }
+}
+
+.otp-stage[data-verified="true"] .otp-ring-inner {
+  animation: otp-ring-inner 700ms ease-out 1550ms both;
+}
+.otp-stage[data-verified="true"] .otp-ring-outer {
+  animation: otp-ring-outer 800ms ease-out 1650ms both;
+}
+
+/* Eight sparks, each thrown its own way. */
+.otp-spark:nth-child(1) { --otp-dx: 0rem; --otp-dy: -4.25rem; }
+.otp-spark:nth-child(2) { --otp-dx: 3.25rem; --otp-dy: -3rem; }
+.otp-spark:nth-child(3) { --otp-dx: 4.5rem; --otp-dy: 0.25rem; }
+.otp-spark:nth-child(4) { --otp-dx: 3rem; --otp-dy: 3.25rem; }
+.otp-spark:nth-child(5) { --otp-dx: -0.25rem; --otp-dy: 4.5rem; }
+.otp-spark:nth-child(6) { --otp-dx: -3.25rem; --otp-dy: 3rem; }
+.otp-spark:nth-child(7) { --otp-dx: -4.5rem; --otp-dy: -0.25rem; }
+.otp-spark:nth-child(8) { --otp-dx: -3rem; --otp-dy: -3.25rem; }
+
+@keyframes otp-spark {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--otp-dx), var(--otp-dy)) scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* At rest a spark is spent — invisible — which is also its reduced-motion state. */
+.otp-spark {
+  opacity: 0;
+}
+
+.otp-stage[data-verified="true"] .otp-spark {
+  animation: otp-spark 900ms cubic-bezier(0.22, 1, 0.36, 1) 1500ms both;
+}
+
+/* The copy under the badge (LoginPage), one line after another. */
+@keyframes otp-rise {
+  from {
+    transform: translateY(0.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.otp-verified-copy > * {
+  animation: otp-rise 320ms ease-out 1850ms both;
+}
+.otp-verified-copy > *:nth-child(2) {
+  animation-delay: 1950ms;
+}
+.otp-verified-copy > *:nth-child(3) {
+  animation-delay: 2050ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Typing: the digit and the ring simply change; the caret stays lit. */
+  .otp-digit-in,
+  .otp-trace,
+  .otp-caret {
+    animation: none;
+  }
+  .otp-trace {
+    opacity: 0;
+  }
+  /* Verified: no journey, only where it ends — the badge, its rings and its
+     copy, with the tiles and links that would have folded into it gone. */
+  .otp-stage[data-verified="true"] .otp-tile-frame,
+  .otp-stage[data-verified="true"] .otp-tile,
+  .otp-stage[data-verified="true"] .otp-links,
+  .otp-stage[data-verified="true"] .otp-link-top,
+  .otp-stage[data-verified="true"] .otp-link-left,
+  .otp-stage[data-verified="true"] .otp-link-right,
+  .otp-stage[data-verified="true"] .otp-link-bottom,
+  .otp-stage[data-verified="true"] .otp-badge,
+  .otp-stage[data-verified="true"] .otp-badge-check,
+  .otp-stage[data-verified="true"] .otp-ring-inner,
+  .otp-stage[data-verified="true"] .otp-ring-outer,
+  .otp-stage[data-verified="true"] .otp-spark,
+  .otp-verified-copy > * {
+    animation: none;
+  }
+  .otp-stage[data-verified="true"] .otp-tile-frame,
+  .otp-stage[data-verified="true"] .otp-links {
+    visibility: hidden;
+  }
+}

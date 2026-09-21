@@ -521,6 +521,11 @@ const pt = {
   deliveryAddress: "Morada de Entrega",
 
   optional: "opcional",
+  otpVerifiedTitle: "Verificado com sucesso",
+  otpVerifiedBody: "O seu código foi verificado.",
+  otpVerifiedSecure: "Verificado e seguro",
+  shareFailed: "Não foi possível partilhar este artigo. Tente novamente.",
+  shareItemIntro: "Encontrei isto na DeliGo:",
   riderInstructions: "Instruções para o estafeta",
   riderInstructionsPlaceholder: "ex.: Deixar à porta, tocar duas vezes",
   required: "obrigatório",

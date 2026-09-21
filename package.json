@@ -27,7 +27,10 @@
     "verify:offers": "node --no-warnings scripts/verify-offers.mjs",
     "verify:vendor-noun": "node --no-warnings scripts/verify-vendor-noun.mjs",
     "verify:rating": "node --no-warnings scripts/verify-rating.mjs",
-    "verify:rider-instructions": "node --no-warnings scripts/verify-rider-instructions.mjs"
+    "verify:rider-instructions": "node --no-warnings scripts/verify-rider-instructions.mjs",
+    "verify:otp-input": "node --no-warnings scripts/verify-otp-input.mjs",
+    "verify:share": "node --no-warnings scripts/verify-share.mjs",
+    "verify:escape": "node --no-warnings scripts/verify-escape.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
