@@ -19,6 +19,8 @@ export const vendorKeys = {
     page: number | null,
     limit: number | null,
   ) => ["vendors", "nearby", lang, lat, lng, page, limit] as const,
+  search: (lang: string, lat: number | null, lng: number | null, term: string) =>
+    ["vendors", "search", lang, lat, lng, term] as const,
   detail: (lang: string, authed: boolean, vendorId: string) =>
     ["vendors", "detail", lang, authed, vendorId] as const,
   products: (lang: string, authed: boolean, vendorId: string) =>
@@ -95,6 +97,55 @@ export function useVendorsNearby<T = unknown>(
       };
     },
     enabled: (options?.enabled ?? true) && !!coords,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * Vendors near the customer whose **name** matches what they typed
+ * (`/vendors/nearby/open?searchTerm=`).
+ *
+ * The search index the results page reads is `food_items` — dishes only, no
+ * vendor documents — so searching "tasco" returned nine of Tasca do Bairro's
+ * dishes and never the restaurant itself. This is the other half of the answer,
+ * and it is a different endpoint because that is where vendors live.
+ *
+ * Measured 20 Sep 2026: with no `businessType` the call returns **restaurants
+ * and stores together** (5 vendors near Dhaka: 4 restaurants, 1 store);
+ * `searchTerm=tasca` narrows it to 1, `searchTerm=zzz` to none. So the name
+ * filter is the API's, not ours.
+ *
+ * Needs coordinates — it is a proximity endpoint first — and is disabled
+ * without them, which is why the places row is absent rather than empty for a
+ * viewer who has neither a saved address nor a browser location.
+ */
+export function useVendorSearch<T = unknown>(
+  coords: { lat: number; lng: number } | null,
+  term: string,
+  options?: { limit?: number; enabled?: boolean },
+) {
+  const lang = useStore((s) => s.lang);
+  const trimmed = term.trim();
+  return useQuery({
+    queryKey: vendorKeys.search(
+      lang,
+      coords?.lat ?? null,
+      coords?.lng ?? null,
+      trimmed,
+    ),
+    queryFn: async ({ signal }) => {
+      const res = await apiClient.get("/vendors/nearby/open", {
+        params: {
+          latitude: coords!.lat,
+          longitude: coords!.lng,
+          searchTerm: trimmed,
+          limit: options?.limit ?? 12,
+        },
+        signal,
+      });
+      return (res.data?.data ?? []) as T[];
+    },
+    enabled: (options?.enabled ?? true) && !!coords && trimmed.length > 0,
     placeholderData: keepPreviousData,
   });
 }

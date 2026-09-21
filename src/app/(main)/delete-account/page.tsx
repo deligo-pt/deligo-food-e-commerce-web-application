@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { Button } from "@/components/ui/button";
 
 export default function DeleteAccountPage() {
@@ -18,6 +19,9 @@ export default function DeleteAccountPage() {
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // The "request received" notice closes on Escape, like its ✕ and Close.
+  useEscapeToClose(isModalOpen, () => setIsModalOpen(false));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

@@ -521,6 +521,13 @@ const pt = {
   deliveryAddress: "Morada de Entrega",
 
   optional: "opcional",
+  otpVerifiedTitle: "Verificado com sucesso",
+  otpVerifiedBody: "O seu código foi verificado.",
+  otpVerifiedSecure: "Verificado e seguro",
+  shareFailed: "Não foi possível partilhar este artigo. Tente novamente.",
+  shareItemIntro: "Encontrei isto na DeliGo:",
+  riderInstructions: "Instruções para o estafeta",
+  riderInstructionsPlaceholder: "ex.: Deixar à porta, tocar duas vezes",
   required: "obrigatório",
   chooseUpTo: "Escolha até",
   selectRequiredAddons: "Selecione as opções obrigatórias",
@@ -573,19 +580,19 @@ const pt = {
 
   chefPreparingMeal: "O chef está a preparar a sua refeição",
 
-  waitingRestaurantConfirmation: "A aguardar confirmação do restaurante",
+  waitingRestaurantConfirmation: "A aguardar confirmação",
 
   accepted: "Aceite",
   pending: "Pendente",
   loadingMap: "A carregar mapa...",
 
-  restaurant: "Restaurante",
+  restaurant: "Parceiro",
 
   restaurantPlaceholder: "Restaurante",
   locationPlaceholder: "Localização",
 
   restaurantAddressPending:
-    "A morada do restaurante aparecerá após a confirmação do pedido",
+    "A morada de recolha aparecerá após a confirmação do pedido",
 
   restaurantAddressComingSoon: "Morada disponível em breve",
 
@@ -606,9 +613,29 @@ const pt = {
   reorderAddedToCart: "Artigos adicionados ao seu carrinho",
   reorderFailed: "Não foi possível encomendar estes artigos novamente",
 
-  storeClosedTitle: "Este restaurante está fechado",
-  storeClosedNotice: "Pode consultar o menu, mas não é possível encomendar até reabrir.",
-  storeClosedCannotOrder: "Este restaurante está fechado neste momento — ainda não pode encomendar.",
+  // Fechados, por tipo de parceiro — em português muda a frase, não só o nome.
+  // Offers: the free item a buy-and-reward offer gives (Sep 2026 API).
+  freeWithOffer: "Grátis",
+  freeItem: "Item grátis",
+  chooseYourFreeItem: "Escolha o seu item grátis",
+  buyAndRewardSummary: "Leve {buy}, receba {free} grátis",
+  rewardReceived: "Recebeu {item} grátis",
+
+  storeClosedTitleRestaurant: "Este restaurante está fechado",
+  storeClosedTitleStore: "Esta loja está fechada",
+  storeClosedTitlePartner: "Este parceiro está fechado",
+  storeClosedNoticeRestaurant:
+    "Pode ver o menu, mas não é possível encomendar até reabrir.",
+  storeClosedNoticeStore:
+    "Pode ver os produtos, mas não é possível encomendar até reabrir.",
+  storeClosedNoticePartner:
+    "Pode ver o que oferecem, mas não é possível encomendar até reabrir.",
+  storeClosedCannotOrderRestaurant:
+    "Este restaurante está fechado neste momento — ainda não pode encomendar.",
+  storeClosedCannotOrderStore:
+    "Esta loja está fechada neste momento — ainda não pode encomendar.",
+  storeClosedCannotOrderPartner:
+    "Este parceiro está fechado neste momento — ainda não pode encomendar.",
 
   closingSoon: "Estamos a Fechar em Breve",
   orderWithin: "Peça em",
@@ -630,18 +657,18 @@ const pt = {
   notCollected: "Não Recolhido",
   location: "Localização",
   orderWasCancelled: "O pedido foi cancelado",
-  orderWasRejected: "O pedido foi rejeitado pelo restaurante",
+  orderWasRejected: "O seu pedido foi rejeitado",
   orderHasBeenDelivered: "O pedido foi entregue",
   riderIsHeadingToYourLocation: "O estafeta está a caminho da sua localização",
 
   orderPending: "Pedido Pendente",
-  waitingRestaurantResponse: "A aguardar resposta do restaurante",
+  waitingRestaurantResponse: "A aguardar resposta do parceiro",
 
   orderAccepted: "Pedido Aceite",
-  restaurantAcceptedOrder: "O restaurante aceitou o seu pedido",
+  restaurantAcceptedOrder: "O seu pedido foi aceite",
 
   preparing: "Preparação",
-  restaurantPreparingMeal: "O restaurante está a preparar a sua refeição",
+  restaurantPreparingMeal: "O seu pedido está a ser preparado",
 
   readyForPickup: "Pronto para Recolha",
   orderReadyForPickup: "O seu pedido está pronto para recolha",
@@ -662,12 +689,12 @@ const pt = {
     "O seu pagamento foi reembolsado com sucesso para a sua conta.",
   refundNotEligible: "Sem Reembolso",
   refundNotEligibleDescription:
-    "O restaurante já tinha aceite este pedido quando foi cancelado, pelo que não há direito a reembolso.",
+    "O parceiro já tinha aceite este pedido quando foi cancelado, pelo que não há direito a reembolso.",
 
   cancelOrder: "Cancelar Pedido",
   cancelOrderTitle: "Cancelar este pedido?",
   cancelOrderDescription:
-    "Se o restaurante ainda não tiver aceite o seu pedido, será reembolsado. Depois de aceite, não há direito a reembolso.",
+    "Se o parceiro ainda não tiver aceite o seu pedido, será reembolsado. Depois de aceite, não há direito a reembolso.",
   cancelReason: "Motivo",
   cancelReasonPlaceholder: "Diga-nos porque está a cancelar",
   cancelReasonQuestion: "Porque quer cancelar este pedido?",
@@ -1449,7 +1476,7 @@ const pt = {
   searchOrdersLabel: "Pesquisar os seus pedidos",
   // "ID", not "nº": the dictionary already localizes it that way everywhere
   // else (`ID de utilizador`, `ID de finalização`, `ID Fiscal`).
-  searchOrdersPlaceholder: "Pesquisar por ID do pedido, item ou restaurante",
+  searchOrdersPlaceholder: "Pesquisar por ID do pedido, item ou parceiro",
   noMatchingOrders: "Nenhum pedido correspondente aqui.",
   // Compostas com um número no JSX — "3 no Histórico" — porque t() não
   // interpola. São fragmentos por essa razão, não frases completas.
@@ -1765,6 +1792,9 @@ const pt = {
   searchPromptHint:
     "Escreva o nome de um restaurante, loja ou prato para ver resultados.",
   sortRelevance: "Relevância",
+  // Search: the vendors row above the dish results (Sep 2026).
+  placesSectionTitle: "Lojas e restaurantes",
+  dishesSectionTitle: "Pratos",
   searchResultsFor: "Resultados da pesquisa para",
   searchingFor: "A pesquisar por",
   resultLabel: "resultado",

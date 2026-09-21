@@ -39,6 +39,7 @@ import { isOptimizableImageHost } from "@/lib/imageHosts";
 import Link from "next/link";
 import ProfilePageSkeleton from "./profilePageSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import {
   useProfile,
   useOffersCount,
@@ -86,6 +87,8 @@ export default function AccountPage() {
   // Pending while the post-logout navigation is in flight — see `handleLogout`.
   const [isLoggingOut, startLogout] = useTransition();
   const [showProModal, setShowProModal] = useState(false);
+  // The DeliGo Pro sheet closes on Escape, as on its ✕ and its backdrop.
+  useEscapeToClose(showProModal, () => setShowProModal(false));
 
   // Resolve auth after mount so SSR and the first client render agree (both
   // show the skeleton), avoiding a hydration flash.

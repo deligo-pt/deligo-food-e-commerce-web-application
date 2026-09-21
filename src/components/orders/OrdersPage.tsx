@@ -8,6 +8,7 @@ import CancelOrderDialog from "./CancelOrderDialog";
 import OrdersPageSkeleton from "./OrdersPageSkeleton";
 import OrderSearchBar from "./OrderSearchBar";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useOrderSearch } from "@/hooks/useOrderSearch";
 import { useOrders, useInvalidateOrders } from "@/hooks/queries/useOrders";
 import { getRatingStatus, hasUnratedParts } from "@/lib/ratingStatus";
@@ -230,6 +231,12 @@ export default function OrdersPage() {
    * are page state: without the reset, rating a second order starts on the
    * first one's scores.
    */
+  // Escape is the rating sheet's Cancel — and, like Cancel, does nothing while
+  // the rating is being sent.
+  useEscapeToClose(Boolean(activeRatingOrder), () => setActiveRatingOrder(null), {
+    disabled: submittingRating,
+  });
+
   const openRatingModal = useCallback((order: any) => {
     setProductScores({});
     setProductReviews({});

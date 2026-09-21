@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { MapPin, Loader2, Compass } from "lucide-react";
 import { useLocationStore } from "@/stores/locationStore";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { getAccessToken } from "@/lib/authCookies";
 import { apiClient } from "@/lib/apiClient";
 import { addDeliveryAddress } from "@/services/addressApi";
@@ -155,17 +156,26 @@ export default function LocationPromptModal() {
     })();
   }, [permissionStatus, coords, setIsAutoSavingAddress]);
 
+  const handleNotNow = () => {
+    setShowPromptModal(false);
+    setPermissionStatus("denied");
+  };
+
+  // Escape is "Not now" — the same answer, remembered the same way, so the
+  // prompt does not come straight back. Ignored while the browser is being
+  // asked for the location, when "Not now" is disabled too. Above the early
+  // return, as hooks must be; `handleNotNow` moved up with it for that reason.
+  useEscapeToClose(showPromptModal, handleNotNow, {
+    disabled: isRequesting,
+    layer: 9999,
+  });
+
   if (!showPromptModal) return null;
 
   const handleShareLocation = async () => {
     setIsRequesting(true);
     await requestLocation();
     setIsRequesting(false);
-  };
-
-  const handleNotNow = () => {
-    setShowPromptModal(false);
-    setPermissionStatus("denied");
   };
 
   return (

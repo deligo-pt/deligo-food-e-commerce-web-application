@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { useVendor } from "@/hooks/queries/useVendors";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 import { Button } from "@/components/ui/button";
 
@@ -97,18 +98,10 @@ export default function VendorDetailsModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [shareMenuOpen]);
 
-  // Close modal on Escape key press
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-    }
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  // Close modal on Escape key press — through the shared hook, so this modal
+  // takes its turn with the others instead of closing whenever anything is
+  // escaped (it used to listen on its own, on top of everything).
+  useEscapeToClose(isOpen, onClose);
 
   const lat = vendorData?.businessLocation?.latitude;
   const lng = vendorData?.businessLocation?.longitude;

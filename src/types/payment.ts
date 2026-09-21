@@ -43,4 +43,14 @@ export interface PayWithSavedCardPayload {
   checkoutSummaryId: string;
   /** `SavedCard["id"]` — NOT the one-shot `paymentToken` of the redirect flow. */
   paymentTokenId: string;
+  /**
+   * The rider instructions, on the one path where this endpoint creates the
+   * order itself — there is no `create-order` call of ours to attach them to.
+   *
+   * ⚠️ Whether the backend stores it here is **unverified**: confirming it
+   * costs one one-click order on a real saved card. Sent only when the
+   * customer typed something, so the request a silent customer makes is
+   * byte-identical to the one this endpoint has always received.
+   */
+  deliveryNotes?: string;
 }

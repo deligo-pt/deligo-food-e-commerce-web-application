@@ -8,6 +8,7 @@ import { useInvalidateSavedCards } from "@/hooks/queries/usePaymentTokens";
 import Loader from "@/components/shared/Loader";
 import { openSupportChat } from "@/stores/supportChatStore";
 import { Button } from "@/components/ui/button";
+import { DELIVERY_NOTES_KEY } from "@/lib/deliveryNotes";
 
 export default function PaymentReturnPage() {
   const { t } = useTranslation();
@@ -35,6 +36,12 @@ export default function PaymentReturnPage() {
         }
       }
 
+      // 3. And the note on its own, for a redirect that began before the
+      //    payment page wrote `pendingOrder` — the customer typed it on the
+      //    cart page either way, and losing it here would lose it silently.
+      deliveryNotes =
+        deliveryNotes || sessionStorage.getItem(DELIVERY_NOTES_KEY) || "";
+
       if (!summaryId || !token) {
         setError(t("missingPaymentInfo"));
         setStatus("error");
@@ -51,7 +58,7 @@ export default function PaymentReturnPage() {
         if (response.data.success) {
           // Clear temporary storage
           sessionStorage.removeItem("pendingOrder");
-          sessionStorage.removeItem("deliveryNotes");
+          sessionStorage.removeItem(DELIVERY_NOTES_KEY);
           // This call is where a "save this card" request actually becomes a
           // saved card, so the cached list is now potentially wrong. Marking it
           // stale costs nothing here — there's no observer on this page, so it

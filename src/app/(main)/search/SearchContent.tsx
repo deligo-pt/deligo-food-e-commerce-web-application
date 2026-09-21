@@ -4,6 +4,8 @@ import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UtensilsCrossed, SearchX } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
+import ShareButton from "@/components/shared/ShareButton";
+import { productShareText, productShareUrl, type ShareData } from "@/lib/share";
 import { currencySymbol } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -28,6 +30,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { cardVariants } from "@/components/ui/card";
+import VendorCard, { type Vendor } from "@/components/vendors/VendorCard";
+import { useVendorSearch } from "@/hooks/queries/useVendors";
+import { useLocationStore } from "@/stores/locationStore";
 
 /**
  * `/search` — results from the backend's Meilisearch index.
@@ -45,11 +50,14 @@ import { cardVariants } from "@/components/ui/card";
  * The one arithmetic here is `hits.length` for the skeleton — everything a user
  * reads, including the result count, comes from the response.
  *
- * ## Dish results only
+ * ## Two sections, two sources
  *
- * The index is `food_items`; there are no restaurant documents to match, so the
- * old "Places" section is gone (§1.1). Searching a restaurant by name returns
- * its dishes — which is why every card names its restaurant.
+ * The search index is `food_items` — dishes only, with no vendor documents in
+ * it — so it can never answer "which restaurant is called Tasca?". That is why
+ * every dish card names its restaurant, and why the places row above the grid
+ * comes from a different endpoint entirely (`useVendorSearch`, which asks
+ * `/vendors/nearby/open?searchTerm=`). Neither list is filtered, sorted or
+ * ranked here; each backend decides its own answer.
  *
  * ## Not yet interactive
  *
@@ -87,13 +95,17 @@ function DishCard({
   hit,
   onOpen,
   onPrefetch,
+  onShareData,
   busy,
 }: {
   hit: SearchHit;
   onOpen: (hit: SearchHit) => void;
   onPrefetch: (hit: SearchHit) => void;
+  /** The dish's link — its store looked up first, since a hit does not carry it. */
+  onShareData: (hit: SearchHit) => Promise<ShareData>;
   busy: boolean;
 }) {
+  const { t } = useTranslation();
   const cuisines = hit.cuisine?.map(formatCuisineLabel).filter(Boolean) ?? [];
 
   return (
@@ -129,6 +141,15 @@ function DishCard({
           alt={hit.name}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
+        />
+        {/* Starts the store lookup on press-down, so the link is usually
+            ready by the time the click lands — the same lookup hovering the
+            card already warms. */}
+        <ShareButton
+          className="absolute right-2 top-2"
+          label={`${t("share")} ${hit.name}`}
+          onPrepare={() => onPrefetch(hit)}
+          getShareData={() => onShareData(hit)}
         />
       </div>
 
@@ -215,6 +236,33 @@ export default function SearchContent() {
   } | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
   const coords = addressCoords ?? browserCoords;
+
+  /**
+   * Where to look for places.
+   *
+   * `/vendors/nearby/open` is a proximity endpoint first, so the places row
+   * needs somewhere to be near — and it should not have to ask for it. The
+   * filters' own `coords` are only resolved once the viewer presses "Near me",
+   * so relying on them alone would mean a guest never saw a place at all. The
+   * location store already holds what the navbar is showing (the browser
+   * position, or the address a guest chose), and the saved delivery address
+   * still wins when there is one.
+   *
+   * With neither, this stays `null` and the query is disabled: the row is
+   * absent rather than empty, which is the honest shape for "we do not know
+   * where you are" as opposed to "nothing near you matches".
+   */
+  const storedCoords = useLocationStore((s) => s.coords);
+  const guestAddress = useLocationStore((s) => s.guestAddress);
+  const placeCoords =
+    coords ??
+    (storedCoords
+      ? { lat: storedCoords.latitude, lng: storedCoords.longitude }
+      : guestAddress
+        ? { lat: guestAddress.latitude, lng: guestAddress.longitude }
+        : null);
+
+  const { data: places = [] } = useVendorSearch<Vendor>(placeCoords, query);
 
   const requestLocation = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -310,6 +358,19 @@ export default function SearchContent() {
   // vendor is resolved from `productId` — warmed on hover, awaited on click.
   const { resolve, prefetch } = useProductDestination();
   const [openingProductId, setOpeningProductId] = useState<string | null>(null);
+
+  // A shared dish lands where a clicked one does: its store, with the dish up.
+  const shareDataFor = useCallback(
+    async (hit: SearchHit): Promise<ShareData> => {
+      const destination = await resolve(hit.productId);
+      return {
+        title: hit.name,
+        text: productShareText(t("shareItemIntro"), hit.name, formatRestaurantLabel(hit)),
+        url: productShareUrl(window.location.origin, destination.vendorUserId, hit.productId),
+      };
+    },
+    [resolve, t],
+  );
 
   const openHit = useCallback(
     async (hit: SearchHit) => {
@@ -453,7 +514,26 @@ export default function SearchContent() {
         </p>
       </div>
 
-      {hits.length === 0 ? (
+      {/* Places first: someone typing a restaurant's name wants the
+          restaurant, and its dishes are directly underneath. */}
+      {places.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-4 text-xl font-bold text-foreground dark:text-neutral-50">
+            {t("placesSectionTitle")}
+          </h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {places.map((place) => (
+              <VendorCard
+                key={place.id ?? place.userId}
+                vendor={place}
+                userCoords={placeCoords}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {hits.length === 0 && places.length === 0 ? (
         <div className="py-16 text-center">
           <SearchX
             className="mx-auto h-10 w-10 text-gray-300 dark:text-neutral-600"
@@ -484,8 +564,13 @@ export default function SearchContent() {
             </p>
           )}
         </div>
-      ) : (
+      ) : hits.length === 0 ? null : (
         <>
+          {places.length > 0 && (
+            <h2 className="mb-4 text-xl font-bold text-foreground dark:text-neutral-50">
+              {t("dishesSectionTitle")}
+            </h2>
+          )}
           <ResultsGrid>
             {hits.map((hit) => (
               <DishCard
@@ -493,6 +578,7 @@ export default function SearchContent() {
                 hit={hit}
                 onOpen={openHit}
                 onPrefetch={(target) => prefetch(target.productId)}
+                onShareData={shareDataFor}
                 busy={openingProductId === hit.productId}
               />
             ))}

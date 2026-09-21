@@ -27,6 +27,7 @@ const VendorDetailsModal = dynamic(() => import("./VendorDetailsModal"), {
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
 import ClosingCountdown from "./ClosingCountdown";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getVendorKind, vendorCopyKey, type VendorKind } from "@/lib/vendorKind";
 import {
   useVendor,
   useVendorProducts,
@@ -42,6 +43,8 @@ import { formatCuisine } from "@/lib/cuisine";
 import { currencySymbol } from "@/lib/currency";
 import { formatDiscountValue, hasProductDiscount } from "@/lib/productPricing";
 import SafeImage from "@/components/shared/SafeImage";
+import ShareButton from "@/components/shared/ShareButton";
+import { productIdFromParam, productShareText, productShareUrl } from "@/lib/share";
 import VendorHeroImage from "./VendorHeroImage";
 import ProductQuantityStepper from "./ProductQuantityStepper";
 import { useCartQuantities } from "@/hooks/useCartQuantities";
@@ -214,6 +217,9 @@ const MenuProductCard = memo(function MenuProductCard({
   cartQuantity,
   onCartChanged,
   storeClosed = false,
+  vendorKind = "partner",
+  vendorUserId,
+  storeName,
 }: {
   product: Product;
   onSelect: (productId: string) => void;
@@ -227,6 +233,12 @@ const MenuProductCard = memo(function MenuProductCard({
   // so the card never invites a click it won't honour. Customers can still see
   // what's on offer, which is the point of letting them in here at all.
   storeClosed?: boolean;
+  /** Restaurant, store or neither — decides what the closed label calls it. */
+  vendorKind?: VendorKind;
+  /** The store's `V-…` id from the route — the one the share link needs. */
+  vendorUserId: string;
+  /** Named in the shared line, when the store record has loaded. */
+  storeName?: string;
 }) {
   const { t } = useTranslation();
   // Guard against a product record with missing/partial pricing — an unguarded
@@ -287,6 +299,19 @@ const MenuProductCard = memo(function MenuProductCard({
             {discountValue} {t("off")}
           </span>
         )}
+        {/* Opposite the discount badge, so the two never meet. Shares the
+            dish's own deep link — the store with this dish already open —
+            and stays available while the store is closed: showing someone a
+            dish is not ordering it. */}
+        <ShareButton
+          className="absolute right-2 top-2"
+          label={`${t("share")} ${product.name}`}
+          getShareData={() => ({
+            title: product.name,
+            text: productShareText(t("shareItemIntro"), product.name, storeName),
+            url: productShareUrl(window.location.origin, vendorUserId, product.productId),
+          })}
+        />
       </div>
 
       {/* `flex-1` + `h-full` on the card make every card in a row the same
@@ -335,6 +360,7 @@ const MenuProductCard = memo(function MenuProductCard({
               productName={product.name}
               quantity={cartQuantity}
               disabled={storeClosed}
+              vendorKind={vendorKind}
               onCartChanged={onCartChanged}
             />
           ) : (
@@ -342,7 +368,11 @@ const MenuProductCard = memo(function MenuProductCard({
               size="icon"
               onClick={() => onSelect(product.productId)}
               disabled={storeClosed}
-              aria-label={storeClosed ? t("storeClosedTitle") : t("addToCart")}
+              aria-label={
+                storeClosed
+                  ? t(vendorCopyKey("storeClosedTitle", vendorKind))
+                  : t("addToCart")
+              }
               className="size-9 shrink-0 rounded-xl hover:scale-105 disabled:hover:scale-100"
             >
               <Plus size={16} />
@@ -387,8 +417,10 @@ export default function VendorDetailsPage({
   // Read once, as the initial state — the modal owns it from then on, so
   // closing it does not immediately reopen from a URL that has not changed.
   const searchParams = useSearchParams();
+  // Only the id: a link pasted together with its share message carries the
+  // message in this parameter too (see `productIdFromParam`).
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    () => searchParams.get("product"),
+    () => productIdFromParam(searchParams.get("product")),
   );
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
@@ -396,6 +428,12 @@ export default function VendorDetailsPage({
   // browsable and only ordering is withdrawn — and a store can also close while
   // this page is open. Only an explicit `false` counts as closed.
   const isStoreClosed = vendor?.businessDetails?.isStoreOpen === false;
+  // Restaurant, store, or neither — the vendor's own record decides the words
+  // on the closed banner and on the disabled add buttons.
+  const vendorKind = getVendorKind(vendor?.businessDetails?.businessType);
+  // A string rather than the vendor object, so the memoised cards compare it
+  // by value and a vendor refetch does not re-render the whole grid.
+  const storeName = vendor?.businessDetails?.businessName;
 
   const handleSelectProduct = useCallback(
     (productId: string) => setSelectedProductId(productId),
@@ -501,9 +539,20 @@ export default function VendorDetailsPage({
         cartQuantity={cartQuantities.get(product._id ?? product.productId) ?? 0}
         onCartChanged={invalidateCart}
         storeClosed={isStoreClosed}
+        vendorKind={vendorKind}
+        vendorUserId={vendorId}
+        storeName={storeName}
       />
     ),
-    [cartQuantities, handleSelectProduct, invalidateCart, isStoreClosed],
+    [
+      cartQuantities,
+      handleSelectProduct,
+      invalidateCart,
+      isStoreClosed,
+      vendorKind,
+      vendorId,
+      storeName,
+    ],
   );
   const categoryProductKey = useCallback(
     (product: Product) => product.productId ?? product.id,
@@ -716,10 +765,10 @@ export default function VendorDetailsPage({
             />
             <div>
               <p className="font-semibold text-amber-900 dark:text-amber-300">
-                {t("storeClosedTitle")}
+                {t(vendorCopyKey("storeClosedTitle", vendorKind))}
               </p>
               <p className="mt-1 text-sm text-amber-800 dark:text-amber-400/80">
-                {t("storeClosedNotice")}
+                {t(vendorCopyKey("storeClosedNotice", vendorKind))}
               </p>
             </div>
           </div>

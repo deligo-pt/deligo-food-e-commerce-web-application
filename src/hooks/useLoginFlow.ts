@@ -15,6 +15,7 @@ import {
 import { storeAuthTokens } from "../lib/authCookies";
 import { COUNTRY_OPTIONS } from "../data/countryCodes";
 import { requestFCMToken } from "../lib/fcmToken";
+import { VERIFIED_HOLD_MS, VERIFIED_HOLD_REDUCED_MS } from "@/lib/otp";
 import { apiClient } from "@/lib/apiClient";
 import { updateLiveLocation } from "@/services/addressApi";
 import { useLocationStore } from "@/stores/locationStore";
@@ -54,6 +55,11 @@ export function useLoginFlow() {
   const [otp, setOtp] = useState("");
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  /**
+   * The server accepted the code, and the page is playing the verified moment
+   * before it moves on. OTP only: the social path keeps going straight home.
+   */
+  const [otpVerified, setOtpVerified] = useState(false);
   const [isResendingOtp, setIsResendingOtp] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   // A translation key for errors we word ourselves, as opposed to `errorMessage`
@@ -216,6 +222,23 @@ export function useLoginFlow() {
     );
   }
 
+  /**
+   * Waits out the verified moment — the tiles folding into the badge and its
+   * copy settling — then lets the page move on by itself. There is no button
+   * to skip it (the owner's call: the page already continues on its own), so
+   * the wait is sign-in time the customer did not ask for and is kept to the
+   * animation's length and no more. With reduced motion there is no
+   * animation, only the badge, and the wait is just long enough to read it.
+   */
+  function holdForVerifiedMoment() {
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    return new Promise<void>((resolve) => {
+      window.setTimeout(resolve, reduced ? VERIFIED_HOLD_REDUCED_MS : VERIFIED_HOLD_MS);
+    });
+  }
+
   async function verifyOtp(forceLogin = false) {
     clearMessages();
     setShowDeviceLimitModal(false);
@@ -247,8 +270,19 @@ export function useLoginFlow() {
         deviceDetails,
         forceLogin,
       });
+
+      // The session is kept *before* the celebration, not after it: a customer
+      // who closes the tab while the badge is drawing is still signed in.
+      // `completeLogin` stores the same tokens again, which is harmless, and
+      // stays byte-for-byte the path the social providers take.
+      storeAuthTokens(response.data.accessToken, response.data.refreshToken);
+      setOtpVerified(true);
+      await holdForVerifiedMoment();
       await completeLogin(response);
     } catch (error) {
+      // Nothing after a successful verify is expected to throw, but if it did
+      // the page would sit on the badge with no buttons. Back to the form.
+      setOtpVerified(false);
       const message = error instanceof Error ? error.message : "Unable to verify OTP.";
       if (isDeviceLimitError(error, message)) {
         setPendingAction("verify");
@@ -456,6 +490,7 @@ export function useLoginFlow() {
     otp,
     isSendingOtp,
     isVerifyingOtp,
+    otpVerified,
     isResendingOtp,
     errorMessage,
     errorMessageKey,

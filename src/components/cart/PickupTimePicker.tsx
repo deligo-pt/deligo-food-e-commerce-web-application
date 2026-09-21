@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useStore } from "@/stores/translationStore";
 import {
   findFirstAvailableDay,
@@ -113,14 +114,9 @@ export default function PickupTimePicker({
     [draft, activeDay],
   );
 
-  // Escape closes without choosing — the sheet is a detour, not a trap.
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  // Escape closes without choosing — the sheet is a detour, not a trap. It is
+  // mounted only while open, hence `true`.
+  useEscapeToClose(true, onClose, { layer: 9999 });
 
   // Focus moves into the sheet on open, so the page behind it is out of the
   // keyboard's reach. The sheet itself rather than Confirm, which starts

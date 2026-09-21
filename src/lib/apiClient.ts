@@ -112,9 +112,13 @@ const GENERIC_ERROR_MESSAGE = /validation error/i;
  * layer, not a place to reinterpret what the backend said.
  */
 const ERROR_KEY_MESSAGES: Record<string, LocalizedField> = {
+  // Vendor-neutral on purpose: this layer sees an error code, not the vendor,
+  // and the code is raised for stores and restaurants alike. The screens that
+  // *do* hold the vendor's record say "restaurant" or "store" (see
+  // `lib/vendorKind.ts`); here "partner" is DeliGo's own word for both.
   STORE_CLOSED_OR_UNAPPROVED: {
-    en: "This restaurant is closed right now — you can't order from it yet.",
-    pt: "Este restaurante está fechado neste momento — ainda não pode encomendar.",
+    en: "This partner is closed right now — you can't order from it yet.",
+    pt: "Este parceiro está fechado neste momento — ainda não pode encomendar.",
   },
   // Both of these mean the same thing to a customer trying to cancel: the order
   // moved on since the page was painted. The server's own wording ("Only paid

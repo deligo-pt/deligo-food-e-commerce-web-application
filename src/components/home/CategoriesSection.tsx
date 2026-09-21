@@ -227,6 +227,7 @@
 
 "use client";
 
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { isOptimizableImageHost } from "@/lib/imageHosts";
@@ -349,17 +350,7 @@ export default function CategoriesSection() {
     };
   }, [isModalOpen]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsModalOpen(false);
-      }
-    };
-    if (isModalOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-    }
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isModalOpen]);
+  useEscapeToClose(isModalOpen, () => setIsModalOpen(false));
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
