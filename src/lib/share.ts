@@ -6,12 +6,16 @@
  *
  * ## The link needs nothing new
  *
- * The store page already reads `?product=`: `/vendors/<userId>?product=<id>`
+ * The store page already reads `?product=`: `/vendors/<vendorId>?product=<id>`
  * opens the store with that dish's details already up — the same deep link a
  * search result navigates to. It is public, so a friend without an account
  * lands on the dish too. The ids are the ones that route takes: the store's
- * `V-…` userId (not its Mongo `_id`, which 404s) and the dish's business
- * `productId` (`PROD-…`, which `/products/:id` resolves).
+ * Mongo id (**not** its `V-…` userId, which the API stopped accepting on
+ * 24 Sep 2026 — see `lib/vendorId.ts`) and the dish's business `productId`
+ * (`PROD-…`, which `/products/:productId` resolves and `/products/:_id` 404s).
+ *
+ * Links shared before that date carry the userId. They are not dead: the store
+ * page resolves one through the dish they point at — `useLegacyVendorRedirect`.
  *
  * ## One behaviour, everywhere
  *
@@ -32,11 +36,11 @@ export type ShareOutcome = "shared" | "copied" | "cancelled" | "failed";
 /** The deep link to one dish, on this site. */
 export function productShareUrl(
   origin: string,
-  vendorUserId: string,
+  vendorId: string,
   productId: string,
 ): string {
   const base = origin.replace(/\/+$/, "");
-  return `${base}/vendors/${encodeURIComponent(vendorUserId)}?product=${encodeURIComponent(productId)}`;
+  return `${base}/vendors/${encodeURIComponent(vendorId)}?product=${encodeURIComponent(productId)}`;
 }
 
 /**

@@ -153,6 +153,11 @@ export function useVendorSearch<T = unknown>(
 /**
  * A single vendor. Logged-in users hit `/vendors/customer/:id`; guests hit the
  * public `/vendors/nearby/open/:id`. Normalizes `_id → id` for downstream use.
+ *
+ * `vendorId` is the store's **Mongo id**. Both routes answered on the `V-…`
+ * userId until 24 Sep 2026 and now reject it with 400 "The provided ID is
+ * invalid." — see `lib/vendorId.ts`, and pass `vendorRouteId(vendor)` rather
+ * than anything read off `userId`.
  */
 export function useVendor<T = unknown>(
   vendorId: string | undefined,
@@ -179,6 +184,9 @@ export function useVendor<T = unknown>(
 /**
  * A vendor's products/menu. Logged-in: `/products?vendorId=…&limit=100`.
  * Guests: `/products/open` — count first, then fetch all in one request.
+ *
+ * `vendorId` is the Mongo id here too: both accept nothing else since
+ * 24 Sep 2026, and a `V-…` comes back 400, not empty.
  */
 export function useVendorProducts<T = unknown>(
   vendorId: string | undefined,
@@ -224,7 +232,9 @@ export function useVendorProducts<T = unknown>(
  * `/product-categories/open` is public and needs no token, so unlike products
  * there is no authed/guest branch. `vendorId` is **required** — the backend
  * answers `400 VENDOR_ID_REQUIRED` without it, because vendor categories are
- * not a global catalogue.
+ * not a global catalogue. It must be the Mongo id: given a `V-…` this endpoint
+ * answers with that *same* missing-id message rather than an invalid-id one,
+ * so a wrong id here reads as a missing parameter.
  *
  * `limit=100` mirrors `useVendorProducts`. The default page size is 10, and a
  * vendor with more than ten categories would otherwise lose the rest of their

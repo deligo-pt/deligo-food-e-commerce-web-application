@@ -4,12 +4,17 @@ import LoadingText from "@/components/shared/LoadingText";
 
 interface PageProps {
   params: Promise<{
-    userId: string;
+    /**
+     * The store's Mongo id. It was its `V-…` userId until 24 Sep 2026, when the
+     * API stopped accepting that — see `lib/vendorId.ts`. Links written before
+     * then still arrive here and are resolved, not rejected.
+     */
+    vendorId: string;
   }>;
 }
 
 export default async function Page({ params }: PageProps) {
-  const { userId } = await params;
+  const { vendorId } = await params;
 
   // The Suspense boundary is required because `VendorDetailsPage` reads
   // `useSearchParams()` for `?product=` — the id a search result hands over so
@@ -18,7 +23,7 @@ export default async function Page({ params }: PageProps) {
     <Suspense
       fallback={<LoadingText className="w-full px-4 py-8 lg:px-16" />}
     >
-      <VendorDetailsPage vendorId={userId} />
+      <VendorDetailsPage vendorId={vendorId} />
     </Suspense>
   );
 }

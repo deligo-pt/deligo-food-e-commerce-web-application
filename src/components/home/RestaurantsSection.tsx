@@ -19,6 +19,7 @@ import { cuisineMatches, formatCuisine } from "@/lib/cuisine";
 import { Button } from "@/components/ui/button";
 import { useRevealOnScroll } from "@/hooks/useMotion";
 import { cn } from "@/lib/utils";
+import { vendorHref } from "@/lib/vendorId";
 import { cardVariants } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
 
@@ -243,7 +244,7 @@ const RestaurantCard = memo(function RestaurantCard({
        press sits on the <Link> rather than the <article> because the anchor is
        the control; the article keeps its own hover transition, untouched. */
     <Link
-      href={`/vendors/${vendor.userId}`}
+      href={vendorHref(vendor)}
       className="motion-press block h-full"
     >
       {cardBody}

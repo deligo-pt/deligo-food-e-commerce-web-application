@@ -7,11 +7,12 @@
  *
  * ## What this defends
  *
- * 1. **The link lands on the dish.** `/vendors/<userId>?product=<productId>`
+ * 1. **The link lands on the dish.** `/vendors/<vendorId>?product=<productId>`
  *    is the deep link the store page already reads. Both ids are easy to get
  *    wrong in a way that only shows once a friend taps the link: the store's
- *    Mongo `_id` 404s where its `V-…` userId works, and the dish's Mongo `_id`
- *    is not what `?product=` takes — its business `productId` is.
+ *    `V-…` userId answers 400 where its Mongo id works (since 24 Sep 2026 —
+ *    `pnpm verify:vendor-id`), and the dish's Mongo `_id` is not what
+ *    `?product=` takes, its business `productId` is.
  * 2. **Sharing never opens the dish.** The button sits inside cards that are
  *    clickable themselves, and a search card answers Enter on `keydown`, which
  *    a click handler alone does not stop.
@@ -76,22 +77,23 @@ function fakeNavigator({ share, copy } = {}) {
 }
 const PHONE = { sheet: true };
 const COMPUTER = { sheet: false };
-const DATA = { title: "Beef Tehari", text: "Found this on DeliGo: Beef Tehari", url: "https://x/vendors/V-1?product=PROD-1" };
+const VENDOR_ID = "6a6ad9d6f9e179566170dd64"; // Sumu's Bites, on the test API
+const DATA = { title: "Beef Tehari", text: "Found this on DeliGo: Beef Tehari", url: `https://x/vendors/${VENDOR_ID}?product=PROD-1` };
 
 section("🔴 The link lands on the dish");
 {
   check(
-    "the store's userId and the dish's productId, in the route the page reads",
-    productShareUrl("https://deligo.pt", "V-PIYE3122", "PROD-0042") ===
-      "https://deligo.pt/vendors/V-PIYE3122?product=PROD-0042",
+    "the store's route id and the dish's productId, in the route the page reads",
+    productShareUrl("https://deligo.pt", VENDOR_ID, "PROD-0042") ===
+      `https://deligo.pt/vendors/${VENDOR_ID}?product=PROD-0042`,
   );
   check(
     "a trailing slash on the origin does not double up",
-    productShareUrl("https://deligo.pt/", "V-1", "PROD-1") === "https://deligo.pt/vendors/V-1?product=PROD-1",
+    productShareUrl("https://deligo.pt/", "v1", "PROD-1") === "https://deligo.pt/vendors/v1?product=PROD-1",
   );
   check(
     "the ids are encoded, not trusted",
-    productShareUrl("https://d.pt", "V 1", "P&x=1") === "https://d.pt/vendors/V%201?product=P%26x%3D1",
+    productShareUrl("https://d.pt", "v 1", "P&x=1") === "https://d.pt/vendors/v%201?product=P%26x%3D1",
     "a product id is data from the API; an `&` in it must not become a second parameter",
   );
   check(
@@ -113,19 +115,19 @@ section("🔴 The link lands on the dish");
   );
   check(
     "🔴 the menu card shares the business productId, never the Mongo _id",
-    /productShareUrl\(window\.location\.origin, vendorUserId, product\.productId\)/.test(vendorPage),
+    /productShareUrl\(window\.location\.origin, vendorId, product\.productId\)/.test(vendorPage),
     "`?product=` takes PROD-…; the cart's `_id` would open nothing",
   );
   check(
-    "🔴 …and the store's route id, not its record id",
-    /vendorUserId=\{vendorId\}/.test(vendorPage),
-    "`vendorId` here is the `[userId]` route param — the V-… id the link needs",
+    "🔴 …and the store's route id",
+    /\bvendorId=\{vendorId\}/.test(vendorPage),
+    "`vendorId` here is the `[vendorId]` route param — the id the link needs",
   );
   check(
-    "a search result looks its store up before sharing",
-    /await resolve\(hit\.productId\)/.test(search) &&
-      /productShareUrl\(window\.location\.origin, destination\.vendorUserId, hit\.productId\)/.test(search),
-    "a hit's restaurantId is a Mongo id that 404s on /vendors/:userId",
+    "a search result shares the store its card leads to",
+    /const vendorId = await vendorIdFor\(hit\);/.test(search) &&
+      /productShareUrl\(window\.location\.origin, vendorId, hit\.productId\)/.test(search),
+    "shared and tapped must land in the same place",
   );
 }
 

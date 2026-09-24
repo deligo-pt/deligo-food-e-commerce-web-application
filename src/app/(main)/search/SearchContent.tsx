@@ -59,13 +59,14 @@ import { useLocationStore } from "@/stores/locationStore";
  * `/vendors/nearby/open?searchTerm=`). Neither list is filtered, sorted or
  * ranked here; each backend decides its own answer.
  *
- * ## Not yet interactive
+ * ## Where a card leads
  *
- * Cards render as `<article>`, not links. A hit's `restaurantId` is a Mongo
- * `_id` that our `/vendors/:userId` routes 404 on, so a destination has to be
- * resolved from `productId` — that is Phase 5's job, along with the signed-out
- * prompt. Shipping a link that 404s in the meantime would be worse than
- * shipping none.
+ * Cards render as `<article>`, not links, and open through `router.push`. A
+ * hit's `restaurantId` is the store's Mongo id — which is what the store route
+ * takes as of 24 Sep 2026 (`lib/vendorId.ts`), so the tap navigates with no
+ * lookup in front of it. It did not always: the routes used to key on the
+ * `V-…` userId, and the destination had to be resolved from `productId`. That
+ * hop survives only as the fallback for a hit without a `restaurantId`.
  */
 
 /** How many skeleton cards to show before the first response arrives. */
@@ -113,10 +114,10 @@ function DishCard({
       role="button"
       tabIndex={0}
       aria-busy={busy}
-      // A hit carries no usable destination — `restaurantId` 404s against our
-      // routes — so where this card leads has to be looked up from `productId`.
-      // Hovering or tab-focusing starts that lookup, which means the click
-      // usually resolves from cache and navigates immediately.
+      // Hovering or tab-focusing warms the destination, for the one case that
+      // still needs looking up: a hit that arrived without a `restaurantId`.
+      // With one — every hit today — the prefetch is a no-op and the click
+      // navigates on the spot.
       onMouseEnter={() => onPrefetch(hit)}
       onFocus={() => onPrefetch(hit)}
       onClick={() => onOpen(hit)}
@@ -354,43 +355,50 @@ export default function SearchContent() {
     { enabled: hasCriteria },
   );
 
-  // Click-through. A hit has no usable destination of its own (§0.3), so the
-  // vendor is resolved from `productId` — warmed on hover, awaited on click.
+  // Click-through. `restaurantId` is the store's id and the store route takes
+  // it, so the common path costs nothing; `useProductDestination` is the
+  // fallback for a hit that has none.
   const { resolve, prefetch } = useProductDestination();
   const [openingProductId, setOpeningProductId] = useState<string | null>(null);
+
+  const vendorIdFor = useCallback(
+    async (hit: SearchHit): Promise<string> =>
+      hit.restaurantId || (await resolve(hit.productId)).vendorId,
+    [resolve],
+  );
 
   // A shared dish lands where a clicked one does: its store, with the dish up.
   const shareDataFor = useCallback(
     async (hit: SearchHit): Promise<ShareData> => {
-      const destination = await resolve(hit.productId);
+      const vendorId = await vendorIdFor(hit);
       return {
         title: hit.name,
         text: productShareText(t("shareItemIntro"), hit.name, formatRestaurantLabel(hit)),
-        url: productShareUrl(window.location.origin, destination.vendorUserId, hit.productId),
+        url: productShareUrl(window.location.origin, vendorId, hit.productId),
       };
     },
-    [resolve, t],
+    [vendorIdFor, t],
   );
 
   const openHit = useCallback(
     async (hit: SearchHit) => {
       setOpeningProductId(hit.productId);
       try {
-        const destination = await resolve(hit.productId);
+        const vendorId = await vendorIdFor(hit);
         // `?product=` opens the menu with this dish's modal already up, so the
         // click lands on the thing that was clicked rather than near it.
         // A closed restaurant is navigated to, not blocked: the vendor page's
         // existing "Currently Closed" treatment is the honest place to say so,
         // and the menu stays browsable there (§0.5).
         router.push(
-          `/vendors/${destination.vendorUserId}?product=${encodeURIComponent(hit.productId)}`,
+          `/vendors/${vendorId}?product=${encodeURIComponent(hit.productId)}`,
         );
       } catch {
         toast.error(t("failedToOpenItem"));
         setOpeningProductId(null);
       }
     },
-    [resolve, router, t],
+    [vendorIdFor, router, t],
   );
 
   const filterBar = (
@@ -577,7 +585,9 @@ export default function SearchContent() {
                 key={hit.id}
                 hit={hit}
                 onOpen={openHit}
-                onPrefetch={(target) => prefetch(target.productId)}
+                onPrefetch={(target) => {
+                  if (!target.restaurantId) prefetch(target.productId);
+                }}
                 onShareData={shareDataFor}
                 busy={openingProductId === hit.productId}
               />

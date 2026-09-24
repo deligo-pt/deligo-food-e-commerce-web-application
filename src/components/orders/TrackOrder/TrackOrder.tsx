@@ -50,6 +50,7 @@ import { useVendor, useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { formatAddressFull } from "@/lib/addressFormat";
 import { toTelHref } from "@/lib/phone";
 import { getVendorDisplayName } from "@/lib/vendorName";
+import { vendorRouteId } from "@/lib/vendorId";
 import { formatPickupMoment } from "@/lib/pickupTime";
 import OrderMap from "./OrderMap/OrderMap";
 import DeliveryCodeCard from "./DeliveryCodeCard";
@@ -224,7 +225,7 @@ export default function TrackOrder() {
   const storeVendor = isPickup
     ? vendorList.find(
         (v: any) =>
-          v._id === order?.vendorId?._id ||
+          vendorRouteId(v) === vendorRouteId(order?.vendorId) ||
           v.userId === order?.vendorId?.userId,
       ) ?? null
     : null;
@@ -249,10 +250,14 @@ export default function TrackOrder() {
    * Net effect: a delivery order makes **zero** requests here, and so does a
    * pickup order whose store is in the list — which is every one of them today.
    *
-   * Keyed on `userId` ("V-…"), NOT the Mongo `_id`; the detail route 404s on
-   * the latter.
+   * Keyed on the store's Mongo id. It was keyed on `userId` ("V-…") until
+   * 24 Sep 2026, when the vendor routes swapped which id they take — a `V-…`
+   * now answers 400, which would have left a collecting customer with no
+   * address exactly when the list did not have their store. See
+   * `lib/vendorId.ts`.
    */
-  const { data: vendorDetail } = useVendor<any>(order?.vendorId?.userId, {
+  const orderVendorId = vendorRouteId(order?.vendorId);
+  const { data: vendorDetail } = useVendor<any>(orderVendorId, {
     enabled: isPickup && !storeVendor?.businessLocation,
   });
 
@@ -426,7 +431,7 @@ export default function TrackOrder() {
      the check, moving between two orders could print one shop's address under
      another shop's name for a frame. */
   const orderVendor =
-    vendorDetail && vendorDetail.userId === order.vendorId?.userId
+    vendorDetail && vendorRouteId(vendorDetail) === orderVendorId
       ? vendorDetail
       : null;
 
