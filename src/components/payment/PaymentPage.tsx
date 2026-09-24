@@ -30,6 +30,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { isVendorObjectId, vendorHref, vendorRouteId } from "@/lib/vendorId";
 import SafeImage from "@/components/shared/SafeImage";
 import Loader from "@/components/shared/Loader";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -248,13 +249,15 @@ type VendorRef =
   | null;
 
 interface VendorLookupIds {
-  /** The `V-…`/`SV-…` id, the only one `/vendors/customer/:id` accepts. */
+  /** The Mongo id — since 24 Sep 2026 the only one the vendor routes accept. */
+  vendorId?: string;
+  /**
+   * The `V-…`/`SV-…` business id. No endpoint takes it any more, so it is kept
+   * for one thing only: matching a row in the list when that is all the
+   * checkout summary gave us.
+   */
   userId?: string;
-  /** The Mongo `_id`, which matches `id` in the customer-facing vendor list. */
-  mongoId?: string;
 }
-
-const MONGO_ID = /^[0-9a-f]{24}$/i;
 
 function normalizeVendor(raw: VendorApiResponse): Vendor {
   return {
@@ -264,23 +267,23 @@ function normalizeVendor(raw: VendorApiResponse): Vendor {
 }
 
 /**
- * Splits whatever the checkout summary called `vendorId` into the two ids the
- * vendor endpoints key on, because they key on different ones.
+ * Splits whatever the checkout summary called `vendorId` into the ids a lookup
+ * can use.
  *
  * A bare string is classified by shape rather than assumed: 24 hex characters
- * is a Mongo id, anything else is a userId. The populated document carries an
- * `_id` and (today) no `userId` at all, which is why the direct-by-userId call
- * cannot be the only path.
+ * is the Mongo id, anything else is an old-style userId. The populated
+ * document carries an `_id` and (today) no `userId` at all, which is why the
+ * shape test cannot be the only path.
  */
 function getVendorLookupIds(ref: VendorRef): VendorLookupIds {
   if (typeof ref === "string") {
     if (ref.length === 0) return {};
-    return MONGO_ID.test(ref) ? { mongoId: ref } : { userId: ref };
+    return isVendorObjectId(ref) ? { vendorId: ref } : { userId: ref };
   }
   if (ref && typeof ref === "object") {
     return {
+      vendorId: vendorRouteId(ref),
       userId: typeof ref.userId === "string" ? ref.userId : undefined,
-      mongoId: typeof ref._id === "string" ? ref._id : undefined,
     };
   }
   return {};
@@ -289,32 +292,29 @@ function getVendorLookupIds(ref: VendorRef): VendorLookupIds {
 /**
  * Resolves the store shown in "Delivery From" / "Collect From".
  *
- * Deliberately two-step, and deliberately in this order:
- *
- * 1. `/vendors/customer/:userId` — only when a userId is actually in hand.
- *    Called with a Mongo id it 404s every single time, which is what the old
- *    code did on every page load.
- * 2. the customer-facing list, whose `id` is the Mongo `_id` the checkout
- *    summary hands us. It is the only route from that id to a street address.
+ * 1. `/vendors/customer/:vendorId` — the Mongo id, which every checkout
+ *    summary carries. This used to be tried *second*, behind a call keyed on
+ *    `userId`, back when the userId was what the route took. That order is now
+ *    exactly wrong: the userId call answers 400 every time, so it was a
+ *    guaranteed round trip and a `console.warn` on every payment page load.
+ * 2. the customer-facing list, for a summary that gave only a userId, and as
+ *    the backstop when the detail call fails.
  *
  * Returns `null` rather than throwing when the store cannot be found: a
  * missing store name must not take down the payment page around it.
  */
 async function resolveVendor({
+  vendorId,
   userId,
-  mongoId,
 }: VendorLookupIds): Promise<Vendor | null> {
-  if (!userId && !mongoId) return null;
+  if (!vendorId && !userId) return null;
 
-  if (userId) {
+  if (vendorId) {
     try {
-      const res = await apiClient.get(`/vendors/customer/${userId}`);
+      const res = await apiClient.get(`/vendors/customer/${vendorId}`);
       if (res.data?.data) return normalizeVendor(res.data.data);
     } catch (err) {
-      console.warn(
-        "Vendor lookup by userId failed, falling back to the list:",
-        err,
-      );
+      console.warn("Vendor lookup failed, falling back to the list:", err);
     }
   }
 
@@ -324,7 +324,7 @@ async function resolveVendor({
   const vendors: VendorApiResponse[] = res.data?.data ?? [];
   const match = vendors.find(
     (v) =>
-      (mongoId !== undefined && (v.id === mongoId || v._id === mongoId)) ||
+      (vendorId !== undefined && vendorId !== "" && vendorRouteId(v) === vendorId) ||
       (userId !== undefined && v.userId === userId),
   );
   return match ? normalizeVendor(match) : null;
@@ -573,12 +573,12 @@ export default function PaymentPage() {
     const needed = offers.flatMap((offer) => rewardOptionsOf(offer) ?? []);
     if (needed.length === 0) return;
     if (!summary) return;
-    const vendorMongoId = getVendorLookupIds(summary.vendorId).mongoId;
-    if (!vendorMongoId) return;
+    const vendorLookupId = getVendorLookupIds(summary.vendorId).vendorId;
+    if (!vendorLookupId) return;
 
     try {
       const res = await apiClient.get("/products/open", {
-        params: { vendorId: vendorMongoId, page: 1, limit: 100 },
+        params: { vendorId: vendorLookupId, page: 1, limit: 100 },
       });
       const products: {
         _id?: string;
@@ -1172,7 +1172,7 @@ export default function PaymentPage() {
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-neutral-50">{t("yourOrder")}</h2>
                 <Link
-                  href={vendor?.userId ? `/vendors/${vendor.userId}` : "/vendors"}
+                  href={vendorHref(vendor)}
                   className="focus-ring rounded-sm text-sm font-semibold text-primary transition hover:opacity-80"
                 >
                   {t("addMoreItems")}

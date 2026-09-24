@@ -4,26 +4,34 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import { useAuthed } from "@/hooks/useAuthed";
+import { vendorRouteId } from "@/lib/vendorId";
 
 /**
- * Where a search result actually leads.
+ * Where a dish leads, when only the dish is known.
  *
  * See `Plan.md` → "Customer Search — Implementation Plan", Phase 5.
  *
- * ## Why a lookup is needed at all
+ * ## No longer the search page's first choice
  *
- * A search hit's `restaurantId` is the vendor's Mongo `_id`, and our routes are
- * `/vendors/<userId>` — `GET /vendors/customer/<mongo _id>` returns **404**.
- * The vendor list does not expose `_id` either, so no client-side map can be
- * built. The one field on a hit that resolves anywhere is `productId`, and
- * `GET /products/:productId` returns the owning vendor's `userId`. That is the
- * hop this file performs, and it disappears the day §7 Q23/Q25 puts
- * `restaurantUserId` on the hit.
+ * This existed because a search hit's `restaurantId` — the vendor's Mongo id —
+ * was useless for navigation: our routes were `/vendors/<userId>` and
+ * `GET /vendors/customer/<mongo id>` 404'd. The one field on a hit that
+ * resolved anywhere was `productId`, so the click hopped through the product
+ * to reach the store.
+ *
+ * Since 24 Sep 2026 the vendor routes take the Mongo id and reject the userId
+ * (`lib/vendorId.ts`), which means `restaurantId` **is** the destination.
+ * `SearchContent` navigates straight off it and never calls this for a hit
+ * that has one — no round trip between the tap and the store.
+ *
+ * What is left is the fallback: a hit with no `restaurantId`, and the store
+ * page resolving a pre-change `/vendors/V-…?product=` link through the dish it
+ * points at (`useLegacyVendorRedirect`).
  *
  * ## It works signed-out
  *
- * `/products/open/:productId` is public and returns the same `vendorId.userId`
- * and `isStoreOpen` as the authenticated route — the same pair of endpoints
+ * `/products/open/:productId` is public and returns the same populated
+ * `vendorId` as the authenticated route — the same pair of endpoints
  * `ProductDetailsModal` already switches between. So a guest can search, click,
  * and land on the menu; the sign-in prompt belongs at "add to cart", where the
  * modal already raises it, not at the click.
@@ -36,8 +44,8 @@ import { useAuthed } from "@/hooks/useAuthed";
  */
 export type ProductDestination = {
   productId: string;
-  /** The `V-XXXXXXXX` id our `/vendors/:userId` route expects. */
-  vendorUserId: string;
+  /** The store's Mongo id — what `/vendors/:vendorId` takes. */
+  vendorId: string;
   /**
    * Whether the owning restaurant is currently open, or `null` when the
    * response did not say. Only an explicit `false` means closed — the same rule
@@ -66,19 +74,19 @@ async function fetchDestination(
 
   const res = await apiClient.get(url, { signal });
   const vendor = res.data?.data?.vendorId;
-  const vendorUserId = typeof vendor?.userId === "string" ? vendor.userId : "";
+  const vendorId = vendorRouteId(vendor);
 
-  if (!vendorUserId) {
+  if (!vendorId) {
     // Without this the caller would push `/vendors/undefined` and land on a
     // 404 that looks like the product is gone rather than unresolvable.
-    throw new Error(`No vendor userId for product ${productId}`);
+    throw new Error(`No vendor id for product ${productId}`);
   }
 
   const isStoreOpen = vendor?.businessDetails?.isStoreOpen;
 
   return {
     productId,
-    vendorUserId,
+    vendorId,
     isStoreOpen: typeof isStoreOpen === "boolean" ? isStoreOpen : null,
   };
 }

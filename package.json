@@ -26,6 +26,7 @@
     "verify:pickup": "node scripts/verify-pickup-contract.mjs",
     "verify:offers": "node --no-warnings scripts/verify-offers.mjs",
     "verify:vendor-noun": "node --no-warnings scripts/verify-vendor-noun.mjs",
+    "verify:vendor-id": "node --no-warnings scripts/verify-vendor-id.mjs",
     "verify:rating": "node --no-warnings scripts/verify-rating.mjs",
     "verify:rider-instructions": "node --no-warnings scripts/verify-rider-instructions.mjs",
     "verify:otp-input": "node --no-warnings scripts/verify-otp-input.mjs",

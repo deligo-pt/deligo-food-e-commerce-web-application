@@ -40,6 +40,7 @@ import { useStore } from "@/stores/translationStore";
 import { useCart } from "@/hooks/queries/useCart";
 import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { activateOrder } from "@/lib/cartActivation";
+import { vendorHref, vendorRouteId } from "@/lib/vendorId";
 import PickupTimePicker from "./PickupTimePicker";
 import {
   formatDayShort,
@@ -821,9 +822,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               </div>
             </div>
 
-            {vendor?.userId && (
+            {vendorRouteId(vendor) && (
               <Link
-                href={`/vendors/${vendor.userId}`}
+                href={vendorHref(vendor)}
                 className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-primary px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white dark:border-pink-500 dark:text-pink-400 dark:hover:bg-pink-600 dark:hover:text-white"
               >
                 <Plus size={16} />

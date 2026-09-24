@@ -45,6 +45,8 @@ import { formatDiscountValue, hasProductDiscount } from "@/lib/productPricing";
 import SafeImage from "@/components/shared/SafeImage";
 import ShareButton from "@/components/shared/ShareButton";
 import { productIdFromParam, productShareText, productShareUrl } from "@/lib/share";
+import { isLegacyVendorUserId } from "@/lib/vendorId";
+import { useLegacyVendorRedirect } from "@/hooks/queries/useLegacyVendorRedirect";
 import VendorHeroImage from "./VendorHeroImage";
 import ProductQuantityStepper from "./ProductQuantityStepper";
 import { useCartQuantities } from "@/hooks/useCartQuantities";
@@ -218,7 +220,7 @@ const MenuProductCard = memo(function MenuProductCard({
   onCartChanged,
   storeClosed = false,
   vendorKind = "partner",
-  vendorUserId,
+  vendorId,
   storeName,
 }: {
   product: Product;
@@ -235,8 +237,8 @@ const MenuProductCard = memo(function MenuProductCard({
   storeClosed?: boolean;
   /** Restaurant, store or neither — decides what the closed label calls it. */
   vendorKind?: VendorKind;
-  /** The store's `V-…` id from the route — the one the share link needs. */
-  vendorUserId: string;
+  /** The store's id from the route — the one the share link needs. */
+  vendorId: string;
   /** Named in the shared line, when the store record has loaded. */
   storeName?: string;
 }) {
@@ -309,7 +311,7 @@ const MenuProductCard = memo(function MenuProductCard({
           getShareData={() => ({
             title: product.name,
             text: productShareText(t("shareItemIntro"), product.name, storeName),
-            url: productShareUrl(window.location.origin, vendorUserId, product.productId),
+            url: productShareUrl(window.location.origin, vendorId, product.productId),
           })}
         />
       </div>
@@ -392,6 +394,11 @@ export default function VendorDetailsPage({
   vendorId,
 }: VendorDetailsPageProps) {
   const { t } = useTranslation();
+  // A link shared before 24 Sep 2026 carries the store's `V-…` userId, which
+  // every vendor endpoint now answers 400 on. It is resolved and the URL
+  // replaced rather than fetched — see `useLegacyVendorRedirect` — so the
+  // vendor query is held back for exactly as long as that is in flight.
+  const isLegacyLink = isLegacyVendorUserId(vendorId);
   // Cached + deduped, keyed on language + auth. React Query keeps the current
   // vendor/menu on screen during a language switch (placeholderData), replacing
   // the old prevLangVersionRef silent-refetch machinery.
@@ -399,7 +406,7 @@ export default function VendorDetailsPage({
     data: vendor = null,
     isLoading: loading,
     error: vendorErrorObj,
-  } = useVendor<Vendor>(vendorId);
+  } = useVendor<Vendor>(vendorId, { enabled: !isLegacyLink });
   const {
     data: products = [],
     isLoading: productsLoading,
@@ -410,7 +417,7 @@ export default function VendorDetailsPage({
   const productsError = productsErrorObj
     ? getApiErrorMessage(productsErrorObj, "Unable to load menu")
     : "";
-  // `/vendors/<userId>?product=PROD-XXXXXX` opens straight onto that dish.
+  // `/vendors/<vendorId>?product=PROD-XXXXXX` opens straight onto that dish.
   // Search results arrive this way: a hit carries no usable vendor route of its
   // own, so `/search` resolves one from `productId` and hands the same id back
   // here, and the click lands on the dish that was clicked rather than near it.
@@ -419,8 +426,16 @@ export default function VendorDetailsPage({
   const searchParams = useSearchParams();
   // Only the id: a link pasted together with its share message carries the
   // message in this parameter too (see `productIdFromParam`).
+  const productParam = productIdFromParam(searchParams.get("product"));
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    () => productIdFromParam(searchParams.get("product")),
+    () => productParam,
+  );
+  // An aged link resolves through the dish it points at, which is why this
+  // sits below the parameter it needs. It does nothing at all for a current
+  // link.
+  const { resolving: resolvingLegacyLink } = useLegacyVendorRedirect(
+    vendorId,
+    productParam,
   );
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
@@ -540,7 +555,7 @@ export default function VendorDetailsPage({
         onCartChanged={invalidateCart}
         storeClosed={isStoreClosed}
         vendorKind={vendorKind}
-        vendorUserId={vendorId}
+        vendorId={vendorId}
         storeName={storeName}
       />
     ),
@@ -641,7 +656,10 @@ export default function VendorDetailsPage({
     setLoadingTime(false);
   }, [vendor?.id]);
 
-  if (loading) {
+  // The skeleton also covers the moment an aged link is being resolved: the
+  // vendor query is disabled then, so `loading` is false and the "not found"
+  // below would flash before the redirect lands.
+  if (loading || resolvingLegacyLink) {
     return <VendorDetailsSkeleton />;
   }
 

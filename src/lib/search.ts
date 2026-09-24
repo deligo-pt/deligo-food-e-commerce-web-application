@@ -66,9 +66,10 @@ export interface SearchHit {
   /** Absent for single-location restaurants. See `formatRestaurantLabel`. */
   branchName?: string;
   /**
-   * The vendor's Mongo `_id` — **not** the `V-XXXXXXXX` userId our routes use,
-   * and `GET /vendors/customer/:id` 404s on it. Good for `?restaurantId=`,
-   * useless for navigation; resolve a destination via `productId` instead.
+   * The vendor's Mongo id — since 24 Sep 2026 the id the vendor endpoints and
+   * our own `/vendors/:vendorId` route both take (`lib/vendorId.ts`). It used
+   * to be useless for navigation, which is why `useProductDestination` exists;
+   * it is now the destination, and that hop is only a fallback.
    */
   restaurantId: string;
   /** Direct price, or the cheapest variation. Render as sent. */

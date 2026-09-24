@@ -8,6 +8,7 @@ import { memo, useCallback, useEffect, useState, useRef } from "react";
 import { formatCuisine } from "@/lib/cuisine";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
+import { vendorHref } from "@/lib/vendorId";
 import { cardVariants } from "@/components/ui/card";
 
 export interface Vendor {
@@ -313,7 +314,7 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
     /* Phase 6 #3 — press feedback on the anchor, which is the control. The
        <article> keeps its own hover transition. */
     <Link
-      href={`/vendors/${vendor.userId}`}
+      href={vendorHref(vendor)}
       className="motion-press block h-full"
     >
       {cardBody}
