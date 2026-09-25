@@ -90,11 +90,18 @@
  *
  * ## Order is copied, never computed
  *
- * Groups come out in **the order the endpoint returned them**, and products stay
- * in the order `/products` gave them. Nothing here sorts, because there is
- * nothing to sort by: the ProductCategory schema carries no `sortOrder` and no
- * `priority` (confirmed by the backend doc), so the response order *is* the
- * vendor's order as far as this page is concerned.
+ * Groups come out **sorted by name**, and products stay in the order
+ * `/products` gave them.
+ *
+ * The groups used to keep the endpoint's order, on the reasoning that with no
+ * `sortOrder` and no `priority` on the ProductCategory schema, the response
+ * order *was* the vendor's order. That was overruled on 25 Sep 2026: the
+ * sidebar is alphabetical now, by the name the customer reads.
+ *
+ * The cost is real and worth stating: a restaurant can no longer put "DINNER
+ * MENU" before "DESSERT", because nothing in the schema lets them say so. If
+ * vendor-chosen order comes back, it needs a field on the category first — and
+ * then this sort becomes the fallback for vendors who have not set one.
  *
  * ## Everything here is total
  *
@@ -220,8 +227,8 @@ export interface VendorCategory {
 
 export interface VendorCategoryView<P> {
   /**
-   * Owned categories that have at least one product, in the endpoint's order,
-   * followed by the "Other" group when anything landed in it.
+   * Owned categories that have at least one product, sorted by name, followed
+   * by the "Other" group when anything landed in it.
    */
   groups: CategoryGroup<P>[];
   /**
@@ -252,8 +259,10 @@ export interface VendorCategoryView<P> {
  *
  * Rules, each one a guard in `verify:category`:
  *
- * - **Order is the category list's order**, copied. Never sorted. The "Other"
- *   group is always last, whatever position its products appeared in.
+ * - **Order is alphabetical by the name on screen**, compared with the caller's
+ *   locale so `Chá` and `Sobremesa` land where a Portuguese reader expects
+ *   rather than where their code points fall. Equal names keep their input
+ *   order. The "Other" group is always last, never sorted into the run.
  * - **Names come from the category list**, not from the product's embedded
  *   copy. Two sources carry a name; the owned list is the authority, so a stale
  *   name on an old product document cannot reach the screen.
@@ -268,6 +277,7 @@ export function groupByVendorCategories<P extends CategorizedProduct>(
   products: readonly P[] | null | undefined,
   categories: readonly VendorCategory[] | null | undefined,
   fallbackName: string,
+  locale?: string,
 ): VendorCategoryView<P> {
   const productList = Array.isArray(products) ? products : [];
   const categoryList = Array.isArray(categories) ? categories : [];
@@ -305,12 +315,18 @@ export function groupByVendorCategories<P extends CategorizedProduct>(
     group.products.push(product);
   }
 
-  const rendered = groups.filter((group) => group.products.length > 0);
+  const rendered = groups
+    .filter((group) => group.products.length > 0)
+    // `localeCompare` rather than `<`: the Portuguese storefront has `Chá` and
+    // `Sobremesa`, and comparing code points files accented letters after `Z`.
+    // `sort` is stable in every engine we target, so equal names keep the order
+    // the endpoint gave them.
+    .sort((a, b) => a.name.localeCompare(b.name, locale, { sensitivity: "base", numeric: true }));
 
-  // Appended last regardless of where its products appeared, so a first product
-  // the vendor has not re-filed cannot push an "Other" heading to the top of
-  // their storefront. Omitted entirely when empty, which is what a fully
-  // migrated vendor looks like.
+  // Appended after the sort, so "Other" stays last whatever it is called in the
+  // current language — sorted in, the Portuguese "Outros" would land mid-list
+  // and read like one of the vendor's own categories. Omitted entirely when
+  // empty, which is what a fully migrated vendor looks like.
   if (uncategorized.length > 0) {
     rendered.push({
       id: UNCATEGORIZED_GROUP_ID,

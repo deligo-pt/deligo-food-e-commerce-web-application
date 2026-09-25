@@ -225,7 +225,7 @@ const en = {
   incl: "incl.",
   inclVat: "Incl. VAT",
   finalPrice: "Final Price",
-  serviceCharge: "Service Charge",
+  serviceCharge: "Service Fee",
   total: "Total",
 
   deliveryInstructions: "Delivery Instructions",

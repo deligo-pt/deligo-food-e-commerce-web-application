@@ -23,10 +23,13 @@
  *    the control it replaced. §5 asserts the nav's only outward effect is a
  *    scroll.
  *
- * A third rule is inherited: order is copied from the API, never computed. It is
- * now the order `/product-categories/open?vendorId=…` returns, because the
- * schema has no `sortOrder` to sort by. §5 asserts that endpoint is requested
- * from exactly one file.
+ * A third rule replaced an inherited one on 25 Sep 2026. Order used to be
+ * copied from `/product-categories/open?vendorId=…` — the schema has no
+ * `sortOrder`, so its response order was treated as the vendor's order. The
+ * sidebar is **alphabetical by displayed name** now, collated with the viewer's
+ * locale, with "Other" pinned last. The vendor lost the ability to put "DINNER
+ * MENU" before "DESSERT"; restoring that needs a field on the category first.
+ * §5 asserts that endpoint is still requested from exactly one file.
  *
  * The scale of the mismatch, measured across all seven live vendors on
  * 2026-08-29: 22 of 34 products sit outside their own vendor's list, and three
@@ -36,11 +39,11 @@
  * ## Sections
  *
  *   §1  the model is total — fuzzed, never throws, for shapes nobody has sent yet
- *   §2  grouping loses no product, and copies order rather than computing it
+ *   §2  grouping loses no product, and sorts the groups by name
  *   §3  DOM ids are stable, safe, and collision-free
  *   §4  nothing is dropped — every product is placed, Other catches the rest
  *   §5  source guards: the nav navigates, renders nothing when useless, derives
- *       its active pill, and nothing here re-prices, sorts, or reads a clock
+ *       its active pill, and nothing here re-prices or reads a clock
  *   §6  every key the feature renders has copy in both dictionaries
  *   §6b polish — the bar clears the header, the skeleton does not jump
  *   §6c the sidebar layout and the vertical card
@@ -275,25 +278,73 @@ const TASCA = [
 const tasca = groupByVendorCategories(TASCA, TASCA_OWNS, "Other");
 
 check(
-  "🔴 order is the category list's, not the products'",
-  tasca.groups.map((g) => g.name).join(" | ") === "DINNER MENU | DESSERT | FAST FOOD TESTING",
+  "🔴 groups come out alphabetical, not in the endpoint's order",
+  tasca.groups.map((g) => g.name).join(" | ") === "DESSERT | DINNER MENU | FAST FOOD TESTING",
   tasca.groups.map((g) => g.name).join(" | "),
 );
 check(
-  "reordering the category list reorders the page",
+  "reordering the category list changes nothing",
   groupByVendorCategories(TASCA, [...TASCA_OWNS].reverse(), "Other")
     .groups.map((g) => g.name)
-    .join(" | ") === "FAST FOOD TESTING | DESSERT | DINNER MENU",
+    .join(" | ") === "DESSERT | DINNER MENU | FAST FOOD TESTING",
+  "the API's order is no longer the page's order",
 );
 check(
-  "reordering the products does not",
+  "reordering the products changes nothing either",
   groupByVendorCategories([...TASCA].reverse(), TASCA_OWNS, "Other")
     .groups.map((g) => g.name)
-    .join(" | ") === "DINNER MENU | DESSERT | FAST FOOD TESTING",
+    .join(" | ") === "DESSERT | DINNER MENU | FAST FOOD TESTING",
 );
 check(
-  "nothing sorts — the model never calls .sort()",
-  !/\.sort\(/.test(stripComments(read("src/lib/categoryModel.ts"))),
+  "🔴 accents are collated, not compared by code point",
+  groupByVendorCategories(
+    [
+      { productId: "p1", category: { _id: "c1", name: "Sobremesa" } },
+      { productId: "p2", category: { _id: "c2", name: "Chá" } },
+      { productId: "p3", category: { _id: "c3", name: "Bebidas" } },
+    ],
+    [
+      { _id: "c1", name: "Sobremesa" },
+      { _id: "c2", name: "Chá" },
+      { _id: "c3", name: "Bebidas" },
+    ],
+    "Outros",
+    "pt",
+  )
+    .groups.map((g) => g.name)
+    .join(" | ") === "Bebidas | Chá | Sobremesa",
+  "a code-point sort files Chá after Z, at the bottom of a Portuguese menu",
+);
+check(
+  "🔴 Other is pinned last, never sorted into the run",
+  groupByVendorCategories(
+    [
+      { productId: "p1", category: { _id: "c1", name: "Zuppa" } },
+      { productId: "p2", category: null },
+    ],
+    [{ _id: "c1", name: "Zuppa" }],
+    "Aperitivos",
+    "pt",
+  )
+    .groups.map((g) => g.name)
+    .join(" | ") === "Zuppa | Aperitivos",
+  "sorted in, a fallback name starting with A would head the storefront",
+);
+check(
+  "equal names keep the order the endpoint gave them",
+  groupByVendorCategories(
+    [
+      { productId: "p1", category: { _id: "first", name: "SAME" } },
+      { productId: "p2", category: { _id: "second", name: "SAME" } },
+    ],
+    [
+      { _id: "first", name: "SAME" },
+      { _id: "second", name: "SAME" },
+    ],
+    "Other",
+  )
+    .groups.map((g) => g.id)
+    .join(" | ") === "first | second",
 );
 
 check(
@@ -332,7 +383,10 @@ check(
 );
 check(
   "the same product object comes back, not a copy",
-  groupByVendorCategories(TASCA, TASCA_OWNS, "Other").groups[0].products[0] === TASCA[1],
+  // Looked up by name rather than by index: the groups are sorted now, so an
+  // index here would be asserting the order twice and the identity not at all.
+  groupByVendorCategories(TASCA, TASCA_OWNS, "Other")
+    .groups.find((g) => g.name === "DINNER MENU").products[0] === TASCA[1],
 );
 check(
   "no group carries a count field that could drift from its array",
@@ -358,8 +412,9 @@ const LEOPOLD_PT = [
 const leopoldPt = groupByVendorCategories(LEOPOLD_PT, LEOPOLD_OWNS_PT, "Outros");
 
 check(
-  "pt yields the same groups, in the same order, with the same ids",
-  leopoldPt.groups.map((g) => g.id).join("|") === leopold.groups.map((g) => g.id).join("|"),
+  "pt yields the same groups, with the same ids",
+  [...leopoldPt.groups].map((g) => g.id).sort().join("|") ===
+    [...leopold.groups].map((g) => g.id).sort().join("|"),
 );
 check(
   "pt sends exactly the same products to Other",
@@ -554,12 +609,20 @@ check(
   !/finalPrice|pricing|discount|price/i.test(model),
 );
 check(
-  "nothing in the feature sorts — order is copied from the API",
-  !/\.sort\(/.test(model) && !/\.sort\(/.test(nav),
+  "🔴 the model sorts the groups, and the nav still does not",
+  /\.sort\(\(a, b\) => a\.name\.localeCompare\(b\.name, locale/.test(model) && !/\.sort\(/.test(nav),
+  "the bar renders whatever order the model produced; two sorts would drift",
 );
 check(
-  "nothing in the feature reads a clock or formats by locale",
-  !/Date\.now|new Date\(|Intl\.|toLocale/.test(model + nav),
+  "the page hands the model the viewer's language to collate with",
+  /groupByVendorCategories\(\s*products,\s*vendorCategories,\s*t\("otherCategory"\),\s*i18n\.language,/.test(
+    stripComments(read("src/components/vendors/VendorDetailsPage.tsx")),
+  ),
+  "without it, a Portuguese menu is ordered by English rules",
+);
+check(
+  "nothing in the feature reads a clock, or formats by locale beyond collation",
+  !/Date\.now|new Date\(|Intl\.|toLocaleString|toLocaleDate|toLocaleTime/.test(model + nav),
 );
 check(
   "the model is pure — no React, no fetching, no translation store",

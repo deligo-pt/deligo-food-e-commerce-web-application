@@ -393,7 +393,7 @@ interface VendorDetailsPageProps {
 export default function VendorDetailsPage({
   vendorId,
 }: VendorDetailsPageProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // A link shared before 24 Sep 2026 carries the store's `V-…` userId, which
   // every vendor endpoint now answers 400 on. It is resolved and the URL
   // replaced rather than fetched — see `useLegacyVendorRedirect` — so the
@@ -478,14 +478,22 @@ export default function VendorDetailsPage({
   // requiring a category on every product.
   //
   // Public endpoint, no auth branch, and the only second request this page
-  // makes. Ordering comes from the response: the schema has no `sortOrder`, so
-  // the order it returns is the vendor's order.
+  // makes. Its order is not used: the schema has no `sortOrder`, and since
+  // 25 Sep 2026 the page sorts these alphabetically itself.
   const { data: vendorCategories = [], isLoading: categoriesLoading } =
     useVendorProductCategories<VendorCategory>(vendor?.id, { enabled: !!vendor?.id });
 
+  // `i18n.language` decides the collation, so a language switch re-sorts rather
+  // than leaving Portuguese names ordered the English way.
   const { groups: categoryGroups, uncategorizedCount } = useMemo(
-    () => groupByVendorCategories(products, vendorCategories, t("otherCategory")),
-    [products, vendorCategories, t],
+    () =>
+      groupByVendorCategories(
+        products,
+        vendorCategories,
+        t("otherCategory"),
+        i18n.language,
+      ),
+    [products, vendorCategories, t, i18n.language],
   );
 
   // Development only. Nothing is broken for the customer — those products are
