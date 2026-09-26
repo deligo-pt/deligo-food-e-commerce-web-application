@@ -80,6 +80,7 @@ try {
 
 const {
   groupByVendorCategories,
+  isSellableProduct,
   productCategoryId,
   productCategoryName,
   categoryDomId,
@@ -254,8 +255,8 @@ check(
   String(leopold.uncategorizedCount),
 );
 check(
-  "the products that do belong keep their own group, in input order",
-  leopold.groups[0].products.map((p) => p.productId).join(",") === "PROD-1,PROD-4",
+  "the products that do belong keep their own group",
+  [...leopold.groups[0].products].map((p) => p.productId).sort().join(",") === "PROD-1,PROD-4",
 );
 check(
   "🔴 every product handed in comes back in exactly one group",
@@ -329,6 +330,56 @@ check(
     .groups.map((g) => g.name)
     .join(" | ") === "Zuppa | Aperitivos",
   "sorted in, a fallback name starting with A would head the storefront",
+);
+check(
+  "🔴 products are alphabetical inside a category, not in the API's order",
+  groupByVendorCategories(
+    [
+      { productId: "p1", name: "Mutton Kachi", category: { _id: "c1", name: "DINNER" } },
+      { productId: "p2", name: "Morog Polao", category: { _id: "c1", name: "DINNER" } },
+      { productId: "p3", name: "Beef Tehari", category: { _id: "c1", name: "DINNER" } },
+    ],
+    [{ _id: "c1", name: "DINNER" }],
+    "Other",
+  ).groups[0].products.map((p) => p.name).join(" | ") ===
+    "Beef Tehari | Morog Polao | Mutton Kachi",
+);
+check(
+  "🔴 …by the name the customer reads, when the stub carries { en, pt }",
+  groupByVendorCategories(
+    [
+      { productId: "p1", name: { en: "Zebra dish", pt: "Arroz" }, category: { _id: "c1", name: "X" } },
+      { productId: "p2", name: { en: "Apple dish", pt: "Zurrapa" }, category: { _id: "c1", name: "X" } },
+    ],
+    [{ _id: "c1", name: "X" }],
+    "Outros",
+    "pt",
+  ).groups[0].products.map((p) => p.productId).join(",") === "p1,p2",
+  "sorted by the English half, this would come back p2,p1",
+);
+check(
+  "the Other group's products are sorted too",
+  groupByVendorCategories(
+    [
+      { productId: "z", name: "Zuppa", category: null },
+      { productId: "a", name: "Arroz", category: null },
+    ],
+    [],
+    "Other",
+  ).groups[0].products.map((p) => p.productId).join(",") === "a,z",
+);
+check(
+  "a product with no readable name is kept, not dropped",
+  groupByVendorCategories(
+    [
+      { productId: "named", name: "Arroz", category: { _id: "c1", name: "X" } },
+      { productId: "nameless", category: { _id: "c1", name: "X" } },
+      { productId: "empty", name: {}, category: { _id: "c1", name: "X" } },
+    ],
+    [{ _id: "c1", name: "X" }],
+    "Other",
+  ).groups[0].products.length === 3,
+  "losing one silently is the NO_SHOW failure shape this file exists to prevent",
 );
 check(
   "equal names keep the order the endpoint gave them",
@@ -509,8 +560,8 @@ check(
   mixed.groups.filter((g) => g.id === UNCATEGORIZED_GROUP_ID).length === 1,
 );
 check(
-  "the Other group keeps input order too",
-  mixed.groups[1].products.map((p) => p.productId).join(",") === "B,C,D,E",
+  "the Other group holds the same products, sorted like any other group",
+  [...mixed.groups[1].products].map((p) => p.productId).sort().join(",") === "B,C,D,E",
 );
 check(
   "uncategorizedCount is the size of that group",
@@ -539,6 +590,42 @@ const spy = stripComments(read("src/hooks/useCategoryScrollSpy.ts"));
 const group = stripComments(read("src/components/vendors/CategoryGroup.tsx"));
 const page = stripComments(read("src/components/vendors/VendorDetailsPage.tsx"));
 const model = stripComments(read("src/lib/categoryModel.ts"));
+
+// ── inactive products never reach the menu ──
+check(
+  "🔴 an inactive product is never shown",
+  isSellableProduct({ meta: { status: "INACTIVE" } }) === false &&
+    isSellableProduct({ isDeleted: true }) === false,
+  "`/products/open` returns the vendor's switched-off dishes to guests",
+);
+check(
+  "🔴 …but a missing status shows the product, it does not hide it",
+  isSellableProduct({ meta: { status: "ACTIVE" } }) === true &&
+    isSellableProduct({ meta: {} }) === true &&
+    isSellableProduct({}) === true &&
+    isSellableProduct({ isDeleted: false }) === true,
+  "a response that stops sending `meta` must not empty the menu",
+);
+check(
+  "the page filters before grouping, and the grouping still drops nothing",
+  // Scoped to the function's own body: `isSellableProduct` lives in the same
+  // file, so testing the whole module would pass no matter where the filter
+  // went.
+  /products\.filter\(isSellableProduct\)/.test(page) &&
+    !/isSellableProduct|INACTIVE/.test(
+      model.slice(
+        model.indexOf("export function groupByVendorCategories"),
+        model.indexOf("export function categoryDomId"),
+      ),
+    ),
+  "grouping is contracted never to lose a product it is handed",
+);
+check(
+  "🔴 a `?product=` link cannot open a dish the menu is not showing",
+  /selectedProductId && sellableProductIds\.has\(selectedProductId\)/.test(page),
+  "otherwise a shared link still sells a switched-off dish",
+);
+
 // Phase 2 moved this feature's controls onto the shared button. Reading it here
 // means these guards assert the geometry where it is actually decided, instead
 // of re-checking a copy of it at the call site.
@@ -609,13 +696,16 @@ check(
   !/finalPrice|pricing|discount|price/i.test(model),
 );
 check(
-  "🔴 the model sorts the groups, and the nav still does not",
-  /\.sort\(\(a, b\) => a\.name\.localeCompare\(b\.name, locale/.test(model) && !/\.sort\(/.test(nav),
-  "the bar renders whatever order the model produced; two sorts would drift",
+  "🔴 the model sorts both levels with one comparator, and the nav still does not",
+  /const byName = \(a: string, b: string\) =>\s*a\.localeCompare\(b, locale/.test(model) &&
+    /\.sort\(\(a, b\) => byName\(a\.name, b\.name\)\)/.test(model) &&
+    /group\.products\.sort\(/.test(model) &&
+    !/\.sort\(/.test(nav),
+  "a heading and the cards under it must not be ordered by different rules",
 );
 check(
   "the page hands the model the viewer's language to collate with",
-  /groupByVendorCategories\(\s*products,\s*vendorCategories,\s*t\("otherCategory"\),\s*i18n\.language,/.test(
+  /groupByVendorCategories\(\s*sellableProducts,\s*vendorCategories,\s*t\("otherCategory"\),\s*i18n\.language,/.test(
     stripComments(read("src/components/vendors/VendorDetailsPage.tsx")),
   ),
   "without it, a Portuguese menu is ordered by English rules",
@@ -629,8 +719,12 @@ check(
   !/from "react"|useState|apiClient|useTranslation/.test(model),
 );
 check(
-  "nothing unwraps { en, pt } — the API already resolved the name",
-  !/\.\s*en\b|\.\s*pt\b|\["en"\]|\["pt"\]/.test(model) && !/\.\s*en\b|\.\s*pt\b/.test(nav),
+  "only the product-name reader unwraps { en, pt } — nothing else does",
+  // Category names arrive resolved and must stay that way. Product names do
+  // not always: a stub product carries the raw bag, which is why
+  // `productDisplayName` exists and why the nav — which renders categories —
+  // still must not contain this.
+  /text\(bag\.en\) \?\? text\(bag\.pt\)/.test(model) && !/\.\s*en\b|\.\s*pt\b/.test(nav),
 );
 check(
   "the nav renders the group's label directly — the fallback lives in the model",
