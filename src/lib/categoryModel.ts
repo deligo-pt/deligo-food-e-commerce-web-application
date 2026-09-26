@@ -90,11 +90,17 @@
  *
  * ## Order is copied, never computed
  *
- * Groups come out in **the order the endpoint returned them**, and products stay
- * in the order `/products` gave them. Nothing here sorts, because there is
- * nothing to sort by: the ProductCategory schema carries no `sortOrder` and no
- * `priority` (confirmed by the backend doc), so the response order *is* the
- * vendor's order as far as this page is concerned.
+ * Groups come out **sorted by name**, and so do the products inside each one.
+ *
+ * The groups used to keep the endpoint's order, on the reasoning that with no
+ * `sortOrder` and no `priority` on the ProductCategory schema, the response
+ * order *was* the vendor's order. That was overruled on 25 Sep 2026: the
+ * sidebar is alphabetical now, by the name the customer reads.
+ *
+ * The cost is real and worth stating: a restaurant can no longer put "DINNER
+ * MENU" before "DESSERT", because nothing in the schema lets them say so. If
+ * vendor-chosen order comes back, it needs a field on the category first — and
+ * then this sort becomes the fallback for vendors who have not set one.
  *
  * ## Everything here is total
  *
@@ -119,9 +125,15 @@ export interface ProductCategoryRef {
   name?: string | null;
 }
 
-/** The only thing this module needs to know about a product. */
+/** The only things this module needs to know about a product. */
 export interface CategorizedProduct {
   category?: ProductCategoryRef | null;
+  /**
+   * Loosely typed because the two endpoints disagree: `/products` resolves it
+   * to a string via `Accept-Language`, while a stub product carries the raw
+   * `{ en, pt }`. `productDisplayName` reads both.
+   */
+  name?: unknown;
 }
 
 /**
@@ -157,6 +169,57 @@ export interface CategoryGroup<P> {
 /** Trimmed string, or `null` for anything that is not usable text. */
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+/**
+ * A product's name as the customer reads it — the string the API localized, or
+ * the right half of a `{ en, pt }` stub.
+ *
+ * Kept here rather than imported so this module stays dependency-free, and
+ * tolerant rather than strict: a product with no readable name sorts as `""`
+ * (first) instead of throwing a grid away.
+ */
+export function productDisplayName(product: unknown, locale?: string): string {
+  const raw = (product as { name?: unknown } | null)?.name;
+  const direct = text(raw);
+  if (direct) return direct;
+  if (!raw || typeof raw !== "object") return "";
+
+  const bag = raw as Record<string, unknown>;
+  const lang = (locale ?? "").slice(0, 2).toLowerCase();
+  const picked = text(bag[lang]) ?? text(bag.en) ?? text(bag.pt);
+  if (picked) return picked;
+
+  for (const value of Object.values(bag)) {
+    const candidate = text(value);
+    if (candidate) return candidate;
+  }
+  return "";
+}
+
+/**
+ * Whether a product may be shown to a customer at all.
+ *
+ * `/products/open` — the guest path — returns a vendor's **inactive** products
+ * with `meta.status: "INACTIVE"`, and the page used to render them: a
+ * logged-out visitor saw a dish the vendor had switched off, could open it, and
+ * could put it in a basket. (The signed-in path, `/products?vendorId=`, filters
+ * server-side, which is why this only ever showed itself to guests. Observed
+ * 26 Sep 2026 on `PROD-OK4USG`, "Chicken Soup".)
+ *
+ * **Absence means shown.** Only an explicit `INACTIVE`, or an explicit
+ * `isDeleted: true`, hides a product — the same rule the vendor card uses for
+ * `isStoreOpen`. A response that stops sending `meta` must not empty the menu.
+ *
+ * Kept out of `groupByVendorCategories` on purpose: that function's contract is
+ * that it never drops anything it is given, and it is guarded on exactly that.
+ * Filtering belongs to the caller, before the grouping.
+ */
+export function isSellableProduct(product: unknown): boolean {
+  if (!product || typeof product !== "object") return false;
+  const p = product as { isDeleted?: unknown; meta?: { status?: unknown } | null };
+  if (p.isDeleted === true) return false;
+  return p.meta?.status !== "INACTIVE";
 }
 
 /** The `category` object on a product, or `null` if there isn't one. */
@@ -220,8 +283,8 @@ export interface VendorCategory {
 
 export interface VendorCategoryView<P> {
   /**
-   * Owned categories that have at least one product, in the endpoint's order,
-   * followed by the "Other" group when anything landed in it.
+   * Owned categories that have at least one product, sorted by name, followed
+   * by the "Other" group when anything landed in it.
    */
   groups: CategoryGroup<P>[];
   /**
@@ -252,8 +315,11 @@ export interface VendorCategoryView<P> {
  *
  * Rules, each one a guard in `verify:category`:
  *
- * - **Order is the category list's order**, copied. Never sorted. The "Other"
- *   group is always last, whatever position its products appeared in.
+ * - **Order is alphabetical by the name on screen**, compared with the caller's
+ *   locale so `Chá` and `Sobremesa` land where a Portuguese reader expects
+ *   rather than where their code points fall. Equal names keep their input
+ *   order. The "Other" group is always last, never sorted into the run — but
+ *   the products inside it are sorted like any other group's.
  * - **Names come from the category list**, not from the product's embedded
  *   copy. Two sources carry a name; the owned list is the authority, so a stale
  *   name on an old product document cannot reach the screen.
@@ -262,12 +328,15 @@ export interface VendorCategoryView<P> {
  * - **No product is ever dropped.** Every input product comes back in exactly
  *   one group. Losing one silently is the `NO_SHOW` failure shape: no error, no
  *   count, no empty state, just an item that is not there.
- * - Products keep the order `/products` gave them, inside every group.
+ * - **Products are sorted the same way inside every group**, including
+ *   "Other", by the name the customer reads — the string `/products`
+ *   localized, or the right half of a `{ en, pt }` stub.
  */
 export function groupByVendorCategories<P extends CategorizedProduct>(
   products: readonly P[] | null | undefined,
   categories: readonly VendorCategory[] | null | undefined,
   fallbackName: string,
+  locale?: string,
 ): VendorCategoryView<P> {
   const productList = Array.isArray(products) ? products : [];
   const categoryList = Array.isArray(categories) ? categories : [];
@@ -305,12 +374,32 @@ export function groupByVendorCategories<P extends CategorizedProduct>(
     group.products.push(product);
   }
 
-  const rendered = groups.filter((group) => group.products.length > 0);
+  // One comparator for both levels, so a heading and the cards under it are
+  // ordered by the same rules.
+  const byName = (a: string, b: string) =>
+    a.localeCompare(b, locale, { sensitivity: "base", numeric: true });
 
-  // Appended last regardless of where its products appeared, so a first product
-  // the vendor has not re-filed cannot push an "Other" heading to the top of
-  // their storefront. Omitted entirely when empty, which is what a fully
-  // migrated vendor looks like.
+  for (const group of groups) {
+    group.products.sort((a, b) =>
+      byName(productDisplayName(a, locale), productDisplayName(b, locale)),
+    );
+  }
+  uncategorized.sort((a, b) =>
+    byName(productDisplayName(a, locale), productDisplayName(b, locale)),
+  );
+
+  const rendered = groups
+    .filter((group) => group.products.length > 0)
+    // `localeCompare` rather than `<`: the Portuguese storefront has `Chá` and
+    // `Sobremesa`, and comparing code points files accented letters after `Z`.
+    // `sort` is stable in every engine we target, so equal names keep the order
+    // the endpoint gave them.
+    .sort((a, b) => byName(a.name, b.name));
+
+  // Appended after the sort, so "Other" stays last whatever it is called in the
+  // current language — sorted in, the Portuguese "Outros" would land mid-list
+  // and read like one of the vendor's own categories. Omitted entirely when
+  // empty, which is what a fully migrated vendor looks like.
   if (uncategorized.length > 0) {
     rendered.push({
       id: UNCATEGORIZED_GROUP_ID,

@@ -33,7 +33,11 @@ import {
   useVendorProducts,
   useVendorProductCategories,
 } from "@/hooks/queries/useVendors";
-import { groupByVendorCategories, type VendorCategory } from "@/lib/categoryModel";
+import {
+  groupByVendorCategories,
+  isSellableProduct,
+  type VendorCategory,
+} from "@/lib/categoryModel";
 import { useCategoryScrollSpy } from "@/hooks/useCategoryScrollSpy";
 import CategoryNav from "./CategoryNav";
 import CategorySidebar from "./CategorySidebar";
@@ -393,7 +397,7 @@ interface VendorDetailsPageProps {
 export default function VendorDetailsPage({
   vendorId,
 }: VendorDetailsPageProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // A link shared before 24 Sep 2026 carries the store's `V-…` userId, which
   // every vendor endpoint now answers 400 on. It is resolved and the URL
   // replaced rather than fetched — see `useLegacyVendorRedirect` — so the
@@ -478,14 +482,44 @@ export default function VendorDetailsPage({
   // requiring a category on every product.
   //
   // Public endpoint, no auth branch, and the only second request this page
-  // makes. Ordering comes from the response: the schema has no `sortOrder`, so
-  // the order it returns is the vendor's order.
+  // makes. Its order is not used: the schema has no `sortOrder`, and since
+  // 25 Sep 2026 the page sorts these alphabetically itself.
   const { data: vendorCategories = [], isLoading: categoriesLoading } =
     useVendorProductCategories<VendorCategory>(vendor?.id, { enabled: !!vendor?.id });
 
+  // `i18n.language` decides the collation, so a language switch re-sorts rather
+  // than leaving Portuguese names ordered the English way.
+  // The guest product endpoint returns the vendor's inactive dishes too, and a
+  // menu must not offer something the vendor has switched off. Filtered here
+  // rather than inside the grouping, which is contracted never to drop a
+  // product it is handed.
+  const sellableProducts = useMemo(
+    () => products.filter(isSellableProduct),
+    [products],
+  );
+
+  // Ids the menu is showing, for the `?product=` deep link to check itself
+  // against. Both id shapes, because a shared link carries the business
+  // `productId` while the cards key on `_id`.
+  const sellableProductIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const product of sellableProducts) {
+      const p = product as { productId?: string; _id?: string };
+      if (p.productId) ids.add(p.productId);
+      if (p._id) ids.add(p._id);
+    }
+    return ids;
+  }, [sellableProducts]);
+
   const { groups: categoryGroups, uncategorizedCount } = useMemo(
-    () => groupByVendorCategories(products, vendorCategories, t("otherCategory")),
-    [products, vendorCategories, t],
+    () =>
+      groupByVendorCategories(
+        sellableProducts,
+        vendorCategories,
+        t("otherCategory"),
+        i18n.language,
+      ),
+    [sellableProducts, vendorCategories, t, i18n.language],
   );
 
   // Development only. Nothing is broken for the customer — those products are
@@ -897,7 +931,11 @@ export default function VendorDetailsPage({
           </section>
         </div>
 
-        {selectedProductId && (
+        {/* A `?product=` link to a dish the vendor has since switched off opens
+            nothing: the menu no longer lists it, and a modal over an empty
+            menu would sell it anyway. Only ids the page is actually showing
+            can open. */}
+        {selectedProductId && sellableProductIds.has(selectedProductId) && (
           <ProductDetailsModal
             isOpen={!!selectedProductId}
             onClose={() => setSelectedProductId(null)}
