@@ -19,11 +19,14 @@ import {
 import SafeImage from "@/components/shared/SafeImage";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import axios from "axios";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useCartCache } from "@/hooks/queries/useCart";
 import { activateAddedOrder } from "@/lib/cartActivation";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCustomerCoords } from "@/hooks/useCustomerCoords";
+import { isOutOfArea, withCoords } from "@/lib/customerCoords";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
 import { currencySymbol } from "@/lib/currency";
@@ -117,6 +120,7 @@ export default function ProductDetailsModal({
   productId,
 }: ProductDetailsModalProps) {
   const { t } = useTranslation();
+  const coords = useCustomerCoords();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
@@ -252,26 +256,44 @@ export default function ProductDetailsModal({
       setError("");
       try {
         const token = getAccessToken();
+        // Both routes need the customer's position since 27 Sep 2026: without
+        // it the open one answers 400 and the protected one 404s on a product
+        // that exists. A product too far away 404s either way — which is a
+        // different thing from "deleted", and Phase 4 is where that is said.
+        const params = withCoords({}, coords);
         if (token) {
           // Authenticated: use protected endpoint
-          const { data } = await apiClient.get(`/products/${productId}`);
+          const { data } = await apiClient.get(`/products/${productId}`, { params });
           setProduct(data.data);
         } else {
           // Unauthenticated: use open public endpoint
-          const { data } = await apiClient.get(`/products/open/${productId}`);
+          const { data } = await apiClient.get(`/products/open/${productId}`, { params });
           setProduct(data.data);
         }
         setQuantity(1);
         setSelectedOption(null);
       } catch (err) {
-        setError(getApiErrorMessage(err, "Failed to load product details"));
+        // A 404 on a request that carried coordinates means the dish is out of
+        // range, not gone. Saying "product not found" to someone whose only
+        // problem is their address sends them away for good.
+        const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+        setError(
+          isOutOfArea(status, coords)
+            ? `${t("productOutOfAreaTitle")} — ${t("productOutOfAreaHint")}`
+            : getApiErrorMessage(err, "Failed to load product details"),
+        );
       } finally {
         setLoading(false);
       }
     };
 
     fetchProduct();
-  }, [isOpen, productId]);
+    // `coords` is in the list: the same product answers differently from a
+    // different place, so a customer who sets their address while the modal is
+    // open should see the answer for where they actually are. `t` is here
+    // because the out-of-area message is built inside the effect — a language
+    // switch should re-render it in the new language.
+  }, [isOpen, productId, coords, t]);
 
   if (!isOpen) return null;
 

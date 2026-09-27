@@ -5,6 +5,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import { useAuthed } from "@/hooks/useAuthed";
 import { vendorRouteId } from "@/lib/vendorId";
+import { coordsKey, withCoords, type Coords } from "@/lib/customerCoords";
+import { useCustomerCoords } from "@/hooks/useCustomerCoords";
 
 /**
  * Where a dish leads, when only the dish is known.
@@ -56,8 +58,11 @@ export type ProductDestination = {
 
 export const productDestinationKeys = {
   all: ["product-destination"] as const,
-  detail: (authed: boolean, productId: string) =>
-    ["product-destination", authed, productId] as const,
+  // The coordinates are part of the key: the same product resolves or 404s
+  // depending on where the customer is, so a cached answer from one
+  // neighbourhood must not be served in another.
+  detail: (authed: boolean, productId: string, coords: Coords | null) =>
+    ["product-destination", authed, productId, coordsKey(coords)] as const,
 };
 
 /** Resolved destinations stay fresh for five minutes; a vendor id does not move. */
@@ -66,13 +71,19 @@ const DESTINATION_STALE_TIME = 5 * 60 * 1000;
 async function fetchDestination(
   authed: boolean,
   productId: string,
+  coords: Coords | null,
   signal?: AbortSignal,
 ): Promise<ProductDestination> {
   const url = authed
     ? `/products/${productId}`
     : `/products/open/${productId}`;
 
-  const res = await apiClient.get(url, { signal });
+  // Required since 27 Sep 2026. Without them the open route answers 400 and
+  // the authed one answers 404 for a product that plainly exists — and *with*
+  // them, a product too far from the customer answers 404 as well. The caller
+  // is what turns that into "not available in your area" rather than "gone";
+  // see Phase 4.
+  const res = await apiClient.get(url, { params: withCoords({}, coords), signal });
   const vendor = res.data?.data?.vendorId;
   const vendorId = vendorRouteId(vendor);
 
@@ -102,15 +113,16 @@ async function fetchDestination(
 export function useProductDestination() {
   const queryClient = useQueryClient();
   const authed = useAuthed();
+  const coords = useCustomerCoords();
 
   const options = useCallback(
     (productId: string) => ({
-      queryKey: productDestinationKeys.detail(authed, productId),
+      queryKey: productDestinationKeys.detail(authed, productId, coords),
       queryFn: ({ signal }: { signal?: AbortSignal }) =>
-        fetchDestination(authed, productId, signal),
+        fetchDestination(authed, productId, coords, signal),
       staleTime: DESTINATION_STALE_TIME,
     }),
-    [authed],
+    [authed, coords],
   );
 
   const resolve = useCallback(

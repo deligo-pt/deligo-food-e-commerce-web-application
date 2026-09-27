@@ -2069,6 +2069,16 @@ const pt = {
     "Os dados pessoais são conservados durante o período estritamente necessário para cumprir as finalidades descritas, ou durante os prazos legais obrigatórios — por exemplo, 10 anos para documentos fiscais e faturas sob a lei portuguesa.",
   legalSecurityText:
     "Todos os dados transmitidos são encriptados através de protocolos de segurança avançados (SSL/TLS).",
+
+  // localização necessária antes de pesquisar
+  searchNeedsLocationTitle: "Diga-nos onde está",
+  searchNeedsLocationHint:
+    "A pesquisa mostra o que consegue chegar até si, por isso precisa primeiro de uma morada de entrega ou da sua localização.",
+  searchLocationDeniedHint:
+    "A localização está bloqueada no seu navegador. Adicione uma morada de entrega ou permita a localização e tente novamente.",
+  productOutOfAreaTitle: "Indisponível na sua área",
+  productOutOfAreaHint:
+    "Este artigo pertence a um menu que não entrega na sua morada atual.",
 };
 
 export default pt;

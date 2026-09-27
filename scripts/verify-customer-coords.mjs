@@ -1,0 +1,229 @@
+/**
+ * Where the customer is, and which calls are told.
+ *
+ *   pnpm verify:customer-coords
+ *
+ * No token, no network: the module runs directly, the call sites are read off
+ * source.
+ *
+ * ## What this defends
+ *
+ * On 27 Sep 2026 the customer product and search endpoints began requiring
+ * `lat`/`lng` and filtering by proximity. Every failure mode this introduced is
+ * quiet:
+ *
+ * 1. **A call that forgets them** answers `400 "Location coordinates are
+ *    required to discover…"`, or — on the authed single-product route — a bare
+ *    **404** for a product that exists.
+ * 2. **A call that sends them where it must not** is worse, because it
+ *    succeeds: `/products?vendorId=…` honours the vendor filter only while
+ *    coordinates are absent, and `/product-categories/open?vendorId=…` returns
+ *    3 categories without them and **0** with them. A store page then fills
+ *    with other restaurants' food, or empties, and nothing looks broken.
+ * 3. **A cached answer crossing a boundary.** The same product resolves here
+ *    and 404s there, so a key without the position serves one neighbourhood's
+ *    menu to another.
+ * 4. **A 404 read as "deleted"** when it means "too far" — the recoverable
+ *    case reported as the final one.
+ */
+
+import { register } from "node:module";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+register("./ts-resolve-hook.mjs", import.meta.url);
+
+const here = dirname(fileURLToPath(import.meta.url));
+const read = (file) => readFileSync(join(here, "..", file), "utf8");
+const stripComments = (source) =>
+  source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+let passed = 0;
+let failed = 0;
+function check(name, condition, detail) {
+  if (condition) {
+    passed++;
+    console.log(`  PASS  ${name}`);
+  } else {
+    failed++;
+    console.log(`  FAIL  ${name}${detail === undefined ? "" : `  → ${detail}`}`);
+  }
+}
+const section = (title) => console.log(`\n${title}`);
+
+const {
+  pickCoords,
+  toCoords,
+  hasCoords,
+  withCoords,
+  coordsKey,
+  vendorCoords,
+  isOutOfArea,
+  WITHOUT_COORDS,
+} = await import(join(here, "../src/lib/customerCoords.ts"));
+
+const module_ = stripComments(read("src/lib/customerCoords.ts"));
+const hook = stripComments(read("src/hooks/useCustomerCoords.ts"));
+const page = stripComments(read("src/app/(main)/search/SearchContent.tsx"));
+const vendors = stripComments(read("src/hooks/queries/useVendors.ts"));
+const destination = stripComments(read("src/hooks/queries/useProductDestination.ts"));
+const modal = stripComments(read("src/components/vendors/ProductDetailsModal.tsx"));
+const payment = stripComments(read("src/components/payment/PaymentPage.tsx"));
+
+const J = JSON.stringify;
+
+section("🔴 The order the sources are tried in");
+{
+  check(
+    "🔴 the delivery address wins",
+    J(pickCoords({ lat: 1, lng: 2 }, { latitude: 3, longitude: 4 }, { latitude: 5, longitude: 6 })) ===
+      J({ lat: 1, lng: 2 }),
+    "that is where the food would actually go",
+  );
+  check(
+    "then the device position, then a guest's typed address",
+    J(pickCoords(null, { latitude: 3, longitude: 4 }, { latitude: 5, longitude: 6 })) === J({ lat: 3, lng: 4 }) &&
+      J(pickCoords(null, null, { latitude: 5, longitude: 6 })) === J({ lat: 5, lng: 6 }),
+  );
+  check(
+    "🔴 and the hook reads exactly those three, in that order",
+    /useActiveAddressCoords\(\)/.test(hook) &&
+      /useLocationStore\(\(s\) => s\.coords\)/.test(hook) &&
+      /useLocationStore\(\(s\) => s\.guestAddress\)/.test(hook) &&
+      /pickCoords\(addressCoords, storedCoords, guestAddress\)/.test(hook),
+  );
+  check(
+    "nothing at all is null — never an invented default",
+    pickCoords(null, undefined, null) === null,
+    "a fallback coordinate answers a question the customer never asked",
+  );
+}
+
+section("🔴 Half-formed positions are not sent");
+{
+  check(
+    "🔴 a source with one half is skipped, not sent as lng=undefined",
+    J(pickCoords({ latitude: 3 }, { latitude: 5, longitude: 6 })) === J({ lat: 5, lng: 6 }),
+    "the API reads a partial pair as no position at all",
+  );
+  check(
+    "🔴 zero is a real coordinate",
+    J(pickCoords({ latitude: 0, longitude: 0 })) === J({ lat: 0, lng: 0 }) && hasCoords({ lat: 0, lng: 0 }),
+    "the null island is a place; falsiness is the wrong test",
+  );
+  check(
+    "NaN is not",
+    pickCoords({ latitude: NaN, longitude: 2 }) === null && !hasCoords({ lat: NaN, lng: 1 }),
+  );
+  check(
+    "toCoords tolerates null and partial shapes",
+    toCoords(null) === null && toCoords({ latitude: 1 }) === null &&
+      J(toCoords({ latitude: 1, longitude: 2 })) === J({ lat: 1, lng: 2 }),
+  );
+}
+
+section("🔴 Attaching them, and deliberately not");
+{
+  const params = { limit: 5 };
+  check(
+    "withCoords attaches both and copies rather than mutates",
+    J(withCoords(params, { lat: 1, lng: 2 })) === J({ limit: 5, lat: 1, lng: 2 }) && !("lat" in params),
+  );
+  check(
+    "🔴 WITHOUT_COORDS leaves the params untouched",
+    J(withCoords({ vendorId: "x" }, WITHOUT_COORDS)) === J({ vendorId: "x" }),
+    "this is the one call where omitting them is correct, and it must read as a decision",
+  );
+  check(
+    "a vendor's own position comes off its businessLocation",
+    J(vendorCoords({ businessLocation: { latitude: 23.817252, longitude: 90.421308 } })) ===
+      J({ lat: 23.817252, lng: 90.421308 }) &&
+      vendorCoords(null) === null &&
+      vendorCoords({ businessLocation: {} }) === null,
+  );
+}
+
+section("🔴 The cache cannot serve one neighbourhood's answer to another");
+{
+  check(
+    "🔴 the key rounds to ~100m, so GPS jitter does not refetch the catalogue",
+    coordsKey({ lat: 38.72234567, lng: -9.13934567 }) === coordsKey({ lat: 38.7223, lng: -9.1393 }),
+  );
+  check(
+    "…and 'no position' is a key of its own",
+    coordsKey(null) === "no-coords" && coordsKey({ lat: 1, lng: 2 }) !== "no-coords",
+    "a customer who gains a location must not read a cached 'nothing nearby'",
+  );
+  check(
+    "🔴 the product destination keys on it",
+    /coordsKey\(coords\)\] as const/.test(destination) &&
+      /productDestinationKeys\.detail\(authed, productId, coords\)/.test(destination),
+  );
+  check(
+    "🔴 and so does the vendor menu — in the key array, not just the signature",
+    /authed \? "" : coordsKey\(place\)/.test(vendors) &&
+      /\["vendors", "products", lang, authed, vendorId, place\]/.test(vendors),
+    "passing it to the key builder means nothing if the builder drops it",
+  );
+}
+
+section("🔴 Which call is told what");
+{
+  check(
+    "search sends the position, and does not fire without one",
+    /lat: searchCoords\?\.lat/.test(page) &&
+      /enabled: hasCriteria && !!searchCoords/.test(page),
+  );
+  check(
+    "the product destination sends it on both routes",
+    /withCoords\(\{\}, coords\)/.test(destination),
+  );
+  check(
+    "the dish modal sends it, and re-asks when it changes",
+    /const params = withCoords\(\{\}, coords\);/.test(modal) &&
+      /\[isOpen, productId, coords, t\]/.test(modal),
+  );
+  check(
+    "🔴 the payment page's reward lookup sends the VENDOR's position",
+    /vendorCoords\(vendor\)/.test(payment),
+    "the customer's would filter a store's own menu down to what is near them",
+  );
+  check(
+    "🔴 the signed-in menu call sends none at all",
+    /withCoords\(\{\}, WITHOUT_COORDS\)/.test(vendors),
+    "/products?vendorId= honours the filter only while coordinates are absent",
+  );
+  check(
+    "🔴 the category list is asked without one",
+    !/product-categories\/open[^`"]*lat=/.test(vendors),
+    "3 categories without them, 0 with them — and that list decides what renders",
+  );
+}
+
+section("🔴 A 404 that means distance");
+{
+  check(
+    "🔴 out of area only when coordinates were actually sent",
+    isOutOfArea(404, { lat: 1, lng: 2 }) === true &&
+      isOutOfArea(404, null) === false &&
+      isOutOfArea(500, { lat: 1, lng: 2 }) === false,
+    "a genuinely missing id 404s with or without them",
+  );
+  check(
+    "both screens use it rather than reporting a missing product",
+    /isOutOfArea\(status, coords\)/.test(modal) && /isOutOfArea\(status, searchCoords\)/.test(page),
+  );
+}
+
+section("The module stays pure");
+{
+  check(
+    "no React, no fetching, no store",
+    !/from "react"|useState|useMemo|apiClient|useStore/.test(module_),
+    "it is asserted directly here; a hook could not be",
+  );
+}
+
+console.log(`\n${passed} passed, ${failed} failed\n`);
+process.exit(failed === 0 ? 0 : 1);
