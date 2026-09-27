@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { UtensilsCrossed, SearchX } from "lucide-react";
+import { UtensilsCrossed, SearchX, MapPin } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
 import ShareButton from "@/components/shared/ShareButton";
 import { productShareText, productShareUrl, type ShareData } from "@/lib/share";
@@ -19,6 +19,7 @@ import SearchFilters, {
   type FilterPatch,
 } from "@/components/search/SearchFilters";
 import { useProductDestination } from "@/hooks/queries/useProductDestination";
+import axios from "axios";
 import { toast } from "sonner";
 import {
   formatCuisineLabel,
@@ -32,7 +33,8 @@ import { cn } from "@/lib/utils";
 import { cardVariants } from "@/components/ui/card";
 import VendorCard, { type Vendor } from "@/components/vendors/VendorCard";
 import { useVendorSearch } from "@/hooks/queries/useVendors";
-import { useLocationStore } from "@/stores/locationStore";
+import { useCustomerCoords } from "@/hooks/useCustomerCoords";
+import { isOutOfArea, pickCoords } from "@/lib/customerCoords";
 
 /**
  * `/search` — results from the backend's Meilisearch index.
@@ -236,6 +238,8 @@ export default function SearchContent() {
     lng: number;
   } | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
+  // Only the filters' "Near me" toggle reads this; everything that talks to the
+  // API uses `searchCoords` below, which also falls back to the location store.
   const coords = addressCoords ?? browserCoords;
 
   /**
@@ -253,17 +257,15 @@ export default function SearchContent() {
    * absent rather than empty, which is the honest shape for "we do not know
    * where you are" as opposed to "nothing near you matches".
    */
-  const storedCoords = useLocationStore((s) => s.coords);
-  const guestAddress = useLocationStore((s) => s.guestAddress);
-  const placeCoords =
-    coords ??
-    (storedCoords
-      ? { lat: storedCoords.latitude, lng: storedCoords.longitude }
-      : guestAddress
-        ? { lat: guestAddress.latitude, lng: guestAddress.longitude }
-        : null);
+  // The address / device / guest-address chain, defined once in
+  // `lib/customerCoords.ts`. This page used to assemble its own copy of it.
+  const sharedCoords = useCustomerCoords();
+  // The browser position this screen resolves on demand comes first: a
+  // customer who has just pressed "Near me" means *here*, not their saved
+  // address.
+  const searchCoords = pickCoords(browserCoords, sharedCoords);
 
-  const { data: places = [] } = useVendorSearch<Vendor>(placeCoords, query);
+  const { data: places = [] } = useVendorSearch<Vendor>(searchCoords, query);
 
   const requestLocation = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -327,6 +329,10 @@ export default function SearchContent() {
     isHalal ||
     (radiusInMeters !== null && coords !== null);
 
+  // `/search` answers 400 without a position, so a customer who has not given
+  // one is not shown an empty result — they are shown why, and how to fix it.
+  const needsLocation = hasCriteria && !searchCoords;
+
   const {
     data,
     isPending,
@@ -343,16 +349,20 @@ export default function SearchContent() {
       sortOrder,
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
-      // The triple is passed only when a radius is chosen *and* coordinates
-      // exist. `buildSearchParams` would drop a partial one anyway, but not
-      // building it is clearer than relying on that.
-      lat: radiusInMeters !== null ? coords?.lat : undefined,
-      lng: radiusInMeters !== null ? coords?.lng : undefined,
-      radiusInMeters: coords ? (radiusInMeters ?? undefined) : undefined,
+      // The position always goes, because `/search` answers 400 without it.
+      // The radius still only goes when the customer chose one — and
+      // `buildSearchParams` drops it unless the position is there to measure
+      // from.
+      lat: searchCoords?.lat,
+      lng: searchCoords?.lng,
+      radiusInMeters: searchCoords ? (radiusInMeters ?? undefined) : undefined,
       isAvailable: isAvailable ? true : undefined,
       isHalal: isHalal ? true : undefined,
     },
-    { enabled: hasCriteria },
+    // Without coordinates the request can only earn a 400, so it is not made.
+    // Phase 4 turns this into something the customer can act on; today the
+    // page falls through to its existing empty state.
+    { enabled: hasCriteria && !!searchCoords },
   );
 
   // Click-through. `restaurantId` is the store's id and the store route takes
@@ -393,12 +403,20 @@ export default function SearchContent() {
         router.push(
           `/vendors/${vendorId}?product=${encodeURIComponent(hit.productId)}`,
         );
-      } catch {
-        toast.error(t("failedToOpenItem"));
+      } catch (err) {
+        // The fallback lookup 404s for a dish outside the customer's area. It
+        // is the same status a deleted dish returns, and the difference is
+        // what the customer can do about it.
+        const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+        toast.error(
+          isOutOfArea(status, searchCoords)
+            ? t("productOutOfAreaTitle")
+            : t("failedToOpenItem"),
+        );
         setOpeningProductId(null);
       }
     },
-    [vendorIdFor, router, t],
+    [vendorIdFor, router, t, searchCoords],
   );
 
   const filterBar = (
@@ -534,14 +552,38 @@ export default function SearchContent() {
               <VendorCard
                 key={place.id ?? place.userId}
                 vendor={place}
-                userCoords={placeCoords}
+                userCoords={searchCoords}
               />
             ))}
           </div>
         </section>
       )}
 
-      {hits.length === 0 && places.length === 0 ? (
+      {needsLocation ? (
+        /* Not "no results": nothing was searched. Saying so, and offering the
+           button that fixes it, is the difference between a broken page and a
+           page waiting on one piece of information. */
+        <div className="py-16 text-center">
+          <MapPin
+            className="mx-auto h-10 w-10 text-gray-300 dark:text-neutral-600"
+            aria-hidden="true"
+          />
+          <p className="mt-4 font-semibold text-foreground dark:text-neutral-50">
+            {t("searchNeedsLocationTitle")}
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground dark:text-neutral-400">
+            {t("searchNeedsLocationHint")}
+          </p>
+          <Button type="button" className="mt-4" onClick={requestLocation}>
+            {t("useMyLocation")}
+          </Button>
+          {locationDenied && (
+            <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground dark:text-neutral-400">
+              {t("searchLocationDeniedHint")}
+            </p>
+          )}
+        </div>
+      ) : hits.length === 0 && places.length === 0 ? (
         <div className="py-16 text-center">
           <SearchX
             className="mx-auto h-10 w-10 text-gray-300 dark:text-neutral-600"

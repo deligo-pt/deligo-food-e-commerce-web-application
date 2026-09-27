@@ -38,6 +38,7 @@ import {
   isSellableProduct,
   type VendorCategory,
 } from "@/lib/categoryModel";
+import { vendorCoords } from "@/lib/customerCoords";
 import { useCategoryScrollSpy } from "@/hooks/useCategoryScrollSpy";
 import CategoryNav from "./CategoryNav";
 import CategorySidebar from "./CategorySidebar";
@@ -411,11 +412,18 @@ export default function VendorDetailsPage({
     isLoading: loading,
     error: vendorErrorObj,
   } = useVendor<Vendor>(vendorId, { enabled: !isLegacyLink });
+  // The menu is fetched from the vendor's own position, not the customer's:
+  // `/products/open` filters by proximity and ignores `vendorId` while doing
+  // it, so asking from where the customer stands returns other restaurants'
+  // food under this heading — or nothing at all, at the wrong distance. See
+  // `useVendorProducts`.
   const {
     data: products = [],
     isLoading: productsLoading,
     error: productsErrorObj,
-  } = useVendorProducts<Product>(vendor?.id, { enabled: !!vendor?.id });
+  } = useVendorProducts<Product>(vendor?.id, vendorCoords(vendor), {
+    enabled: !!vendor?.id,
+  });
 
   const error = vendorErrorObj ? getApiErrorMessage(vendorErrorObj) : "";
   const productsError = productsErrorObj

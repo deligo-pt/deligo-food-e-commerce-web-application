@@ -175,9 +175,16 @@ const DEFAULT_SORT_ORDER: Record<SearchSortBy, SearchSortOrder> = {
  * clamped to 0. Empty strings are dropped too: `searchTerm=` is a different
  * query from omitting it.
  *
- * `lat`/`lng`/`radiusInMeters` are sent **only as a complete triple**. A partial
- * one is silently ignored by the server, and a filter that quietly does nothing
- * is worse than one that is visibly absent.
+ * `lat`/`lng` go out **whenever both are known**, because `/search` has
+ * required them since 27 Sep 2026 — without them it answers
+ * `400 "Location coordinates are required to discover…"`, signed in or not.
+ * They used to be emitted only as part of a triple with `radiusInMeters`,
+ * which would now mean no results at all unless the customer had also picked
+ * a radius.
+ *
+ * `radiusInMeters` still needs the pair beside it: a radius with nothing to
+ * measure from is silently ignored by the server, and a filter that quietly
+ * does nothing is worse than one that is visibly absent.
  *
  * Parameters are appended in a fixed order so the same input always produces the
  * same string — which is what makes the result usable in a cache key.
@@ -211,16 +218,15 @@ export function buildSearchParams(input: SearchParams = {}): URLSearchParams {
     params.set("maxPrice", String(input.maxPrice));
   }
 
-  // All three or none.
-  if (
-    isFiniteNumber(input.lat) &&
-    isFiniteNumber(input.lng) &&
-    isFiniteNumber(input.radiusInMeters) &&
-    input.radiusInMeters > 0
-  ) {
+  // The pair travels on its own; the radius only travels with the pair.
+  const hasPosition = isFiniteNumber(input.lat) && isFiniteNumber(input.lng);
+  if (hasPosition) {
     params.set("lat", String(input.lat));
     params.set("lng", String(input.lng));
-    params.set("radiusInMeters", String(Math.round(input.radiusInMeters)));
+
+    if (isFiniteNumber(input.radiusInMeters) && input.radiusInMeters > 0) {
+      params.set("radiusInMeters", String(Math.round(input.radiusInMeters)));
+    }
   }
 
   if (input.sortBy) {

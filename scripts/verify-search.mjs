@@ -105,19 +105,23 @@ section("🔴 The three HTTP 500 triggers never reach the wire");
   );
 }
 
-section("🔴 The geo triple is all-or-nothing (a partial one is silently ignored)");
+section("🔴 The position travels alone; the radius never does");
 {
   const full = { lat: 38.766, lng: -9.1565, radiusInMeters: 1000 };
   eq("all three together are sent", q(full), "lat=38.766&lng=-9.1565&radiusInMeters=1000");
 
+  // 🔴 Since 27 Sep 2026 `/search` answers 400 without coordinates, so the pair
+  // must go out on its own. It used to be dropped unless a radius came with
+  // it, which would now mean no results until the customer picked one.
+  eq("🔴 lat+lng without a radius are still sent", q({ lat: 38.766, lng: -9.1565 }), "lat=38.766&lng=-9.1565");
+
   eq("lat alone is dropped", q({ lat: 38.766 }), "");
   eq("lng alone is dropped", q({ lng: -9.1565 }), "");
   eq("radius alone is dropped", q({ radiusInMeters: 1000 }), "");
-  eq("lat+lng without a radius is dropped", q({ lat: 38.766, lng: -9.1565 }), "");
   eq("lat+radius without lng is dropped", q({ lat: 38.766, radiusInMeters: 1000 }), "");
-  eq("a zero radius is not a filter", q({ ...full, radiusInMeters: 0 }), "");
-  eq("nor is a negative one", q({ ...full, radiusInMeters: -5 }), "");
-  eq("a NaN coordinate voids the whole triple", q({ ...full, lat: Number("abc") }), "");
+  eq("a zero radius is not a filter, but the position survives", q({ ...full, radiusInMeters: 0 }), "lat=38.766&lng=-9.1565");
+  eq("nor is a negative one", q({ ...full, radiusInMeters: -5 }), "lat=38.766&lng=-9.1565");
+  eq("a NaN coordinate voids the position and the radius with it", q({ ...full, lat: Number("abc") }), "");
 
   // Latitude 0 / longitude 0 are real coordinates, not "missing".
   check(

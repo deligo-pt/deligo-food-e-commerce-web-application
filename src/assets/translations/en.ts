@@ -2081,6 +2081,16 @@ const en = {
     "Personal data is retained for the period strictly necessary to fulfil the purposes described, or for the mandatory legal retention periods — for example, 10 years for tax documents and invoices under Portuguese law.",
   legalSecurityText:
     "All transmitted data is encrypted using advanced security protocols (SSL/TLS).",
+
+  // location is required before searching
+  searchNeedsLocationTitle: "Tell us where you are",
+  searchNeedsLocationHint:
+    "Search shows what can reach you, so it needs a delivery address or your location first.",
+  searchLocationDeniedHint:
+    "Location is blocked in your browser. Add a delivery address instead, or allow location and try again.",
+  productOutOfAreaTitle: "Not available in your area",
+  productOutOfAreaHint:
+    "This item is on a menu that does not deliver to your current address.",
 };
 
 export default en;

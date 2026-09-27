@@ -233,6 +233,41 @@ section("🔴 The share link and the search result agree with the route");
   );
 }
 
+section("🔴 A store page asks from the store, not from the customer");
+{
+  const vendors = stripComments(read("src/hooks/queries/useVendors.ts"));
+
+  check(
+    "🔴 the guest menu call carries the VENDOR's position",
+    /const params = withCoords\(\{\}, place\);/.test(vendors) &&
+      /useVendorProducts<Product>\(vendor\?\.id, vendorCoords\(vendor\)/.test(vendorPage),
+    "with the customer's, `/products/open` ignores vendorId and answers with whatever is near them",
+  );
+  check(
+    "🔴 …and the signed-in one carries none at all",
+    /withCoords\(\{\}, WITHOUT_COORDS\)/.test(vendors),
+    "`/products?vendorId=` honours the filter only while coordinates are absent",
+  );
+  check(
+    "a guest waits for that position instead of firing into a 400",
+    /const guestReady = authed \|\| hasCoords\(place\);/.test(vendors) &&
+      /enabled: \(options\?\.enabled \?\? true\) && !!vendorId && guestReady/.test(vendors),
+  );
+  check(
+    "the position is in the cache key, so the two branches cannot share one",
+    // Both halves: passing it to the key builder means nothing if the builder
+    // drops it, which is exactly what happened on the first pass.
+    /authed \? "" : coordsKey\(place\)/.test(vendors) &&
+      /\["vendors", "products", lang, authed, vendorId, place\]/.test(vendors),
+  );
+  check(
+    "🔴 the category list is asked WITHOUT a position",
+    !/product-categories\/open[^`"]*lat=/.test(vendors) &&
+      !/productCategories[\s\S]{0,400}withCoords/.test(vendors),
+    "measured 27 Sep 2026: that endpoint returns 3 categories without coordinates and 0 with them, and it is the authority for what the menu renders",
+  );
+}
+
 section("🔴 Lookups that used to key on userId");
 {
   check(

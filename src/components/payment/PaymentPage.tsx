@@ -31,6 +31,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { isVendorObjectId, vendorHref, vendorRouteId } from "@/lib/vendorId";
+import { vendorCoords, withCoords } from "@/lib/customerCoords";
 import SafeImage from "@/components/shared/SafeImage";
 import Loader from "@/components/shared/Loader";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -577,8 +578,16 @@ export default function PaymentPage() {
     if (!vendorLookupId) return;
 
     try {
+      // `/products/open` requires the customer's position since 27 Sep 2026 —
+      // without it this 400s and every free item on the payment page falls back
+      // to its generic label. The *vendor's* position is used rather than the
+      // customer's: this list is the store's own menu, and proximity to the
+      // customer would filter it down to whatever happens to be near them.
       const res = await apiClient.get("/products/open", {
-        params: { vendorId: vendorLookupId, page: 1, limit: 100 },
+        params: withCoords(
+          { vendorId: vendorLookupId, page: 1, limit: 100 },
+          vendorCoords(vendor),
+        ),
       });
       const products: {
         _id?: string;

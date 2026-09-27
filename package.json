@@ -16,6 +16,7 @@
     "verify:vat": "node --no-warnings scripts/verify-vat.mjs",
     "verify:product-pricing": "node --no-warnings scripts/verify-product-pricing.mjs",
     "verify:search": "node --no-warnings scripts/verify-search.mjs",
+    "verify:customer-coords": "node --no-warnings scripts/verify-customer-coords.mjs",
     "verify:search-places": "node --no-warnings scripts/verify-search-places.mjs",
     "verify:order-search": "node --no-warnings scripts/verify-order-search.mjs",
     "verify:profile-form": "node --no-warnings scripts/verify-profile-form.mjs",

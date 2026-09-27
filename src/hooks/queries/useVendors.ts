@@ -2,6 +2,13 @@
 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
+import {
+  coordsKey,
+  hasCoords,
+  withCoords,
+  WITHOUT_COORDS,
+  type Coords,
+} from "@/lib/customerCoords";
 import { getAccessToken } from "@/lib/authCookies";
 import { useStore } from "@/stores/translationStore";
 
@@ -23,8 +30,11 @@ export const vendorKeys = {
     ["vendors", "search", lang, lat, lng, term] as const,
   detail: (lang: string, authed: boolean, vendorId: string) =>
     ["vendors", "detail", lang, authed, vendorId] as const,
-  products: (lang: string, authed: boolean, vendorId: string) =>
-    ["vendors", "products", lang, authed, vendorId] as const,
+  // `place` is the vendor's own position for the guest branch, "" when signed
+  // in — see `useVendorProducts`. In the key because the two branches answer
+  // with different menus and must not share an entry.
+  products: (lang: string, authed: boolean, vendorId: string, place = "") =>
+    ["vendors", "products", lang, authed, vendorId, place] as const,
   // Category names are server-localized too, so this is keyed by language for
   // the same reason the others are. Not keyed by auth: the `/open` endpoint is
   // the only one used, for guests and signed-in customers alike.
@@ -187,35 +197,73 @@ export function useVendor<T = unknown>(
  *
  * `vendorId` is the Mongo id here too: both accept nothing else since
  * 24 Sep 2026, and a `V-…` comes back 400, not empty.
+ *
+ * ## 🔴 The two branches take opposite treatment, on purpose
+ *
+ * Since 27 Sep 2026 the customer product endpoints take `lat`/`lng` and filter
+ * by proximity — and **proximity beats `vendorId`**. Measured:
+ *
+ * ```
+ * /products?vendorId=<Tasca>&lat=38.72&lng=-9.14   → 24 items, none of them Tasca's
+ * /products?vendorId=<Tasca>                       → 11 items, all Tasca ✅
+ * /products/open?vendorId=<Tasca>                  → 400, coordinates required
+ * /products/open?vendorId=<Tasca>&lat=<Tasca's own position>
+ *                                                  → 11 items, all Tasca ✅
+ * ```
+ *
+ * So the signed-in call must send **no** coordinates, and the guest call must
+ * send **the vendor's**, not the customer's. Centring the query on the store
+ * makes that store's own menu in range by definition, which is what a store
+ * page is asking for; the customer's position would answer a different
+ * question — "what is near me" — under this vendor's heading.
+ *
+ * `place` therefore only ever carries the vendor's coordinates, and only for
+ * guests. It is in the cache key so a signed-in and a signed-out read of the
+ * same menu cannot share an entry.
  */
 export function useVendorProducts<T = unknown>(
   vendorId: string | undefined,
+  /** The vendor's own position — required for guests, ignored when signed in. */
+  place?: Coords | null,
   options?: { enabled?: boolean },
 ) {
   const lang = useStore((s) => s.lang);
   const authed = isAuthed();
+  // A guest cannot ask this endpoint anything without a position, so the query
+  // waits for the vendor record rather than firing into a 400.
+  const guestReady = authed || hasCoords(place);
+
   return useQuery({
-    queryKey: vendorKeys.products(lang, authed, vendorId ?? ""),
+    queryKey: vendorKeys.products(
+      lang,
+      authed,
+      vendorId ?? "",
+      authed ? "" : coordsKey(place),
+    ),
     queryFn: async ({ signal }) => {
       if (authed) {
-        const res = await apiClient.get(
-          `/products?vendorId=${vendorId}&limit=100`,
-          { signal },
-        );
+        // WITHOUT_COORDS: adding them here is what turns this vendor's menu
+        // into "whatever is near the customer".
+        const res = await apiClient.get(`/products?vendorId=${vendorId}&limit=100`, {
+          params: withCoords({}, WITHOUT_COORDS),
+          signal,
+        });
         return (res.data?.data ?? []) as T[];
       }
+
+      const params = withCoords({}, place);
       const countRes = await apiClient.get(
         `/products/open?vendorId=${vendorId}&page=1&limit=1`,
-        { signal },
+        { params, signal },
       );
       const total = countRes.data?.meta?.total || 10;
       const res = await apiClient.get(
         `/products/open?vendorId=${vendorId}&page=1&limit=${total}`,
-        { signal },
+        { params, signal },
       );
       return (res.data?.data ?? []) as T[];
     },
-    enabled: (options?.enabled ?? true) && !!vendorId,
+    enabled: (options?.enabled ?? true) && !!vendorId && guestReady,
     placeholderData: keepPreviousData,
   });
 }

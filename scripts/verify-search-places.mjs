@@ -60,21 +60,6 @@ const page = read("src/app/(main)/search/SearchContent.tsx");
 const en = read("src/assets/translations/en.ts");
 const pt = read("src/assets/translations/pt.ts");
 
-/**
- * Text between `from` and the next `;` at the start of a line's statement.
- *
- * Rules about *how* a value is built have to be asserted against the expression
- * that builds it. Matching the file at large lets a mutation keep the tell-tale
- * text and move it somewhere it does nothing — which is exactly what
- * `coords ?? null; const unused = (storedCoords ? …)` does, and what an earlier
- * version of this file missed.
- */
-function expression(text, from) {
-  const start = text.indexOf(from);
-  if (start === -1) return "";
-  const end = text.indexOf(";", start);
-  return text.slice(start, end === -1 ? text.length : end + 1);
-}
 
 /** The body of `useVendorSearch`, so a rule cannot be satisfied by a sibling hook. */
 const searchHook = (() => {
@@ -134,43 +119,95 @@ section("🔴 No coordinates, no row (and no request)");
 
 section("The row finds a location instead of demanding one");
 {
-  // Asserted against the expression itself, not the file: every rule here is
-  // about the order the three sources are tried in, which only means anything
-  // inside the `??`/`?:` chain that does the trying.
-  const placeCoords = expression(page, "const placeCoords =");
+  // The page used to build this chain inline, and every rule below was written
+  // against that expression. Since 27 Sep 2026 the order lives in
+  // `lib/customerCoords.ts`, because `/search` and the product endpoints need
+  // the same position and three private copies would drift. The rules now
+  // assert that the page *uses* the shared chain rather than re-deriving it.
+  const coordsModule = read("src/lib/customerCoords.ts");
+  const coordsHook = read("src/hooks/useCustomerCoords.ts");
 
   check(
-    "the saved delivery address still wins",
-    /^const placeCoords =\s*coords \?\?/.test(placeCoords.replace(/\s+/g, " ")),
+    "🔴 the page takes the shared chain rather than assembling its own",
+    /const sharedCoords = useCustomerCoords\(\);/.test(page) &&
+      !/useLocationStore\(\(s\) => s\.guestAddress\)/.test(page),
+    "three copies of this order would answer the same question differently",
+  );
+  check(
+    "the browser position the viewer just asked for comes first",
+    /const searchCoords = pickCoords\(browserCoords, sharedCoords\);/.test(page),
+    "someone who pressed 'Near me' means here, not their saved address",
+  );
+  check(
+    "🔴 the saved delivery address still wins inside that chain",
+    /useActiveAddressCoords\(\)/.test(coordsHook) &&
+      /pickCoords\(addressCoords, storedCoords, guestAddress\)/.test(coordsHook),
     "that is where the food would actually go",
   );
   check(
-    "🔴 it falls back to the browser position the navbar is showing",
-    /useLocationStore\(\(s\) => s\.coords\)/.test(page) &&
-      /storedCoords\.latitude/.test(placeCoords) &&
-      /storedCoords\.longitude/.test(placeCoords),
-    "the filters' own coords only exist after the viewer presses 'Near me', so a guest would never see a place",
+    "🔴 then the device position, then a guest's typed address",
+    /useLocationStore\(\(s\) => s\.coords\)/.test(coordsHook) &&
+      /useLocationStore\(\(s\) => s\.guestAddress\)/.test(coordsHook),
+    "the filters' own coords only exist after 'Near me', so a guest would never see a place",
   );
   check(
-    "🔴 and then to the address a guest chose",
-    /useLocationStore\(\(s\) => s\.guestAddress\)/.test(page) &&
-      /guestAddress\.latitude/.test(placeCoords) &&
-      /guestAddress\.longitude/.test(placeCoords),
-    "read as coordinates — a proximity endpoint cannot be given a street name",
-  );
-  check(
-    "with neither, it is null — which is what disables the query",
-    /:\s*null\)?;$/.test(placeCoords.trimEnd()),
+    "with none of them it is null — which is what disables the query",
+    /return null;/.test(coordsModule) &&
+      /enabled: hasCriteria && !!searchCoords/.test(page),
     "an invented fallback coordinate would answer a question the viewer never asked",
   );
   check(
     "and that null is what the hook is handed",
-    /useVendorSearch<Vendor>\(placeCoords, query\)/.test(page),
+    /useVendorSearch<Vendor>\(searchCoords, query\)/.test(page),
   );
   check(
     "the cards measure distance from the same point the query used",
-    /userCoords=\{placeCoords\}/.test(page),
+    /userCoords=\{searchCoords\}/.test(page),
     "a card counting kilometres from a different origin than the search contradicts its own list",
+  );
+}
+
+section("🔴 No location is a different state from no results");
+{
+  const coordsModule = read("src/lib/customerCoords.ts");
+  const modal = read("src/components/vendors/ProductDetailsModal.tsx");
+  const en = read("src/assets/translations/en.ts");
+  const pt = read("src/assets/translations/pt.ts");
+
+  check(
+    "🔴 a customer with no position is told why, not shown 'no results'",
+    /const needsLocation = hasCriteria && !searchCoords;/.test(page) &&
+      /\{needsLocation \? \(/.test(page) &&
+      /t\("searchNeedsLocationTitle"\)/.test(page),
+    "nothing was searched — calling that 'no results' blames the catalogue",
+  );
+  check(
+    "…and offered the control that fixes it",
+    /onClick=\{requestLocation\}/.test(page) && /t\("useMyLocation"\)/.test(page),
+  );
+  check(
+    "a blocked browser gets its own sentence",
+    /locationDenied && \(/.test(page) && /t\("searchLocationDeniedHint"\)/.test(page),
+    "'allow location' is useless advice to someone who already refused",
+  );
+  check(
+    "🔴 a distant 404 is not reported as a missing product",
+    /export function isOutOfArea\(/.test(coordsModule) &&
+      /isOutOfArea\(status, coords\)/.test(modal) &&
+      /isOutOfArea\(status, searchCoords\)/.test(page),
+    "the same status means 'deleted' and 'too far'; only one is worth changing your address for",
+  );
+  check(
+    "…and it only reads that way when coordinates were actually sent",
+    /status === 404 && hasCoords\(coords\)/.test(coordsModule),
+    "a genuinely missing id 404s with or without them",
+  );
+  check(
+    "every new line exists in both dictionaries",
+    ["searchNeedsLocationTitle", "searchNeedsLocationHint", "searchLocationDeniedHint",
+     "productOutOfAreaTitle", "productOutOfAreaHint"].every(
+      (key) => new RegExp(`^\\s*${key}:`, "m").test(en) && new RegExp(`^\\s*${key}:`, "m").test(pt),
+    ),
   );
 }
 
