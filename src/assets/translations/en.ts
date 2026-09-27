@@ -483,6 +483,8 @@ const en = {
   saveThisCard: "Save this card",
   saveThisCardSubtitle: "Pay faster next time with one tap",
   instantOrderNote: "Your order will be placed instantly — no redirect needed.",
+  deselectCardHint:
+    "Tap the selected card again to pay with a different card.",
   payNow: "Pay Now",
   expiresOn: "Expires",
   removeCard: "Remove card",

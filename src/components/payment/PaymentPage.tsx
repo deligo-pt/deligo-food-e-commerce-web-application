@@ -1525,10 +1525,21 @@ export default function PaymentPage() {
                             type="radio"
                             name="savedCard"
                             checked={isSelected}
-                            onChange={() => {
-                              setSelectedCardId(card.id);
-                              // Nothing to save — this card already is saved.
-                              setSaveCard(false);
+                            // Arrow keys move a radio group without ever firing
+                            // a click, so selection stays on `change`.
+                            onChange={() => setSelectedCardId(card.id)}
+                            // A radio has no way back: the browser will not
+                            // un-check one, and this group has no "none of
+                            // these" member to move the selection onto. So the
+                            // chosen card clears itself on a second click —
+                            // which is also what Space on a focused radio
+                            // fires, so the keyboard gets the same way out.
+                            //
+                            // `click` runs before `change`, and `isSelected` is
+                            // this render's value either way, so the two
+                            // handlers cannot fight over one press.
+                            onClick={() => {
+                              if (isSelected) setSelectedCardId(null);
                             }}
                             className="h-4 w-4 shrink-0 text-primary dark:text-pink-500 focus:ring-primary"
                           />
@@ -1536,6 +1547,16 @@ export default function PaymentPage() {
                       );
                     })}
                   </div>
+
+                  {/* An un-checkable radio is not a thing customers have seen
+                      before, so the way out is spelled rather than left to be
+                      discovered. Shown only while a card is selected — it is
+                      an instruction, not a description of the list. */}
+                  {isInstantPayment && (
+                    <p className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
+                      {t("deselectCardHint")}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1547,10 +1568,17 @@ export default function PaymentPage() {
                 </p>
               )}
 
-              {/* CARD only, and pointless once a saved card is picked: no other
-                  method can be tokenized, and offering it under a wallet would
-                  promise something that quietly doesn't happen. */}
-              {paymentMethod === "CARD" && !isInstantPayment && (
+              {/* CARD only — no other method can be tokenized, and offering
+                  this under a wallet would promise something that quietly
+                  doesn't happen.
+
+                  It no longer disappears when a saved card is picked. Hiding it
+                  moved the page under the customer mid-decision, and the one it
+                  was protecting against — a `saveCard` sent on a token payment
+                  — cannot happen anyway: that path calls `payWithSavedCard`,
+                  which has no such field. The toggle simply has nothing to do
+                  while a saved card is selected. */}
+              {paymentMethod === "CARD" && (
                 <label className="mt-4 flex cursor-pointer items-center justify-between gap-4">
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-gray-900 dark:text-neutral-50">
