@@ -80,3 +80,51 @@ export function vendorHref(vendor: VendorIdentifiers | null | undefined): string
   const id = vendorRouteId(vendor);
   return id ? `/vendors/${encodeURIComponent(id)}` : "/vendors";
 }
+
+/**
+ * A product as the product endpoints return it, for the one field that says
+ * whose it is. Populated on some routes, a bare id on others.
+ */
+export interface ProductVendorRef {
+  vendorId?: string | VendorIdentifiers | null;
+}
+
+/** The owning vendor's object id, `""` when the product does not say. */
+export function productVendorId(product: ProductVendorRef | null | undefined): string {
+  const ref = product?.vendorId;
+  if (typeof ref === "string") return ref;
+  return vendorRouteId(ref);
+}
+
+/**
+ * The products on this page that are actually **this store's**.
+ *
+ * ## Why a store page has to check
+ *
+ * On 27 Sep 2026 the customer product endpoints began filtering by proximity,
+ * and proximity **overrides `vendorId`**: `/products/open?vendorId=<Tasca>`
+ * with coordinates answered with 30 products belonging to *five* vendors, 19 of
+ * them other restaurants'. Nothing about the response says so — the items are
+ * well-formed, they simply are not this store's, and they land in the trailing
+ * "Other" group because their categories are not in this store's category list.
+ *
+ * The page already knows which store it is rendering, so it never has to trust
+ * the server's filtering to answer that. This is the check that should have
+ * been here from the beginning; `?vendorId=` merely made it look unnecessary.
+ *
+ * ## A product that does not say whose it is, is kept
+ *
+ * Dropping those instead would be the more aggressive read, and the more
+ * dangerous one: a route that omits `vendorId` *because it already filtered
+ * server-side* would empty the store page completely. Letting an unattributed
+ * product through is no worse than today. Every product on `/products/open`
+ * does carry the field, so this is a guard against a shape we have not seen,
+ * not against the one that broke.
+ */
+export function ownedBy<T>(products: readonly T[], vendorId: string | null | undefined): T[] {
+  if (!vendorId) return [...products];
+  return products.filter((product) => {
+    const owner = productVendorId(product as ProductVendorRef);
+    return owner === "" || owner === vendorId;
+  });
+}

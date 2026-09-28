@@ -489,6 +489,8 @@ const pt = {
   saveThisCardSubtitle: "Pague mais rápido da próxima vez com um toque",
   instantOrderNote:
     "A sua encomenda será feita instantaneamente — sem redirecionamento.",
+  deselectCardHint:
+    "Toque novamente no cartão selecionado para pagar com outro cartão.",
   payNow: "Pagar Agora",
   expiresOn: "Expira",
   removeCard: "Remover cartão",

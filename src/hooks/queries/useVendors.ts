@@ -10,6 +10,7 @@ import {
   type Coords,
 } from "@/lib/customerCoords";
 import { getAccessToken } from "@/lib/authCookies";
+import { ownedBy } from "@/lib/vendorId";
 import { useStore } from "@/stores/translationStore";
 
 export const vendorKeys = {
@@ -220,6 +221,23 @@ export function useVendor<T = unknown>(
  * `place` therefore only ever carries the vendor's coordinates, and only for
  * guests. It is in the cache key so a signed-in and a signed-out read of the
  * same menu cannot share an entry.
+ *
+ * ## 🔴 …and centring on the store is still not a filter
+ *
+ * That measurement held only while no other vendor sat within range of Tasca's
+ * pin. Several test vendors share that location, and once they had products the
+ * same call answered with **30 products from five vendors**. Distance was never
+ * a test of ownership; it passed because of where the data happened to be.
+ *
+ * So both branches end in `ownedBy(…, vendorId)`. The page knows which store it
+ * is rendering and checks the products against it, which is true whatever the
+ * backend decides proximity means next. The parameter rules above stay — they
+ * still describe the fewest wrong items to ask for — but they are no longer
+ * what makes the page correct.
+ *
+ * The count call deliberately keeps counting everything: `meta.total` has to
+ * cover the foreign items too, or the second request would page past some of
+ * this vendor's own products before the filter ever sees them.
  */
 export function useVendorProducts<T = unknown>(
   vendorId: string | undefined,
@@ -248,7 +266,7 @@ export function useVendorProducts<T = unknown>(
           params: withCoords({}, WITHOUT_COORDS),
           signal,
         });
-        return (res.data?.data ?? []) as T[];
+        return ownedBy((res.data?.data ?? []) as T[], vendorId);
       }
 
       const params = withCoords({}, place);
@@ -261,7 +279,7 @@ export function useVendorProducts<T = unknown>(
         `/products/open?vendorId=${vendorId}&page=1&limit=${total}`,
         { params, signal },
       );
-      return (res.data?.data ?? []) as T[];
+      return ownedBy((res.data?.data ?? []) as T[], vendorId);
     },
     enabled: (options?.enabled ?? true) && !!vendorId && guestReady,
     placeholderData: keepPreviousData,

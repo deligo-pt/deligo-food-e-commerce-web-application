@@ -52,6 +52,8 @@ function check(name, condition, detail) {
 }
 const section = (title) => console.log(`\n${title}`);
 
+const { ownedBy, productVendorId } = await import(join(here, "../src/lib/vendorId.ts"));
+
 const {
   pickCoords,
   toCoords,
@@ -213,6 +215,62 @@ section("🔴 A 404 that means distance");
   check(
     "both screens use it rather than reporting a missing product",
     /isOutOfArea\(status, coords\)/.test(modal) && /isOutOfArea\(status, searchCoords\)/.test(page),
+  );
+}
+
+section("\ud83d\udd34 A store page shows only that store's food");
+{
+  const TASCA = "6a6aced8f9e179566170db79";
+  const OTHER = "6a7b26e8b3c691ae6e46a406";
+  const menu = [
+    { name: "Mutton Kachi", vendorId: TASCA },
+    { name: "BBQ Pizza", vendorId: OTHER },
+    { name: "Bread pasta", vendorId: { _id: OTHER } },
+    { name: "Petis", vendorId: { id: TASCA } },
+    { name: "Unattributed" },
+  ];
+
+  check(
+    "\ud83d\udd34 another restaurant's dish is dropped, however the id is shaped",
+    J(ownedBy(menu, TASCA).map((p) => p.name)) ===
+      J(["Mutton Kachi", "Petis", "Unattributed"]),
+    "/products/open?vendorId= answered with 30 products from five vendors on 27 Sep 2026",
+  );
+  check(
+    "a populated vendorId reads the same as a bare one",
+    productVendorId({ vendorId: TASCA }) === TASCA &&
+      productVendorId({ vendorId: { _id: TASCA } }) === TASCA &&
+      productVendorId({ vendorId: null }) === "" &&
+      productVendorId(undefined) === "",
+  );
+  check(
+    "\ud83d\udd34 a product that does not say whose it is is kept",
+    ownedBy([{ name: "x" }], TASCA).length === 1,
+    "a route that omits vendorId because it already filtered would empty the page",
+  );
+  check(
+    "no vendor to check against leaves the list alone, and never mutates it",
+    ownedBy(menu, "").length === menu.length && ownedBy(menu, null) !== menu,
+  );
+
+  const hook = vendors.slice(
+    vendors.indexOf("export function useVendorProducts"),
+    vendors.indexOf("export function useVendorProductCategories"),
+  );
+  check(
+    "\ud83d\udd34 both branches end in that filter — signed in and guest alike",
+    (hook.match(/return ownedBy\(\(res\.data\?\.data \?\? \[\]\) as T\[\], vendorId\);/g) || []).length === 2,
+    "the signed-in branch is the one we could not test against a token",
+  );
+  check(
+    "\ud83d\udd34 and neither returns the response unfiltered",
+    !/return \(res\.data\?\.data \?\? \[\]\) as T\[\];/.test(hook),
+  );
+  check(
+    "the count call still counts everything",
+    /const total = countRes\.data\?\.meta\?\.total/.test(hook) &&
+      !/ownedBy\(\(countRes/.test(hook),
+    "a total narrowed to this vendor would page past its own products",
   );
 }
 
