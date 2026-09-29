@@ -98,6 +98,11 @@ export default function OrdersPage() {
     isLoading: loading,
     isError: ordersFailed,
     refetch: refetchOrders,
+    hasNextPage: hasMoreOrders,
+    isFetchingNextPage: loadingMoreOrders,
+    fetchNextPage: fetchMoreOrders,
+    remaining: remainingOrders,
+    total: totalOrders,
   } = useOrders<any>();
   const invalidateOrders = useInvalidateOrders();
   const [activeRatingOrder, setActiveRatingOrder] = useState<any | null>(null);
@@ -624,6 +629,30 @@ export default function OrdersPage() {
                 );
               })
             )}
+          </div>
+        )}
+
+        {/* One control for both tabs, because one page of orders feeds both.
+            Kept visible while searching on purpose: the search box filters what
+            is *loaded*, so a match further back is only reachable by loading
+            more — hiding the button there would make the page look as though it
+            had already looked everywhere. */}
+        {hasMoreOrders && (
+          <div className="mt-8 flex flex-col items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => fetchMoreOrders()}
+              disabled={loadingMoreOrders}
+              className="min-w-50"
+            >
+              {loadingMoreOrders ? t("loading") : t("loadMore")}
+              {!loadingMoreOrders && remainingOrders > 0
+                ? ` (${remainingOrders})`
+                : ""}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              {orders.length} / {totalOrders}
+            </p>
           </div>
         )}
       </div>      {/* Rating Modal */}
