@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
+  useInfiniteQuery,
   useQuery,
   useQueryClient,
   keepPreviousData,
@@ -75,13 +76,19 @@ const ORDERS_LIST_FIELDS = [
 /**
  * Every order the customer has, not the first hundred.
  *
- * `GET /orders` has `limit` and nothing else this app has been able to confirm.
- * `page` is not known to be supported, and an **unrecognised query parameter on
- * this endpoint is applied as a strict equality filter** — it returns `200`
- * with an empty list rather than erring (measured; see the header of
- * `lib/orderSearch.ts`). So paginating with a guessed parameter name would not
- * degrade to "the first page again". It would empty the customer's order
- * history, silently, in production. Only `limit` is used here for that reason.
+ * NOTE (measured 2026-09-29): `page` **is** supported after all, and the orders
+ * page now uses it — see `fetchOrdersPage` above. `page=2` returns genuinely
+ * different orders and `meta` carries `{page, limit, total, totalPage}`. This
+ * function keeps the limit-only shape because its one remaining caller wants
+ * every order in one go for an id lookup, not a page of them.
+ *
+ * What the original warning got right, and still applies: an **unrecognised
+ * query parameter on this endpoint is applied as a strict equality filter** —
+ * `?bogusparam=xyz` returns `200` with `total: 0` and an empty list rather than
+ * erring. So a *guessed* parameter name does not degrade to "the first page
+ * again", it empties the customer's history silently. `limit`, `page`, `fields`
+ * and `orderStatus` are confirmed real; nothing else gets sent without being
+ * measured first.
  *
  * Hence the shape: ask for a limit, and if the answer fills it exactly there
  * may be more, so ask again for twice as many. Each response supersedes the
@@ -129,6 +136,57 @@ async function fetchAllOrders<T>(
   }
 }
 
+/**
+ * What one "Load more" is worth.
+ *
+ * 20 against an endpoint that costs roughly a second per order even projected
+ * (see `ORDERS_LIST_FIELDS`): small enough that the first paint is one fast
+ * request, large enough that a customer with a normal history never presses the
+ * button at all.
+ */
+const ORDERS_PAGE_SIZE = 20;
+
+/** One page of orders, plus where it sits in the whole list. */
+interface OrdersPage<T> {
+  rows: T[];
+  page: number;
+  totalPage: number;
+  total: number;
+}
+
+/**
+ * One page of `GET /orders`.
+ *
+ * `page` is real on this endpoint — measured, not assumed: `page=2` returns
+ * different orders and `meta` carries `{page, limit, total, totalPage}`. The
+ * long warning on `fetchAllOrders` below predates that measurement and is
+ * wrong about `page` specifically; what it gets right is that a *guessed*
+ * parameter name is applied as an equality filter and quietly empties the list,
+ * so only these two are ever sent.
+ *
+ * `meta` is trusted but not assumed present: a missing `totalPage` collapses to
+ * a single page, which ends the sequence rather than looping.
+ */
+async function fetchOrdersPage<T>(
+  page: number,
+  params: Record<string, unknown>,
+  signal: AbortSignal | undefined,
+): Promise<OrdersPage<T>> {
+  const res = await apiClient.get("/orders", {
+    params: { ...params, limit: ORDERS_PAGE_SIZE, page },
+    timeout: ORDERS_TIMEOUT,
+    signal,
+  });
+  const meta = res.data?.meta ?? {};
+  const rows = (res.data?.data ?? []) as T[];
+  return {
+    rows,
+    page: Number(meta.page) || page,
+    totalPage: Number(meta.totalPage) || 1,
+    total: Number(meta.total) || rows.length,
+  };
+}
+
 export const orderKeys = {
   all: ["orders"] as const,
   // Order item names are server-localized, so the list is keyed by language —
@@ -141,12 +199,34 @@ export const orderKeys = {
   statusIndex: ["orders", "status-index"] as const,
 };
 
+/**
+ * The customer's orders, a page at a time.
+ *
+ * Paged rather than fetched whole because the cost of this endpoint scales with
+ * the row count — a single request for everything is what used to run past the
+ * client's timeout and leave the page drawing its empty state.
+ *
+ * Returns `data` already flattened across the loaded pages, so callers see the
+ * same flat array they always did. `total` is the server's count of *all* the
+ * customer's orders, which is what makes the remaining count on the button
+ * honest before those orders have been fetched.
+ *
+ * One consequence worth knowing: the tabs and the search box filter what is
+ * **loaded**, not what exists. A match on an unloaded page cannot be found
+ * until the customer presses Load more, which is why `remaining` is shown
+ * rather than hidden once a search is active.
+ */
 export function useOrders<T = unknown>(options?: { enabled?: boolean }) {
   const lang = useStore((s) => s.lang);
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: orderKeys.list(lang),
-    queryFn: ({ signal }) =>
-      fetchAllOrders<T>({ fields: ORDERS_LIST_FIELDS }, signal),
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) =>
+      fetchOrdersPage<T>(pageParam, { fields: ORDERS_LIST_FIELDS }, signal),
+    // `undefined` is what ends the sequence, so the button disappears on the
+    // last page rather than asking for a page that does not exist.
+    getNextPageParam: (last) =>
+      last.page < last.totalPage ? last.page + 1 : undefined,
     enabled: options?.enabled ?? true,
     // The global 60s staleTime is tuned for catalog and profile data, which does
     // not change on its own. Orders do — a vendor accepts, a rider picks up, and
@@ -163,19 +243,40 @@ export function useOrders<T = unknown>(options?: { enabled?: boolean }) {
     // history-only page makes no requests, and React Query's default of not
     // refetching in the background keeps a hidden tab silent either way.
     refetchInterval: (query) => {
-      const list = query.state.data as
-        | ({ orderStatus?: string | null } | null)[]
-        | undefined;
+      // Every loaded page, not just the first: an ongoing order sitting on page
+      // three must keep the poll alive, or the card the customer is watching is
+      // the one card nothing refreshes.
+      const pages = query.state.data?.pages ?? [];
       // The same question the Ongoing tab asks, so the page cannot show a card
       // in Ongoing that nothing is refreshing — which is what happened while
       // this read a status *allowlist* and the tab read a bucket.
-      return list?.some((order) => getOrderBucket(order?.orderStatus) === "ongoing")
+      return pages.some((page) =>
+        (page.rows as ({ orderStatus?: string | null } | null)[]).some(
+          (order) => getOrderBucket(order?.orderStatus) === "ongoing",
+        ),
+      )
         ? 30_000
         : false;
     },
     // Keep the current list visible during a language-switch refetch.
     placeholderData: keepPreviousData,
   });
+
+  // Flattened once per change of data, not per render: `useOrderSearch` builds
+  // its index off this array's identity, and a fresh array on every render
+  // would refold every item name on every keystroke.
+  const orders = useMemo(
+    () => query.data?.pages.flatMap((page) => page.rows) ?? [],
+    [query.data],
+  );
+  const total = query.data?.pages.at(-1)?.total ?? orders.length;
+
+  return {
+    ...query,
+    data: orders,
+    total,
+    remaining: Math.max(total - orders.length, 0),
+  };
 }
 
 /** The slice of an order a notification row needs. */
