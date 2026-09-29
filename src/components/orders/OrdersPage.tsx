@@ -93,7 +93,12 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   // Cached + deduped. Keyed on language, so a switch refetches while React
   // Query keeps the current list on screen — no manual silent-refetch needed.
-  const { data: orders = [], isLoading: loading } = useOrders<any>();
+  const {
+    data: orders = [],
+    isLoading: loading,
+    isError: ordersFailed,
+    refetch: refetchOrders,
+  } = useOrders<any>();
   const invalidateOrders = useInvalidateOrders();
   const [activeRatingOrder, setActiveRatingOrder] = useState<any | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
@@ -397,6 +402,24 @@ export default function OrdersPage() {
 
   if (loading) {
     return <OrdersPageSkeleton />;
+  }
+
+  // A failed fetch used to fall through to `orders = []`, which drew the empty
+  // state — so a timed-out request told the customer they had never ordered
+  // anything. Say what actually happened, and offer the one thing that fixes
+  // it.
+  if (ordersFailed) {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-4 py-16">
+        <div className="flex h-75 flex-col items-center justify-center gap-3 rounded-xl bg-card border border-border shadow-xs px-4 text-center">
+          <UtensilsCrossed className="h-10 w-10 text-muted-foreground" />
+          <p className="text-muted-foreground">{t("failedToLoadOrders")}</p>
+          <Button variant="outline" onClick={() => refetchOrders()}>
+            {t("retry")}
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   // How far along the bar sits, and the line of copy under it. Which *face* the

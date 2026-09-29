@@ -343,6 +343,7 @@ const pt = {
 
   loadingNotifications: "A carregar notificações...",
   retry: "Tentar novamente",
+  failedToLoadOrders: "Não foi possível carregar os seus pedidos. Tente novamente.",
   error: "Erro",
 
   noNotifications: "Nenhuma notificação para mostrar.",

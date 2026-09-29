@@ -1011,7 +1011,7 @@ export default function PaymentPage() {
                               travel to, so it shows in full rather than the
                               street-and-city summary a delivery order needs. */}
                           {vendor.businessLocation && (
-                            <p className="mt-1 text-sm break-words text-gray-550 dark:text-neutral-400">
+                            <p className="mt-1 text-sm wrap-break-word text-gray-550 dark:text-neutral-400">
                               {isPickup
                                 ? formatAddressFull(vendor.businessLocation)
                                 : `${vendor.businessLocation.street}, ${vendor.businessLocation.city}`}
@@ -1037,7 +1037,7 @@ export default function PaymentPage() {
                         <Clock className="h-5 w-5 text-primary dark:text-pink-400" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold break-words text-gray-900 dark:text-neutral-50">
+                        <p className="font-semibold wrap-break-word text-gray-900 dark:text-neutral-50">
                           {summary.pickupTime
                             ? formatPickupMoment(summary.pickupTime, lang, {
                                 today: t("today"),
@@ -1086,7 +1086,7 @@ export default function PaymentPage() {
                             profile has none), the address keeps the headline
                             weight so the block never renders visibly empty. */}
                         {customerName && (
-                          <p className="font-semibold break-words text-gray-900 dark:text-neutral-50">
+                          <p className="font-semibold wrap-break-word text-gray-900 dark:text-neutral-50">
                             {customerName}
                           </p>
                         )}
