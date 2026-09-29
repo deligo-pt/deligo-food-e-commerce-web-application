@@ -337,6 +337,7 @@ const en = {
 
   loadingNotifications: "Loading notifications...",
   retry: "Retry",
+  failedToLoadOrders: "We could not load your orders. Please try again.",
   error: "Error",
 
   noNotifications: "No notifications to show.",

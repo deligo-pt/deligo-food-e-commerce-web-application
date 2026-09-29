@@ -17,13 +17,60 @@ import type { CartItem } from "@/types/cart";
 /**
  * Where the fetch below starts, and where it gives up.
  *
- * 100 is what this always asked for and covers essentially every account in one
- * request — so the common case makes exactly one call, as it always did. The
- * ceiling exists so a data bug on the API side cannot turn one page view into
- * an unbounded download.
+ * It starts *at* the ceiling on purpose. The ladder below re-reads the whole
+ * list on every rung rather than appending to it, so an account past the old
+ * starting point of 100 paid for two or three full downloads back to back —
+ * 100, then 200, then 400 — and that serial chain, not any single response, is
+ * what ran past the client's timeout and left the page showing an empty
+ * history. Asking for the ceiling once makes every account a single request.
+ *
+ * The ladder is kept for the case it was written for: a server that caps
+ * `limit` below what we asked. Starting high does not blind it to that — a cap
+ * still comes back short of the ask and still ends the loop with everything the
+ * server is willing to give.
  */
-const ORDERS_FIRST_PAGE = 100;
 const ORDERS_MAX = 1000;
+const ORDERS_FIRST_PAGE = ORDERS_MAX;
+
+/**
+ * Longer than the client's global 15s (`lib/apiClient`), which is tuned for
+ * catalog reads. A thousand orders is a large response on a slow connection,
+ * and being cut off at 15s is indistinguishable, on screen, from having no
+ * orders at all.
+ */
+const ORDERS_TIMEOUT = 45_000;
+
+/**
+ * The projection for the orders **list** — the same undocumented-but-live
+ * `?fields=` that keeps `useOrderStatusIndex` cheap (see its note below).
+ *
+ * Every name here is read while drawing the page: the card itself
+ * (`OrdersPage` → `OrderCard`), its search index (`lib/orderSearch`), its
+ * cancel affordance and refund chip (`lib/refund`), its rating state
+ * (`lib/ratingStatus`), its pickup wording (`lib/orderTimeline`) and its vendor
+ * name (`lib/vendorName`). What it drops is the delivery/pickup address blocks,
+ * the payment-gateway records and the payout breakdown beyond the total.
+ *
+ * Fails soft, like the status index's: if the parameter ever stops being
+ * honoured the response is merely fatter, because these fields are a subset of
+ * the full order either way. Adding a field to the page means adding it here.
+ */
+const ORDERS_LIST_FIELDS = [
+  "_id",
+  "orderId",
+  "orderStatus",
+  "paymentStatus",
+  "isPaid",
+  "refundStatus",
+  "createdAt",
+  "fulfillmentType",
+  "isRated",
+  "ratingStatus",
+  "deliveryPartnerId",
+  "vendorId",
+  "payoutSummary",
+  "items",
+].join(",");
 
 /**
  * Every order the customer has, not the first hundred.
@@ -63,6 +110,7 @@ async function fetchAllOrders<T>(
     try {
       const res = await apiClient.get("/orders", {
         params: { ...params, limit },
+        timeout: ORDERS_TIMEOUT,
         signal,
       });
       batch = (res.data?.data ?? []) as T[];
@@ -97,7 +145,8 @@ export function useOrders<T = unknown>(options?: { enabled?: boolean }) {
   const lang = useStore((s) => s.lang);
   return useQuery({
     queryKey: orderKeys.list(lang),
-    queryFn: ({ signal }) => fetchAllOrders<T>({}, signal),
+    queryFn: ({ signal }) =>
+      fetchAllOrders<T>({ fields: ORDERS_LIST_FIELDS }, signal),
     enabled: options?.enabled ?? true,
     // The global 60s staleTime is tuned for catalog and profile data, which does
     // not change on its own. Orders do — a vendor accepts, a rider picks up, and
