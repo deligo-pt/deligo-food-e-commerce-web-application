@@ -31,6 +31,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { isVendorObjectId, vendorHref, vendorRouteId } from "@/lib/vendorId";
+import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { vendorCoords, withCoords } from "@/lib/customerCoords";
 import SafeImage from "@/components/shared/SafeImage";
 import Loader from "@/components/shared/Loader";
@@ -390,6 +391,9 @@ export default function PaymentPage() {
 
   const [summary, setSummary] = useState<CheckoutSummary | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
+  // `resolveVendor` reads `/vendors/customer/:id` first, which carries
+  // `branchName`, so a branch is named without a further lookup.
+  const storeTitle = useVendorCardTitle(vendor);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   // Default to Google Pay: CARD is currently rejected by the REDUNIQ sandbox
@@ -973,14 +977,14 @@ export default function PaymentPage() {
                     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-primary/10 dark:bg-pink-950/40">
                       <SafeImage
                         src={vendor?.storePhoto?.[0]}
-                        alt={vendor?.businessDetails?.businessName || "Store"}
+                        alt={storeTitle.title || "Store"}
                         sizes="48px"
                         fallbackIcon={<Store className="h-5 w-5" />}
                       />
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-neutral-50">
-                        {vendor?.businessDetails.businessName}
+                        {storeTitle.title}
                       </p>
                       {vendor && (
                         <>

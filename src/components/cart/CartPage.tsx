@@ -116,6 +116,13 @@ export default function CartPage() {
             vendorId,
             businessName:
               vendorInfo?.businessDetails?.businessName || fallbackName,
+            // Named by the card itself (`useVendorCardTitle`): the list row
+            // knows whether this is a branch, the cart's own ref does not.
+            vendorRef:
+              vendorInfo ??
+              (typeof item.vendorId === "object" && item.vendorId
+                ? item.vendorId
+                : { id: vendorId }),
             image: vendorInfo?.storePhoto?.[0] || "",
             rating: vendorInfo?.rating?.average || 0,
             items: [],
@@ -232,6 +239,7 @@ export default function CartPage() {
               key={store.vendorId}
               vendorId={store.vendorId}
               businessName={store.businessName}
+              vendor={store.vendorRef}
               image={store.image}
               rating={store.rating}
               items={store.items}

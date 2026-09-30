@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { useRevealOnScroll } from "@/hooks/useMotion";
 import { cn } from "@/lib/utils";
 import { vendorHref } from "@/lib/vendorId";
+import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { cardVariants } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
 
@@ -110,6 +111,7 @@ const RestaurantCard = memo(function RestaurantCard({
   // openable — the menu is browsable, only ordering is withdrawn. Only an
   // explicit `false` counts as closed.
   const isClosed = vendor.businessDetails?.isStoreOpen === false;
+  const cardTitle = useVendorCardTitle(vendor);
 
   const cardBody = (
     /* Plan.md Phase 7 #1. Three things changed and each was doing the wrong
@@ -129,7 +131,7 @@ const RestaurantCard = memo(function RestaurantCard({
       <div className="relative aspect-16/10 overflow-hidden">
         <SafeImage
           src={vendor.storePhoto?.[0]}
-          alt={vendor.businessDetails.businessName}
+          alt={cardTitle.title}
           sizes="(max-width:1024px) 100vw, 33vw"
           // Phase 6 #4. This was 1.10 over 700ms: a tenth of the image's width
           // travelling for the better part of a second, so the picture was
@@ -174,15 +176,25 @@ const RestaurantCard = memo(function RestaurantCard({
           between them — three margins doing what one `gap` does, each free to
           drift from the others. */}
       <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
-        <h3
-          className={`line-clamp-1 text-xl font-bold tracking-[-0.015em] ${
-            isClosed
-              ? "text-[#9aa0a6] dark:text-neutral-500"
-              : "text-foreground dark:text-neutral-100"
-          }`}
-        >
-          {vendor.businessDetails.businessName}
-        </h3>
+        {/* A branch is titled with its own `branchName`, a main store with its
+            business name — see `useVendorCardTitle`. The tag covers a branch
+            whose name is not known, so two of them never read as one place. */}
+        <div className="flex min-w-0 items-center gap-2">
+          <h3
+            className={`line-clamp-1 text-xl font-bold tracking-[-0.015em] min-w-0 ${
+              isClosed
+                ? "text-[#9aa0a6] dark:text-neutral-500"
+                : "text-foreground dark:text-neutral-100"
+            }`}
+          >
+            {cardTitle.title}
+          </h3>
+          {cardTitle.branchTag && (
+            <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs font-bold text-muted-foreground dark:bg-neutral-800 dark:text-neutral-300">
+              {t("branchTag")}
+            </span>
+          )}
+        </div>
 
         {/* 14px sentence case sat two steps under a 20px title with nothing
             but size between them. 12 uppercase at 700 separates them by kind

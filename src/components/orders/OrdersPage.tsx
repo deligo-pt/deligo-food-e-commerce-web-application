@@ -545,6 +545,7 @@ export default function OrdersPage() {
                     restaurant={
                       getVendorDisplayName(order.vendorId) ?? t("restaurant")
                     }
+                    vendor={typeof order.vendorId === "object" ? order.vendorId : null}
                     orderId={order.orderId}
                     date={new Date(order.createdAt).toLocaleString()}
                     price={formatOrderPrice(order.payoutSummary?.grandTotal)}
@@ -599,6 +600,7 @@ export default function OrdersPage() {
                     restaurant={
                       getVendorDisplayName(order.vendorId) ?? t("restaurant")
                     }
+                    vendor={typeof order.vendorId === "object" ? order.vendorId : null}
                     orderId={order.orderId}
                     date={new Date(order.createdAt).toLocaleString()}
                     price={formatOrderPrice(order.payoutSummary?.grandTotal)}

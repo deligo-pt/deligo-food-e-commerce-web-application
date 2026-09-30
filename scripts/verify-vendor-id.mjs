@@ -233,32 +233,48 @@ section("🔴 The share link and the search result agree with the route");
   );
 }
 
-section("🔴 A store page asks from the store, not from the customer");
+section("🔴 A store page asks from the customer, and says when it cannot reach them");
 {
   const vendors = stripComments(read("src/hooks/queries/useVendors.ts"));
 
   check(
-    "🔴 the guest menu call carries the VENDOR's position",
+    "🔴 the menu is asked from `menuCoords` — the customer first",
+    /menuCoords\(authed, customerCoords, vendorCoords\(vendor\)\)/.test(vendorPage) &&
+      /useVendorProducts<Product>\(vendor\?\.id, menuPlace\.coords,/.test(vendorPage),
+    "re-measured 30 Sep 2026: with the customer's position the vendor filter holds, and a store out of range answers empty",
+  );
+  check(
+    "🔴 both branches send what they were given",
     /const params = withCoords\(\{\}, place\);/.test(vendors) &&
-      /useVendorProducts<Product>\(vendor\?\.id, vendorCoords\(vendor\)/.test(vendorPage),
-    "with the customer's, `/products/open` ignores vendorId and answers with whatever is near them",
+      !/WITHOUT_COORDS/.test(vendors),
+    "a branch that drops the position shows a Dhaka customer a Lisbon menu it cannot order from",
   );
   check(
-    "🔴 …and the signed-in one carries none at all",
-    /withCoords\(\{\}, WITHOUT_COORDS\)/.test(vendors),
-    "`/products?vendorId=` honours the filter only while coordinates are absent",
+    "the menu waits for the customer's position to settle",
+    /enabled: !!vendor\?\.id && !userLoading,/.test(vendorPage) &&
+      /userLoading \|\| productsLoading \|\| categoriesLoading/.test(vendorPage),
+    "otherwise a distant store flashes its whole menu, then empties",
   );
   check(
-    "a guest waits for that position instead of firing into a 400",
+    "🔴 an empty answer is called out of range only when the store's own pin has dishes",
+    /menuPlace\.fromCustomer && !productsLoading && !productsErrorObj && products\.length === 0/.test(vendorPage) &&
+      /useVendorProducts<Product>\(vendor\?\.id, vendorCoords\(vendor\), \{\s*enabled: menuCameBackEmpty/.test(vendorPage) &&
+      /const outOfDeliveryArea = menuCameBackEmpty && storeReachProducts\.length > 0;/.test(vendorPage) &&
+      /t\("storeOutOfAreaTitle"\)/.test(vendorPage),
+    "a store with no dishes at all must still read \"no products\", not \"doesn't deliver\"",
+  );
+  check(
+    "a guest waits for a position instead of firing into a 400",
     /const guestReady = authed \|\| hasCoords\(place\);/.test(vendors) &&
       /enabled: \(options\?\.enabled \?\? true\) && !!vendorId && guestReady/.test(vendors),
   );
   check(
-    "the position is in the cache key, so the two branches cannot share one",
+    "the position is in the cache key, for both branches",
     // Both halves: passing it to the key builder means nothing if the builder
     // drops it, which is exactly what happened on the first pass.
-    /authed \? "" : coordsKey\(place\)/.test(vendors) &&
+    /vendorKeys\.products\(lang, authed, vendorId \?\? "", coordsKey\(place\)\)/.test(vendors) &&
       /\["vendors", "products", lang, authed, vendorId, place\]/.test(vendors),
+    "a new delivery address must refetch the menu",
   );
   check(
     "🔴 the category list is asked WITHOUT a position",

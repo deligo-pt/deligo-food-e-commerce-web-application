@@ -29,13 +29,15 @@
  *    without an account.
  * 4. **Nothing.** Not an error and not a default: see `WITHOUT_COORDS`.
  *
- * ## Not everything wants coordinates
+ * ## Store menus ask from the customer too
  *
- * Sending them is *wrong* in one place. `/products?vendorId=…` honours the
- * vendor filter only while coordinates are absent — with them it answers with
- * whatever is near the customer instead, and a store page fills up with other
- * restaurants' food. That call passes `WITHOUT_COORDS`, which exists so the
- * omission reads as a decision rather than an oversight.
+ * Until 30 Sep 2026 a store page was the exception: `/products?vendorId=…`
+ * dropped the vendor filter once coordinates were attached, so the menu was
+ * asked with none (signed in) or with the store's own (guest). Re-measured
+ * 30 Sep: with the customer's position the filter holds for every store, and a
+ * store that cannot reach the customer answers **empty** — which is the answer
+ * the page now wants. So the menu asks from the customer as well; see
+ * `menuCoords` for the two fallbacks when their position is unknown.
  */
 
 export interface Coords {
@@ -53,8 +55,9 @@ export interface LatLngPair {
  * Deliberately sending no coordinates.
  *
  * Reads as intent at a call site — `withCoords(params, WITHOUT_COORDS)` — where
- * a bare `null` would read as "we could not find any", which is a different
- * thing and would be a bug in the one place this is correct.
+ * a bare `null` would read as "we could not find any". `menuCoords` returns it
+ * for a signed-in customer whose position is unknown: `/products?vendorId=…`
+ * then answers with the store's whole menu, where a guess would filter it.
  */
 export const WITHOUT_COORDS = null;
 
@@ -128,19 +131,43 @@ export function coordsKey(coords: Coords | null | undefined): string {
 }
 
 /**
- * A vendor's own position, for a page that is about *that vendor*.
+ * A vendor's own position.
  *
- * The guest store page cannot use the customer's coordinates:
- * `/products/open?vendorId=…` ignores the vendor filter and answers with
- * whatever is near those coordinates, so a customer in Dhaka opening a Lisbon
- * store sees Lisbon food under a Dhaka heading — or, at the wrong distance,
- * nothing at all. Centring the query on the store makes that store's own menu
- * in range by definition, which is what the page is asking for.
+ * Used where the question is about the store rather than the customer — the
+ * payment page's reward lookup — and as the guest's last resort in
+ * `menuCoords`.
  */
 export function vendorCoords(
   vendor: { businessLocation?: LatLngPair | null } | null | undefined,
 ): Coords | null {
   return toCoords(vendor?.businessLocation);
+}
+
+/**
+ * Where a store page asks for its menu from.
+ *
+ * 1. **The customer's position.** The menu then shows what can actually reach
+ *    them, and a store out of range answers empty — the page says "doesn't
+ *    deliver to you" rather than selling what cannot arrive.
+ * 2. **Signed in, position unknown → none** (`WITHOUT_COORDS`).
+ *    `/products?vendorId=…` accepts that and returns the whole menu.
+ * 3. **Guest, position unknown → the store's own.** `/products/open` answers
+ *    400 without coordinates, and centring on the store keeps its menu
+ *    browsable until the guest tells us where they are.
+ *
+ * `fromCustomer` tells the page which of these it got: only an empty answer to
+ * the customer's own position means "out of range".
+ */
+export function menuCoords(
+  authed: boolean,
+  customer: Coords | null | undefined,
+  store: Coords | null | undefined,
+): { coords: Coords | null; fromCustomer: boolean } {
+  if (hasCoords(customer)) {
+    return { coords: { lat: customer.lat, lng: customer.lng }, fromCustomer: true };
+  }
+  if (authed) return { coords: WITHOUT_COORDS, fromCustomer: false };
+  return { coords: hasCoords(store) ? { lat: store.lat, lng: store.lng } : null, fromCustomer: false };
 }
 
 /**

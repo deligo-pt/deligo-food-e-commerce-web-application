@@ -9,13 +9,16 @@ import { formatCuisine } from "@/lib/cuisine";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 import { vendorHref } from "@/lib/vendorId";
+import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { cardVariants } from "@/components/ui/card";
 
 export interface Vendor {
   id: string;
   userId: string;
+  role?: string;
   businessDetails: {
     businessName: string;
+    branchName?: string;
     businessType: string;
     restaurantCuisineType?: string[] | string;
     openingHours: string;
@@ -122,6 +125,7 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
   // treat only an explicit `false` as closed so cards with the flag absent
   // still behave as open.
   const isClosed = vendor.businessDetails?.isStoreOpen === false;
+  const cardTitle = useVendorCardTitle(vendor);
 
   // Coords are always resolved by the parent (VendorsGrid) from the shared,
   // cached profile — no per-card /profile fetch.
@@ -209,7 +213,7 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
       <div className="relative aspect-16/10 shrink-0 overflow-hidden">
         <SafeImage
           src={vendor.storePhoto?.[0]}
-          alt={vendor.businessDetails.businessName}
+          alt={cardTitle.title}
           sizes="(max-width: 1024px) 100vw, 33vw"
           // Phase 6 #4. A full second at 1.10 — the slowest of the three
           // copies of this construct in the tree, all now 1.04 over 300ms.
@@ -248,15 +252,25 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
       {/* flex-1 + mt-auto on the footer keeps every card's divider and meta row
           aligned regardless of how long the cuisine list is. */}
       <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
-        <h3
-          className={`line-clamp-1 text-xl font-bold tracking-[-0.015em] ${
-            isClosed
-              ? "text-[#9aa0a6] dark:text-neutral-500"
-              : "text-foreground dark:text-neutral-100"
-          }`}
-        >
-          {vendor.businessDetails.businessName}
-        </h3>
+        {/* A branch is titled with its own `branchName`, a main store with its
+            business name — see `useVendorCardTitle`. The tag covers a branch
+            whose name is not known, so two of them never read as one place. */}
+        <div className="flex min-w-0 items-center gap-2">
+          <h3
+            className={`line-clamp-1 text-xl font-bold tracking-[-0.015em] min-w-0 ${
+              isClosed
+                ? "text-[#9aa0a6] dark:text-neutral-500"
+                : "text-foreground dark:text-neutral-100"
+            }`}
+          >
+            {cardTitle.title}
+          </h3>
+          {cardTitle.branchTag && (
+            <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs font-bold text-muted-foreground dark:bg-neutral-800 dark:text-neutral-300">
+              {t("branchTag")}
+            </span>
+          )}
+        </div>
         <p
           className={`line-clamp-1 text-xs font-bold uppercase tracking-[0.06em] ${
             isClosed

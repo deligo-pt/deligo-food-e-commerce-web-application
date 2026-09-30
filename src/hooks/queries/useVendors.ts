@@ -6,7 +6,6 @@ import {
   coordsKey,
   hasCoords,
   withCoords,
-  WITHOUT_COORDS,
   type Coords,
 } from "@/lib/customerCoords";
 import { getAccessToken } from "@/lib/authCookies";
@@ -31,9 +30,8 @@ export const vendorKeys = {
     ["vendors", "search", lang, lat, lng, term] as const,
   detail: (lang: string, authed: boolean, vendorId: string) =>
     ["vendors", "detail", lang, authed, vendorId] as const,
-  // `place` is the vendor's own position for the guest branch, "" when signed
-  // in — see `useVendorProducts`. In the key because the two branches answer
-  // with different menus and must not share an entry.
+  // `place` is where the menu was asked from (`coordsKey`) — see
+  // `useVendorProducts`. A different position can answer with a different menu.
   products: (lang: string, authed: boolean, vendorId: string, place = "") =>
     ["vendors", "products", lang, authed, vendorId, place] as const,
   // Category names are server-localized too, so this is keyed by language for
@@ -199,77 +197,64 @@ export function useVendor<T = unknown>(
  * `vendorId` is the Mongo id here too: both accept nothing else since
  * 24 Sep 2026, and a `V-…` comes back 400, not empty.
  *
- * ## 🔴 The two branches take opposite treatment, on purpose
+ * ## Asked from where the customer is — both branches
  *
- * Since 27 Sep 2026 the customer product endpoints take `lat`/`lng` and filter
- * by proximity — and **proximity beats `vendorId`**. Measured:
+ * `place` comes from `menuCoords`: the customer's position when known, else
+ * nothing (signed in) or the store's own (guest). Re-measured 30 Sep 2026 from
+ * a Dhaka address, the vendor filter holds with the customer's coordinates on
+ * both endpoints, for main stores and branches alike:
  *
  * ```
- * /products?vendorId=<Tasca>&lat=38.72&lng=-9.14   → 24 items, none of them Tasca's
- * /products?vendorId=<Tasca>                       → 11 items, all Tasca ✅
- * /products/open?vendorId=<Tasca>                  → 400, coordinates required
- * /products/open?vendorId=<Tasca>&lat=<Tasca's own position>
- *                                                  → 11 items, all Tasca ✅
+ * /products?vendorId=<Tasca main>&lat=<Dhaka>        → 13, all Tasca ✅
+ * /products/open?vendorId=<Bashundhara>&lat=<Dhaka>  → 7, all the branch's ✅
+ * /products?vendorId=<Lisbon branch>&lat=<Dhaka>     → 0 — does not deliver
+ * /products?vendorId=<Lisbon branch>&lat=<Lisbon>    → 11 ✅
  * ```
  *
- * So the signed-in call must send **no** coordinates, and the guest call must
- * send **the vendor's**, not the customer's. Centring the query on the store
- * makes that store's own menu in range by definition, which is what a store
- * page is asking for; the customer's position would answer a different
- * question — "what is near me" — under this vendor's heading.
+ * The empty answer is the point: a store that cannot reach the customer says
+ * so, and the page shows "doesn't deliver to you" instead of a menu that could
+ * not arrive. Until that date the opposite held — coordinates dropped the
+ * vendor filter — and this hook sent none, or the store's own.
  *
- * `place` therefore only ever carries the vendor's coordinates, and only for
- * guests. It is in the cache key so a signed-in and a signed-out read of the
- * same menu cannot share an entry.
+ * `place` is in the cache key for both branches, so a new delivery address
+ * refetches the menu rather than reading the old area's answer.
  *
- * ## 🔴 …and centring on the store is still not a filter
+ * ## `ownedBy` stays
  *
- * That measurement held only while no other vendor sat within range of Tasca's
- * pin. Several test vendors share that location, and once they had products the
- * same call answered with **30 products from five vendors**. Distance was never
- * a test of ownership; it passed because of where the data happened to be.
- *
- * So both branches end in `ownedBy(…, vendorId)`. The page knows which store it
- * is rendering and checks the products against it, which is true whatever the
- * backend decides proximity means next. The parameter rules above stay — they
- * still describe the fewest wrong items to ask for — but they are no longer
- * what makes the page correct.
+ * On 27 Sep the same call answered with 30 products from five vendors, because
+ * distance was never a test of ownership. Both branches still end in
+ * `ownedBy(…, vendorId)`: the page knows which store it is rendering, and that
+ * stays true whatever the backend decides proximity means next.
  *
  * The count call deliberately keeps counting everything: `meta.total` has to
- * cover the foreign items too, or the second request would page past some of
+ * cover any foreign items too, or the second request would page past some of
  * this vendor's own products before the filter ever sees them.
  */
 export function useVendorProducts<T = unknown>(
   vendorId: string | undefined,
-  /** The vendor's own position — required for guests, ignored when signed in. */
+  /** Where to ask from — resolve it with `menuCoords`. Required for guests. */
   place?: Coords | null,
   options?: { enabled?: boolean },
 ) {
   const lang = useStore((s) => s.lang);
   const authed = isAuthed();
   // A guest cannot ask this endpoint anything without a position, so the query
-  // waits for the vendor record rather than firing into a 400.
+  // waits rather than firing into a 400.
   const guestReady = authed || hasCoords(place);
 
   return useQuery({
-    queryKey: vendorKeys.products(
-      lang,
-      authed,
-      vendorId ?? "",
-      authed ? "" : coordsKey(place),
-    ),
+    queryKey: vendorKeys.products(lang, authed, vendorId ?? "", coordsKey(place)),
     queryFn: async ({ signal }) => {
+      const params = withCoords({}, place);
+
       if (authed) {
-        // WITHOUT_COORDS: adding them here is what turns this vendor's menu
-        // into "whatever is near the customer".
         const res = await apiClient.get(`/products?vendorId=${vendorId}&limit=100`, {
-          params: withCoords({}, WITHOUT_COORDS),
+          params,
           signal,
         });
         return ownedBy((res.data?.data ?? []) as T[], vendorId);
       }
 
-      const params = withCoords({}, place);
       const countRes = await apiClient.get(
         `/products/open?vendorId=${vendorId}&page=1&limit=1`,
         { params, signal },

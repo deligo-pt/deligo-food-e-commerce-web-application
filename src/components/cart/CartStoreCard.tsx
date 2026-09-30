@@ -28,6 +28,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
+import type { BranchNameSource } from "@/lib/vendorName";
+import type { VendorIdentifiers } from "@/lib/vendorId";
 
 interface CartItem {
   productId: string;
@@ -48,7 +51,15 @@ interface CartItem {
 
 interface CartStoreCardProps {
   vendorId: string;
+  /** The name to show until the store's own is known — see `vendor`. */
   businessName: string;
+  /**
+   * The store as the page knows it: its vendor-list row, or the cart's own
+   * populated `vendorId`. Named through `useVendorCardTitle`, so a branch reads
+   * as that branch — two branches of one brand in the cart used to be two
+   * groups with the same heading.
+   */
+  vendor?: (BranchNameSource & VendorIdentifiers) | null;
   image: string;
   rating: number;
   items: CartItem[];
@@ -70,7 +81,8 @@ interface CartStoreCardProps {
 
 export default function CartStoreCard({
   vendorId,
-  businessName,
+  businessName: fallbackName,
+  vendor,
   image,
   rating,
   items,
@@ -79,6 +91,10 @@ export default function CartStoreCard({
   onCartChanged,
 }: CartStoreCardProps) {
   const { t } = useTranslation();
+  const storeTitle = useVendorCardTitle(vendor ?? { id: vendorId });
+  // Every toast, alt and confirm below says this, so the branch is named the
+  // same way in all of them.
+  const businessName = storeTitle.title || fallbackName;
   const [isToggling, setIsToggling] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -230,6 +246,11 @@ export default function CartStoreCard({
         <h3 className="mt-3 max-w-full break-words text-xl font-bold text-gray-900 dark:text-neutral-100 sm:text-2xl">
           {businessName}
         </h3>
+        {storeTitle.branchTag && (
+          <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs font-bold text-muted-foreground dark:bg-neutral-800 dark:text-neutral-300">
+            {t("branchTag")}
+          </span>
+        )}
 
         <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
           <div className="flex items-center gap-1.5 rounded-xl bg-yellow-50 dark:bg-yellow-950/20 px-2.5 py-1.5">

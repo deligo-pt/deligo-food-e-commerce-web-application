@@ -13,6 +13,9 @@ import { useReorder } from "@/hooks/queries/useOrders";
 import { refundStateLabelKey, type RefundState } from "@/lib/refund";
 import { isFinishedCardStatus, type OrderCardStatus } from "@/lib/orderCardStatus";
 import { Button } from "@/components/ui/button";
+import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
+import type { BranchNameSource } from "@/lib/vendorName";
+import type { VendorIdentifiers } from "@/lib/vendorId";
 
 /**
  * How each refund state is chipped. `not_eligible` is amber and neutral on
@@ -39,7 +42,14 @@ const REFUND_CHIP: Record<
 
 interface OrderCardProps {
   dbId: string;
+  /** The name to show until the store's own is known — see `vendor`. */
   restaurant: string;
+  /**
+   * The order's populated `vendorId`. `/orders` sends its `userId` and `role`
+   * but not `branchName`, so a branch order looks its name up once
+   * (`useVendorCardTitle`, cached per store) — main-store orders never do.
+   */
+  vendor?: (BranchNameSource & VendorIdentifiers) | null;
   orderId: string;
   date: string;
   price: string;
@@ -108,7 +118,8 @@ interface OrderCardProps {
 
 export default function OrderCard({
   dbId,
-  restaurant,
+  restaurant: fallbackRestaurant,
+  vendor,
   orderId,
   date,
   price,
@@ -126,6 +137,8 @@ export default function OrderCard({
   isPickup = false,
 }: OrderCardProps) {
   const { t } = useTranslation();
+  const storeTitle = useVendorCardTitle(vendor);
+  const restaurant = storeTitle.title || fallbackRestaurant;
   const router = useRouter();
   const reorder = useReorder();
   const [downloading, setDownloading] = useState(false);
@@ -161,7 +174,7 @@ export default function OrderCard({
     if (downloading) return;
     setDownloading(true);
     try {
-      await downloadInvoice(orderId, t);
+      await downloadInvoice(orderId, t, restaurant);
       toast.success(t("invoiceDownloaded"));
     } catch (error) {
       toast.error(await extractBlobErrorMessage(error, t("invoiceDownloadFailed")));

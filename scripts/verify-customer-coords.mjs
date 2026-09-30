@@ -62,6 +62,7 @@ const {
   coordsKey,
   vendorCoords,
   isOutOfArea,
+  menuCoords,
   WITHOUT_COORDS,
 } = await import(join(here, "../src/lib/customerCoords.ts"));
 
@@ -135,7 +136,7 @@ section("🔴 Attaching them, and deliberately not");
   check(
     "🔴 WITHOUT_COORDS leaves the params untouched",
     J(withCoords({ vendorId: "x" }, WITHOUT_COORDS)) === J({ vendorId: "x" }),
-    "this is the one call where omitting them is correct, and it must read as a decision",
+    "a signed-in menu with no known position relies on it",
   );
   check(
     "a vendor's own position comes off its businessLocation",
@@ -143,6 +144,33 @@ section("🔴 Attaching them, and deliberately not");
       J({ lat: 23.817252, lng: 90.421308 }) &&
       vendorCoords(null) === null &&
       vendorCoords({ businessLocation: {} }) === null,
+  );
+}
+
+section("🔴 Where a store page asks for its menu from");
+{
+  const me = { lat: 23.8172892, lng: 90.420495 };
+  const store = { lat: 38.76742, lng: -9.09682 };
+  check(
+    "🔴 the customer's position wins, signed in or not",
+    J(menuCoords(true, me, store)) === J({ coords: me, fromCustomer: true }) &&
+      J(menuCoords(false, me, store)) === J({ coords: me, fromCustomer: true }),
+    "decided 30 Sep 2026: the menu lists what can reach the customer",
+  );
+  check(
+    "🔴 signed in with no position asks with none",
+    J(menuCoords(true, null, store)) === J({ coords: WITHOUT_COORDS, fromCustomer: false }),
+    "/products?vendorId= answers with the whole menu then; the store's pin would not add anything",
+  );
+  check(
+    "🔴 a guest with no position falls back to the store's own",
+    J(menuCoords(false, null, store)) === J({ coords: store, fromCustomer: false }) &&
+      J(menuCoords(false, null, null)) === J({ coords: null, fromCustomer: false }),
+    "/products/open 400s without coordinates, and a blank store page explains nothing",
+  );
+  check(
+    "a half-formed position is not the customer's",
+    menuCoords(false, { lat: 1, lng: NaN }, store).fromCustomer === false,
   );
 }
 
@@ -164,7 +192,7 @@ section("🔴 The cache cannot serve one neighbourhood's answer to another");
   );
   check(
     "🔴 and so does the vendor menu — in the key array, not just the signature",
-    /authed \? "" : coordsKey\(place\)/.test(vendors) &&
+    /vendorKeys\.products\(lang, authed, vendorId \?\? "", coordsKey\(place\)\)/.test(vendors) &&
       /\["vendors", "products", lang, authed, vendorId, place\]/.test(vendors),
     "passing it to the key builder means nothing if the builder drops it",
   );
@@ -183,8 +211,10 @@ section("🔴 Which call is told what");
   );
   check(
     "the dish modal sends it, and re-asks when it changes",
-    /const params = withCoords\(\{\}, coords\);/.test(modal) &&
-      /\[isOpen, productId, coords, t\]/.test(modal),
+    /const askFrom = hasCoords\(coords\) \? coords : hasCoords\(storeCoords\) \? storeCoords : null;/.test(modal) &&
+      /const params = withCoords\(\s*\{\},\s*askLat !== undefined && askLng !== undefined \? \{ lat: askLat, lng: askLng \} : null,\s*\);/.test(modal) &&
+      /\[isOpen, productId, coords, askLat, askLng, t\]/.test(modal),
+    "the customer's position first; the store's own only when theirs is unknown",
   );
   check(
     "🔴 the payment page's reward lookup sends the VENDOR's position",
@@ -192,9 +222,9 @@ section("🔴 Which call is told what");
     "the customer's would filter a store's own menu down to what is near them",
   );
   check(
-    "🔴 the signed-in menu call sends none at all",
-    /withCoords\(\{\}, WITHOUT_COORDS\)/.test(vendors),
-    "/products?vendorId= honours the filter only while coordinates are absent",
+    "🔴 the menu call sends the position it was given, on both branches",
+    /const params = withCoords\(\{\}, place\);/.test(vendors) && !/WITHOUT_COORDS/.test(vendors),
+    "re-measured 30 Sep 2026: the vendor filter holds with the customer's coordinates",
   );
   check(
     "🔴 the category list is asked without one",

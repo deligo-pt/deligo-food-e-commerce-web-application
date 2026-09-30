@@ -6,8 +6,12 @@ export interface Vendor {
   _id?: string;
   id?: string;
   userId: string;
+  /** `"SUB_VENDOR"` on a branch; not sent by every list. See `isBranchVendor`. */
+  role?: string;
   businessDetails: {
     businessName: string;
+    /** A branch's own name. Only the single-vendor routes send it (30 Sep 2026). */
+    branchName?: string;
     businessType: string;
     restaurantCuisineType?: string[] | string;
     openingHours: string;
