@@ -26,7 +26,7 @@ import { useCartCache } from "@/hooks/queries/useCart";
 import { activateAddedOrder } from "@/lib/cartActivation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCustomerCoords } from "@/hooks/useCustomerCoords";
-import { isOutOfArea, withCoords } from "@/lib/customerCoords";
+import { hasCoords, isOutOfArea, withCoords, type Coords } from "@/lib/customerCoords";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
 import { currencySymbol } from "@/lib/currency";
@@ -41,6 +41,17 @@ interface ProductDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   productId: string;
+  /**
+   * The store's own position, for when the customer's is unknown.
+   *
+   * The store page shows a guest with no location the menu asked from the
+   * store's pin (`menuCoords`), but this modal asked with nothing and
+   * `/products/open/:id` answered 400 — every dish on the page failed to open
+   * (measured 30 Sep 2026: 19 of 19 on two branches). Used **only** when the
+   * customer has no position: when they have one, the dish is asked from
+   * there, so "not available in your area" stays the true answer.
+   */
+  storeCoords?: Coords | null;
 }
 
 interface Product {
@@ -118,9 +129,16 @@ export default function ProductDetailsModal({
   isOpen,
   onClose,
   productId,
+  storeCoords,
 }: ProductDetailsModalProps) {
   const { t } = useTranslation();
   const coords = useCustomerCoords();
+  // Where the dish is asked from: the customer, else the store's own pin.
+  // Kept as primitives so a new `storeCoords` object each render does not
+  // refetch the dish.
+  const askFrom = hasCoords(coords) ? coords : hasCoords(storeCoords) ? storeCoords : null;
+  const askLat = askFrom?.lat;
+  const askLng = askFrom?.lng;
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
@@ -260,7 +278,10 @@ export default function ProductDetailsModal({
         // it the open one answers 400 and the protected one 404s on a product
         // that exists. A product too far away 404s either way — which is a
         // different thing from "deleted", and Phase 4 is where that is said.
-        const params = withCoords({}, coords);
+        const params = withCoords(
+          {},
+          askLat !== undefined && askLng !== undefined ? { lat: askLat, lng: askLng } : null,
+        );
         if (token) {
           // Authenticated: use protected endpoint
           const { data } = await apiClient.get(`/products/${productId}`, { params });
@@ -293,7 +314,10 @@ export default function ProductDetailsModal({
     // open should see the answer for where they actually are. `t` is here
     // because the out-of-area message is built inside the effect — a language
     // switch should re-render it in the new language.
-  }, [isOpen, productId, coords, t]);
+    //
+    // `askLat`/`askLng` cover the store fallback. `isOutOfArea` still reads
+    // `coords`: a 404 from the store's own pin means the dish is gone, not far.
+  }, [isOpen, productId, coords, askLat, askLng, t]);
 
   if (!isOpen) return null;
 

@@ -50,6 +50,7 @@ import { useVendor, useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { formatAddressFull } from "@/lib/addressFormat";
 import { toTelHref } from "@/lib/phone";
 import { getVendorDisplayName } from "@/lib/vendorName";
+import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { vendorRouteId } from "@/lib/vendorId";
 import { formatPickupMoment } from "@/lib/pickupTime";
 import OrderMap from "./OrderMap/OrderMap";
@@ -261,11 +262,23 @@ export default function TrackOrder() {
     enabled: isPickup && !storeVendor?.businessLocation,
   });
 
+  // What this order's store is called — a branch by its own name. Declared up
+  // here, before the loading/error returns, because it is a hook; `/orders`
+  // sends the store's `userId` but not `branchName`, so a branch order looks
+  // it up once (`useVendorCardTitle`).
+  const storeTitle = useVendorCardTitle(
+    order?.vendorId && typeof order.vendorId === "object" ? order.vendorId : null,
+  );
+
   const handleDownloadInvoice = async () => {
     if (downloadingInvoice || !order?.orderId) return;
     setDownloadingInvoice(true);
     try {
-      await downloadInvoice(order.orderId, t);
+      await downloadInvoice(
+        order.orderId,
+        t,
+        storeTitle.title || getVendorDisplayName(order.vendorId) || undefined,
+      );
       toast.success(t("invoiceDownloaded"));
     } catch (error) {
       toast.error(await extractBlobErrorMessage(error, t("invoiceDownloadFailed")));
@@ -424,7 +437,7 @@ export default function TrackOrder() {
   // `getVendorDisplayName`. This read `name` directly, which is the *owner*, so
   // the Restaurant card below headed a Leopold order with the person who runs
   // it. The pickup card a few lines down already had the priority right.
-  const vendorName = getVendorDisplayName(order.vendorId);
+  const vendorName = storeTitle.title || getVendorDisplayName(order.vendorId);
 
   /* `useVendor` holds the previous vendor's record while a new one loads, so it
      is trusted only once it is demonstrably about THIS order's vendor. Without

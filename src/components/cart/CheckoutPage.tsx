@@ -41,6 +41,7 @@ import { useCart } from "@/hooks/queries/useCart";
 import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { activateOrder } from "@/lib/cartActivation";
 import { vendorHref, vendorRouteId } from "@/lib/vendorId";
+import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import PickupTimePicker from "./PickupTimePicker";
 import {
   formatDayShort,
@@ -184,8 +185,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
    * The cart's populated vendor carries `businessDetails.businessName`, so the
    * header no longer falls back to a bare "Store" when the vendor list misses.
    */
+  const storeTitle = useVendorCardTitle(vendor ?? (vendorId ? { id: vendorId } : null));
+  // A branch is named as that branch (`useVendorCardTitle`); the cart's own
+  // name is the fallback while that is being worked out.
   const businessName =
-    cartVendor?.businessName || vendor?.businessDetails?.businessName || "";
+    storeTitle.title || cartVendor?.businessName || vendor?.businessDetails?.businessName || "";
 
   /**
    * A coarse clock, so anything derived from "now" stays true on a page that is

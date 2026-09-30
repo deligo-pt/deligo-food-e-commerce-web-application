@@ -255,7 +255,7 @@ section("On every dish card");
   );
   check(
     "the store name reaches the cards as a string",
-    /const storeName = vendor\?\.businessDetails\?\.businessName;/.test(vendorPage) &&
+    /const storeName = storeTitle\.title \|\| undefined;/.test(vendorPage) &&
       /storeName=\{storeName\}/.test(vendorPage),
     "the cards are memoised; handing them the vendor object would re-render the grid on every refetch",
   );

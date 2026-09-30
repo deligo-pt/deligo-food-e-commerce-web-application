@@ -38,7 +38,8 @@ import {
   isSellableProduct,
   type VendorCategory,
 } from "@/lib/categoryModel";
-import { vendorCoords } from "@/lib/customerCoords";
+import { menuCoords, vendorCoords } from "@/lib/customerCoords";
+import { useCustomerCoords } from "@/hooks/useCustomerCoords";
 import { useCategoryScrollSpy } from "@/hooks/useCategoryScrollSpy";
 import CategoryNav from "./CategoryNav";
 import CategorySidebar from "./CategorySidebar";
@@ -51,6 +52,7 @@ import SafeImage from "@/components/shared/SafeImage";
 import ShareButton from "@/components/shared/ShareButton";
 import { productIdFromParam, productShareText, productShareUrl } from "@/lib/share";
 import { isLegacyVendorUserId } from "@/lib/vendorId";
+import { getVendorCardTitle } from "@/lib/vendorName";
 import { useLegacyVendorRedirect } from "@/hooks/queries/useLegacyVendorRedirect";
 import VendorHeroImage from "./VendorHeroImage";
 import ProductQuantityStepper from "./ProductQuantityStepper";
@@ -123,8 +125,11 @@ interface Vendor {
   id: string;
   _id?: string; // returned by open endpoint instead of id
   userId: string;
+  role?: string;
   businessDetails: {
     businessName: string;
+    /** A branch's own name — `/vendors/customer/:id` sends it. */
+    branchName?: string;
     businessType: string;
     openingHours: string;
     closingHours: string;
@@ -412,18 +417,56 @@ export default function VendorDetailsPage({
     isLoading: loading,
     error: vendorErrorObj,
   } = useVendor<Vendor>(vendorId, { enabled: !isLegacyLink });
-  // The menu is fetched from the vendor's own position, not the customer's:
-  // `/products/open` filters by proximity and ignores `vendorId` while doing
-  // it, so asking from where the customer stands returns other restaurants'
-  // food under this heading — or nothing at all, at the wrong distance. See
-  // `useVendorProducts`.
+  // Signed in? The cart only exists for an account, so a guest's grid renders
+  // every card in its `+` state and the query is never fired. Declared this
+  // early because the menu query below needs it.
+  const authed = typeof window !== "undefined" && !!getAccessToken();
+
+  // Resolve delivery coords from the shared, cached profile (GPS fallback),
+  // waiting on the profile query so we don't lock in a wrong estimate early.
+  const { isLoading: profileLoading } = useProfile({ enabled: authed });
+  const activeCoords = useActiveAddressCoords();
+  const { coords: geoCoords, permissionStatus } = useLocationStore();
+  const userCoords = useMemo(
+    () =>
+      activeCoords ??
+      (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null),
+    [activeCoords, geoCoords],
+  );
+  const userLoading = permissionStatus === "loading" || (authed && profileLoading);
+
+  // The menu is asked from where the customer is — the same position search
+  // and the dish modal use — so it lists what can reach them, and a store out
+  // of range answers empty. `menuCoords` covers an unknown position: none when
+  // signed in, the store's own for a guest. The query waits for the position
+  // to settle, or a distant store would flash its whole menu and then empty.
+  // See `useVendorProducts`.
+  const customerCoords = useCustomerCoords();
+  const menuPlace = useMemo(
+    () => menuCoords(authed, customerCoords, vendorCoords(vendor)),
+    [authed, customerCoords, vendor],
+  );
   const {
     data: products = [],
     isLoading: productsLoading,
     error: productsErrorObj,
-  } = useVendorProducts<Product>(vendor?.id, vendorCoords(vendor), {
-    enabled: !!vendor?.id,
+  } = useVendorProducts<Product>(vendor?.id, menuPlace.coords, {
+    enabled: !!vendor?.id && !userLoading,
   });
+
+  // An empty answer to the customer's position is either "has no dishes" or
+  // "doesn't deliver here" — the API says the same thing for both. Only then,
+  // ask once more from the store's own position: dishes there mean the store
+  // is simply out of range, and the page says so instead of "no products".
+  // Measured 30 Sep 2026: a Lisbon branch answers 0 from Dhaka and 11 from
+  // its own pin.
+  const menuCameBackEmpty =
+    menuPlace.fromCustomer && !productsLoading && !productsErrorObj && products.length === 0;
+  const { data: storeReachProducts = [], isLoading: reachLoading } =
+    useVendorProducts<Product>(vendor?.id, vendorCoords(vendor), {
+      enabled: menuCameBackEmpty && !!vendorCoords(vendor),
+    });
+  const outOfDeliveryArea = menuCameBackEmpty && storeReachProducts.length > 0;
 
   const error = vendorErrorObj ? getApiErrorMessage(vendorErrorObj) : "";
   const productsError = productsErrorObj
@@ -458,9 +501,13 @@ export default function VendorDetailsPage({
   // Restaurant, store, or neither — the vendor's own record decides the words
   // on the closed banner and on the disabled add buttons.
   const vendorKind = getVendorKind(vendor?.businessDetails?.businessType);
+  // What this store is called: a branch's own `branchName`, a main store's
+  // business name — the same rule as its card (`getVendorCardTitle`). This page
+  // reads the single-vendor route, which carries `branchName`, so no lookup.
+  const storeTitle = getVendorCardTitle(vendor);
   // A string rather than the vendor object, so the memoised cards compare it
   // by value and a vendor refetch does not re-render the whole grid.
-  const storeName = vendor?.businessDetails?.businessName;
+  const storeName = storeTitle.title || undefined;
 
   const handleSelectProduct = useCallback(
     (productId: string) => setSelectedProductId(productId),
@@ -549,7 +596,11 @@ export default function VendorDetailsPage({
   // Both requests gate the catalogue. The category list decides which products
   // render, so showing the grid on products alone would flash an empty page —
   // every product filtered out — and then fill it a moment later.
-  const catalogueLoading = productsLoading || categoriesLoading;
+  // `userLoading` too: the menu query is held back until the customer's
+  // position settles, and a query that has not started is not "loading" to
+  // React Query — without it the page would say "no products" while waiting.
+  const catalogueLoading =
+    userLoading || productsLoading || categoriesLoading || (menuCameBackEmpty && reachLoading);
 
   // One scroll-spy, two views. The sidebar (lg+) and the pill row (below lg)
   // read the same `activeId` and call the same `selectGroup`, so they cannot
@@ -575,10 +626,6 @@ export default function VendorDetailsPage({
     [categoryGroups],
   );
 
-  // Signed in? The cart only exists for an account, so a guest's grid renders
-  // every card in its `+` state and the query is never fired. Declared here
-  // rather than beside the profile query below because the card needs it.
-  const authed = typeof window !== "undefined" && !!getAccessToken();
 
   // One cart read for the whole grid. Each card receives a number, so a change
   // to one line re-renders one card — see `useCartQuantities`.
@@ -616,18 +663,6 @@ export default function VendorDetailsPage({
     [],
   );
 
-  // Resolve delivery coords from the shared, cached profile (GPS fallback),
-  // waiting on the profile query so we don't lock in a wrong estimate early.
-  const { isLoading: profileLoading } = useProfile({ enabled: authed });
-  const activeCoords = useActiveAddressCoords();
-  const { coords: geoCoords, permissionStatus } = useLocationStore();
-  const userCoords = useMemo(
-    () =>
-      activeCoords ??
-      (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null),
-    [activeCoords, geoCoords],
-  );
-  const userLoading = permissionStatus === "loading" || (authed && profileLoading);
   const [estimatedTime, setEstimatedTime] = useState<string | null>(null);
   const [loadingTime, setLoadingTime] = useState(false);
   const timeFetchedRef = useRef(false);
@@ -742,7 +777,7 @@ export default function VendorDetailsPage({
                   `VendorHeroImage`. */}
               <VendorHeroImage
                 src={heroImage}
-                alt={vendor.businessDetails.businessName}
+                alt={storeTitle.title}
                 dimmed={isStoreClosed}
               />
               {/* Everything below stays stacked above the placeholder in
@@ -767,8 +802,13 @@ export default function VendorDetailsPage({
                 <div className="rounded-2xl bg-card border p-4 shadow-xl dark:shadow-none">
                   <div className="mb-1 flex items-center gap-2">
                     <h1 className="text-2xl lg:text-display font-bold text-gray-900 dark:text-white">
-                      {vendor.businessDetails.businessName}
+                      {storeTitle.title}
                     </h1>
+                    {storeTitle.branchTag && (
+                      <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs font-bold text-muted-foreground dark:bg-neutral-800 dark:text-neutral-300">
+                        {t("branchTag")}
+                      </span>
+                    )}
                     <span
                       className={`h-3 w-3 rounded-full ${vendor.businessDetails.isStoreOpen
                         ? "bg-green-500"
@@ -902,14 +942,28 @@ export default function VendorDetailsPage({
               selected state to be wrong, no empty result to explain, and no
               second branch for "nothing matched".
 
-              That is also why there is only one empty state left. Under menus
+              That is also why there is only one "nothing here" state left —
+              plus "doesn't deliver to you", which is not about the menu at all
+              but about the customer's position (see `outOfDeliveryArea`). Under menus
               there were three — no menus, no sections, no items in a section —
               because a vendor could have products the menu did not reach. A
               group exists because products were found under it, so the only way
               to see nothing here is to have nothing.
               --------------------------------------------------------------- */}
           {!catalogueLoading && !productsError && (
-            categoryGroups.length === 0 ? (
+            outOfDeliveryArea ? (
+              <div
+                role="status"
+                className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border p-6 text-center"
+              >
+                <p className="font-semibold text-gray-900 dark:text-white">
+                  {t("storeOutOfAreaTitle")}
+                </p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
+                  {t("storeOutOfAreaHint")}
+                </p>
+              </div>
+            ) : categoryGroups.length === 0 ? (
               <div className="rounded-2xl bg-gray-50 dark:bg-neutral-900/50 border p-6 text-center text-gray-500 dark:text-neutral-400">
                 {t("noProductsFound")}
               </div>
@@ -948,6 +1002,7 @@ export default function VendorDetailsPage({
             isOpen={!!selectedProductId}
             onClose={() => setSelectedProductId(null)}
             productId={selectedProductId}
+            storeCoords={vendorCoords(vendor)}
           />
         )}
       </div>

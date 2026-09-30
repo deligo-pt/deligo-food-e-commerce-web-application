@@ -146,6 +146,12 @@ function formatAddress(addr?: InvoiceAddress): string[] {
 export async function downloadInvoice(
   orderId: string,
   t: Translate,
+  /**
+   * What the screen calls this store. `/orders/:id` does not send
+   * `branchName`, so the caller — which has already named the branch — passes
+   * it, and a branch pickup invoice names the branch it is collected from.
+   */
+  storeName?: string,
 ): Promise<void> {
   const lang: Lang = useStore.getState().lang ?? "pt";
   // apiClient sends Accept-Language, so product names come back in `lang`.
@@ -254,7 +260,7 @@ export async function downloadInvoice(
   // The panel is a filled box drawn *behind* its text, so its height has to be
   // known first — which means wrapping the address before anything is drawn.
   const addrLines = isPickup
-    ? [order.vendorId?.businessDetails?.businessName].filter(
+    ? [storeName || order.vendorId?.businessDetails?.businessName].filter(
         (line): line is string => Boolean(line),
       )
     : formatAddress(order.deliveryAddress);

@@ -33,7 +33,8 @@
     "verify:otp-input": "node --no-warnings scripts/verify-otp-input.mjs",
     "verify:share": "node --no-warnings scripts/verify-share.mjs",
     "verify:escape": "node --no-warnings scripts/verify-escape.mjs",
-    "verify:saved-card": "node --no-warnings scripts/verify-saved-card-choice.mjs"
+    "verify:saved-card": "node --no-warnings scripts/verify-saved-card-choice.mjs",
+    "verify:branch": "node --no-warnings scripts/verify-branch.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",

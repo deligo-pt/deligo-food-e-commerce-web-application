@@ -20,6 +20,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { loadGoogleMapsScript } from "@/lib/googleMapsLoader";
 import { Button } from "@/components/ui/button";
+import { getVendorCardTitle } from "@/lib/vendorName";
 
 interface VendorDetailsModalProps {
   isOpen: boolean;
@@ -32,8 +33,11 @@ interface VendorData {
     firstName: string;
     lastName: string;
   };
+  role?: string;
   businessDetails: {
     businessName: string;
+    /** A branch's own name — the single-vendor routes send it. */
+    branchName?: string;
     businessType: string;
     businessLicenseNumber: string;
     NIF: string;
@@ -156,9 +160,11 @@ export default function VendorDetailsModal({
     : "";
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-  const shareTitle = vendorData?.businessDetails?.businessName
-    ? `${vendorData.businessDetails.businessName} – DeliGo`
-    : "DeliGo Vendor";
+  // A branch is called by its own `branchName`, a main store by its business
+  // name — the rule the cards and the store page use. The legal-entity row
+  // below keeps `businessName` on purpose: that is who the business legally is.
+  const storeTitle = getVendorCardTitle(vendorData).title;
+  const shareTitle = storeTitle ? `${storeTitle} – DeliGo` : "DeliGo Vendor";
   const shareText = fullAddress
     ? `Check out ${shareTitle} at ${fullAddress}`
     : `Check out ${shareTitle} on DeliGo!`;
@@ -233,7 +239,7 @@ export default function VendorDetailsModal({
 
             <div>
               <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {vendorData?.businessDetails?.businessName || t("vendor")}
+                {storeTitle || t("vendor")}
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-neutral-400">
                 {t("pleaseContactVendor")}
@@ -329,7 +335,7 @@ export default function VendorDetailsModal({
               <div className="absolute left-3 top-3 sm:left-4 sm:top-4 flex items-center gap-1.5 sm:gap-2 rounded-full bg-white/95 dark:bg-neutral-900/95 px-2 py-1 sm:px-3 sm:py-1.5 shadow-sm border">
                 <MapPin size={14} className="fill-primary text-primary" />
                 <span className="text-xs font-medium text-gray-900 dark:text-white">
-                  {vendorData?.businessDetails?.businessName || t("vendor")}
+                  {storeTitle || t("vendor")}
                 </span>
               </div>
             </div>

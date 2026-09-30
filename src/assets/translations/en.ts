@@ -2091,6 +2091,10 @@ const en = {
     "Search shows what can reach you, so it needs a delivery address or your location first.",
   searchLocationDeniedHint:
     "Location is blocked in your browser. Add a delivery address instead, or allow location and try again.",
+  branchTag: "Branch",
+  storeOutOfAreaTitle: "This store doesn't deliver to your location",
+  storeOutOfAreaHint:
+    "Its menu is only available to addresses it can reach. Change your delivery address to order from it.",
   productOutOfAreaTitle: "Not available in your area",
   productOutOfAreaHint:
     "This item is on a menu that does not deliver to your current address.",

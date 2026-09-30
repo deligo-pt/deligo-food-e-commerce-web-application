@@ -2079,6 +2079,10 @@ const pt = {
     "A pesquisa mostra o que consegue chegar até si, por isso precisa primeiro de uma morada de entrega ou da sua localização.",
   searchLocationDeniedHint:
     "A localização está bloqueada no seu navegador. Adicione uma morada de entrega ou permita a localização e tente novamente.",
+  branchTag: "Filial",
+  storeOutOfAreaTitle: "Esta loja não entrega na sua localização",
+  storeOutOfAreaHint:
+    "O menu só está disponível para moradas que a loja consegue alcançar. Altere a sua morada de entrega para encomendar aqui.",
   productOutOfAreaTitle: "Indisponível na sua área",
   productOutOfAreaHint:
     "Este artigo pertence a um menu que não entrega na sua morada atual.",

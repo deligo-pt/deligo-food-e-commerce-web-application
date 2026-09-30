@@ -775,7 +775,7 @@ check(
 );
 check(
   "🔴 the catalogue waits for both requests, so it cannot flash an empty page",
-  /const catalogueLoading = productsLoading \|\| categoriesLoading;/.test(page) &&
+  /const catalogueLoading =\s*userLoading \|\| productsLoading \|\| categoriesLoading \|\|/.test(page) &&
     /\{catalogueLoading && \(/.test(page),
 );
 check(
