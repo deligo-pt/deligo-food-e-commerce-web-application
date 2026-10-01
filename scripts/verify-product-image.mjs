@@ -13,7 +13,7 @@
  */
 
 import { register } from "node:module";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -24,7 +24,7 @@ const src = (...parts) => join(here, "..", "src", ...parts);
 const stripComments = (source) =>
   source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 
-const { getProductImage } = await import(src("lib/productImage.ts"));
+const { getProductImage, buildProductImageIndex } = await import(src("lib/productImage.ts"));
 
 let passed = 0;
 let failed = 0;
@@ -65,6 +65,64 @@ for (const [label, file] of [
   check(
     `🔴 ${label}`,
     /src=\{getProductImage\(product\)\}/.test(code) && !/src=\{product\.images\?\.\[0\]\}/.test(code),
+  );
+}
+
+console.log("\n🔴 Screens whose payload has no picture look it up (1 Oct 2026)");
+{
+  const index = buildProductImageIndex([
+    { _id: "m1", productId: "PROD-A", images: [OLD] },
+    { _id: "m2", productId: "PROD-B", image: NEW },
+    { _id: "m3", productId: "PROD-C" },
+  ]);
+  check(
+    "🔴 the menu index answers by Mongo id and by PROD- code, old shape included",
+    index.get("m1") === OLD && index.get("PROD-A") === OLD && index.get("m2") === NEW,
+    "cart and order lines hold the Mongo id; a search hit holds both",
+  );
+  check("a product with no picture is not in the index", !index.has("m3") && !index.has("PROD-C"));
+
+  const hook = stripComments(readFileSync(src("hooks/queries/useProductImageIndex.ts"), "utf8"));
+  check(
+    "🔴 one lookup per store, asked from the store's own position",
+    /queryKey: \["product-image-index", vendorId \?\? ""\]/.test(hook) &&
+      /vendorCoords\(res\.data\?\.data\)/.test(hook) &&
+      /withCoords\(\{ vendorId, limit: 100 \}, place\)/.test(hook),
+    "asked from the customer's position, a distant store answers an empty menu",
+  );
+  const component = stripComments(readFileSync(src("components/shared/ProductImage.tsx"), "utf8"));
+  check(
+    "🔴 the lookup only runs when the payload has no picture",
+    /useProductImageIndex\(vendorId, \{\s*enabled: !own,/.test(component),
+    "a payload with its own picture must cost nothing",
+  );
+  check(
+    "the DeliGo default picture is the fallback, and exists",
+    /fallbackSrc=\{own \|\| found \|\| settledWithout \? DEFAULT_PRODUCT_IMAGE : undefined\}/.test(component) &&
+      existsSync(join(here, "..", "public", "images", "default-product.png")),
+  );
+
+  for (const [label, file] of [
+    ["search results", "app/(main)/search/SearchContent.tsx"],
+    ["cart rows", "components/cart/CartProductRow.tsx"],
+    ["checkout", "components/cart/CheckoutPage.tsx"],
+    ["payment", "components/payment/PaymentPage.tsx"],
+    ["order cards", "components/orders/OrderCard.tsx"],
+    ["the rating dialog", "components/orders/OrdersPage.tsx"],
+  ]) {
+    const code = stripComments(readFileSync(src(file), "utf8"));
+    check(
+      `🔴 ${label} use ProductImage with a product id and a store`,
+      /<ProductImage[\s\S]{0,200}productIds=\{\[[^\]]+\]\}[\s\S]{0,80}vendorId=\{/.test(code) &&
+        !/<SafeImage\s+src=\{(item\.image|hit\.thumbnail|image)\}/.test(code),
+      "a bare SafeImage on these fields shows the grey icon for every old-shape product",
+    );
+  }
+  check(
+    "search passes the hit's own _geo as the store position",
+    /place=\{hasLocation\(hit\) \? \{ lat: hit\._geo\.lat, lng: hit\._geo\.lng \} : null\}/.test(
+      stripComments(readFileSync(src("app/(main)/search/SearchContent.tsx"), "utf8")),
+    ),
   );
 }
 

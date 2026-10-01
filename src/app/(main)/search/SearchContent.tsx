@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UtensilsCrossed, SearchX, MapPin } from "lucide-react";
-import SafeImage from "@/components/shared/SafeImage";
+import ProductImage from "@/components/shared/ProductImage";
 import ShareButton from "@/components/shared/ShareButton";
 import { productShareText, productShareUrl, type ShareData } from "@/lib/share";
 import { currencySymbol } from "@/lib/currency";
@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import {
   formatCuisineLabel,
   formatRestaurantLabel,
+  hasLocation,
   type SearchHit,
   type SearchSortBy,
   type SearchSortOrder,
@@ -139,8 +140,15 @@ function DishCard({
       )}
     >
       <div className="relative aspect-4/3 shrink-0 overflow-hidden bg-gray-50 dark:bg-neutral-800">
-        <SafeImage
+        {/* `thumbnail` is absent for every product still in the old
+            `images: [url]` shape (64 of 97 hits, 1 Oct 2026) — the search
+            sync copies only `product.image`. `ProductImage` finds it on the
+            store's menu, asked from the hit's own `_geo`. */}
+        <ProductImage
           src={hit.thumbnail}
+          productIds={[hit.id, hit.productId]}
+          vendorId={hit.restaurantId}
+          place={hasLocation(hit) ? { lat: hit._geo.lat, lng: hit._geo.lng } : null}
           alt={hit.name}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}

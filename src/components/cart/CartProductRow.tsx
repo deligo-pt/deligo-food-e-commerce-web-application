@@ -5,7 +5,7 @@ import { useState, useRef } from "react";
 import { Trash2, Loader2, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
-import SafeImage from "@/components/shared/SafeImage";
+import ProductImage from "@/components/shared/ProductImage";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getAddonsTotal } from "@/lib/cart";
 import type { CartAddon } from "@/types/cart";
@@ -40,12 +40,15 @@ interface CartItem {
 
 interface CartProductRowProps {
   item: CartItem;
+  /** The store the line belongs to — where a missing picture is looked up. */
+  vendorId?: string;
   /** Re-read the cart from the server — see `CartPage.resyncCart`. */
   onCartChanged: () => Promise<void>;
 }
 
 export default function CartProductRow({
   item,
+  vendorId,
   onCartChanged,
 }: CartProductRowProps) {
   const { t } = useTranslation();
@@ -97,8 +100,12 @@ export default function CartProductRow({
     >
       {/* Product image */}
       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-200 dark:bg-neutral-800">
-        <SafeImage
+        {/* The cart line's `image` is "" for products in the old
+            `images: [url]` shape; `ProductImage` finds it on the menu. */}
+        <ProductImage
           src={item.image}
+          productIds={[item.productId]}
+          vendorId={vendorId}
           alt={item.name}
           sizes="96px"
           fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}

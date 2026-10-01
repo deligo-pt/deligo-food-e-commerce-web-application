@@ -60,6 +60,7 @@ import { useCartQuantities } from "@/hooks/useCartQuantities";
 import { useCartCache } from "@/hooks/queries/useCart";
 import { Button } from "@/components/ui/button";
 import { getProductImage } from "@/lib/productImage";
+import { DEFAULT_PRODUCT_IMAGE } from "@/components/shared/ProductImage";
 
 function getDistanceKm(
   lat1: number,
@@ -301,6 +302,7 @@ const MenuProductCard = memo(function MenuProductCard({
       <div className="relative aspect-4/3 w-full overflow-hidden">
         <SafeImage
           src={getProductImage(product)}
+          fallbackSrc={DEFAULT_PRODUCT_IMAGE}
           alt={product.name}
           // Four columns at the widest breakpoint, two on a phone.
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

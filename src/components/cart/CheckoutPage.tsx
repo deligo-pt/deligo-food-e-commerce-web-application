@@ -18,6 +18,7 @@ import {
   Clock,
 } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
+import ProductImage from "@/components/shared/ProductImage";
 import Loader from "@/components/shared/Loader";
 import { toast } from "sonner";
 import {
@@ -855,8 +856,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                 <div className="p-4">
                   <div className="flex flex-col gap-4 sm:flex-row">
                     <div className="relative h-28 w-full overflow-hidden rounded-2xl sm:w-28 bg-gray-100 dark:bg-neutral-800">
-                      <SafeImage
+                      {/* Empty for old-shape products — see `ProductImage`. */}
+                      <ProductImage
                         src={item.image}
+                        productIds={[item.productId]}
+                        vendorId={vendorId}
                         alt={item.name}
                         sizes="112px"
                         fallbackIcon={<UtensilsCrossed className="h-10 w-10" />}
