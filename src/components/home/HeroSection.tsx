@@ -28,7 +28,9 @@ function BannerSkeletonArt() {
     <>
       <div className="absolute inset-0 bg-linear-to-r from-gray-100 dark:from-neutral-800 via-gray-200 dark:via-neutral-700 to-gray-100 dark:to-neutral-800" />
       <div className="absolute left-6 top-6 h-9 w-40 rounded-full bg-white/80 dark:bg-neutral-900/80 lg:left-16 lg:top-8" />
-      <div className="absolute bottom-8 left-6 right-6 space-y-4 lg:left-16 lg:max-w-xl">
+      {/* Text bars only where the box is tall enough to hold them: at 21:8 a
+          phone-width banner is ~140px, and the pill alone takes 60 of it. */}
+      <div className="absolute bottom-8 left-6 right-6 hidden space-y-4 sm:block lg:left-16 lg:max-w-xl">
         <div className="h-8 w-3/4 rounded-full bg-white/80 dark:bg-neutral-900/80 lg:h-11" />
         <div className="h-4 w-full rounded-full bg-white/70 dark:bg-neutral-900/70" />
         <div className="h-4 w-2/3 rounded-full bg-white/70 dark:bg-neutral-900/70" />
@@ -199,7 +201,8 @@ export default function HeroSection() {
       {loading ? (
         <div>
           <div className="relative overflow-hidden rounded-4xl bg-gray-100 dark:bg-neutral-800">
-            <div className="relative aspect-video animate-pulse lg:aspect-21/8">
+            {/* The banner's own shape — see the slide box below. */}
+            <div className="relative aspect-21/8 animate-pulse">
               <BannerSkeletonArt />
             </div>
           </div>
@@ -263,9 +266,14 @@ export default function HeroSection() {
                     />
                   );
                   return (
+                    // One shape at every width: the banners are made at 21:8
+                    // (2560×976, measured 1 Oct 2026). Below `lg` this box was
+                    // 16:9, and `object-cover` filled the taller box by cutting
+                    // about a third off the sides — the drink and the right
+                    // edge vanished on phones and tablets.
                     <div
                       key={slide._id}
-                      className="relative aspect-video min-w-0 flex-[0_0_100%] lg:aspect-21/8"
+                      className="relative aspect-21/8 min-w-0 flex-[0_0_100%]"
                     >
                       {href ? (
                         // The sponsor's site, in a new tab. A drag that swipes

@@ -59,6 +59,7 @@ import ProductQuantityStepper from "./ProductQuantityStepper";
 import { useCartQuantities } from "@/hooks/useCartQuantities";
 import { useCartCache } from "@/hooks/queries/useCart";
 import { Button } from "@/components/ui/button";
+import { getProductImage } from "@/lib/productImage";
 
 function getDistanceKm(
   lat1: number,
@@ -168,7 +169,9 @@ interface Product {
   productId: string;
   name: string;
   description: string;
-  images: string[];
+  images?: string[];
+  /** Newer products carry this instead of `images` — see `getProductImage`. */
+  image?: string;
   pricing: {
     price: number;
     discount: number;
@@ -297,7 +300,7 @@ const MenuProductCard = memo(function MenuProductCard({
     >
       <div className="relative aspect-4/3 w-full overflow-hidden">
         <SafeImage
-          src={product.images?.[0]}
+          src={getProductImage(product)}
           alt={product.name}
           // Four columns at the widest breakpoint, two on a phone.
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
