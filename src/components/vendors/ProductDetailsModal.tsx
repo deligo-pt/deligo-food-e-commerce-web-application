@@ -36,6 +36,7 @@ import {
   hasProductDiscount,
 } from "@/lib/productPricing";
 import { Button } from "@/components/ui/button";
+import { getProductImage } from "@/lib/productImage";
 
 interface ProductDetailsModalProps {
   isOpen: boolean;
@@ -60,7 +61,9 @@ interface Product {
   productId: string;
   name: string;
   description: string;
-  images: string[];
+  images?: string[];
+  /** Newer products carry this instead of `images` — see `getProductImage`. */
+  image?: string;
   pricing: {
     price: number;
     /** Percent when `discountType` is PERCENTAGE, an amount when it's FLAT. */
@@ -565,7 +568,7 @@ export default function ProductDetailsModal({
                 <div className="absolute inset-0 rounded-full bg-primary/10 blur-3xl" />
                 <div className="relative h-full w-full overflow-hidden rounded-full border-4 border-white shadow-xl">
                   <SafeImage
-                    src={product.images?.[0]}
+                    src={getProductImage(product)}
                     alt={product.name}
                     sizes="256px"
                     fallbackIcon={<UtensilsCrossed className="h-16 w-16" />}
