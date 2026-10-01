@@ -16,7 +16,8 @@ import { createRating } from "@/lib/ratings";
 import { resolveLocalized } from "@/lib/localizedField";
 import type { ProductRatingItem, RateableOrderItem } from "@/types/rating";
 import { Star, UtensilsCrossed, X } from "lucide-react";
-import SafeImage from "@/components/shared/SafeImage";
+import ProductImage from "@/components/shared/ProductImage";
+import { vendorRouteId } from "@/lib/vendorId";
 import { toast } from "sonner";
 import { canCancelOrder, getRefundState } from "@/lib/refund";
 import { isPickupOrder } from "@/lib/orderTimeline";
@@ -542,6 +543,7 @@ export default function OrdersPage() {
                     dbId={order._id}
                     isPickup={isPickup}
                     image={order.items?.[0]?.image}
+                    imageProductId={order.items?.[0]?.productId}
                     restaurant={
                       getVendorDisplayName(order.vendorId) ?? t("restaurant")
                     }
@@ -597,6 +599,7 @@ export default function OrdersPage() {
                     dbId={order._id}
                     isPickup={isPickupOrder(order)}
                     image={order.items?.[0]?.image}
+                    imageProductId={order.items?.[0]?.productId}
                     restaurant={
                       getVendorDisplayName(order.vendorId) ?? t("restaurant")
                     }
@@ -707,8 +710,14 @@ export default function OrdersPage() {
                               picture is decorative — an empty `alt`, not the
                               dish's name announced twice. */}
                           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border">
-                            <SafeImage
+                            <ProductImage
                               src={item.image}
+                              productIds={[item.productId]}
+                              vendorId={vendorRouteId(
+                                typeof activeRatingOrder?.vendorId === "object"
+                                  ? activeRatingOrder.vendorId
+                                  : { id: activeRatingOrder?.vendorId },
+                              )}
                               alt=""
                               sizes="40px"
                               fallbackIcon={<UtensilsCrossed className="h-4 w-4" />}

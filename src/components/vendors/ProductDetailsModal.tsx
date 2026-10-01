@@ -37,6 +37,7 @@ import {
 } from "@/lib/productPricing";
 import { Button } from "@/components/ui/button";
 import { getProductImage } from "@/lib/productImage";
+import { DEFAULT_PRODUCT_IMAGE } from "@/components/shared/ProductImage";
 
 interface ProductDetailsModalProps {
   isOpen: boolean;
@@ -569,6 +570,7 @@ export default function ProductDetailsModal({
                 <div className="relative h-full w-full overflow-hidden rounded-full border-4 border-white shadow-xl">
                   <SafeImage
                     src={getProductImage(product)}
+                    fallbackSrc={DEFAULT_PRODUCT_IMAGE}
                     alt={product.name}
                     sizes="256px"
                     fallbackIcon={<UtensilsCrossed className="h-16 w-16" />}

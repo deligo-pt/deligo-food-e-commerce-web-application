@@ -34,6 +34,7 @@ import { isVendorObjectId, vendorHref, vendorRouteId } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { vendorCoords, withCoords } from "@/lib/customerCoords";
 import SafeImage from "@/components/shared/SafeImage";
+import ProductImage from "@/components/shared/ProductImage";
 import Loader from "@/components/shared/Loader";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
@@ -1199,8 +1200,12 @@ export default function PaymentPage() {
                     className="flex items-center gap-4 py-4"
                   >
                     <div className="relative h-20 w-20 overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
-                      <SafeImage
+                      {/* Empty for old-shape products — see `ProductImage`. */}
+                      <ProductImage
                         src={item.image}
+                        productIds={[item.productId]}
+                        vendorId={vendor?.id}
+                        place={vendorCoords(vendor)}
                         alt={resolveLocalized(item.name, lang)}
                         sizes="80px"
                         fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}

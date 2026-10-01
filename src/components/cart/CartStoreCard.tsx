@@ -319,6 +319,7 @@ export default function CartStoreCard({
             <CartProductRow
               key={`${item.productId}-${item.variationSku ?? "default"}`}
               item={item}
+              vendorId={vendorId}
               onCartChanged={onCartChanged}
             />
           ))}

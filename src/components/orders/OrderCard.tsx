@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
-import SafeImage from "@/components/shared/SafeImage";
+import ProductImage from "@/components/shared/ProductImage";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { downloadInvoice, extractBlobErrorMessage } from "@/lib/invoice";
 import { useReorder } from "@/hooks/queries/useOrders";
@@ -15,7 +15,7 @@ import { isFinishedCardStatus, type OrderCardStatus } from "@/lib/orderCardStatu
 import { Button } from "@/components/ui/button";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import type { BranchNameSource } from "@/lib/vendorName";
-import type { VendorIdentifiers } from "@/lib/vendorId";
+import { vendorRouteId, type VendorIdentifiers } from "@/lib/vendorId";
 
 /**
  * How each refund state is chipped. `not_eligible` is amber and neutral on
@@ -82,6 +82,8 @@ interface OrderCardProps {
   progress: number;
   progressText: string;
   image?: string;
+  /** The product `image` belongs to, for when `image` is empty. */
+  imageProductId?: string;
   /**
    * Whether there is **nothing left to rate** on this order — not whether a
    * rating exists.
@@ -130,6 +132,7 @@ export default function OrderCard({
   progress,
   progressText,
   image,
+  imageProductId,
   isRated = false,
   onRateOrder,
   canCancel = false,
@@ -189,8 +192,12 @@ export default function OrderCard({
       <div className="flex items-start justify-between">
         <div className="flex gap-3">
           <div className="relative h-12 w-12 overflow-hidden rounded-full border border-border">
-            <SafeImage
+            {/* The order's first item. Empty for old-shape products — see
+                `ProductImage`. */}
+            <ProductImage
               src={image}
+              productIds={[imageProductId]}
+              vendorId={vendorRouteId(vendor)}
               alt={restaurant}
               sizes="48px"
               fallbackIcon={<UtensilsCrossed className="h-5 w-5" />}

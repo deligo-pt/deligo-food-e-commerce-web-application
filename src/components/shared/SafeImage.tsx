@@ -28,6 +28,7 @@ export default function SafeImage({
   sizes = DEFAULT_SIZES,
   className = "object-cover",
   fallbackIcon,
+  fallbackSrc,
   onSettled,
   dataLoaded,
 }: {
@@ -37,6 +38,13 @@ export default function SafeImage({
   sizes?: string;
   className?: string;
   fallbackIcon: ReactNode;
+  /**
+   * A picture to show instead of the icon when `src` is missing or fails —
+   * the DeliGo default for products (`ProductImage`). The icon remains the
+   * last resort if this one fails too. Optional: every existing caller keeps
+   * the icon exactly as before.
+   */
+  fallbackSrc?: string;
   /**
    * Called once the image has either decoded or failed — the signal a
    * placeholder needs in order to get out of the way.
@@ -60,6 +68,23 @@ export default function SafeImage({
   dataLoaded?: boolean;
 }) {
   const [errored, setErrored] = useState(false);
+  const [fallbackErrored, setFallbackErrored] = useState(false);
+
+  if ((!src || errored) && fallbackSrc && !fallbackErrored) {
+    return (
+      <Image
+        src={fallbackSrc}
+        alt={alt}
+        fill
+        sizes={sizes}
+        unoptimized={!isOptimizableImageHost(fallbackSrc)}
+        data-loaded={dataLoaded}
+        onLoad={onSettled}
+        onError={() => setFallbackErrored(true)}
+        className={className}
+      />
+    );
+  }
 
   if (!src || errored) {
     return (
