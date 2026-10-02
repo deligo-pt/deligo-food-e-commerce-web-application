@@ -3,7 +3,7 @@
 import { memo, useEffect, useState, useCallback, useMemo, useRef } from "react";
 import SafeImage from "@/components/shared/SafeImage";
 import Link from "next/link";
-import { ChevronRight, Star, Truck, Check, Store, Moon } from "lucide-react";
+import { Star, Truck, Check, Store, Moon } from "lucide-react";
 
 import { getApiErrorMessage } from "../../lib/apiClient";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
@@ -12,7 +12,12 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { useActiveAddressCoords } from "@/hooks/queries/useProfile";
-import { useVendorsNearby } from "@/hooks/queries/useVendors";
+import { useVendorsNearbyAll } from "@/hooks/queries/useVendors";
+import {
+  getDistanceKm,
+  HOME_VENDORS_PAGE_SIZE,
+  sortVendorsByDistance,
+} from "@/lib/vendorDistance";
 import { X } from "lucide-react";
 import type { Vendor } from "@/types/vendor";
 import { cuisineMatches, formatCuisine } from "@/lib/cuisine";
@@ -23,23 +28,6 @@ import { vendorHref } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { cardVariants } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
-
-function getDistanceKm(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 function formatTimeRange(totalMinutes: number): string {
   if (totalMinutes < 60) {
@@ -293,15 +281,21 @@ export default function RestaurantsSection() {
     [activeAddressCoords, geoCoords],
   );
 
+  // Every vendor, nearest first (2 Oct 2026). The API returns them all but in
+  // no distance order, so the whole list is read and sorted here; "Load more"
+  // then pages through it. See `useVendorsNearbyAll`.
   const {
-    data: nearbyData,
+    data: nearbyVendors,
     isLoading,
     error: queryError,
-  } = useVendorsNearby<Vendor>(resolvedCoords, {
+  } = useVendorsNearbyAll<Vendor>(resolvedCoords, {
     enabled: permissionStatus !== "loading",
   });
 
-  const allVendors = useMemo(() => nearbyData?.data ?? [], [nearbyData]);
+  const allVendors = useMemo(
+    () => sortVendorsByDistance(nearbyVendors ?? [], resolvedCoords),
+    [nearbyVendors, resolvedCoords],
+  );
   // Skeleton only while permissions resolve or the first coords-backed fetch
   // runs; a language switch keeps the current list (keepPreviousData).
   const loading =
@@ -358,6 +352,26 @@ export default function RestaurantsSection() {
     selectedProductCategory,
     selectedCuisines,
   ]);
+
+  // "Load more": how many of the sorted list are on screen. Remembered per
+  // list — a new position or filter is a new list and starts from the top —
+  // by keying the count rather than resetting it in an effect.
+  const listKey = [
+    resolvedCoords?.lat ?? "",
+    resolvedCoords?.lng ?? "",
+    selectedBusinessCategory?.slug ?? selectedBusinessCategory?.name ?? "",
+    selectedProductCategory?._id ?? "",
+    selectedCuisines.join("|"),
+  ].join("~");
+  const [shown, setShown] = useState({ key: listKey, count: HOME_VENDORS_PAGE_SIZE });
+  const visibleCount = shown.key === listKey ? shown.count : HOME_VENDORS_PAGE_SIZE;
+  const visibleVendors = useMemo(
+    () => filteredVendors.slice(0, visibleCount),
+    [filteredVendors, visibleCount],
+  );
+  const hasMoreVendors = filteredVendors.length > visibleCount;
+  const loadMoreVendors = () =>
+    setShown({ key: listKey, count: visibleCount + HOME_VENDORS_PAGE_SIZE });
 
   const estimateDeliveryTime = useCallback(
     async (vendor: Vendor) => {
@@ -418,15 +432,17 @@ export default function RestaurantsSection() {
 
   const lastFetchedCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
 
+  // Only the cards on screen: each estimate is a maps request, and the list
+  // now holds every vendor. "Load more" estimates the new ones as they appear.
   useEffect(() => {
-    if (loading || filteredVendors.length === 0) return;
+    if (loading || visibleVendors.length === 0) return;
 
     const currentCoords =
       activeAddressCoords ??
       (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null);
 
     if (!currentCoords) {
-      filteredVendors.forEach((vendor) => {
+      visibleVendors.forEach((vendor) => {
         setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: "Under 10 min" }));
       });
       return;
@@ -437,20 +453,20 @@ export default function RestaurantsSection() {
       lastFetchedCoordsRef.current.lat !== currentCoords.lat ||
       lastFetchedCoordsRef.current.lng !== currentCoords.lng;
 
-    const hasUnestimatedVendors = filteredVendors.some(
+    const hasUnestimatedVendors = visibleVendors.some(
       (vendor) => !deliveryTimes[vendor.userId]
     );
 
     if (coordsChanged || hasUnestimatedVendors) {
       lastFetchedCoordsRef.current = currentCoords;
-      filteredVendors.forEach((vendor) => {
+      visibleVendors.forEach((vendor) => {
         const hasTime = deliveryTimes[vendor.userId];
         if (coordsChanged || !hasTime) {
           estimateDeliveryTime(vendor);
         }
       });
     }
-  }, [activeAddressCoords, geoCoords, loading, filteredVendors, deliveryTimes, estimateDeliveryTime]);
+  }, [activeAddressCoords, geoCoords, loading, visibleVendors, deliveryTimes, estimateDeliveryTime]);
 
   if (loading) {
     return (
@@ -458,11 +474,6 @@ export default function RestaurantsSection() {
         <SectionHeading
           loading
           skeletonWidth="w-40"
-          /* The "View all" link is `text-sm` now, not 20px, so its stand-in
-             shrinks with it. */
-          action={
-            <div className="hidden h-5 w-24 animate-pulse rounded-full bg-gray-200 sm:block dark:bg-neutral-800" />
-          }
         />
         <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
@@ -505,16 +516,7 @@ export default function RestaurantsSection() {
   if (filteredVendors.length === 0) {
     return (
       <section>
-        <SectionHeading
-          action={
-            <Link
-              href="/vendors"
-              className="flex items-center gap-2 text-sm font-bold text-primary hover:underline dark:text-pink-500"
-            >
-              {t("viewAll")} <ChevronRight size={20} />
-            </Link>
-          }
-        >
+        <SectionHeading>
           {t("nearYou")}
         </SectionHeading>
         {(selectedBusinessCategory ||
@@ -569,16 +571,7 @@ export default function RestaurantsSection() {
           `mb-8` here: the heading jumped 16px on mobile the moment the vendors
           arrived. Phase 9 retired that whole class of bug in this file — all
           three branches are one component now. */}
-      <SectionHeading
-        action={
-          <Link
-            href="/vendors"
-            className="flex items-center gap-2 text-sm font-bold text-primary hover:underline dark:text-pink-500"
-          >
-            {t("viewAll")} <ChevronRight size={20} />
-          </Link>
-        }
-      >
+      <SectionHeading>
         {t("nearYou")}
       </SectionHeading>
       {(selectedBusinessCategory ||
@@ -636,7 +629,7 @@ export default function RestaurantsSection() {
         data-revealed={revealed}
         className="reveal-group grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
       >
-        {filteredVendors.map((vendor) => (
+        {visibleVendors.map((vendor) => (
           <RestaurantCard
             key={vendor.userId}
             vendor={vendor}
@@ -645,6 +638,16 @@ export default function RestaurantsSection() {
           />
         ))}
       </div>
+
+      {/* Replaces "View all": the whole list lives here now, nearest first,
+          twelve at a time. Gone once everything is on screen. */}
+      {hasMoreVendors && (
+        <div className="mt-8 flex justify-center">
+          <Button variant="outline" onClick={loadMoreVendors} className="rounded-full px-8">
+            {t("loadMore")}
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

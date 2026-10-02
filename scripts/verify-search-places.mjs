@@ -176,7 +176,7 @@ section("🔴 No location is a different state from no results");
 
   check(
     "🔴 a customer with no position is told why, not shown 'no results'",
-    /const needsLocation = hasCriteria && !searchCoords;/.test(page) &&
+    /const needsLocation = hasCriteria && !searchCoords && !locationResolving;/.test(page) &&
       /\{needsLocation \? \(/.test(page) &&
       /t\("searchNeedsLocationTitle"\)/.test(page),
     "nothing was searched — calling that 'no results' blames the catalogue",
@@ -285,6 +285,35 @@ section("The guard is wired in");
     "`verify:search-places` is a script someone can run",
     typeof scripts["verify:search-places"] === "string",
     "a guard nothing calls passes forever",
+  );
+}
+
+console.log("\n🔴 One simple loader for every search wait (2 Oct 2026)");
+{
+  check(
+    "🔴 a new term or filter shows the loader, not the previous results",
+    /isFetching && !isFetchingNextPage && \(isPending \|\| isPlaceholderData\)/.test(page),
+    "keepPreviousData left the old results up with nothing to say a search was running",
+  );
+  check(
+    "🔴 a disabled query (no position) cannot spin forever",
+    /\(!!searchCoords && isFetching/.test(page),
+    "in React Query 5 a disabled query with no data is 'pending' for ever",
+  );
+  check(
+    "the position settling shows the loader, not 'set your location'",
+    /const searching =\s*locationResolving \|\|/.test(page) &&
+      /!searchCoords && \(permissionStatus === "loading" \|\| \(authed && profileLoading\)\)/.test(page),
+  );
+  check(
+    "it is a spinner — no skeleton grid left",
+    /<LoaderCircle className="h-8 w-8 animate-spin text-primary"/.test(page) && !/animate-pulse rounded-2xl/.test(page),
+  );
+  const navbar = read("src/components/shared/Navbar.tsx");
+  check(
+    "🔴 the header search box spins while a search is out (both inputs)",
+    /useIsFetching\(\{\s*queryKey: searchKeys\.all/.test(navbar) &&
+      (navbar.match(/\{searchRunning \? \(/g) || []).length === 2,
   );
 }
 

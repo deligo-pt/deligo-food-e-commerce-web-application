@@ -111,6 +111,46 @@ export function useVendorsNearby<T = unknown>(
 }
 
 /**
+ * Every vendor `/vendors/nearby/open` returns for a position — all pages — for
+ * the home page's "Near You", which lists them nearest first with "Load more"
+ * (2 Oct 2026).
+ *
+ * The API does not order by distance (and ignores `sortBy=distance`), so its
+ * pages cannot be shown one at a time as "the next nearest": the whole list is
+ * read and the caller sorts it (`sortVendorsByDistance`). 100 per page keeps
+ * that to one request today (14 vendors); `meta.totalPage` covers the day it
+ * is not.
+ */
+export function useVendorsNearbyAll<T = unknown>(
+  coords: { lat: number; lng: number } | null,
+  options?: { enabled?: boolean },
+) {
+  const lang = useStore((s) => s.lang);
+  return useQuery({
+    queryKey: ["vendors", "nearby-all", lang, coords?.lat ?? null, coords?.lng ?? null] as const,
+    queryFn: async ({ signal }) => {
+      const params = { latitude: coords!.lat, longitude: coords!.lng, limit: 100 };
+      const first = await apiClient.get("/vendors/nearby/open", {
+        params: { ...params, page: 1 },
+        signal,
+      });
+      const vendors = [...((first.data?.data ?? []) as T[])];
+      const totalPage = Number(first.data?.meta?.totalPage ?? 1);
+      for (let page = 2; page <= totalPage; page++) {
+        const next = await apiClient.get("/vendors/nearby/open", {
+          params: { ...params, page },
+          signal,
+        });
+        vendors.push(...((next.data?.data ?? []) as T[]));
+      }
+      return vendors;
+    },
+    enabled: (options?.enabled ?? true) && !!coords,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/**
  * Vendors near the customer whose **name** matches what they typed
  * (`/vendors/nearby/open?searchTerm=`).
  *

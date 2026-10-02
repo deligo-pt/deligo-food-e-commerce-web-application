@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { UtensilsCrossed, SearchX, MapPin } from "lucide-react";
+import { UtensilsCrossed, SearchX, MapPin, LoaderCircle } from "lucide-react";
 import ProductImage from "@/components/shared/ProductImage";
 import ShareButton from "@/components/shared/ShareButton";
 import { productShareText, productShareUrl, type ShareData } from "@/lib/share";
@@ -14,7 +14,9 @@ import {
   searchTotal,
 } from "@/hooks/queries/useSearch";
 import { useCuisines } from "@/hooks/queries/useCuisines";
-import { useActiveAddressCoords } from "@/hooks/queries/useProfile";
+import { useActiveAddressCoords, useProfile } from "@/hooks/queries/useProfile";
+import { useLocationStore } from "@/stores/locationStore";
+import { getAccessToken } from "@/lib/authCookies";
 import SearchFilters, {
   type FilterPatch,
 } from "@/components/search/SearchFilters";
@@ -72,8 +74,6 @@ import { isOutOfArea, pickCoords } from "@/lib/customerCoords";
  * hop survives only as the fallback for a hit without a `restaurantId`.
  */
 
-/** How many skeleton cards to show before the first response arrives. */
-const SKELETON_COUNT = 8;
 
 /** Cuisine chips per card before the rest are summarised as "+N". */
 const CUISINE_CHIP_LIMIT = 3;
@@ -273,6 +273,15 @@ export default function SearchContent() {
   // address.
   const searchCoords = pickCoords(browserCoords, sharedCoords);
 
+  // Whether the position is still on its way — the saved address (profile) or
+  // the device position. Until it settles, "set your location" would be a
+  // flash of the wrong message, so the page shows the loader instead.
+  const authed = typeof window !== "undefined" && !!getAccessToken();
+  const { isLoading: profileLoading } = useProfile({ enabled: authed });
+  const permissionStatus = useLocationStore((state) => state.permissionStatus);
+  const locationResolving =
+    !searchCoords && (permissionStatus === "loading" || (authed && profileLoading));
+
   const { data: places = [] } = useVendorSearch<Vendor>(searchCoords, query);
 
   const requestLocation = useCallback(() => {
@@ -339,11 +348,13 @@ export default function SearchContent() {
 
   // `/search` answers 400 without a position, so a customer who has not given
   // one is not shown an empty result — they are shown why, and how to fix it.
-  const needsLocation = hasCriteria && !searchCoords;
+  const needsLocation = hasCriteria && !searchCoords && !locationResolving;
 
   const {
     data,
     isPending,
+    isFetching,
+    isPlaceholderData,
     isError,
     refetch,
     fetchNextPage,
@@ -481,29 +492,39 @@ export default function SearchContent() {
     );
   }
 
-  if (isPending) {
+  // One loader for every wait (2 Oct 2026): the first search, a new term or
+  // filter, and the position still settling. A new search used to leave the
+  // previous results on screen untouched (`keepPreviousData`), which read as
+  // nothing happening. `isPlaceholderData` is exactly "showing the old query
+  // while the new one runs"; a background refetch of the same search is not,
+  // so it does not flash the loader. `isFetching` keeps a disabled query —
+  // pending but idle, e.g. no position — from spinning forever.
+  const searching =
+    locationResolving ||
+    (!!searchCoords && isFetching && !isFetchingNextPage && (isPending || isPlaceholderData));
+
+  if (searching) {
     return (
       <main className="w-full px-4 py-8 lg:px-16">
         {filterBar}
-        {/* A filter-only search has no term to echo, and "Searching for ''" is
-            worse than no subtitle at all. */}
-        <h1 className="mb-6 text-2xl font-bold text-foreground dark:text-neutral-50">
-          {query ? (
-            <>
-              {t("searchingFor")} &ldquo;{query}&rdquo;
-            </>
-          ) : (
-            t("loadingSearch")
-          )}
-        </h1>
-        <ResultsGrid>
-          {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-            <div
-              key={i}
-              className="h-72 animate-pulse rounded-2xl bg-gray-200 dark:bg-neutral-800"
-            />
-          ))}
-        </ResultsGrid>
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground dark:text-neutral-400"
+        >
+          <LoaderCircle className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
+          {/* A filter-only search has no term to echo, and "Searching for ''" is
+              worse than no subtitle at all. */}
+          <p className="text-sm font-medium">
+            {query ? (
+              <>
+                {t("searchingFor")} &ldquo;{query}&rdquo;
+              </>
+            ) : (
+              t("loadingSearch")
+            )}
+          </p>
+        </div>
       </main>
     );
   }

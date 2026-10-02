@@ -36,6 +36,8 @@ import {
   REFRESH_TOKEN_COOKIE,
 } from "../../lib/authCookies";
 import { MIN_SEARCH_TERM_LENGTH, SEARCH_DEBOUNCE_MS } from "@/lib/search";
+import { useIsFetching } from "@tanstack/react-query";
+import { searchKeys } from "@/hooks/queries/useSearch";
 import { useCart, useCartCache } from "@/hooks/queries/useCart";
 import { useInvalidateSupport } from "@/hooks/queries/useSupport";
 import { closeSupportChat } from "@/stores/supportChatStore";
@@ -421,6 +423,17 @@ export default function Navbar() {
     if (term.length >= MIN_SEARCH_TERM_LENGTH) goToSearch(term);
   }, [localSearchTerm, goToSearch]);
 
+  // The search icon turns into a spinner while a search request is out — the
+  // results page shows the same wait as a loader (2 Oct 2026). "Load more" on
+  // the results page is not counted: it has its own button state.
+  const searchRunning =
+    useIsFetching({
+      queryKey: searchKeys.all,
+      predicate: (query) =>
+        (query.state.fetchMeta as { fetchMore?: unknown } | null | undefined)?.fetchMore ===
+        undefined,
+    }) > 0;
+
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setLocalSearchTerm(value);
@@ -752,7 +765,15 @@ export default function Navbar() {
             regardless of how long the location label is. */}
         <div className="mx-4 hidden flex-1 lg:block lg:min-w-[240px] xl:mx-8 xl:min-w-[340px]">
           <div className="relative flex items-center">
-            <Search size={18} className="absolute left-4 text-black/60" />
+            {searchRunning ? (
+              <LoaderCircle
+                size={18}
+                aria-hidden="true"
+                className="absolute left-4 animate-spin text-primary"
+              />
+            ) : (
+              <Search size={18} className="absolute left-4 text-black/60" />
+            )}
             <input
               type="text"
               placeholder={t("searchPlaceholder")}
@@ -880,7 +901,15 @@ export default function Navbar() {
       {/* Mobile-only Row 2: Search Bar */}
       <div className="mt-3 w-full lg:hidden">
         <div className="relative flex items-center">
-          <Search size={18} className="absolute left-4 text-black/60" />
+          {searchRunning ? (
+              <LoaderCircle
+                size={18}
+                aria-hidden="true"
+                className="absolute left-4 animate-spin text-primary"
+              />
+            ) : (
+              <Search size={18} className="absolute left-4 text-black/60" />
+            )}
           <input
             type="text"
             placeholder={t("searchPlaceholder")}
