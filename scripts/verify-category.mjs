@@ -83,6 +83,7 @@ const {
   isSellableProduct,
   productCategoryId,
   productCategoryName,
+  productAdditionalCategoryIds,
   categoryDomId,
   UNCATEGORIZED_GROUP_ID,
 } = M;
@@ -577,6 +578,81 @@ check(
 check(
   "the Other label is a parameter — the model never localizes",
   groupByVendorCategories([{ category: null }], [], "Outros").groups[0].name === "Outros",
+);
+
+// ---------------------------------------------------------------------------
+// §4b — additional categories (3 Oct 2026)
+// ---------------------------------------------------------------------------
+section("§4b  a product shows under its main and every additional category");
+
+const DESSERT_ID = "6a92d8ef24c3ca3215361323";
+const FAST_ID = "6a92d64124c3ca321536120c";
+// Faluda as `/products/open` sent it for Tasca, 3 Oct 2026: main DINNER MENU,
+// additional DESSERT + FAST FOOD TESTING, additional names unresolved.
+const FALUDA = {
+  productId: "PROD-LE1JUF",
+  name: "Faluda",
+  category: { _id: DINNER, name: "DINNER MENU" },
+  additionalCategories: [
+    { _id: DESSERT_ID, name: { en: "DESSERT", pt: "SOBREMESA" }, id: DESSERT_ID },
+    { _id: FAST_ID, name: { en: "FAST FOOD TESTING", pt: "ANÁLISE" }, id: FAST_ID },
+  ],
+};
+const ICE = { productId: "PROD-P0FGIJ", name: "Ice Cream", category: { _id: DESSERT_ID, name: "DESSERT" } };
+const extra = groupByVendorCategories([FALUDA, ICE], TASCA_OWNS, "Other", "en");
+const inGroup = (view, id) => (view.groups.find((g) => g.id === id)?.products ?? []).map((p) => p.productId);
+
+check(
+  "🔴 Faluda is under DINNER MENU, DESSERT and FAST FOOD TESTING",
+  inGroup(extra, DINNER).includes("PROD-LE1JUF") &&
+    inGroup(extra, DESSERT_ID).includes("PROD-LE1JUF") &&
+    inGroup(extra, FAST_ID).includes("PROD-LE1JUF"),
+  extra.groups.map((g) => `${g.name}:${g.products.map((p) => p.productId)}`).join(" | "),
+);
+check(
+  "headings come from the owned list, not the unresolved { en, pt } on the product",
+  extra.groups.map((g) => g.name).join(" | ") === "DESSERT | DINNER MENU | FAST FOOD TESTING",
+  extra.groups.map((g) => g.name).join(" | "),
+);
+check("each group lists a product once", extra.groups.every((g) => new Set(g.products).size === g.products.length));
+check(
+  "an additional category repeated, or equal to the main, adds nothing",
+  groupByVendorCategories(
+    [{ ...ICE, additionalCategories: [{ _id: DESSERT_ID }, DESSERT_ID, { id: FAST_ID }, { _id: FAST_ID }] }],
+    TASCA_OWNS,
+    "Other",
+  ).groups.map((g) => `${g.id}:${g.products.length}`).join(",") === `${DESSERT_ID}:1,${FAST_ID}:1`,
+);
+check(
+  "an additional category the vendor doesn't own is ignored, not given a heading",
+  groupByVendorCategories([{ ...ICE, additionalCategories: [{ _id: "deadbeefdeadbeefdeadbeef" }] }], TASCA_OWNS, "Other")
+    .groups.length === 1,
+);
+{
+  const foreignMain = groupByVendorCategories(
+    [{ productId: "X", category: { _id: FOOD, name: "FOOD" }, additionalCategories: [{ _id: DESSERT_ID }] }],
+    TASCA_OWNS,
+    "Other",
+  );
+  check(
+    "🔴 a foreign main but an owned additional: shown there, not under Other",
+    foreignMain.uncategorizedCount === 0 && inGroup(foreignMain, DESSERT_ID).join() === "X",
+  );
+}
+check(
+  "productAdditionalCategoryIds: ids in order, no repeats, never the main one",
+  JSON.stringify(
+    productAdditionalCategoryIds({
+      category: { _id: DESSERT_ID },
+      additionalCategories: [{ _id: FAST_ID }, DESSERT_ID, { id: FAST_ID }, { _id: DINNER }],
+    }),
+  ) === JSON.stringify([FAST_ID, DINNER]),
+);
+check(
+  "productAdditionalCategoryIds is total",
+  [null, undefined, 1, "x", {}, { additionalCategories: null }, { additionalCategories: [null, 3, {}, "  "] }].every(
+    (input) => Array.isArray(productAdditionalCategoryIds(input)) && productAdditionalCategoryIds(input).length === 0,
+  ),
 );
 
 // ---------------------------------------------------------------------------

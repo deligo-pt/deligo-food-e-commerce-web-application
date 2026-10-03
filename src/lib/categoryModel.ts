@@ -24,9 +24,23 @@
  * than live paths. They stay: a document that predates the requirement must not
  * take a restaurant's page down, and must not vanish from it either.
  *
- * `additionalCategories` is not read here. The doc removed it on the same day —
- * "a product has a single canonical category only" — and what still appears in
- * the payload (9 of 29 products) is legacy documents.
+ * ## Additional categories (3 Oct 2026)
+ *
+ * A product is shown under its main `category` **and** under each of its
+ * `additionalCategories`. That's the product owner's rule ("if the product is
+ * added to multiple categories, that product will be under multiple
+ * categories"), and it reverses the earlier "single canonical category" reading
+ * of the backend doc. The backend already behaves this way:
+ * `GET /products?category=<DESSERT>` returns Tasca's Faluda, whose main
+ * category is DINNER MENU. `/products/open` sends the field populated:
+ *
+ * ```json
+ * "additionalCategories": [{ "_id": "6a92d8ef…", "name": { "en": "DESSERT", "pt": "SOBREMESA" } }]
+ * ```
+ *
+ * Unlike the main category, the name here is the raw `{ en, pt }`. It is never
+ * read: groups match on `_id`, and their headings come from the vendor's own
+ * category list.
  *
  * ## 🟢 Why this file is a tenth of the size of what it replaced
  *
@@ -274,6 +288,26 @@ export function productCategoryName(product: unknown): string {
   return ref ? text(ref.name) ?? "" : "";
 }
 
+/**
+ * The ids of a product's additional categories, in order, without repeats and
+ * without its main category. Ids only (`_id`, then `id`): the embedded name is
+ * an unresolved `{ en, pt }` and can't key a group the way the main one does.
+ */
+export function productAdditionalCategoryIds(product: unknown): string[] {
+  if (!product || typeof product !== "object") return [];
+  const raw = (product as { additionalCategories?: unknown }).additionalCategories;
+  if (!Array.isArray(raw)) return [];
+
+  const main = productCategoryId(product);
+  const ids: string[] = [];
+  for (const entry of raw) {
+    const ref = entry && typeof entry === "object" ? (entry as ProductCategoryRef) : null;
+    const id = typeof entry === "string" ? text(entry) : ref ? text(ref._id) ?? text(ref.id) : null;
+    if (id && id !== main && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
 /** One entry from `GET /product-categories/open?vendorId=…`. */
 export interface VendorCategory {
   _id?: string | null;
@@ -325,9 +359,13 @@ export interface VendorCategoryView<P> {
  *   name on an old product document cannot reach the screen.
  * - **An owned category with no products is omitted.** It is a dead scroll
  *   target and a `(0)` row in the sidebar.
- * - **No product is ever dropped.** Every input product comes back in exactly
- *   one group. Losing one silently is the `NO_SHOW` failure shape: no error, no
- *   count, no empty state, just an item that is not there.
+ * - **No product is ever dropped.** Every input product comes back in at
+ *   least one group. Losing one silently is the `NO_SHOW` failure shape: no
+ *   error, no count, no empty state, just an item that is not there.
+ * - **A product appears under its main category and each additional one** the
+ *   vendor owns, once per group. It goes to "Other" only when none of its
+ *   categories is owned. A product in an owned additional category isn't
+ *   "uncategorized" just because its main one is foreign.
  * - **Products are sorted the same way inside every group**, including
  *   "Other", by the name the customer reads — the string `/products`
  *   localized, or the right half of a `{ en, pt }` stub.
@@ -366,12 +404,21 @@ export function groupByVendorCategories<P extends CategorizedProduct>(
   for (const product of productList) {
     const id = productCategoryId(product);
     const group = id ? byId.get(id) : undefined;
-    if (!group) {
-      uncategorized.push(product);
-      continue;
+    let placed = false;
+    if (group) {
+      if (!group.name) group.name = productCategoryName(product);
+      group.products.push(product);
+      placed = true;
     }
-    if (!group.name) group.name = productCategoryName(product);
-    group.products.push(product);
+    // Unique and never the main one (see the helper), so no group gets the
+    // same product twice.
+    for (const extraId of productAdditionalCategoryIds(product)) {
+      const extra = byId.get(extraId);
+      if (!extra) continue;
+      extra.products.push(product);
+      placed = true;
+    }
+    if (!placed) uncategorized.push(product);
   }
 
   // One comparator for both levels, so a heading and the cards under it are
