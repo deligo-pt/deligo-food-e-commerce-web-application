@@ -197,6 +197,9 @@ export const orderKeys = {
   // full order list, and must never be served to the orders page from cache.
   // Not language-keyed either — the projection contains no localized field.
   statusIndex: ["orders", "status-index"] as const,
+  // Under `all`, so every `useInvalidateOrders` (a rating submitted, an order
+  // cancelled) refreshes the pop-up's view as well.
+  ratingPrompt: (lang: string) => ["orders", "rating-prompt", lang] as const,
 };
 
 /**
@@ -293,6 +296,34 @@ export interface OrderStatusEntry {
    * that absence as a delivery.
    */
   fulfillmentType?: string | null;
+}
+
+/**
+ * The customer's most recent orders, for the rating pop-up (`OrderRatingPrompt`).
+ *
+ * One page (20, newest first), with `statusHistory` for when each order
+ * completed. While one of them is still ongoing it re-checks every 30s, so an
+ * order that completes while the customer is elsewhere in the app is noticed
+ * without a reload. Once everything has settled it stops, and only window
+ * focus and `useInvalidateOrders` refresh it. The tracking page also refreshes
+ * it the moment its order completes, so the pop-up appears there at once.
+ */
+export function useRatingPromptOrders<T extends { orderStatus?: string | null }>(options?: {
+  enabled?: boolean;
+}) {
+  const lang = useStore((s) => s.lang);
+  return useQuery({
+    queryKey: orderKeys.ratingPrompt(lang),
+    queryFn: async ({ signal }) =>
+      (await fetchOrdersPage<T>(1, { fields: `${ORDERS_LIST_FIELDS},statusHistory` }, signal)).rows,
+    enabled: options?.enabled ?? true,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: (query) =>
+      (query.state.data ?? []).some((order) => getOrderBucket(order?.orderStatus) === "ongoing")
+        ? 30_000
+        : false,
+  });
 }
 
 /**
@@ -432,5 +463,10 @@ export function useReorder() {
  */
 export function useInvalidateOrders() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: orderKeys.all });
+  // Memoized so an effect can list it as a dependency without re-running on
+  // every render (the tracking page's poll does).
+  return useCallback(
+    () => queryClient.invalidateQueries({ queryKey: orderKeys.all }),
+    [queryClient],
+  );
 }

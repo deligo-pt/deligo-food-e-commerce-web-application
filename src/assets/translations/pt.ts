@@ -358,6 +358,7 @@ const pt = {
   rateOrder: "Avaliar Pedido",
   alreadySubmitted: "Feedback Enviado",
   rateYourOrder: "Avalie seu pedido",
+  ratePromptSubtitle: "O seu pedido foi concluído. Como correu?",
   foodReview: "Avaliação da Comida",
   deliveryReview: "Avaliação da Entrega",
   overallRating: "Avaliação Geral",

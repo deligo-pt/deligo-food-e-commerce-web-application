@@ -351,6 +351,7 @@ const en = {
   rateOrder: "Rate Order",
   alreadySubmitted: "Feedback Submitted",
   rateYourOrder: "Rate your order",
+  ratePromptSubtitle: "Your order is complete. How did it go?",
   foodReview: "Food Review",
   deliveryReview: "Delivery Review",
   overallRating: "Overall Rating",

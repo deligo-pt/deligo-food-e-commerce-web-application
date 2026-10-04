@@ -303,10 +303,14 @@ check(
 );
 
 const ordersPage = read(join(SRC, "components", "orders", "OrdersPage.tsx"));
+// The dialog moved to its own file on 4 Oct 2026 (the rating pop-up reuses it),
+// and the pop-up is a third gate: it asks the same question in `ratingPrompt.ts`.
+const ratingDialog = read(join(SRC, "components", "orders", "OrderRatingDialog.tsx"));
+const ratingPrompt = read(join(SRC, "lib", "ratingPrompt.ts"));
 const gateCalls = (ordersPage.match(/hasUnratedParts\(/g) ?? []).length;
 check(
-  `both gates ask hasUnratedParts — the card and the deep link (${gateCalls} call sites)`,
-  gateCalls >= 2 && /getRatingStatus\(/.test(ordersPage),
+  `every gate asks hasUnratedParts — the card, the deep link and the pop-up (${gateCalls} + pop-up)`,
+  gateCalls >= 2 && /getRatingStatus\(/.test(ratingDialog) && /hasUnratedParts\(order\)/.test(ratingPrompt),
   "the button and the modal have to agree on what is left to rate. Two answers is how a notification opens a modal for an order whose card has already gone quiet — or refuses to open one the card is still offering",
 );
 
