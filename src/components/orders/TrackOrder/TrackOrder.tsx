@@ -211,6 +211,8 @@ export default function TrackOrder() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const invalidateOrders = useInvalidateOrders();
+  // The status the last poll saw, to notice the moment the order completes.
+  const lastStatusRef = useRef<string | null>(null);
 
   /**
    * The store's record in the cached vendor list — a pickup order's address.
@@ -296,6 +298,19 @@ export default function TrackOrder() {
         const orderData = res.data.data;
         setOrder(orderData);
 
+        // The order just completed while the customer watched: refresh the
+        // orders cache, which includes the rating pop-up's view
+        // (`OrderRatingPrompt`), so it asks for feedback now and not on its
+        // next 30s check. Only on a change seen here, never on the first load.
+        if (
+          !isInitial &&
+          isCompletedStatus(orderData?.orderStatus) &&
+          !isCompletedStatus(lastStatusRef.current)
+        ) {
+          void invalidateOrders();
+        }
+        lastStatusRef.current = orderData?.orderStatus ?? null;
+
         if (orderData) {
           const idx = getTimelineStepIndex(orderData);
           // The timeline shortens the moment an order is rejected, so a max
@@ -379,7 +394,7 @@ export default function TrackOrder() {
     };
     // langVersion: re-fetch the order in the new language (keeps the current
     // order on screen since loading only toggles on the initial load).
-  }, [orderId, langVersion]);
+  }, [orderId, langVersion, invalidateOrders]);
 
   // Animation observer
   useEffect(() => {

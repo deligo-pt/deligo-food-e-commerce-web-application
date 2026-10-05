@@ -108,7 +108,7 @@ console.log("\n🔴 Screens whose payload has no picture look it up (1 Oct 2026)
     ["checkout", "components/cart/CheckoutPage.tsx"],
     ["payment", "components/payment/PaymentPage.tsx"],
     ["order cards", "components/orders/OrderCard.tsx"],
-    ["the rating dialog", "components/orders/OrdersPage.tsx"],
+    ["the rating dialog", "components/orders/OrderRatingDialog.tsx"],
   ]) {
     const code = stripComments(readFileSync(src(file), "utf8"));
     check(

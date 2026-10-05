@@ -189,10 +189,12 @@ section("🔴 Escape is the safe answer");
     /useEscapeToClose\(showAddressModal, \(\) => setShowAddressModal\(false\), \{\s*disabled: Boolean\(switchingAddressId\),/.test(payment),
     "its ✕ refuses then too",
   );
-  const orders = files.find((f) => f.path === "src/components/orders/OrdersPage.tsx").code;
+  // The sheet moved to its own component on 4 Oct 2026, so the rating pop-up
+  // could reuse it; it is mounted only while open, hence `true`.
+  const rating = files.find((f) => f.path === "src/components/orders/OrderRatingDialog.tsx").code;
   check(
     "the rating sheet stays while the rating is being sent",
-    /useEscapeToClose\(Boolean\(activeRatingOrder\), \(\) => setActiveRatingOrder\(null\), \{\s*disabled: submittingRating,/.test(orders),
+    /useEscapeToClose\(true, onClose, \{\s*disabled: submittingRating/.test(rating),
     "its Cancel is disabled then",
   );
 }
