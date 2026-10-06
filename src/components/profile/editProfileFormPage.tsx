@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { AlertTriangle, ChevronRight, Pencil, User, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, KeyRound, Pencil, User, X } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
 import { isOptimizableImageHost } from "@/lib/imageHosts";
@@ -12,6 +12,12 @@ import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
 import { normalizePortugueseNumber } from "@/lib/phone";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import OtpInput from "@/components/auth/OtpInput";
+import {
+  MOBILE_OTP_LENGTH,
+  VERIFIED_HOLD_MS,
+  VERIFIED_HOLD_REDUCED_MS,
+} from "@/lib/otp";
 
 interface ProfileData {
   userId: string;
@@ -52,6 +58,9 @@ export default function EditProfileFormPage() {
   const [sendingMobileOtp, setSendingMobileOtp] = useState(false);
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [verifyingMobile, setVerifyingMobile] = useState(false);
+  // The server accepted the new number's code: the tiles play the same
+  // verified moment as the login page, then the row closes.
+  const [mobileOtpVerified, setMobileOtpVerified] = useState(false);
 
   // Helper: Upload image and return URL
   const uploadProfilePhoto = async (file: File): Promise<string> => {
@@ -221,7 +230,8 @@ export default function EditProfileFormPage() {
 
   // Verify OTP and update mobile
   const handleVerifyMobileOtp = async () => {
-    if (!mobileOtp) {
+    // The SMS code is six digits (6 Oct 2026), so a shorter one is not sent.
+    if (mobileOtp.length < MOBILE_OTP_LENGTH) {
       toast.error(t("pleaseEnterOtp"));
       return;
     }
@@ -235,9 +245,21 @@ export default function EditProfileFormPage() {
       // hint clears even though the customer typed it with spaces.
       setMobileNumber(normalizePortugueseNumber(mobileNumber) ?? mobileNumber);
       setOriginalMobile(normalizePortugueseNumber(mobileNumber) ?? mobileNumber);
-      setMobileOtpSent(false);
-      setMobileOtp("");
       toast.success(t("mobileUpdatedSuccessfully"));
+      // Play the verified moment, then close the code row: the animation's
+      // length and no more, or just long enough to read with reduced motion.
+      setMobileOtpVerified(true);
+      const reduced =
+        typeof window !== "undefined" &&
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      window.setTimeout(
+        () => {
+          setMobileOtpSent(false);
+          setMobileOtp("");
+          setMobileOtpVerified(false);
+        },
+        reduced ? VERIFIED_HOLD_REDUCED_MS : VERIFIED_HOLD_MS,
+      );
       // Same as the email above — the navbar and profile page are showing a
       // number that is no longer the customer's.
       await invalidateProfile();
@@ -256,7 +278,7 @@ export default function EditProfileFormPage() {
    * customer had just finished typing a code and meant the button beside it.
    */
   const handleOtpKeyDown =
-    (verify: () => void) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (verify: () => void) => (e: React.KeyboardEvent<HTMLElement>) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
       verify();
@@ -528,27 +550,41 @@ export default function EditProfileFormPage() {
                       >
                         {sendingMobileOtp ? t("sending") : t("sendOtp")}
                       </Button>
-                    ) : (
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder={t("otp")}
-                          value={mobileOtp}
-                          onChange={(e) => setMobileOtp(e.target.value)}
-                          onKeyDown={handleOtpKeyDown(handleVerifyMobileOtp)}
-                          className="w-24 rounded border border-border bg-card px-2 py-2 text-center outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
+                    ) : null}
+                  </div>
+                  {/* The SMS code: six tiles, the login page's own field, on a
+                      row of its own because they don't fit beside the number. */}
+                  {mobileOtpSent ? (
+                    <div
+                      className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center"
+                      onKeyDown={handleOtpKeyDown(handleVerifyMobileOtp)}
+                    >
+                      <div className="flex flex-1 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3">
+                        <KeyRound
+                          size={18}
+                          className={`shrink-0 text-muted-foreground transition-opacity duration-200 dark:text-neutral-500 ${mobileOtpVerified ? "opacity-0" : ""}`}
                         />
+                        <OtpInput
+                          length={MOBILE_OTP_LENGTH}
+                          value={mobileOtp}
+                          onChange={setMobileOtp}
+                          label={t("otp")}
+                          disabled={verifyingMobile}
+                          verified={mobileOtpVerified}
+                        />
+                      </div>
+                      {!mobileOtpVerified ? (
                         <Button
                           type="button"
                           onClick={handleVerifyMobileOtp}
-                          disabled={verifyingMobile}
+                          disabled={verifyingMobile || mobileOtp.length < MOBILE_OTP_LENGTH}
                           className="whitespace-nowrap rounded bg-green-600 text-white hover:bg-green-700"
                         >
                           {verifyingMobile ? t("verifying") : t("verify")}
                         </Button>
-                      </div>
-                    )}
-                  </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {mobileUnverified && (
                     <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                       <AlertTriangle aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />

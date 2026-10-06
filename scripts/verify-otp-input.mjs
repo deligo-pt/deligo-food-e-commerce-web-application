@@ -68,7 +68,7 @@ const bodyOf = (source, name) => {
   return source.slice(start, next === -1 ? source.length : start + 1 + next);
 };
 
-const { OTP_LENGTH, sanitizeOtp, tileChanges, VERIFIED_HOLD_MS, VERIFIED_HOLD_REDUCED_MS } =
+const { OTP_LENGTH, EMAIL_OTP_LENGTH, MOBILE_OTP_LENGTH, otpLengthFor, sanitizeOtp, tileChanges, VERIFIED_HOLD_MS, VERIFIED_HOLD_REDUCED_MS } =
   await import(join(here, "../src/lib/otp.ts"));
 const tiles = read("src/components/auth/OtpInput.tsx");
 const tilesCode = stripComments(tiles);
@@ -229,9 +229,41 @@ section("The page around it");
   );
 }
 
+section("🔴 Six digits for an SMS code (6 Oct 2026)");
+{
+  const login = read("src/components/auth/LoginPage.tsx");
+  check("🔴 the login page sizes the field by method", /length=\{otpLengthFor\(mode\)\}/.test(login));
+  const profile = read("src/components/profile/editProfileFormPage.tsx");
+  check(
+    "🔴 changing the phone number takes the six-digit code in the same tiles",
+    /<OtpInput\s+length=\{MOBILE_OTP_LENGTH\}\s+value=\{mobileOtp\}/.test(profile) &&
+      /if \(mobileOtp\.length < MOBILE_OTP_LENGTH\)/.test(profile) &&
+      /verified=\{mobileOtpVerified\}/.test(profile),
+  );
+  const field = read("src/components/auth/OtpInput.tsx");
+  check(
+    "the field caps and draws by its length",
+    /sanitizeOtp\(raw, length\)/.test(field) && /tileChanges\(value, next, length\)/.test(field) && /data-length=\{length\}/.test(field),
+  );
+  check(
+    "🔴 tiles 5 and 6 have a place in the 2×3 block",
+    /\.otp-tile-frame:nth-child\(5\) \{\s*--otp-i: 4;\s*--otp-col: 2;\s*--otp-row: 0;/.test(css) &&
+      /\.otp-tile-frame:nth-child\(6\) \{\s*--otp-i: 5;\s*--otp-col: 2;\s*--otp-row: 1;/.test(css),
+  );
+  check(
+    "the block's centre comes from the length",
+    /\.otp-stage\[data-length="6"\] \{[^}]*--otp-mid: 2\.5;[^}]*--otp-col-mid: 1;/.test(css) &&
+      /--otp-cx: calc\(\(var\(--otp-mid\) - var\(--otp-i\)\) \* var\(--otp-pitch\)\)/.test(css),
+  );
+}
+
 section("The model, executed");
 {
-  check("the code is four digits", OTP_LENGTH === 4);
+  check("the email code is four digits", OTP_LENGTH === 4 && EMAIL_OTP_LENGTH === 4 && otpLengthFor("email") === 4);
+  // 6 Oct 2026: the SMS code is six digits, and the field cut it to four.
+  check("🔴 the SMS code is six digits", MOBILE_OTP_LENGTH === 6 && otpLengthFor("mobile") === 6);
+  check("🔴 six digits are kept for a mobile code", sanitizeOtp("482-913", 6) === "482913" && sanitizeOtp("1234567", 6) === "123456");
+  check("six tiles track six digits", same(tileChanges("", "482913", 6), Array(6).fill("filled")));
   check(
     "🔴 a formatted paste keeps every digit",
     sanitizeOtp("98-76") === "9876" && sanitizeOtp("Code: 1 2 3 4") === "1234",
@@ -308,7 +340,7 @@ section("The verified moment, as the video has it");
       const at = (cls) =>
         Number((css.match(new RegExp(`\\.${cls}[^{]*\\{\\s*animation: otp-link-[xy] \\d+ms ease-out (\\d+)ms`)) ?? [])[1]);
       const top = at("otp-link-top");
-      const side = Number((css.match(/\.otp-link-right \{\s*animation: otp-link-y \d+ms ease-out (\d+)ms/) ?? [])[1]);
+      const side = Number((css.match(/\.otp-link-side \{\s*animation: otp-link-y \d+ms ease-out (\d+)ms/) ?? [])[1]);
       const bottom = at("otp-link-bottom");
       return top > 0 && top < side && side < bottom;
     })(),

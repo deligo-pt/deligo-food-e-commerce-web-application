@@ -21,6 +21,7 @@ import { COUNTRY_OPTIONS, type CountryOption } from "../../data/countryCodes";
 import { FacebookMark } from "./BrandIcons";
 import GoogleSignInButton from "./GoogleSignInButton";
 import OtpInput from "./OtpInput";
+import { otpLengthFor } from "@/lib/otp";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import SocialButton from "./SocialButton";
 import { useTheme } from "@/hooks/useTheme";
@@ -336,10 +337,12 @@ export default function LoginPage() {
                       size={18}
                       className={`shrink-0 text-muted-foreground transition-opacity duration-200 dark:text-neutral-500 ${otpVerified ? "opacity-0" : ""}`}
                     />
-                    {/* Four tiles over one real input: autofill, paste and
+                    {/* Tiles over one real input (4 for an email code, 6 for
+                        an SMS one): autofill, paste and
                         backspace behave exactly as they did in the plain
                         field this replaced. See `OtpInput`. */}
                     <OtpInput
+                      length={otpLengthFor(mode)}
                       value={otp}
                       onChange={setOtp}
                       label={t("enterOtp")}
