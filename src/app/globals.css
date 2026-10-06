@@ -869,6 +869,12 @@ body {
    Ordinals: tile 1 is the first digit. It gathers to the top-left, 2 to the
    bottom-left, 3 to the top-right, 4 to the bottom-right — the video's 8 4 0 2
    becoming 8 0 / 4 2.
+
+   Six digits (the SMS code, 6 Oct 2026) follow the same zig-zag into a 2×3
+   block: 1 3 5 on top, 2 4 6 below. Tile `n` sits in column ⌊(n-1)/2⌋, row
+   (n-1) mod 2. `--otp-mid` is the row's middle tile and `--otp-col-mid` the
+   block's middle column; both come from `data-length`, so one set of
+   formulas places either shape.
    --------------------------------------------------------------------------- */
 .otp-stage {
   --otp-s: 3rem;
@@ -878,6 +884,17 @@ body {
   --otp-ok-soft: rgb(16 185 129 / 0.1);
   --otp-pitch: calc(var(--otp-s) + var(--otp-g));
   --otp-step: calc(var(--otp-s) + var(--otp-gap));
+  --otp-mid: 1.5;
+  --otp-col-mid: 0.5;
+}
+
+/* Six tiles: smaller, so the row still fits a phone beside the key icon. */
+.otp-stage[data-length="6"] {
+  --otp-s: 2.5rem;
+  --otp-g: 0.375rem;
+  --otp-gap: 1.25rem;
+  --otp-mid: 2.5;
+  --otp-col-mid: 1;
 }
 
 /* Range syntax, as Tailwind v4 writes its own `sm`: 40rem is 640px. */
@@ -885,6 +902,11 @@ body {
   .otp-stage {
     --otp-s: 3.5rem;
     --otp-g: 0.75rem;
+  }
+  .otp-stage[data-length="6"] {
+    --otp-s: 3rem;
+    --otp-g: 0.5rem;
+    --otp-gap: 1.5rem;
   }
 }
 
@@ -947,11 +969,19 @@ body {
 .otp-tile-frame:nth-child(4) > .otp-tile[data-batch="true"] .otp-trace {
   animation-delay: 150ms;
 }
+.otp-tile-frame:nth-child(5) > .otp-tile[data-batch="true"] .otp-digit-in,
+.otp-tile-frame:nth-child(5) > .otp-tile[data-batch="true"] .otp-trace {
+  animation-delay: 200ms;
+}
+.otp-tile-frame:nth-child(6) > .otp-tile[data-batch="true"] .otp-digit-in,
+.otp-tile-frame:nth-child(6) > .otp-tile[data-batch="true"] .otp-trace {
+  animation-delay: 250ms;
+}
 
 /* ── The verified moment ─────────────────────────────────────────────────
    One timeline, started when the server accepts the code:
-      0 – 540ms   the row tilts apart and settles into a square
-    540 – 940ms   the four links draw: top, then the sides, then the bottom
+      0 – 540ms   the row tilts apart and settles into a block (2×2 or 2×3)
+    540 – 940ms   the links draw: top, then the sides, then the bottom
    1000 – 1220ms  everything turns green
    1300 – 1800ms  the square folds into one tile at its centre
    1450 – 2050ms  that tile becomes the badge; rings and sparks go out
@@ -986,14 +1016,29 @@ body {
   --otp-tilt: 9deg;
   --otp-spin: -45deg;
 }
+.otp-tile-frame:nth-child(5) {
+  --otp-i: 4;
+  --otp-col: 2;
+  --otp-row: 0;
+  --otp-tilt: -8deg;
+  --otp-spin: 35deg;
+}
+.otp-tile-frame:nth-child(6) {
+  --otp-i: 5;
+  --otp-col: 2;
+  --otp-row: 1;
+  --otp-tilt: 6deg;
+  --otp-spin: -25deg;
+}
 
-/* From its place in the row to its corner of the square (the square hangs
-   below the row, so the first digit does not move vertically), and from there
-   to the square's centre. */
+/* From its place in the row to its place in the block (the block hangs below
+   the row, so the top row does not move vertically), and from there to the
+   block's centre. With four tiles `--otp-mid` is 1.5 and `--otp-col-mid` 0.5,
+   which is exactly the square these formulas always drew. */
 .otp-tile-frame {
-  --otp-gx: calc((var(--otp-col) - 0.5) * var(--otp-step) - (var(--otp-i) - 1.5) * var(--otp-pitch));
+  --otp-gx: calc((var(--otp-col) - var(--otp-col-mid)) * var(--otp-step) - (var(--otp-i) - var(--otp-mid)) * var(--otp-pitch));
   --otp-gy: calc(var(--otp-row) * var(--otp-step));
-  --otp-cx: calc((1.5 - var(--otp-i)) * var(--otp-pitch));
+  --otp-cx: calc((var(--otp-mid) - var(--otp-i)) * var(--otp-pitch));
   --otp-cy: calc(var(--otp-step) / 2);
 }
 
@@ -1034,21 +1079,21 @@ body {
   animation: otp-tile-ok 220ms ease-out 1000ms both;
 }
 
-/* The links: placed with `translate`, drawn with `transform`. */
+/* The links: placed with `translate`, drawn with `transform`. `--otp-lx` is
+   each link's offset from the block's centre in tile steps, set per link by
+   `OtpInput` (2×2: one across each row, one down each side; 2×3: two across
+   each row, three down). */
 .otp-link-top {
-  translate: calc(var(--otp-gap) / -2) calc(var(--otp-s) / 2 - 1px);
+  translate: calc(var(--otp-lx) * var(--otp-step) - var(--otp-gap) / 2) calc(var(--otp-s) / 2 - 1px);
   transform-origin: 0 50%;
 }
 .otp-link-bottom {
-  translate: calc(var(--otp-gap) / -2) calc(var(--otp-step) + var(--otp-s) / 2 - 1px);
+  translate: calc(var(--otp-lx) * var(--otp-step) - var(--otp-gap) / 2)
+    calc(var(--otp-step) + var(--otp-s) / 2 - 1px);
   transform-origin: 100% 50%;
 }
-.otp-link-left {
-  translate: calc(var(--otp-step) / -2 - 1px) var(--otp-s);
-  transform-origin: 50% 0;
-}
-.otp-link-right {
-  translate: calc(var(--otp-step) / 2 - 1px) var(--otp-s);
+.otp-link-side {
+  translate: calc(var(--otp-lx) * var(--otp-step) - 1px) var(--otp-s);
   transform-origin: 50% 0;
 }
 
@@ -1073,8 +1118,7 @@ body {
 .otp-stage[data-verified="true"] .otp-link-top {
   animation: otp-link-x 160ms ease-out 540ms both;
 }
-.otp-stage[data-verified="true"] .otp-link-left,
-.otp-stage[data-verified="true"] .otp-link-right {
+.otp-stage[data-verified="true"] .otp-link-side {
   animation: otp-link-y 160ms ease-out 660ms both;
 }
 .otp-stage[data-verified="true"] .otp-link-bottom {
@@ -1261,8 +1305,7 @@ body {
   .otp-stage[data-verified="true"] .otp-tile,
   .otp-stage[data-verified="true"] .otp-links,
   .otp-stage[data-verified="true"] .otp-link-top,
-  .otp-stage[data-verified="true"] .otp-link-left,
-  .otp-stage[data-verified="true"] .otp-link-right,
+  .otp-stage[data-verified="true"] .otp-link-side,
   .otp-stage[data-verified="true"] .otp-link-bottom,
   .otp-stage[data-verified="true"] .otp-badge,
   .otp-stage[data-verified="true"] .otp-badge-check,

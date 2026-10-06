@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 import {
   OTP_LENGTH,
@@ -27,8 +27,28 @@ const REST: TileMotion = { version: 0, change: null, batch: false };
 const SPARKS = 8;
 
 /**
- * The login code as four tiles — and, once the server accepts it, the
- * verified moment.
+ * The links drawn between tiles once they have gathered, for a code of
+ * `length` digits. The tiles form a block two rows high and `length / 2`
+ * columns wide: four digits make a 2×2 square, six a 2×3 block. Links join
+ * neighbours along the top row, down each column, and along the bottom row.
+ * `lx` is the link's offset from the block's centre, in tile steps; the CSS
+ * turns it into a position.
+ */
+function linksFor(length: number): { edge: "top" | "side" | "bottom"; lx: number }[] {
+  const cols = Math.max(1, Math.floor(length / 2));
+  const mid = (cols - 1) / 2;
+  const across = Array.from({ length: cols - 1 }, (_, c) => c + 0.5 - mid);
+  const down = Array.from({ length: cols }, (_, c) => c - mid);
+  return [
+    ...across.map((lx) => ({ edge: "top" as const, lx })),
+    ...down.map((lx) => ({ edge: "side" as const, lx })),
+    ...across.map((lx) => ({ edge: "bottom" as const, lx })),
+  ];
+}
+
+/**
+ * The login code as tiles (four for an email code, six for an SMS one; see
+ * `otpLengthFor`) and, once the server accepts it, the verified moment.
  *
  * ## One input, four pictures of it
  *
@@ -62,7 +82,10 @@ export default function OtpInput({
   label,
   disabled,
   verified = false,
+  length = OTP_LENGTH,
 }: {
+  /** How many digits the code has: 4 by email, 6 by SMS. */
+  length?: number;
   value: string;
   onChange: (next: string) => void;
   /** The field's accessible name — the tiles replace the visible placeholder. */
@@ -73,15 +96,15 @@ export default function OtpInput({
 }) {
   const [focused, setFocused] = useState(false);
   const [motion, setMotion] = useState<TileMotion[]>(() =>
-    Array.from({ length: OTP_LENGTH }, () => REST),
+    Array.from({ length }, () => REST),
   );
 
   function handleChange(raw: string) {
-    const next = sanitizeOtp(raw);
+    const next = sanitizeOtp(raw, length);
     // A non-digit keystroke leaves the value as it was: nothing to animate.
     if (next === value) return;
 
-    const changes = tileChanges(value, next);
+    const changes = tileChanges(value, next, length);
     const batch = changes.filter(Boolean).length > 1;
     setMotion((current) =>
       current.map((tile, index) => {
@@ -94,12 +117,14 @@ export default function OtpInput({
   }
 
   // The tile the next digit will land in — shown as the caret would be.
-  const activeIndex = Math.min(value.length, OTP_LENGTH - 1);
-  const complete = value.length === OTP_LENGTH;
+  const activeIndex = Math.min(value.length, length - 1);
+  const complete = value.length === length;
 
   return (
     <div
       data-verified={verified ? "true" : undefined}
+      // The CSS sizes the tiles and shapes the verified block from this.
+      data-length={length}
       className={cn(
         "otp-stage relative flex-1",
         // The square needs a second row of room, and it is taken in one step
@@ -154,7 +179,7 @@ export default function OtpInput({
         aria-hidden="true"
         className="flex items-center justify-center gap-[var(--otp-g)]"
       >
-        {Array.from({ length: OTP_LENGTH }, (_, index) => {
+        {Array.from({ length }, (_, index) => {
           const digit = value[index] ?? "";
           const tile = motion[index] ?? REST;
           const isActive = !verified && focused && !complete && index === activeIndex;
@@ -214,25 +239,33 @@ export default function OtpInput({
         })}
       </div>
 
-      {verified ? <VerifiedArt /> : null}
+      {verified ? <VerifiedArt length={length} /> : null}
     </div>
   );
 }
 
 /**
- * Everything the verified moment adds to the tiles: the four links of the
- * square, and the badge the square folds into — its rings and its sparks.
+ * Everything the verified moment adds to the tiles: the links of the block,
+ * and the badge the block folds into, with its rings and its sparks.
  * Mounted only on success, so none of it costs a thing on a normal sign-in
  * that has not got there yet. Positions and timings are all in `globals.css`.
  */
-function VerifiedArt() {
+function VerifiedArt({ length }: { length: number }) {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0">
       <div className="otp-links absolute inset-0 text-primary dark:text-pink-400">
-        <span className="otp-link otp-link-top absolute left-1/2 top-0 h-0.5 w-[var(--otp-gap)] rounded-full bg-current" />
-        <span className="otp-link otp-link-left absolute left-1/2 top-0 h-[var(--otp-gap)] w-0.5 rounded-full bg-current" />
-        <span className="otp-link otp-link-right absolute left-1/2 top-0 h-[var(--otp-gap)] w-0.5 rounded-full bg-current" />
-        <span className="otp-link otp-link-bottom absolute left-1/2 top-0 h-0.5 w-[var(--otp-gap)] rounded-full bg-current" />
+        {linksFor(length).map(({ edge, lx }) => (
+          <span
+            key={`${edge}${lx}`}
+            style={{ "--otp-lx": lx } as CSSProperties}
+            className={cn(
+              "otp-link absolute left-1/2 top-0 rounded-full bg-current",
+              edge === "side"
+                ? "otp-link-side h-[var(--otp-gap)] w-0.5"
+                : cn(`otp-link-${edge}`, "h-0.5 w-[var(--otp-gap)]"),
+            )}
+          />
+        ))}
       </div>
 
       <div className="otp-burst absolute left-1/2 top-0">

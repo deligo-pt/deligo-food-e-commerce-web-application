@@ -2,15 +2,26 @@
  * The login code's shape and the verified moment's timing — pure, so
  * `pnpm verify:otp-input` can run it with no browser.
  *
- * DeliGo sends a **four-digit** code. The field used to cap at six
- * (`slice(0, 6)`), which let a customer type two digits the server would
- * never accept and then press Verify on them.
+ * The code's length depends on how it was sent (6 Oct 2026): the **email**
+ * code is four digits and the **SMS** code is six. The field used to allow
+ * four for both, so a mobile customer's last two digits were cut off and the
+ * code could never verify. Each length is a cap: typing, pasting and SMS
+ * autofill keep at most that many digits.
  */
-export const OTP_LENGTH = 4;
+export const EMAIL_OTP_LENGTH = 4;
+export const MOBILE_OTP_LENGTH = 6;
 
-/** Digits only, at most {@link OTP_LENGTH} of them — for typing, pasting and SMS autofill alike. */
-export function sanitizeOtp(raw: string | null | undefined): string {
-  return (raw ?? "").replace(/\D/g, "").slice(0, OTP_LENGTH);
+/** The email code's length, and the default where no method is known. */
+export const OTP_LENGTH = EMAIL_OTP_LENGTH;
+
+/** How many digits the code sent to this login method has. */
+export function otpLengthFor(mode: "mobile" | "email"): number {
+  return mode === "mobile" ? MOBILE_OTP_LENGTH : EMAIL_OTP_LENGTH;
+}
+
+/** Digits only, at most `length` of them — for typing, pasting and SMS autofill alike. */
+export function sanitizeOtp(raw: string | null | undefined, length: number = OTP_LENGTH): string {
+  return (raw ?? "").replace(/\D/g, "").slice(0, length);
 }
 
 /** `filled` — a tile gained or replaced its digit. `cleared` — it lost one. */
@@ -23,8 +34,12 @@ export type TileChange = "filled" | "cleared";
  * not restart its animation, which is what keeps fast typing smooth — the
  * tile still tracing its border from the previous keystroke is left to finish.
  */
-export function tileChanges(before: string, after: string): (TileChange | null)[] {
-  return Array.from({ length: OTP_LENGTH }, (_, index) => {
+export function tileChanges(
+  before: string,
+  after: string,
+  length: number = OTP_LENGTH,
+): (TileChange | null)[] {
+  return Array.from({ length }, (_, index) => {
     const was = before[index] ?? "";
     const now = after[index] ?? "";
     if (was === now) return null;
