@@ -77,7 +77,16 @@ apiClient.interceptors.response.use(
     // reads the errorKey to tell the two apart.
     const payload = error.response?.data as ApiErrorResponse | undefined;
 
+    // Only a request that carried a token can have its session ended. One sent
+    // without, like the cart refetch that fires in the moment after logout
+    // deletes the cookie, used to land here and hard-reload the browser to
+    // /login: the "Logging out…" spinner vanished and the page went blank
+    // until the login page had loaded from scratch (6 Oct 2026). Now it just
+    // fails; the logout itself navigates.
+    const sentToken = Boolean(axios.AxiosHeaders.from(error.config?.headers).get("Authorization"));
+
     if (
+      sentToken &&
       isSessionEndedResponse(error.response?.status, payload?.err?.errorKey) &&
       typeof window !== "undefined" &&
       !isRedirecting

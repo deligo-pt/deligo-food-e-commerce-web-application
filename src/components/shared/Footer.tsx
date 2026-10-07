@@ -216,7 +216,7 @@ export default function Footer() {
           </p>
           <div className="flex flex-row flex-wrap gap-3 sm:flex-col">
             <a
-              href="https://apps.apple.com/pt/app/deligo-rider/id6769997602?l=en-GB"
+              href="https://apps.apple.com/pt/app/deligo-food/id6770233877?l=en-GB"
               target="_blank"
               rel="noopener noreferrer"
               className="block w-[150px] transition-opacity hover:opacity-90 sm:w-[180px]"
