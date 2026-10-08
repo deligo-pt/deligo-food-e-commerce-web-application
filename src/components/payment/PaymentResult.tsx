@@ -78,13 +78,15 @@ export default function PaymentResult({ routeVendorId }: { routeVendorId?: strin
   /** Each fresh check starts a new run; an older run's answer is ignored. */
   const run = useRef(0);
 
-  useEffect(
-    () => () => {
+  // Set on every mount, not only declared once: Strict Mode and Fast Refresh
+  // remount the page, and a flag left `true` would leave it on "Checking…".
+  useEffect(() => {
+    unmounted.current = false;
+    return () => {
       unmounted.current = true;
       if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
+    };
+  }, []);
 
   // The way back to this checkout's payment page needs the store; the summary
   // has it when nothing else did.

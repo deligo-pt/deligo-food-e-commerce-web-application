@@ -533,6 +533,16 @@ const pt = {
   paymentUnreachableTitle: "Não foi possível contactar o serviço de pagamento",
   paymentUnreachableBody: "A sua ligação ou o nosso serviço de pagamento podem estar em baixo. Por favor, não pague novamente: verifique dentro de momentos, ou veja os seus pedidos.",
   backToCart: "Voltar ao carrinho",
+  // Checkout bloqueado por outro pagamento (8 out 2026) — CheckoutPage.tsx
+  checkoutBlockedTitle: "Tem um pagamento em curso",
+  checkoutBlockedBody: "Conclua-o ou cancele-o antes de iniciar um novo checkout. O seu carrinho está guardado.",
+  checkoutSettlingTitle: "O seu pedido anterior foi feito",
+  checkoutSettlingBody: "A preparar o seu carrinho para um novo checkout… Pode demorar um momento.",
+  checkoutPreparingTitle: "A preparar o seu carrinho",
+  checkoutPreparingBody: "O seu pagamento anterior foi encerrado. Estamos a preparar um novo checkout… Pode demorar até um minuto.",
+  checkoutStuckTitle: "Ainda não foi possível iniciar o checkout",
+  checkoutStuckBody: "O seu pagamento anterior ainda está a ser finalizado. Tente novamente dentro de momentos.",
+  viewOrder: "Ver pedido",
   expiresOn: "Expira",
   removeCard: "Remover cartão",
   removeCardConfirm:

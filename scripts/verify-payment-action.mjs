@@ -263,5 +263,36 @@ section("11. One vocabulary on screen (Phase 5)");
   check("the old pages' texts stay removed (no dead copy to translate)", back.length === 0, back.join(", "));
 }
 
+section("12. 🔴 A checkout blocked by another payment gets a next step, not a red error");
+{
+  const cart = code("src/components/cart/CheckoutPage.tsx");
+  check("🔴 it branches on CHECKOUT_PAYMENT_IN_PROGRESS by errorKey", /getApiErrorKey\(error\) === "CHECKOUT_PAYMENT_IN_PROGRESS"[\s\S]{0,120}resolveBlockedCheckout\(/.test(cart));
+  check("🔴 …reads blockingCheckoutId and asks /action about it", /blockingCheckoutId[\s\S]{0,300}await callPaymentAction\(blockingId\)/.test(cart));
+  const fn = cart.slice(cart.indexOf("const resolveBlockedCheckout = async"), cart.indexOf("const handleToggleSelfPickup"));
+  check("🔴 an open payment → continue it on its own payment page", /result\.state === "IN_PROGRESS"\) \{\s*setBlockedCheckout\(\{ kind: "in-progress"/.test(fn) && /paymentPagePath\(blockedCheckout\.checkoutId/.test(cart));
+  check("🔴 an unknown result → only Check again, no retries, no new payment", /result\.state === "VERIFYING" \|\| result\.state === "UNREACHABLE"\) \{\s*setBlockedCheckout\(\{ kind: "verifying"[\s\S]{0,120}return;/.test(fn));
+  check("🔴 a settled one → bounded retries, then a way out", /for \(const delay of CHECKOUT_RETRY_DELAYS_MS\) \{[\s\S]*?\n    \}\n    setBlockedCheckout\(\{ kind: "stuck", checkoutId: blockingId/.test(fn) && !/for \(;;\)|while \(true\)/.test(fn) && /CHECKOUT_RETRY_DELAYS_MS = \[[\d, ]+\]/.test(cart));
+  check("…a different error during the retries stops them and says so", /!== "CHECKOUT_PAYMENT_IN_PROGRESS"\) \{\s*setBlockedCheckout\(null\);\s*toast\.error/.test(fn));
+  check("🔴 \"Your previous order was placed\" only when an ORD- number came back", /blockedCheckout\.displayOrderId\s*\?\s*t\("checkoutSettlingTitle"\)\s*:\s*t\("checkoutPreparingTitle"\)/.test(cart));
+  check("🔴 this page never releases or starts a payment", !/forceRelease|createPaymentSession|create-payment-intent/.test(cart));
+  const en = read("src/assets/translations/en.ts"), pt = read("src/assets/translations/pt.ts");
+  const keys = ["checkoutBlockedTitle", "checkoutBlockedBody", "checkoutSettlingTitle", "checkoutSettlingBody", "checkoutPreparingTitle", "checkoutPreparingBody", "checkoutStuckTitle", "checkoutStuckBody", "viewOrder"];
+  const missing = keys.flatMap((k) => [["en", en], ["pt", pt]].filter(([, src]) => !new RegExp(`\\b${k}:`).test(src)).map(([n]) => `${n}.${k}`));
+  check("every blocked-checkout text exists in EN and PT", missing.length === 0, missing.join(", "));
+}
+
+section("13. 🔴 \"Page closed\" flags are reset when the page comes back");
+{
+  // Next.js keeps a page alive when the customer navigates away and back
+  // (Activity): effects clean up on hide and run again on show, with the same
+  // refs. A flag only ever set to `true` stayed true after Continue payment →
+  // Back, and every blocked checkout then ended silently (8 Oct 2026).
+  const cart = code("src/components/cart/CheckoutPage.tsx");
+  const result = code("src/components/payment/PaymentResult.tsx");
+  check("🔴 the cart page resets unmountedRef on every mount", /useEffect\(\(\) => \{\s*unmountedRef\.current = false;\s*return \(\) => \{\s*unmountedRef\.current = true;/.test(cart));
+  check("🔴 the result page resets its flag on every mount", /useEffect\(\(\) => \{\s*unmounted\.current = false;\s*return \(\) => \{\s*unmounted\.current = true;/.test(result));
+  check("no cleanup-only flag pattern left in either", ![cart, result].some((src) => /useEffect\(\s*\(\) => \(\) => \{\s*unmounted(Ref)?\.current = true;/.test(src)));
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed === 0 ? 0 : 1);
