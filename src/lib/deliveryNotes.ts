@@ -10,9 +10,11 @@
  *
  * The customer types them on the cart page; the order that carries them is
  * created two screens later. `POST /checkout` has **no field for them** — the
- * summary it returns knows nothing about a note — while `POST
- * /orders/create-order` has taken `deliveryNotes` since this app was written
- * and has been sent `""` every time. So the text has to survive the hop, and
+ * summary it returns knows nothing about a note. `POST /orders/create-order`
+ * used to carry it, but since 8 Oct 2026 the backend creates RedUniq orders
+ * itself and that call is gone — no payment endpoint accepts the note yet
+ * (see `plan.md`, Phase 0). It waits in the pending order until one does. So
+ * the text has to survive the hop, and
  * the hop includes a full page load back from the payment gateway, which rules
  * out React state. `sessionStorage` is where the pending order already waits
  * for the same reason.

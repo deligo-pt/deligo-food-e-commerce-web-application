@@ -47,9 +47,9 @@ export function useSavedCards(options?: { enabled?: boolean }) {
  * refetch. Call it after removing a card, or after an order that saved one.
  *
  * Memoized, unlike its siblings elsewhere in this folder: the post-payment
- * return page calls it from inside the effect that finalizes the order, and an
- * identity that changed every render would re-run that effect — i.e. re-POST
- * `/orders/create-order`.
+ * result page (`PaymentResult`) calls it from inside a callback its effect
+ * depends on, and an identity that changed every render would re-run that
+ * effect — i.e. re-ask `/action` on every render.
  */
 export function useInvalidateSavedCards() {
   const queryClient = useQueryClient();

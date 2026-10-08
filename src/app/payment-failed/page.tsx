@@ -1,85 +1,23 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { apiClient } from "@/lib/apiClient";
-import { useTranslation } from "@/hooks/useTranslation";
-import { Button } from "@/components/ui/button";
+import { Suspense } from "react";
+import PaymentResult from "@/components/payment/PaymentResult";
+import Loader from "@/components/shared/Loader";
 
-function PaymentFailedContent() {
-  const { t } = useTranslation();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const summaryId = searchParams.get("summaryId");
-
-  useEffect(() => {
-    const handleFailure = async () => {
-      if (!summaryId) return;
-
-      try {
-        await apiClient.post(
-          `/payment/reduniq/handle-payment-failure/${summaryId}`
-        );
-      } catch (error) {
-        console.error("Failed to update payment status", error);
-      }
-    };
-
-    handleFailure();
-  }, [summaryId]);
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-neutral-950 px-4 transition-colors duration-200">
-      <div className="w-full max-w-md rounded-2xl bg-card p-6 text-center shadow-md border border-border">
-        <h1 className="text-2xl font-bold text-red-600 dark:text-red-500">
-          {t("paymentFailed")}
-        </h1>
-
-        <p className="mt-3 text-gray-600 dark:text-neutral-400">
-          {t("paymentFailedDesc")}
-        </p>
-
-        {summaryId && (
-          <p className="mt-2 text-sm text-gray-500 dark:text-neutral-500">
-            {t("referenceLabel")}: {summaryId}
-          </p>
-        )}
-
-        <div className="mt-6 flex justify-center gap-3">
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => router.push("/cart")}
-            className="flex-1 rounded-xl font-semibold"
-          >
-            {t("goBack")}
-          </Button>
-
-          <Button
-            size="lg"
-            onClick={() => router.push("/")}
-            className="flex-1 rounded-xl font-semibold"
-          >
-            {t("home")}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+/**
+ * Where RedUniq sends the customer after a declined or cancelled payment
+ * (`/payment-failed?summaryId=…&token=…`, checked 8 Oct 2026).
+ *
+ * "Failed" in the URL proves nothing either: `/action` decides (see
+ * `PaymentResult`). If the payment actually went through, or is still open,
+ * that is what the customer sees. The retired `handle-payment-failure` (404
+ * since 8 Oct 2026) is no longer called — it could only ever have reset a
+ * payment the backend still considered open.
+ */
 export default function PaymentFailedPage() {
-  const { t } = useTranslation();
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-neutral-950 text-gray-800 dark:text-neutral-200 transition-colors duration-200">
-          {t("loadingPaymentDetails")}
-        </div>
-      }
-    >
-      <PaymentFailedContent />
+    <Suspense fallback={<Loader fullScreen />}>
+      <PaymentResult />
     </Suspense>
   );
 }

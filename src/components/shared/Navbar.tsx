@@ -554,11 +554,11 @@ export default function Navbar() {
   // observer stays current on its own.
 
   /**
-   * Signs the user out and sends them home.
+   * Signs the user out and sends them to the login page.
    *
    * Nothing here talks to the server — clearing cookies and caches is instant.
-   * The wait the customer actually experiences is `router.push("/")`: Next has
-   * to navigate and the home page has to load. On a slow connection that is
+   * The wait the customer actually experiences is `router.push("/login")`: Next
+   * has to navigate and the login page has to load. On a slow connection that is
    * long enough for a plain button to look broken, which is what the pending
    * state below is for.
    *
@@ -582,7 +582,8 @@ export default function Navbar() {
     clearSupportCache();
     closeSupportChat();
     startLogout(() => {
-      router.push("/");
+      // To the login page; "Logging out…" stays until it is ready.
+      router.push("/login");
       setIsLoggedIn(false);
       setFirstName(null);
       setProfilePhoto(null);

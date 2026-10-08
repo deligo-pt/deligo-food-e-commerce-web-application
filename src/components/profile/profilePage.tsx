@@ -170,7 +170,7 @@ export default function AccountPage() {
   ];
 
   /**
-   * Signs the user out and sends them home.
+   * Signs the user out and sends them to the login page.
    *
    * This used to remove the two cookies and nothing else, while the navbar's
    * logout also dropped the cart cache, the FCM token and the saved-address
@@ -178,8 +178,8 @@ export default function AccountPage() {
    * query cache for whoever signed in next on the same browser. Both buttons
    * now do the same work.
    *
-   * Nothing here talks to the server; the wait is `router.push("/")` loading
-   * the home page, which is what the pending state covers.
+   * Nothing here talks to the server; the wait is `router.push("/login")`
+   * loading the login page, which is what the pending state covers.
    */
   const handleLogout = () => {
     if (isLoggingOut) return;
@@ -192,7 +192,8 @@ export default function AccountPage() {
     clearSupportCache();
     closeSupportChat();
     startLogout(() => {
-      router.push("/");
+      // To the login page; "Logging out…" stays until it is ready.
+      router.push("/login");
     });
   };
 
