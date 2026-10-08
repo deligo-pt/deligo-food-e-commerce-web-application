@@ -35,6 +35,7 @@
     "verify:share": "node --no-warnings scripts/verify-share.mjs",
     "verify:escape": "node --no-warnings scripts/verify-escape.mjs",
     "verify:saved-card": "node --no-warnings scripts/verify-saved-card-choice.mjs",
+    "verify:payment-action": "node --no-warnings scripts/verify-payment-action.mjs",
     "verify:branch": "node --no-warnings scripts/verify-branch.mjs",
     "verify:product-image": "node --no-warnings scripts/verify-product-image.mjs",
     "verify:home-vendors": "node --no-warnings scripts/verify-home-vendors.mjs"

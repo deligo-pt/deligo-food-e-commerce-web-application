@@ -21,8 +21,14 @@
  * that reaches three of them is worse than one that reaches none — it works
  * when you test it and vanishes for the customer who pays the other way:
  *
- *   1. the redirect flow's return page (`/payment/return`) — `create-order`
- *   2. the alternate success route (`SuccessContent`) — `create-order`
+ *   1. the redirect flow (card, wallets). Until 8 Oct 2026 the return pages
+ *      created the order with `create-order` and sent the note on it. Now the
+ *      backend creates the order itself once RedUniq confirms the payment, and
+ *      no payment endpoint accepts `deliveryNotes` yet (`plan.md`, Phase 0):
+ *      the note waits in the pending order until one does, and is cleared
+ *      once the order is placed (`PaymentResult`)
+ *   2. (was the alternate success route, `SuccessContent` — removed with
+ *      `create-order`; `/payment-success` now renders `PaymentResult` too)
  *   3. one-click with a saved card — the order is created **by the payment
  *      endpoint**, so the note has to travel on that call or not at all
  *   4. pickup — which has no rider, and must send nothing
@@ -66,8 +72,7 @@ const {
 
 const payment = read("src/components/payment/PaymentPage.tsx");
 const cart = read("src/components/cart/CheckoutPage.tsx");
-const ret = read("src/app/(main)/cart/checkout/[vendorId]/payment/return/page.tsx");
-const success = read("src/components/payment/SuccessContent.tsx");
+const result = read("src/components/payment/PaymentResult.tsx");
 const en = read("src/assets/translations/en.ts");
 const pt = read("src/assets/translations/pt.ts");
 
@@ -147,14 +152,14 @@ section("🔴 It survives the hop to the page that creates the order");
     // on the return page is a different namespace — that spelling is the
     // gateway's, not ours, and renaming our key must not silently rename what
     // we read off the URL.
-    ![payment, cart, ret, success].some((file) =>
+    ![payment, cart, result].some((file) =>
       /sessionStorage\.(get|set|remove)Item\(\s*["']deliveryNotes["']/.test(file),
     ),
     "`sessionStorage` is one global namespace; two spellings of one key is a silent drop",
   );
   check(
     "it is cleared once the order exists",
-    /sessionStorage\.removeItem\(DELIVERY_NOTES_KEY\)/.test(ret),
+    /ORDER_PLACED[\s\S]{0,300}sessionStorage\.removeItem\(DELIVERY_NOTES_KEY\)/.test(result),
     "otherwise the next order inherits the last one's note",
   );
 }
@@ -181,13 +186,14 @@ section("🔴 Every path that creates an order carries it");
     "a silent customer must make the request this endpoint has always received",
   );
   check(
-    "the return page sends it",
-    /deliveryNotes: deliveryNotes \|\| ""/.test(ret),
+    "🔴 the redirect flow keeps it in the pending order, ready for the backend",
+    /savePendingOrder\(\{[\s\S]{0,300}deliveryNotes: notes,/.test(payment),
+    "the backend creates this order now and takes no note yet (plan.md, Phase 0); dropping it here loses it for good",
   );
   check(
-    "🔴 the alternate success route sends it too",
-    /deliveryNotes: notes,/.test(success),
-    "it creates the order without having seen the box — the path most likely to be forgotten",
+    "no return page pretends to send it through create-order",
+    !/create-order/.test(result.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1")),
+    "that call is retired: the backend creates the order",
   );
   check(
     "both are trimmed through the one helper",

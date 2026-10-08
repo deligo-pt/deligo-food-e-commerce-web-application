@@ -57,6 +57,19 @@ import type { CartAddon } from "@/types/cart";
 import { useSavedCards } from "@/hooks/queries/usePaymentTokens";
 import { payWithSavedCard } from "@/services/paymentTokenApi";
 import {
+  callPaymentAction,
+  clearPendingOrder,
+  createPaymentSession,
+  savePendingOrder,
+} from "@/services/paymentActionApi";
+import {
+  orderTrackingPath,
+  PAYMENT_METHODS_ANCHOR,
+  type PaymentActionResult,
+} from "@/lib/paymentAction";
+import PaymentInProgressCard from "@/components/payment/PaymentInProgressCard";
+import { toast } from "sonner";
+import {
   DELIVERY_NOTES_KEY,
   MAX_RIDER_INSTRUCTIONS,
   outgoingDeliveryNotes,
@@ -419,6 +432,17 @@ export default function PaymentPage() {
   const isInstantPayment = showSavedCards && selectedCardId !== null;
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  /**
+   * This checkout's payment, as `/action` reports it (8 Oct 2026). While one
+   * is open (`IN_PROGRESS`) or unknown (`VERIFYING`, `UNREACHABLE` on a
+   * re-check), the card replaces the payment methods: continuing it, or
+   * cancelling it on purpose, are the only ways forward. See
+   * `lib/paymentAction.ts`.
+   */
+  const [openPayment, setOpenPayment] = useState<PaymentActionResult | null>(null);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [isContinuingPayment, setIsContinuingPayment] = useState(false);
+  const [isReleasingPayment, setIsReleasingPayment] = useState(false);
 
   /**
    * What the customer wants the rider to know — the app's "Rider Instructions
@@ -430,8 +454,9 @@ export default function PaymentPage() {
    * the same place the pending order already lives, and are cleared by the
    * return page when the order is created.
    *
-   * They reach the order as `deliveryNotes` — the field `create-order` already
-   * takes, and which this page has been sending as `""` since it was written.
+   * For card and wallet payments they can't reach the order yet: the backend
+   * now creates it, and no payment endpoint accepts `deliveryNotes` (8 Oct
+   * 2026). They wait in the pending order until one does.
    */
   const [riderInstructions, setRiderInstructions] = useState("");
   useEffect(() => {
@@ -783,6 +808,105 @@ export default function PaymentPage() {
     }
   };
 
+  /** Paid already (e.g. Back from RedUniq after paying): straight to the order. */
+  const goToPaidOrder = (result: PaymentActionResult) => {
+    clearPendingOrder();
+    router.replace(orderTrackingPath(result));
+  };
+
+  /**
+   * Applies what `/action` says about this checkout. `NOT_STARTED`, `FAILED`
+   * and `ABANDONED` leave the normal page; a network failure on the first look
+   * does too — the backend still refuses a second payment if one is open.
+   */
+  const applyPaymentStatus = (result: PaymentActionResult, { fromUser = false } = {}) => {
+    if (result.state === "ORDER_PLACED") {
+      goToPaidOrder(result);
+      return;
+    }
+    if (result.state === "IN_PROGRESS" || result.state === "VERIFYING") {
+      setOpenPayment(result);
+      return;
+    }
+    if (result.state === "UNREACHABLE" && fromUser) {
+      // The customer asked; say so rather than silently changing nothing.
+      toast.error(t("paymentServiceUnreachable"));
+      return;
+    }
+    setOpenPayment(null);
+  };
+
+  // Where is this checkout's payment? Asked once per checkout. Only reads: it
+  // never starts or cancels anything.
+  useEffect(() => {
+    if (!summary?._id) return;
+    let cancelled = false;
+    callPaymentAction(summary._id).then((result) => {
+      if (!cancelled) applyPaymentStatus(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per checkout
+  }, [summary?._id]);
+
+  // "Choose another way to pay" (after a declined or unfinished payment) lands
+  // here with `#payment-methods`. The page renders after its data loads, so the
+  // browser's own jump to the anchor has nothing to jump to yet.
+  useEffect(() => {
+    if (!summary?._id || openPayment) return;
+    if (window.location.hash !== `#${PAYMENT_METHODS_ANCHOR}`) return;
+    document.getElementById(PAYMENT_METHODS_ANCHOR)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [summary?._id, openPayment]);
+
+  const checkPaymentAgain = async () => {
+    if (!summary) return;
+    setIsCheckingPayment(true);
+    try {
+      applyPaymentStatus(await callPaymentAction(summary._id), { fromUser: true });
+    } finally {
+      setIsCheckingPayment(false);
+    }
+  };
+
+  /** Back to the RedUniq page of the payment that is already open. */
+  const continueOpenPayment = async () => {
+    if (!summary) return;
+    setIsContinuingPayment(true);
+    // Fresh from `/action`: the stored URL could belong to a payment that has
+    // since been completed or released.
+    const result = await callPaymentAction(summary._id);
+    if (result.state === "IN_PROGRESS" && result.redirectUrl) {
+      window.location.href = result.redirectUrl;
+      return;
+    }
+    setIsContinuingPayment(false);
+    applyPaymentStatus(result, { fromUser: true });
+  };
+
+  /**
+   * The customer's confirmed "Cancel and start a new payment" — the only place
+   * that releases a payment (`verify:payment-action` holds that).
+   */
+  const cancelAndStartNewPayment = async () => {
+    if (!summary) return;
+    setIsReleasingPayment(true);
+    try {
+      const result = await callPaymentAction(summary._id, { forceRelease: true });
+      if (result.state === "ABANDONED") {
+        clearPendingOrder();
+        setOpenPayment(null);
+        setPaymentError("");
+        toast.success(t("previousPaymentCancelled"));
+        return;
+      }
+      // It may have been paid in the meantime; whatever it is now, show that.
+      applyPaymentStatus(result, { fromUser: true });
+    } finally {
+      setIsReleasingPayment(false);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (!summary) return;
 
@@ -824,63 +948,44 @@ export default function PaymentPage() {
         return;
       }
 
-      const response = await apiClient.post(
-        "/payment/reduniq/create-payment-intent",
-        {
+      // Read through `data.code` only (see `lib/paymentAction.ts`).
+      const result = await createPaymentSession({
+        checkoutSummaryId: summary._id,
+        paymentMethod,
+        // Only sent for CARD. The field is ignored server-side for the other
+        // methods, but omitting it keeps the wallet request byte-identical.
+        ...(paymentMethod === "CARD" && { saveCard }),
+      });
+
+      if (result.state === "IN_PROGRESS" && result.code === "REDUNIQ_PAYMENT_SESSION_CREATED" && result.redirectUrl) {
+        // RedUniq's return URL carries the checkout id (checked); this is the
+        // fallback, plus the rider note until the backend can take it.
+        savePendingOrder({
           checkoutSummaryId: summary._id,
-          paymentMethod,
-          // Only sent for CARD. The field is ignored server-side for the other
-          // methods, but omitting it keeps the wallet request — the one path
-          // that currently works end to end — byte-identical to before.
-          ...(paymentMethod === "CARD" && { saveCard }),
-        },
-      );
-
-      const { redirectUrl, paymentToken, cardWillBeSaved } = response.data.data;
-
-      // The gateway gets the final say on whether the card can be tokenized.
-      // If it says no while the customer ticked the box, that divergence is
-      // silent everywhere else — leave a trace so it's findable.
-      if (saveCard && cardWillBeSaved === false) {
-        console.warn(
-          "[payment] saveCard was requested but the gateway returned cardWillBeSaved: false",
-        );
-      }
-
-      // The post-payment return page finalizes the order via /orders/create-order,
-      // but REDUNIQ's return URL does NOT carry our internal checkoutSummaryId or
-      // paymentToken. Persist them here so the return page can read them back from
-      // sessionStorage — without this the order never completes after payment.
-      if (!redirectUrl) {
-        throw new Error("Payment could not be initiated. Please try again.");
-      }
-
-      sessionStorage.setItem(
-        "pendingOrder",
-        JSON.stringify({
-          checkoutSummaryId: summary._id,
-          paymentToken,
+          vendorId: getVendorLookupIds(summary.vendorId).vendorId ?? null,
           deliveryNotes: notes,
-        }),
-      );
-      window.location.href = redirectUrl;
-    } catch (err) {
-      const errorMsg = getApiErrorMessage(err, "Failed to process payment");
-      setPaymentError(errorMsg);
-
-      // Also runs for a declined saved-card payment. Whether the backend
-      // already unwinds the summary's payment status in that case is unknown —
-      // TO CONFIRM. Calling it is the failure-safe side of that unknown: if the
-      // backend does unwind, this is a redundant reset whose own errors are
-      // already swallowed below; if it doesn't, skipping it would leave the
-      // summary stuck and the customer unable to retry.
-      try {
-        await apiClient.post(
-          `/payment/reduniq/handle-payment-failure/${summary._id}`,
-        );
-      } catch (failureErr) {
-        console.error("Failed to reset payment status", failureErr);
+        });
+        window.location.href = result.redirectUrl;
+        return;
       }
+
+      if (result.state === "IN_PROGRESS") {
+        // `PAYMENT_SESSION_ACTIVE`: one is already open — a second tab, or Back
+        // from RedUniq. Offer to continue it instead of an error.
+        applyPaymentStatus(await callPaymentAction(summary._id));
+        return;
+      }
+      if (result.state === "ORDER_PLACED") {
+        goToPaidOrder(result);
+        return;
+      }
+      setPaymentError(
+        result.state === "UNREACHABLE" ? t("paymentServiceUnreachable") : t("paymentCouldNotStart"),
+      );
+    } catch (err) {
+      // Only the one-click saved-card path throws here. `handle-payment-failure`
+      // is no longer called: the backend removed it (404, 8 Oct 2026).
+      setPaymentError(getApiErrorMessage(err, t("paymentCouldNotStart")));
     } finally {
       setIsPlacingOrder(false);
     }
@@ -1449,8 +1554,27 @@ export default function PaymentPage() {
                 </div>
               </div>
 
+              {/* A payment already open (or unknown) for this checkout: continue
+                  it or cancel it on purpose. Starting a second one beside it
+                  is how a customer gets charged twice. */}
+              {openPayment ? (
+                <PaymentInProgressCard
+                  mode={openPayment.state === "IN_PROGRESS" ? "in-progress" : "verifying"}
+                  amount={orderTotal}
+                  onContinue={continueOpenPayment}
+                  onCancelAndStartNew={cancelAndStartNewPayment}
+                  onCheckAgain={checkPaymentAgain}
+                  isContinuing={isContinuingPayment}
+                  isReleasing={isReleasingPayment}
+                  isChecking={isCheckingPayment}
+                />
+              ) : (
+              <>
               {/* Payment Methods */}
-              <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-neutral-50">
+              <h3
+                id={PAYMENT_METHODS_ANCHOR}
+                className="mb-4 scroll-mt-24 text-xl font-semibold text-gray-900 dark:text-neutral-50"
+              >
                 {t("paymentMethod")}
               </h3>
 
@@ -1646,7 +1770,9 @@ export default function PaymentPage() {
                     to the gateway's page first. */}
                 <span className="relative z-10 flex items-center gap-2">
                   {isPlacingOrder
-                    ? t("processing")
+                    ? isInstantPayment
+                      ? t("processing")
+                      : t("openingSecurePayment")
                     : isInstantPayment
                       ? t("payNow")
                       : t("placeOrder")}
@@ -1657,6 +1783,8 @@ export default function PaymentPage() {
                   )}
                 </span>
               </Button>
+              </>
+              )}
 
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-500 dark:text-neutral-400">
