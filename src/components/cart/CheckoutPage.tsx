@@ -16,7 +16,13 @@ import {
   Check,
   ChevronRight,
   Clock,
+  ArrowRight,
+  RefreshCw,
+  ShieldCheck,
 } from "lucide-react";
+import axios from "axios";
+import { callPaymentAction } from "@/services/paymentActionApi";
+import { orderTrackingPath, paymentPagePath } from "@/lib/paymentAction";
 import SafeImage from "@/components/shared/SafeImage";
 import ProductImage from "@/components/shared/ProductImage";
 import Loader from "@/components/shared/Loader";
@@ -85,6 +91,9 @@ function sumAddons(addons: any[] | undefined | null) {
   );
 }
 
+/** Retries while a paid checkout still holds the cart: about a minute in all. */
+const CHECKOUT_RETRY_DELAYS_MS = [3000, 3000, 4000, 5000, 5000, 10000, 10000, 10000, 10000];
+
 export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const { t } = useTranslation();
   const lang = useStore((s) => s.lang);
@@ -108,6 +117,35 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const addonIsSyncingRef = useRef<Record<string, boolean>>({});
   const [instructions, setInstructions] = useState("");
   const [isProceeding, setIsProceeding] = useState(false);
+  /**
+   * `POST /checkout` refused because another checkout of this cart has a
+   * payment (8 Oct 2026, `CHECKOUT_PAYMENT_IN_PROGRESS`, with
+   * `blockingCheckoutId`). Instead of the backend's raw red message, the
+   * customer gets the next step for what that payment actually is:
+   *
+   * - `in-progress`: it is still open → continue it on its payment page (where
+   *   cancelling it on purpose also lives);
+   * - `settling`: it is already paid (or settled) but the backend still holds
+   *   the cart for a few minutes → keep retrying, then go on to payment;
+   * - `stuck`: the retries ran out → Try again, and a link to that order;
+   * - `verifying`: the result is unknown → only "Check again", never a second
+   *   payment.
+   */
+  const [blockedCheckout, setBlockedCheckout] = useState<{
+    kind: "in-progress" | "settling" | "stuck" | "verifying";
+    checkoutId: string | null;
+    displayOrderId: string | null;
+  } | null>(null);
+  const unmountedRef = useRef(false);
+  // Set on every mount, not only declared once: React's Strict Mode and Fast
+  // Refresh unmount and remount the page, and a flag left `true` by that made
+  // every blocked checkout end silently ("Processing…", then nothing).
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+    };
+  }, []);
 
   // Self-pickup. The slot is held as a store-local date + wall-clock start
   // rather than an ISO string, so that reopening the picker resumes on the slot
@@ -689,19 +727,19 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       return;
     }
 
-    try {
-      setIsProceeding(true);
-
-      // Delivery sends exactly what it always sent — both pickup keys are
-      // omitted, not sent as null, so the existing path is provably untouched.
+    // Delivery sends exactly what it always sent — both pickup keys are
+    // omitted, not sent as null, so the existing path is provably untouched.
+    const createCheckout = async (): Promise<string> => {
       const response = await apiClient.post("/checkout", {
         useCart: true,
         ...(isSelfPickup && pickupSlot
           ? { fulfillmentType: "PICKUP", pickupTime: slotToIso(pickupSlot) }
           : {}),
       });
-      const checkoutId = response.data.data._id;
+      return response.data.data._id;
+    };
 
+    const goToPayment = (checkoutId: string) => {
       // What the customer typed for the courier. `/checkout` has no field for
       // it — the order does, as `deliveryNotes` — so it rides across in
       // sessionStorage to the payment page, which shows it back as "Rider
@@ -716,7 +754,18 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       router.push(
         `/cart/checkout/${vendorId}/payment?checkoutId=${checkoutId}`,
       );
+    };
+
+    try {
+      setIsProceeding(true);
+      setBlockedCheckout(null);
+      goToPayment(await createCheckout());
     } catch (error) {
+      if (getApiErrorKey(error) === "CHECKOUT_PAYMENT_IN_PROGRESS") {
+        await resolveBlockedCheckout(error, createCheckout, goToPayment);
+        return;
+      }
+
       // Every one of these means the chosen slot is not bookable — it passed
       // while the page sat open, the store closed, or the model and the backend
       // disagree about what is offerable. Clearing it and reopening the picker
@@ -753,6 +802,62 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     } finally {
       setIsProceeding(false);
     }
+  };
+
+  /**
+   * `CHECKOUT_PAYMENT_IN_PROGRESS`: ask `/action` what the blocking checkout's
+   * payment is, and act on that (see `blockedCheckout`). Never releases or
+   * starts a payment here — continuing or cancelling one happens on its own
+   * payment page, behind the confirmation there.
+   */
+  const resolveBlockedCheckout = async (
+    error: unknown,
+    createCheckout: () => Promise<string>,
+    goToPayment: (checkoutId: string) => void,
+  ) => {
+    const body = axios.isAxiosError(error) ? error.response?.data : null;
+    const blockingId: string | null =
+      body?.data?.blockingCheckoutId ?? body?.err?.data?.blockingCheckoutId ?? null;
+    if (!blockingId) {
+      setBlockedCheckout({ kind: "stuck", checkoutId: null, displayOrderId: null });
+      return;
+    }
+
+    const result = await callPaymentAction(blockingId);
+    if (unmountedRef.current) return;
+    if (result.state === "IN_PROGRESS") {
+      setBlockedCheckout({ kind: "in-progress", checkoutId: blockingId, displayOrderId: null });
+      return;
+    }
+    if (result.state === "VERIFYING" || result.state === "UNREACHABLE") {
+      setBlockedCheckout({ kind: "verifying", checkoutId: blockingId, displayOrderId: null });
+      return;
+    }
+
+    // Paid, failed or cancelled: the backend can hold the cart for a minute or
+    // more after (seen 8 Oct 2026; ~60 s after a cancel). Keep trying for about
+    // a minute, then hand over. "Your previous order was placed" only when it
+    // really was (an ORD- number came back); otherwise "Getting your cart
+    // ready".
+    const displayOrderId = result.state === "ORDER_PLACED" ? result.displayOrderId : null;
+    setBlockedCheckout({ kind: "settling", checkoutId: blockingId, displayOrderId });
+    for (const delay of CHECKOUT_RETRY_DELAYS_MS) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      if (unmountedRef.current) return;
+      try {
+        const checkoutId = await createCheckout();
+        setBlockedCheckout(null);
+        goToPayment(checkoutId);
+        return;
+      } catch (retryError) {
+        if (getApiErrorKey(retryError) !== "CHECKOUT_PAYMENT_IN_PROGRESS") {
+          setBlockedCheckout(null);
+          toast.error(getApiErrorMessage(retryError, "Failed to create checkout session"));
+          return;
+        }
+      }
+    }
+    setBlockedCheckout({ kind: "stuck", checkoutId: blockingId, displayOrderId });
   };
 
   const handleToggleSelfPickup = () => {
@@ -1128,19 +1233,97 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
             )}
 
             <div className="border-t border-border p-6">
+              {blockedCheckout && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="mb-4 rounded-2xl border border-primary/20 bg-primary/[0.03] p-4 dark:border-pink-500/20 dark:bg-pink-950/10"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff0f5] dark:bg-pink-950/30">
+                      {blockedCheckout.kind === "settling" ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-primary dark:text-pink-400" />
+                      ) : blockedCheckout.kind === "verifying" ? (
+                        <ShieldCheck className="h-5 w-5 text-primary dark:text-pink-400" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-primary dark:text-pink-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-gray-900 dark:text-neutral-50">
+                        {blockedCheckout.kind === "in-progress"
+                          ? t("checkoutBlockedTitle")
+                          : blockedCheckout.kind === "settling"
+                            ? blockedCheckout.displayOrderId
+                              ? t("checkoutSettlingTitle")
+                              : t("checkoutPreparingTitle")
+                            : blockedCheckout.kind === "verifying"
+                              ? t("paymentVerifyingTitle")
+                              : t("checkoutStuckTitle")}
+                        {blockedCheckout.displayOrderId ? ` (${blockedCheckout.displayOrderId})` : ""}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-gray-600 dark:text-neutral-400">
+                        {blockedCheckout.kind === "in-progress"
+                          ? t("checkoutBlockedBody")
+                          : blockedCheckout.kind === "settling"
+                            ? blockedCheckout.displayOrderId
+                              ? t("checkoutSettlingBody")
+                              : t("checkoutPreparingBody")
+                            : blockedCheckout.kind === "verifying"
+                              ? t("paymentVerifyingBody")
+                              : t("checkoutStuckBody")}
+                      </p>
+                    </div>
+                  </div>
+                  {blockedCheckout.kind === "in-progress" && blockedCheckout.checkoutId && (
+                    <Button
+                      size="lg"
+                      onClick={() =>
+                        router.push(paymentPagePath(blockedCheckout.checkoutId as string, vendorId) ?? "/cart")
+                      }
+                      className="cart-cta relative mt-4 w-full gap-2 overflow-hidden rounded-2xl font-semibold"
+                    >
+                      <span className="relative z-10 flex items-center gap-2">
+                        {t("continuePayment")}
+                        <ArrowRight className="h-5 w-5" />
+                      </span>
+                    </Button>
+                  )}
+                  {blockedCheckout.kind === "stuck" && blockedCheckout.displayOrderId && (
+                    <Link
+                      href={orderTrackingPath({ displayOrderId: blockedCheckout.displayOrderId })}
+                      className="mt-3 inline-block text-sm font-semibold text-primary hover:opacity-80 dark:text-pink-400"
+                    >
+                      {t("viewOrder")}
+                    </Link>
+                  )}
+                </div>
+              )}
+              {/* While a payment is open, the card's Continue payment is the
+                  main action; this one steps back to a quiet "Check again". */}
               <Button
                 size="lg"
+                variant={blockedCheckout?.kind === "in-progress" ? "outline" : "default"}
                 onClick={handleProceedToCheckout}
                 disabled={isProceeding || vendorItems.length === 0}
                 className={`relative w-full overflow-hidden rounded-2xl font-semibold ${
-                  !isProceeding && vendorItems.length > 0 ? "cart-cta" : ""
+                  !isProceeding && vendorItems.length > 0 && blockedCheckout?.kind !== "in-progress" ? "cart-cta" : ""
                 }`}
               >
-                {!isProceeding && vendorItems.length > 0 && (
+                {!isProceeding && vendorItems.length > 0 && blockedCheckout?.kind !== "in-progress" && (
                   <span className="cart-cta-shine" aria-hidden="true" />
                 )}
-                <span className="relative z-10">
-                  {isProceeding ? t("processing") : t("proceedToCheckout")}
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {blockedCheckout && blockedCheckout.kind !== "settling" && !isProceeding ? (
+                    <>
+                      <RefreshCw className="h-4 w-4" />
+                      {blockedCheckout.kind === "stuck" ? t("tryAgain") : t("checkAgain")}
+                    </>
+                  ) : isProceeding ? (
+                    t("processing")
+                  ) : (
+                    t("proceedToCheckout")
+                  )}
                 </span>
               </Button>
               <p className="mt-3 text-center text-xs text-gray-400 dark:text-neutral-500">

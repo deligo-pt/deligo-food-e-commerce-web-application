@@ -527,6 +527,16 @@ const en = {
   paymentUnreachableTitle: "We couldn't reach the payment service",
   paymentUnreachableBody: "Your connection or our payment service may be down. Please don't pay again: check again in a moment, or look in your orders.",
   backToCart: "Back to cart",
+  // Checkout blocked by another payment (8 Oct 2026) — CheckoutPage.tsx
+  checkoutBlockedTitle: "You have a payment in progress",
+  checkoutBlockedBody: "Finish it or cancel it before starting a new checkout. Your cart is safe.",
+  checkoutSettlingTitle: "Your previous order was placed",
+  checkoutSettlingBody: "Getting your cart ready for a new checkout… This can take a moment.",
+  checkoutPreparingTitle: "Getting your cart ready",
+  checkoutPreparingBody: "Your previous payment was closed. We're preparing a new checkout… This can take up to a minute.",
+  checkoutStuckTitle: "We couldn't start your checkout yet",
+  checkoutStuckBody: "Your previous payment is still being finalised. Please try again in a moment.",
+  viewOrder: "View order",
   expiresOn: "Expires",
   removeCard: "Remove card",
   removeCardConfirm:
