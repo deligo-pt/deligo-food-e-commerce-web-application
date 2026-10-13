@@ -32,9 +32,12 @@ import {
   useVendor,
   useVendorProducts,
   useVendorProductCategories,
+  useVendorMenuByCategory,
 } from "@/hooks/queries/useVendors";
 import {
   groupByVendorCategories,
+  vendorCategoryOrder,
+  withPendingCategories,
   isSellableProduct,
   type VendorCategory,
 } from "@/lib/categoryModel";
@@ -401,6 +404,23 @@ const MenuProductCard = memo(function MenuProductCard({
   );
 });
 
+/** Each product once: categories overlap, and so do they and the whole menu. */
+function uniqueProducts<P extends { _id?: string; productId?: string; id?: string }>(
+  products: readonly P[],
+): P[] {
+  const seen = new Set<string>();
+  const unique: P[] = [];
+  for (const product of products) {
+    const key = product._id ?? product.productId ?? product.id;
+    if (key) {
+      if (seen.has(key)) continue;
+      seen.add(key);
+    }
+    unique.push(product);
+  }
+  return unique;
+}
+
 interface VendorDetailsPageProps {
   vendorId: string;
 }
@@ -451,13 +471,85 @@ export default function VendorDetailsPage({
     () => menuCoords(authed, customerCoords, vendorCoords(vendor)),
     [authed, customerCoords, vendor],
   );
+  // 🔴 The vendor's own category list decides what this page shows.
+  //
+  // `/product-categories/open?vendorId=…` returns the categories the vendor owns
+  // and has active; a product filed under anything else is not rendered. That
+  // reverses the earlier rule — `category` on the product decided everything and
+  // every product was shown — on instruction, once the vendor side committed to
+  // requiring a category on every product.
+  //
+  // Public endpoint, no auth branch, and the only second request this page
+  // makes. Its order is not used: the schema has no `sortOrder`, and since
+  // 25 Sep 2026 the page sorts these alphabetically itself.
+  const { data: vendorCategories = [], isLoading: categoriesLoading } =
+    useVendorProductCategories<VendorCategory>(vendor?.id, { enabled: !!vendor?.id });
+
+  // ---------------------------------------------------------------------------
+  // The menu, a category at a time (13 Oct 2026).
+  //
+  // Until now the page waited for the whole menu in one request — 2.5 s for a
+  // store of 183 products — and drew nothing before it. Now every category is
+  // on the page as soon as the category list is in, and each fills in when its
+  // own products arrive (about 0.8 s), top of the page first; the one the
+  // customer jumps to goes to the front. See `useVendorMenuByCategory`.
+  // ---------------------------------------------------------------------------
+  const categoryOrder = useMemo(
+    () => vendorCategoryOrder(vendorCategories, i18n.language),
+    [vendorCategories, i18n.language],
+  );
+  const categoryIds = useMemo(() => categoryOrder.map((category) => category.id), [categoryOrder]);
+  const [urgentCategoryId, setUrgentCategoryId] = useState<string | null>(null);
+  // Asked only once there is a store, a settled position and a category list.
+  // Until then nothing below may read the silence as an answer: "no category
+  // is pending" is also true before any has been asked for.
+  const menuAsked = !!vendor?.id && !userLoading && !categoriesLoading;
+  const menu = useVendorMenuByCategory<Product>(vendor?.id, menuPlace.coords, categoryIds, {
+    enabled: menuAsked,
+    urgentId: urgentCategoryId,
+  });
+  const categoryProducts = useMemo(
+    () => uniqueProducts(menu.lists.flatMap((list) => list ?? [])),
+    [menu.lists],
+  );
+  const categoriesAnswered = menu.statuses.every((status) => status !== "pending");
+  const someCategoryFailed = menu.statuses.includes("error");
+
+  // What the categories cannot reach is fetched the old way, whole: products
+  // filed under no category the store owns ("Other" — the menu is larger than
+  // its categories add up to), a category whose request failed, or a total
+  // that could not be read. A fully filed store never makes this request.
+  const needWholeMenu =
+    menuAsked &&
+    categoriesAnswered &&
+    !menu.totalPending &&
+    (someCategoryFailed || menu.totalFailed || (menu.total ?? 0) > categoryProducts.length);
   const {
-    data: products = [],
-    isLoading: productsLoading,
+    data: wholeMenu,
     error: productsErrorObj,
   } = useVendorProducts<Product>(vendor?.id, menuPlace.coords, {
-    enabled: !!vendor?.id && !userLoading,
+    enabled: needWholeMenu,
   });
+  const wholeMenuPending = needWholeMenu && wholeMenu === undefined && !productsErrorObj;
+  const products = useMemo(
+    () => (wholeMenu ? uniqueProducts([...categoryProducts, ...wholeMenu]) : categoryProducts),
+    [categoryProducts, wholeMenu],
+  );
+  // Every question about the menu has its answer: the categories, the total,
+  // and the whole-menu request if one was needed.
+  const menuAnswered =
+    menuAsked && categoriesAnswered && !menu.totalPending && !wholeMenuPending;
+  // Categories still to draw as loading. One that failed stays among them only
+  // while the whole-menu request that covers for it is on its way.
+  const pendingCategoryIds = useMemo(() => {
+    const pending = new Set<string>();
+    menu.statuses.forEach((status, index) => {
+      if (status === "pending" || (status === "error" && wholeMenuPending)) {
+        pending.add(categoryIds[index]);
+      }
+    });
+    return pending;
+  }, [menu.statuses, categoryIds, wholeMenuPending]);
 
   // An empty answer to the customer's position is either "has no dishes" or
   // "doesn't deliver here" — the API says the same thing for both. Only then,
@@ -466,7 +558,7 @@ export default function VendorDetailsPage({
   // Measured 30 Sep 2026: a Lisbon branch answers 0 from Dhaka and 11 from
   // its own pin.
   const menuCameBackEmpty =
-    menuPlace.fromCustomer && !productsLoading && !productsErrorObj && products.length === 0;
+    menuPlace.fromCustomer && menuAnswered && !productsErrorObj && products.length === 0;
   const { data: storeReachProducts = [], isLoading: reachLoading } =
     useVendorProducts<Product>(vendor?.id, vendorCoords(vendor), {
       enabled: menuCameBackEmpty && !!vendorCoords(vendor),
@@ -533,20 +625,6 @@ export default function VendorDetailsPage({
   // Order is the order `/products` returned; see `categoryModel.ts` for why the
   // vendor's own category list is deliberately not consulted.
   // ---------------------------------------------------------------------------
-  // 🔴 The vendor's own category list decides what this page shows.
-  //
-  // `/product-categories/open?vendorId=…` returns the categories the vendor owns
-  // and has active; a product filed under anything else is not rendered. That
-  // reverses the earlier rule — `category` on the product decided everything and
-  // every product was shown — on instruction, once the vendor side committed to
-  // requiring a category on every product.
-  //
-  // Public endpoint, no auth branch, and the only second request this page
-  // makes. Its order is not used: the schema has no `sortOrder`, and since
-  // 25 Sep 2026 the page sorts these alphabetically itself.
-  const { data: vendorCategories = [], isLoading: categoriesLoading } =
-    useVendorProductCategories<VendorCategory>(vendor?.id, { enabled: !!vendor?.id });
-
   // `i18n.language` decides the collation, so a language switch re-sorts rather
   // than leaving Portuguese names ordered the English way.
   // The guest product endpoint returns the vendor's inactive dishes too, and a
@@ -571,7 +649,7 @@ export default function VendorDetailsPage({
     return ids;
   }, [sellableProducts]);
 
-  const { groups: categoryGroups, uncategorizedCount } = useMemo(
+  const { groups: loadedGroups, uncategorizedCount } = useMemo(
     () =>
       groupByVendorCategories(
         sellableProducts,
@@ -580,6 +658,12 @@ export default function VendorDetailsPage({
         i18n.language,
       ),
     [sellableProducts, vendorCategories, t, i18n.language],
+  );
+  // Every category is on the page from the start; the ones still loading are
+  // placeholders until their products arrive.
+  const categoryGroups = useMemo(
+    () => withPendingCategories(loadedGroups, categoryOrder, pendingCategoryIds, i18n.language),
+    [loadedGroups, categoryOrder, pendingCategoryIds, i18n.language],
   );
 
   // Development only. Nothing is broken for the customer — those products are
@@ -604,8 +688,15 @@ export default function VendorDetailsPage({
   // `userLoading` too: the menu query is held back until the customer's
   // position settles, and a query that has not started is not "loading" to
   // React Query — without it the page would say "no products" while waiting.
+  //
+  // Since 13 Oct 2026 the products no longer gate it: once the category list
+  // is in, there are categories to draw (loading ones included). Only when
+  // there is nothing at all to draw does the skeleton wait for the menu to
+  // finish answering, so "no products" is never said too early.
   const catalogueLoading =
-    userLoading || productsLoading || categoriesLoading || (menuCameBackEmpty && reachLoading);
+    userLoading ||
+    categoriesLoading ||
+    (categoryGroups.length === 0 && (!menuAnswered || (menuCameBackEmpty && reachLoading)));
 
   // One scroll-spy, two views. The sidebar (lg+) and the pill row (below lg)
   // read the same `activeId` and call the same `selectGroup`, so they cannot
@@ -613,10 +704,47 @@ export default function VendorDetailsPage({
   // `display: none` from lg up, so its height measures 0 and the same scroll
   // arithmetic serves both breakpoints without a branch.
   const navRef = useRef<HTMLElement>(null);
-  const { activeId, selectGroup, headerHeight } = useCategoryScrollSpy(
+  const { activeId, selectGroup: scrollToGroup, headerHeight } = useCategoryScrollSpy(
     categoryGroups,
     navRef,
   );
+  // The category jumped to loads ahead of the queue, so the customer does not
+  // land on placeholders and wait for everything above them.
+  //
+  // A jump made while categories above the target are still loading does not
+  // stay put: their products arrive and push the target down the page, and the
+  // customer who asked for Desserts is left looking at Salads. So the jump is
+  // held — the page returns to the target each time something arrives — until
+  // the menu is complete, or the customer scrolls for themselves.
+  const heldJump = useRef<string | null>(null);
+  const stillLoading = pendingCategoryIds.size > 0;
+  const selectGroup = useCallback(
+    (groupId: string) => {
+      setUrgentCategoryId(groupId);
+      heldJump.current = stillLoading ? groupId : null;
+      scrollToGroup(groupId);
+    },
+    [scrollToGroup, stillLoading],
+  );
+  useEffect(() => {
+    const release = () => {
+      heldJump.current = null;
+    };
+    window.addEventListener("wheel", release, { passive: true });
+    window.addEventListener("touchmove", release, { passive: true });
+    window.addEventListener("keydown", release);
+    return () => {
+      window.removeEventListener("wheel", release);
+      window.removeEventListener("touchmove", release);
+      window.removeEventListener("keydown", release);
+    };
+  }, []);
+  useEffect(() => {
+    const target = heldJump.current;
+    if (!target) return;
+    scrollToGroup(target);
+    if (!stillLoading) heldJump.current = null;
+  }, [categoryGroups, stillLoading, scrollToGroup]);
 
   // The sidebar shows a count per category. It is `products.length` for that
   // group — the same number `CategoryGroup` prints beside its heading, read
@@ -626,7 +754,7 @@ export default function VendorDetailsPage({
       categoryGroups.map((group) => ({
         id: group.id,
         name: group.name,
-        count: group.products.length,
+        count: group.pending ? null : group.products.length,
       })),
     [categoryGroups],
   );
@@ -955,7 +1083,9 @@ export default function VendorDetailsPage({
               group exists because products were found under it, so the only way
               to see nothing here is to have nothing.
               --------------------------------------------------------------- */}
-          {!catalogueLoading && !productsError && (
+          {/* A failed whole-menu request does not take down the categories
+              that did load: they stay, under the error. */}
+          {!catalogueLoading && (!productsError || categoryGroups.length > 0) && (
             outOfDeliveryArea ? (
               <div
                 role="status"

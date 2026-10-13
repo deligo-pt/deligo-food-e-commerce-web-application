@@ -251,13 +251,15 @@ section("🔴 A store page asks from the customer, and says when it cannot reach
   );
   check(
     "the menu waits for the customer's position to settle",
-    /enabled: !!vendor\?\.id && !userLoading,/.test(vendorPage) &&
-      /userLoading \|\| productsLoading \|\| categoriesLoading/.test(vendorPage),
+    // By category since 13 Oct 2026: `menuAsked` is the gate for all of it.
+    /const menuAsked = !!vendor\?\.id && !userLoading && !categoriesLoading;/.test(vendorPage) &&
+      /enabled: menuAsked,/.test(vendorPage) &&
+      /const catalogueLoading =\s*userLoading \|\|\s*categoriesLoading \|\|/.test(vendorPage),
     "otherwise a distant store flashes its whole menu, then empties",
   );
   check(
     "🔴 an empty answer is called out of range only when the store's own pin has dishes",
-    /menuPlace\.fromCustomer && !productsLoading && !productsErrorObj && products\.length === 0/.test(vendorPage) &&
+    /menuPlace\.fromCustomer && menuAnswered && !productsErrorObj && products\.length === 0/.test(vendorPage) &&
       /useVendorProducts<Product>\(vendor\?\.id, vendorCoords\(vendor\), \{\s*enabled: menuCameBackEmpty/.test(vendorPage) &&
       /const outOfDeliveryArea = menuCameBackEmpty && storeReachProducts\.length > 0;/.test(vendorPage) &&
       /t\("storeOutOfAreaTitle"\)/.test(vendorPage),

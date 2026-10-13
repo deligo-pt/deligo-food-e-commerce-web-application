@@ -178,6 +178,13 @@ export interface CategoryGroup<P> {
    */
   name: string;
   products: P[];
+  /**
+   * Still loading: its products are not all in yet (13 Oct 2026, when the menu
+   * began arriving a category at a time). `products` holds what has arrived —
+   * usually nothing — so its length is not a count to print. Set only by
+   * `withPendingCategories`; absent on a group that is complete.
+   */
+  pending?: boolean;
 }
 
 /** Trimmed string, or `null` for anything that is not usable text. */
@@ -471,4 +478,84 @@ export function groupByVendorCategories<P extends CategorizedProduct>(
 export function categoryDomId(groupId: string): string {
   const safe = String(groupId ?? "").replace(/[^A-Za-z0-9_-]/g, "-");
   return `category-${safe}`;
+}
+
+/** A vendor category the page can show: its id and the name to sort it by. */
+export interface OrderedCategory {
+  id: string;
+  name: string;
+}
+
+/**
+ * The vendor's categories in the order the page shows them — by name, the
+ * same comparison `groupByVendorCategories` sorts its groups with — so the
+ * menu can be asked for from the top of the page down.
+ *
+ * Categories without a usable id are dropped, as they are there. A blank name
+ * is kept (as `""`, sorting first): it can still be loaded, and takes the name
+ * its products carry once they arrive.
+ */
+export function vendorCategoryOrder(
+  categories: readonly VendorCategory[] | null | undefined,
+  locale?: string,
+): OrderedCategory[] {
+  const ordered: OrderedCategory[] = [];
+  const seen = new Set<string>();
+  for (const category of Array.isArray(categories) ? categories : []) {
+    if (!category || typeof category !== "object") continue;
+    const id = text(category._id) ?? text(category.id);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ordered.push({ id, name: text(category.name) ?? "" });
+  }
+  return ordered.sort((a, b) =>
+    a.name.localeCompare(b.name, locale, { sensitivity: "base", numeric: true }),
+  );
+}
+
+/**
+ * The groups to draw while the menu is still arriving: those
+ * `groupByVendorCategories` made from the products loaded so far, plus a
+ * placeholder for every category still loading, so the whole list of
+ * categories is on the page from the start and only fills in.
+ *
+ * - A loaded group whose category is still pending (a product can reach it
+ *   early through `additionalCategories`) is marked `pending` too: what it
+ *   shows is not yet all of it.
+ * - A pending category with no name cannot be a heading, so it waits for its
+ *   products to name it.
+ * - Sorted as `groupByVendorCategories` sorts, with "Other" kept last.
+ * - Nothing pending returns `groups` itself, untouched.
+ *
+ * A category that turns out to be empty simply stops being pending and, having
+ * no group, leaves the list — which is the one thing that can disappear.
+ */
+export function withPendingCategories<P>(
+  groups: readonly CategoryGroup<P>[],
+  ordered: readonly OrderedCategory[],
+  pendingIds: ReadonlySet<string>,
+  locale?: string,
+): CategoryGroup<P>[] {
+  if (pendingIds.size === 0) return groups as CategoryGroup<P>[];
+
+  const own: CategoryGroup<P>[] = [];
+  let other: CategoryGroup<P> | null = null;
+  const present = new Set<string>();
+  for (const group of groups) {
+    if (group.id === UNCATEGORIZED_GROUP_ID) {
+      other = group;
+      continue;
+    }
+    present.add(group.id);
+    own.push(pendingIds.has(group.id) ? { ...group, pending: true } : group);
+  }
+  for (const category of ordered) {
+    if (!pendingIds.has(category.id) || present.has(category.id) || !category.name) continue;
+    present.add(category.id);
+    own.push({ id: category.id, name: category.name, products: [], pending: true });
+  }
+  own.sort((a, b) =>
+    a.name.localeCompare(b.name, locale, { sensitivity: "base", numeric: true }),
+  );
+  return other ? [...own, other] : own;
 }

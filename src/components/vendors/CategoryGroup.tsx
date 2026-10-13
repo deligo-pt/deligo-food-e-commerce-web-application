@@ -5,6 +5,9 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useRevealOnScroll } from "@/hooks/useMotion";
 import { categoryDomId, type CategoryGroup as Group } from "@/lib/categoryModel";
 
+/** Placeholder cards under a category that is still loading: one desktop row. */
+const PENDING_CARDS = 4;
+
 interface CategoryGroupProps<P> {
   group: Group<P>;
   /**
@@ -95,9 +98,17 @@ export default function CategoryGroup<P>({
         >
           {group.name}
         </h3>
-        <span className="shrink-0 text-sm text-gray-500 dark:text-neutral-400">
-          {count} {count === 1 ? t("item") : t("items")}
-        </span>
+        {/* Still loading: what has arrived is not the count, so none is shown. */}
+        {group.pending ? (
+          <span
+            aria-hidden
+            className="h-5 w-16 shrink-0 animate-pulse rounded-lg bg-gray-100 dark:bg-neutral-800"
+          />
+        ) : (
+          <span className="shrink-0 text-sm text-gray-500 dark:text-neutral-400">
+            {count} {count === 1 ? t("item") : t("items")}
+          </span>
+        )}
       </div>
 
       {/*
@@ -126,6 +137,16 @@ export default function CategoryGroup<P>({
         {group.products.map((product) => (
           <div key={productKey(product)}>{renderProduct(product)}</div>
         ))}
+        {/* The category's place is held while its products load (the menu
+            arrives a category at a time), in the page skeleton's own shape. */}
+        {group.pending &&
+          Array.from({ length: PENDING_CARDS }).map((_, card) => (
+            <div
+              key={`pending-${card}`}
+              aria-hidden
+              className="h-48 animate-pulse rounded-2xl bg-gray-100 dark:bg-neutral-800"
+            />
+          ))}
       </div>
     </div>
   );

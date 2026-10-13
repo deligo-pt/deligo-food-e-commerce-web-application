@@ -283,25 +283,45 @@ section("\ud83d\udd34 A store page shows only that store's food");
     ownedBy(menu, "").length === menu.length && ownedBy(menu, null) !== menu,
   );
 
+  // Up to the next declaration: `useVendorMenuByCategory` and its constants
+  // follow it since 13 Oct 2026 (guarded in `verify-category`).
   const hook = vendors.slice(
     vendors.indexOf("export function useVendorProducts"),
-    vendors.indexOf("export function useVendorProductCategories"),
+    vendors.indexOf("const MENU_CATEGORIES_AT_ONCE"),
   );
   check(
-    "\ud83d\udd34 both branches end in that filter — signed in and guest alike",
-    (hook.match(/return ownedBy\(\(res\.data\?\.data \?\? \[\]\) as T\[\], vendorId\);/g) || []).length === 2,
-    "the signed-in branch is the one we could not test against a token",
+    "\ud83d\udd34 the menu ends in that filter — signed in and guest alike, on every page",
+    /return ownedBy\(await everyMenuPage<T>\(path, params, signal\), vendorId\);/.test(hook) &&
+      /authed\s*\?\s*`\/products\?vendorId=\$\{vendorId\}`\s*:\s*`\/products\/open\?vendorId=\$\{vendorId\}`/.test(hook),
+    "one return for both branches since 13 Oct 2026",
   );
   check(
-    "\ud83d\udd34 and neither returns the response unfiltered",
-    !/return \(res\.data\?\.data \?\? \[\]\) as T\[\];/.test(hook),
+    "\ud83d\udd34 and nothing returns a response unfiltered",
+    !/return \(res\.data\?\.data \?\? \[\]\) as T\[\];/.test(hook) &&
+      (hook.match(/\breturn\b/g) || []).length === 2,
+    "the hook's own return, and the query's",
   );
-  check(
-    "the count call still counts everything",
-    /const total = countRes\.data\?\.meta\?\.total/.test(hook) &&
-      !/ownedBy\(\(countRes/.test(hook),
-    "a total narrowed to this vendor would page past its own products",
-  );
+  {
+    const pager = vendors.slice(
+      vendors.indexOf("async function everyMenuPage"),
+      vendors.indexOf("export function useVendorProducts"),
+    );
+    check(
+      "\ud83d\udd34 the whole menu is asked for: the pages come from the backend's own count",
+      /Number\(first\.data\?\.meta\?\.totalPage\) \|\| 1/.test(pager) &&
+        /ask\(index \+ 2\)/.test(pager) &&
+        /\[first, \.\.\.rest\]\.flatMap/.test(pager),
+      "a store with more products than one page lost the categories past it",
+    );
+    check(
+      "the pager does no filtering of its own — every item reaches ownedBy",
+      !/ownedBy|filter\(/.test(pager),
+    );
+    check(
+      "the signed-in menu no longer stops at 100",
+      !/\/products\?vendorId=\$\{vendorId\}&limit=100/.test(vendors),
+    );
+  }
 }
 
 section("The module stays pure");

@@ -472,7 +472,7 @@ const MUTATIONS = [
   {
     file: "hooks/queries/useVendors.ts",
     what: "a menu request built from a userId",
-    edit: ["/products?vendorId=${vendorId}&limit=100", "/products?vendorId=${vendor.userId}&limit=100"],
+    edit: ["? `/products?vendorId=${vendorId}`", "? `/products?vendorId=${vendor.userId}`"],
     expect: "🔴 no vendor or product request is built from a userId",
   },
   // Store page and "More info".

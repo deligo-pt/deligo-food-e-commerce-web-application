@@ -1,6 +1,12 @@
 "use client";
 
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQueries,
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import {
   coordsKey,
@@ -39,6 +45,17 @@ export const vendorKeys = {
   // the only one used, for guests and signed-in customers alike.
   productCategories: (lang: string, vendorId: string) =>
     ["vendors", "product-categories", lang, vendorId] as const,
+  // One category of a vendor's menu, and the size of the whole menu — see
+  // `useVendorMenuByCategory`. Keyed like `products`, for the same reasons.
+  categoryProducts: (
+    lang: string,
+    authed: boolean,
+    vendorId: string,
+    place: string,
+    categoryId: string,
+  ) => ["vendors", "category-products", lang, authed, vendorId, place, categoryId] as const,
+  productTotal: (lang: string, authed: boolean, vendorId: string, place = "") =>
+    ["vendors", "product-total", lang, authed, vendorId, place] as const,
 };
 
 function isAuthed() {
@@ -231,8 +248,46 @@ export function useVendor<T = unknown>(
 }
 
 /**
- * A vendor's products/menu. Logged-in: `/products?vendorId=…&limit=100`.
- * Guests: `/products/open` — count first, then fetch all in one request.
+ * Products asked for per request. Large on purpose: a usual store's whole menu
+ * fits in one, and one request is what the customer waits for.
+ */
+const MENU_PAGE_SIZE = 500;
+
+/**
+ * Every page of a product list: the first, then — only when the backend says
+ * there are more — the rest together. `path` already carries its `?vendorId=`
+ * (and `&category=` when it is one category's list).
+ * One failed page fails the lot, so a menu is never shown with a hole in it.
+ */
+async function everyMenuPage<T>(
+  path: string,
+  params: Record<string, unknown>,
+  signal: AbortSignal,
+  pageSize: number = MENU_PAGE_SIZE,
+): Promise<T[]> {
+  const ask = (page: number) =>
+    apiClient.get(`${path}&page=${page}&limit=${pageSize}`, { params, signal });
+  const first = await ask(1);
+  const pages = Number(first.data?.meta?.totalPage) || 1;
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, pages - 1) }, (_, index) => ask(index + 2)),
+  );
+  return [first, ...rest].flatMap((res) => (res.data?.data ?? []) as T[]);
+}
+
+/**
+ * A vendor's products/menu — all of it. Logged-in: `/products?vendorId=…`.
+ * Guests: `/products/open?vendorId=…`. Both go through `everyMenuPage`.
+ *
+ * ## The whole menu, not the first page (13 Oct 2026)
+ *
+ * The signed-in branch used to ask for `limit=100` and stop. A store with 183
+ * products in 12 categories showed 100 of them in 5, because a category none
+ * of the first hundred products sits in has nothing to draw.
+ *
+ * The vendor page no longer waits on this request — it loads a category at a
+ * time through `useVendorMenuByCategory`, and comes here only for what that
+ * cannot reach (see there) and to ask whether a store delivers at all.
  *
  * `vendorId` is the Mongo id here too: both accept nothing else since
  * 24 Sep 2026, and a `V-…` comes back 400, not empty.
@@ -266,9 +321,9 @@ export function useVendor<T = unknown>(
  * `ownedBy(…, vendorId)`: the page knows which store it is rendering, and that
  * stays true whatever the backend decides proximity means next.
  *
- * The count call deliberately keeps counting everything: `meta.total` has to
- * cover any foreign items too, or the second request would page past some of
- * this vendor's own products before the filter ever sees them.
+ * The filter runs on the whole list, after every page is in: the page count
+ * comes from the backend's own `meta`, so foreign items could not push any of
+ * this vendor's products off the end before the filter sees them.
  */
 export function useVendorProducts<T = unknown>(
   vendorId: string | undefined,
@@ -287,28 +342,134 @@ export function useVendorProducts<T = unknown>(
     queryFn: async ({ signal }) => {
       const params = withCoords({}, place);
 
-      if (authed) {
-        const res = await apiClient.get(`/products?vendorId=${vendorId}&limit=100`, {
-          params,
-          signal,
-        });
-        return ownedBy((res.data?.data ?? []) as T[], vendorId);
-      }
-
-      const countRes = await apiClient.get(
-        `/products/open?vendorId=${vendorId}&page=1&limit=1`,
-        { params, signal },
-      );
-      const total = countRes.data?.meta?.total || 10;
-      const res = await apiClient.get(
-        `/products/open?vendorId=${vendorId}&page=1&limit=${total}`,
-        { params, signal },
-      );
-      return ownedBy((res.data?.data ?? []) as T[], vendorId);
+      const path = authed
+        ? `/products?vendorId=${vendorId}`
+        : `/products/open?vendorId=${vendorId}`;
+      return ownedBy(await everyMenuPage<T>(path, params, signal), vendorId);
     },
     enabled: (options?.enabled ?? true) && !!vendorId && guestReady,
     placeholderData: keepPreviousData,
   });
+}
+
+/** Category lists in flight together; the rest wait their turn, in page order. */
+const MENU_CATEGORIES_AT_ONCE = 6;
+/** One request covers a category of up to this many products. */
+const CATEGORY_PAGE_SIZE = 100;
+
+export type MenuCategoryStatus = "pending" | "success" | "error";
+
+/** Per category, in the order the ids were given. */
+interface MenuByCategory<T> {
+  /** The category's products once loaded; `undefined` until then. */
+  lists: (T[] | undefined)[];
+  statuses: MenuCategoryStatus[];
+}
+
+// At module level so its identity is stable: React Query then hands back the
+// same object until a category's result actually changes, and the page's
+// grouping is not redone on every render.
+function combineMenuCategories<T>(results: UseQueryResult<T[]>[]): MenuByCategory<T> {
+  return {
+    lists: results.map((result) => result.data),
+    statuses: results.map((result) => result.status),
+  };
+}
+
+/**
+ * A vendor's menu, loaded a category at a time (13 Oct 2026) — the way the
+ * vendor's own All Items page loads, and for the same reason: the customer
+ * should not wait for the last category before seeing the first.
+ *
+ * Measured on a store of 183 products in 12 categories: the whole menu in one
+ * request took 2.5 s and nothing could be drawn before it; one category's
+ * list (`&category=<id>`, accepted by `/products` and `/products/open` alike)
+ * takes about 0.8 s.
+ *
+ * - **Order.** Categories load in the order given — the order the page shows
+ *   them — `MENU_CATEGORIES_AT_ONCE` at a time, so the top of the page fills
+ *   first and a store with fifty categories does not fire fifty requests.
+ *   `urgentId` is the one the customer just jumped to: it skips the queue.
+ * - **Counted too.** `total` is the size of the whole menu, from one
+ *   `limit=1` request. Categories cannot say what sits in none of them
+ *   ("Other"), or whether the store has anything at all; the total can.
+ * - **Position and ownership** follow `useVendorProducts`: asked from `place`,
+ *   keyed on it, and every list ends in `ownedBy`.
+ *
+ * A category that fails is reported as `"error"` and not retried here beyond
+ * React Query's own retries — the page falls back to `useVendorProducts`.
+ */
+export function useVendorMenuByCategory<T = unknown>(
+  vendorId: string | undefined,
+  /** Where to ask from — resolve it with `menuCoords`. Required for guests. */
+  place: Coords | null | undefined,
+  categoryIds: readonly string[],
+  options?: { enabled?: boolean; urgentId?: string | null },
+) {
+  const lang = useStore((s) => s.lang);
+  const authed = isAuthed();
+  const queryClient = useQueryClient();
+  const ready = (options?.enabled ?? true) && !!vendorId && (authed || hasCoords(place));
+  const placeKey = coordsKey(place);
+  const path = authed
+    ? `/products?vendorId=${vendorId}`
+    : `/products/open?vendorId=${vendorId}`;
+
+  const totalQuery = useQuery({
+    queryKey: vendorKeys.productTotal(lang, authed, vendorId ?? "", placeKey),
+    queryFn: async ({ signal }) => {
+      const res = await apiClient.get(`${path}&page=1&limit=1`, {
+        params: withCoords({ fields: "productId" }, place),
+        signal,
+      });
+      return Number(res.data?.meta?.total) || 0;
+    },
+    enabled: ready,
+  });
+
+  // A category that has answered keeps its place; the free slots go to the
+  // first ones still waiting. Read from the cache, so finishing one opens the
+  // next on the render that result causes.
+  let slots = MENU_CATEGORIES_AT_ONCE;
+  const byCategory = useQueries({
+    queries: categoryIds.map((categoryId) => {
+      const queryKey = vendorKeys.categoryProducts(
+        lang,
+        authed,
+        vendorId ?? "",
+        placeKey,
+        categoryId,
+      );
+      const status = queryClient.getQueryState(queryKey)?.status;
+      const answered = status === "success" || status === "error";
+      const open = answered || categoryId === options?.urgentId || slots-- > 0;
+      return {
+        queryKey,
+        queryFn: async ({ signal }: { signal: AbortSignal }) =>
+          ownedBy(
+            await everyMenuPage<T>(
+              `${path}&category=${categoryId}`,
+              withCoords({}, place),
+              signal,
+              CATEGORY_PAGE_SIZE,
+            ),
+            vendorId,
+          ),
+        enabled: ready && open,
+      };
+    }),
+    combine: combineMenuCategories<T>,
+  });
+
+  return {
+    lists: byCategory.lists,
+    statuses: byCategory.statuses,
+    /** Products in the whole menu; `undefined` until known. */
+    total: totalQuery.data,
+    /** Still being asked. False once it has answered, either way. */
+    totalPending: ready && totalQuery.isPending,
+    totalFailed: totalQuery.isError,
+  };
 }
 
 /**
