@@ -611,7 +611,6 @@ const pt = {
   // Apenas Portugal, o indicativo é obrigatório em vez de assumido, e a API
   // rejeita os espaços com que o número é normalmente escrito — daí o formato
   // que funciona sempre.
-  mobilePlaceholder: "+351 XXX XXX XXX",
   invalidPortugueseNumber:
     "Comece com o indicativo — +351 seguido de 9 dígitos.",
   changeNotSavedUntilVerified:

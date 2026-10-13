@@ -47,6 +47,117 @@ export function tileChanges(
   });
 }
 
+// ─── Editing one tile (13 Oct 2026) ──────────────────────────────────────────
+//
+// A wrong digit used to mean backspacing from the end: the caret was pinned
+// there. Now any tile can be picked and changed. The value stays the plain
+// string of digits it always was; what the field adds is *where the gaps are*
+// (`holes`): clearing the second of four digits shows `1 _ 3 4`, not `1 3 4 _`.
+// A gap only exists while a digit sits after it, so a finished code has none.
+
+/** The tiles as drawn: `value`'s digits in order, skipping each gap. */
+export function otpTiles(value: string, holes: readonly number[], length: number = OTP_LENGTH): string[] {
+  const tiles: string[] = [];
+  let next = 0;
+  for (let index = 0; index < length; index++) {
+    const isHole = holes.includes(index) && next < value.length;
+    tiles.push(isHole ? "" : (value[next++] ?? ""));
+  }
+  return tiles;
+}
+
+/** The tile after the last digit: where a digit typed "at the end" lands. */
+export function otpEnd(tiles: readonly string[]): number {
+  let end = 0;
+  tiles.forEach((digit, index) => {
+    if (digit) end = index + 1;
+  });
+  return end;
+}
+
+/** Where a tile sits in the string: the digits before it. */
+export function otpStringIndex(tiles: readonly string[], tile: number): number {
+  return tiles.slice(0, tile).filter(Boolean).length;
+}
+
+/** The gaps that are still gaps: inside the code, with a digit after them. */
+export function otpHoles(tiles: readonly string[]): number[] {
+  const end = otpEnd(tiles);
+  return tiles.flatMap((digit, index) => (!digit && index < end ? [index] : []));
+}
+
+/** Which tiles changed between two drawings (see `tileChanges`). */
+export function tileChangesBetween(before: readonly string[], after: readonly string[]): (TileChange | null)[] {
+  return after.map((now, index) => {
+    const was = before[index] ?? "";
+    if (was === now) return null;
+    return now ? "filled" : "cleared";
+  });
+}
+
+/**
+ * The gaps and the picked tile after the browser changed the string.
+ *
+ * The field keeps the browser's own selection on the picked tile (its digit
+ * selected, or a caret in its gap), so typing, deleting, pasting and autofill
+ * are the browser's as before; this only reads what happened:
+ *
+ * | picked tile | string      | meaning                                       |
+ * |-------------|-------------|-----------------------------------------------|
+ * | a digit     | same length | replaced: move to the next tile               |
+ * | a digit     | one shorter | cleared: the tile becomes a gap, stay on it   |
+ * | a gap       | one longer  | filled: move to the next tile                 |
+ * | a gap       | one shorter | the digit before it cleared: move onto it     |
+ * | none (end)  | ±1          | typed or deleted at the end, as always        |
+ *
+ * Anything else (a paste, an autofill, select-all then type) is a new code:
+ * no gaps, nothing picked.
+ */
+export function otpAfterEdit(
+  before: string,
+  after: string,
+  holes: readonly number[],
+  cursor: number | null,
+  length: number = OTP_LENGTH,
+): { holes: number[]; cursor: number | null } {
+  const fresh = { holes: [] as number[], cursor: null };
+  const tiles = otpTiles(before, holes, length);
+  const delta = after.length - before.length;
+  const settle = (nextHoles: number[], pick: number | null) => {
+    const drawn = otpTiles(after, nextHoles, length);
+    const kept = otpHoles(drawn);
+    // A pick at or past the end is just "the end".
+    return { holes: kept, cursor: pick !== null && pick < Math.min(otpEnd(drawn), length) ? pick : null };
+  };
+  const without = (index: number) => before.slice(0, index) + before.slice(index + 1);
+
+  if (cursor === null) {
+    return Math.abs(delta) === 1 && (delta === 1 ? after.startsWith(before) : before.startsWith(after))
+      ? settle([...holes], null)
+      : fresh;
+  }
+
+  const at = otpStringIndex(tiles, cursor);
+  if (tiles[cursor]) {
+    if (delta === 0 && after.slice(0, at) === before.slice(0, at) && after.slice(at + 1) === before.slice(at + 1)) {
+      return settle([...holes], cursor + 1);
+    }
+    if (delta === -1 && after === without(at)) return settle([...holes, cursor], cursor);
+    return fresh;
+  }
+
+  if (delta === 1 && after.slice(0, at) === before.slice(0, at) && after.slice(at + 1) === before.slice(at)) {
+    return settle(holes.filter((hole) => hole !== cursor), cursor + 1);
+  }
+  if (delta === -1 && at > 0 && after === without(at - 1)) {
+    // The digit before the gap went: that tile is the gap now.
+    let previous = cursor - 1;
+    while (previous > 0 && !tiles[previous]) previous--;
+    return settle([...holes, previous], previous);
+  }
+  return fresh;
+}
+
 /**
  * How long the verified sequence holds the page before it moves on.
  *

@@ -600,7 +600,6 @@ const en = {
   // Portugal-only, the country code is required rather than assumed, and the
   // API rejects the spacing the number is normally written with — so the
   // placeholder shows the shape that always works.
-  mobilePlaceholder: "+351 XXX XXX XXX",
   invalidPortugueseNumber:
     "Start with the country code — +351 followed by 9 digits.",
   changeNotSavedUntilVerified:

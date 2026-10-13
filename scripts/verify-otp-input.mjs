@@ -68,7 +68,7 @@ const bodyOf = (source, name) => {
   return source.slice(start, next === -1 ? source.length : start + 1 + next);
 };
 
-const { OTP_LENGTH, EMAIL_OTP_LENGTH, MOBILE_OTP_LENGTH, otpLengthFor, sanitizeOtp, tileChanges, VERIFIED_HOLD_MS, VERIFIED_HOLD_REDUCED_MS } =
+const { OTP_LENGTH, EMAIL_OTP_LENGTH, MOBILE_OTP_LENGTH, otpLengthFor, sanitizeOtp, tileChanges, tileChangesBetween, otpTiles, otpEnd, otpHoles, otpStringIndex, otpAfterEdit, VERIFIED_HOLD_MS, VERIFIED_HOLD_REDUCED_MS } =
   await import(join(here, "../src/lib/otp.ts"));
 const tiles = read("src/components/auth/OtpInput.tsx");
 const tilesCode = stripComments(tiles);
@@ -99,7 +99,7 @@ section("🔴 One real input, four pictures of it");
   );
   check(
     "🔴 a whole selection is not collapsed",
-    /!wholeSelected && \(start !== end \|\| stop !== end\)/.test(tilesCode),
+    /!wholeSelected && \(input\.selectionStart !== start \|\| input\.selectionEnd !== stop\)/.test(tilesCode),
     "select-all then paste or delete replaced the code in the plain field; collapsing it appended instead",
   );
   check(
@@ -243,7 +243,9 @@ section("🔴 Six digits for an SMS code (6 Oct 2026)");
   const field = read("src/components/auth/OtpInput.tsx");
   check(
     "the field caps and draws by its length",
-    /sanitizeOtp\(raw, length\)/.test(field) && /tileChanges\(value, next, length\)/.test(field) && /data-length=\{length\}/.test(field),
+    /sanitizeOtp\(event\.target\.value, length\)/.test(field) &&
+      /otpTiles\(value, edit\.holes, length\)/.test(field) &&
+      /data-length=\{length\}/.test(field),
   );
   check(
     "🔴 tiles 5 and 6 have a place in the 2×3 block",
@@ -280,6 +282,48 @@ section("The model, executed");
   );
   check("a paste fills every tile", same(tileChanges("", "9876"), ["filled", "filled", "filled", "filled"]));
   check("replacing a digit is a fill", same(tileChanges("1234", "1834"), [null, "filled", null, null]));
+
+  // ── Changing one digit (13 Oct 2026) ──────────────────────────────────────
+  // A wrong digit used to mean backspacing from the end and retyping.
+  // `step` plays one browser edit: the string after it, from the picked tile.
+  let state = { value: "1234", holes: [], cursor: null };
+  const pick = (cursor) => (state = { ...state, cursor });
+  const step = (after) => {
+    state = { value: after, ...otpAfterEdit(state.value, after, state.holes, state.cursor, 4) };
+    return [otpTiles(state.value, state.holes, 4).map((d) => d || "_").join(""), state.cursor];
+  };
+  pick(1);
+  check("🔴 a digit typed on a picked tile replaces that tile only", same(step("1834"), ["1834", 2]), "the wrong digit could only be reached by deleting the ones after it");
+  pick(1);
+  check("🔴 clearing a picked tile leaves a gap, and stays on it", same(step("134"), ["1_34", 1]), "closing up would move every later digit one tile to the left");
+  check("a digit typed into the gap fills it and moves on", same(step("1734"), ["1734", 2]));
+  pick(2);
+  step("174");
+  check("Backspace in a gap clears the tile before it", same(step("14"), ["1__4", 1]));
+  check("…and the gaps fill left to right", same(step("154"), ["15_4", 2]) && same(step("1564"), ["1564", 3]));
+  pick(3);
+  check("the last tile replaced: nothing is picked after it", same(step("1569"), ["1569", null]));
+  pick(1);
+  check("🔴 a paste over a picked tile is a new code: no gaps", same(step("9876"), ["9876", null]), "an SMS autofill or a paste must never be read as one edited tile");
+  state = { value: "12", holes: [], cursor: null };
+  check("typing and deleting at the end are as before", same(step("123"), ["123_", null]) && same(step("12"), ["12__", null]));
+  check("a gap needs a digit after it", same(otpHoles(otpTiles("1", [1, 2], 4)), []) && same(otpTiles("14", [1, 2], 4), ["1", "", "", "4"]));
+  check("a tile's place in the string skips the gaps", otpStringIndex(["1", "", "", "4"], 3) === 1 && otpEnd(["1", "", "", "4"]) === 4 && otpEnd(["1", "2", "", ""]) === 2);
+  check("the tiles animate from what was drawn, gaps included", same(tileChangesBetween(["1", "2", "3", "4"], ["1", "", "3", "4"]), [null, "cleared", null, null]));
+  check(
+    "🔴 the field picks a tile on click and with the arrow keys",
+    /onClick=\{\(event\) => pickTileAt\(event\.clientX\)\}/.test(tilesCode) && /moveCursor\(event\.key === "ArrowLeft" \? -1 : 1\)/.test(tilesCode),
+  );
+  check(
+    "🔴 …by keeping the browser's selection on it, still in one input",
+    /return tiles\[cursor\] \? \[at, at \+ 1\] : \[at, at\];/.test(tilesCode) && (tilesCode.match(/<input/g) || []).length === 1,
+    "separate inputs are where paste and SMS autofill break",
+  );
+  check(
+    "🔴 a letter typed over a picked digit does not delete it",
+    /native\.inputType === "insertText" && native\.data && \/\\D\/\.test\(native\.data\)/.test(tilesCode),
+    "the browser has already swapped the letter in; unsanitised, that reads as the digit being cleared",
+  );
 }
 
 section("🔴 Typing never glitches");

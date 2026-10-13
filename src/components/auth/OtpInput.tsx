@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useLayoutEffect, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 import {
   OTP_LENGTH,
+  otpAfterEdit,
+  otpEnd,
+  otpHoles,
+  otpStringIndex,
+  otpTiles,
   sanitizeOtp,
-  tileChanges,
+  tileChangesBetween,
   type TileChange,
 } from "@/lib/otp";
 
@@ -68,6 +73,16 @@ function linksFor(length: number): { edge: "top" | "side" | "bottom"; lx: number
  * so a keystroke replays one tile and leaves the others alone: that is what
  * keeps fast typing from restarting an animation half-way.
  *
+ * ## Changing one digit (13 Oct 2026)
+ *
+ * Any tile can be picked — a click or tap, or the arrow keys — and changed on
+ * its own; a wrong digit used to mean backspacing from the end. Still one
+ * input: the browser's selection is kept on the picked tile (its digit
+ * selected, or a caret in its gap), so a typed digit replaces exactly that
+ * one, and paste and SMS autofill are untouched. Clearing a tile leaves a gap
+ * (`1 _ 3 4`) rather than closing up; the gaps live here, the value stays the
+ * plain digits. The rules are `otpAfterEdit` in `lib/otp.ts`.
+ *
  * ## Verified (`verified`)
  *
  * Set by the page only after `/verify-otp` has answered yes — submission stays
@@ -99,12 +114,50 @@ export default function OtpInput({
     Array.from({ length }, () => REST),
   );
 
-  function handleChange(raw: string) {
-    const next = sanitizeOtp(raw, length);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const tilesRef = useRef<HTMLDivElement>(null);
+  // Where the gaps are, and the tile picked for editing (`null`: the end).
+  // Both are read through the value, so a code the page replaces or empties
+  // (a resend, a failed attempt) drops them without an effect.
+  const [edit, setEdit] = useState<{ holes: number[]; cursor: number | null }>({ holes: [], cursor: null });
+  // Bumped to put the selection back when nothing else changed.
+  const [reselect, setReselect] = useState(0);
+
+  const tiles = otpTiles(value, edit.holes, length);
+  const end = otpEnd(tiles);
+  const complete = value.length === length;
+  const cursor = edit.cursor !== null && edit.cursor < end ? edit.cursor : null;
+
+  /** The browser selection that stands for the picked tile. */
+  function selectionFor(): [number, number] {
+    if (cursor === null) return [value.length, value.length];
+    const at = otpStringIndex(tiles, cursor);
+    return tiles[cursor] ? [at, at + 1] : [at, at];
+  }
+
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    if (!input || !focused) return;
+    const [start, stop] = selectionFor();
+    if (input.selectionStart !== start || input.selectionEnd !== stop) input.setSelectionRange(start, stop);
+    // `selectionFor` reads only what is listed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, edit, focused, reselect]);
+
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const native = event.nativeEvent as InputEvent;
+    // A letter typed over a picked digit would otherwise read as that digit
+    // being deleted: the browser has already swapped it in.
+    if (native.inputType === "insertText" && native.data && /\D/.test(native.data)) {
+      setReselect((n) => n + 1);
+      return;
+    }
+    const next = sanitizeOtp(event.target.value, length);
     // A non-digit keystroke leaves the value as it was: nothing to animate.
     if (next === value) return;
 
-    const changes = tileChanges(value, next, length);
+    const after = otpAfterEdit(value, next, otpHoles(tiles), cursor, length);
+    const changes = tileChangesBetween(tiles, otpTiles(next, after.holes, length));
     const batch = changes.filter(Boolean).length > 1;
     setMotion((current) =>
       current.map((tile, index) => {
@@ -113,12 +166,37 @@ export default function OtpInput({
         return { version: tile.version + 1, change, batch };
       }),
     );
+    setEdit(after);
     onChange(next);
   }
 
+  /** Picks the tile under a click or tap; past the last digit is "the end". */
+  function pickTileAt(clientX: number) {
+    const frames = Array.from(tilesRef.current?.children ?? []);
+    let picked: number | null = null;
+    let nearest = Infinity;
+    frames.forEach((frame, index) => {
+      const box = frame.getBoundingClientRect();
+      const distance = Math.abs(clientX - (box.left + box.width / 2));
+      if (distance < nearest) {
+        nearest = distance;
+        picked = index;
+      }
+    });
+    setEdit({ holes: otpHoles(tiles), cursor: picked !== null && picked < end ? picked : null });
+    setReselect((n) => n + 1);
+  }
+
+  /** Left and right move between the tiles that hold the code. */
+  function moveCursor(step: -1 | 1) {
+    const from = cursor ?? end;
+    const to = Math.max(0, from + step);
+    setEdit({ holes: otpHoles(tiles), cursor: to < end ? to : null });
+  }
+
   // The tile the next digit will land in — shown as the caret would be.
-  const activeIndex = Math.min(value.length, length - 1);
-  const complete = value.length === length;
+  const activeIndex = cursor ?? Math.min(end, length - 1);
+  const showActive = cursor !== null || !complete;
 
   return (
     <div
@@ -146,24 +224,30 @@ export default function OtpInput({
         value={value}
         disabled={disabled || verified}
         aria-label={label}
-        onChange={(event) => handleChange(event.target.value)}
+        ref={inputRef}
+        onChange={handleChange}
+        onClick={(event) => pickTileAt(event.clientX)}
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          moveCursor(event.key === "ArrowLeft" ? -1 : 1);
+        }}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        // Keeps the (invisible) caret at the end, so what is typed always
-        // lands in the highlighted tile — a caret left in the middle of an
-        // invisible string would put the next digit somewhere the tiles do
-        // not show. A *whole* selection is left alone: select-all then type,
-        // delete or paste replaced the code in the plain field this replaced,
-        // and still has to. Only acts when it changes something, so it cannot
-        // loop on its own `select` event.
+        // Keeps the (invisible) selection on the picked tile, or the caret at
+        // the end, so what is typed always lands in the highlighted tile — a
+        // caret left anywhere else in an invisible string would put the next
+        // digit where the tiles do not show. A *whole* selection is left
+        // alone: select-all then type, delete or paste replaced the code in
+        // the plain field this replaced, and still has to. Only acts when it
+        // changes something, so it cannot loop on its own `select` event.
         onSelect={(event) => {
           const input = event.currentTarget;
-          const end = input.value.length;
-          const start = input.selectionStart ?? end;
-          const stop = input.selectionEnd ?? end;
-          const wholeSelected = start === 0 && stop === end && end > 0;
-          if (!wholeSelected && (start !== end || stop !== end)) {
-            input.setSelectionRange(end, end);
+          const size = input.value.length;
+          const [start, stop] = selectionFor();
+          const wholeSelected = input.selectionStart === 0 && input.selectionEnd === size && size > 0;
+          if (!wholeSelected && (input.selectionStart !== start || input.selectionEnd !== stop)) {
+            input.setSelectionRange(start, stop);
           }
         }}
         // Transparent rather than `opacity-0`: some mobile browsers will not
@@ -176,13 +260,14 @@ export default function OtpInput({
       />
 
       <div
+        ref={tilesRef}
         aria-hidden="true"
         className="flex items-center justify-center gap-[var(--otp-g)]"
       >
         {Array.from({ length }, (_, index) => {
-          const digit = value[index] ?? "";
+          const digit = tiles[index] ?? "";
           const tile = motion[index] ?? REST;
-          const isActive = !verified && focused && !complete && index === activeIndex;
+          const isActive = !verified && focused && showActive && index === activeIndex;
           const justFilled = !verified && tile.change === "filled" && digit;
           return (
             <div
