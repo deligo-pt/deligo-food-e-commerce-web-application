@@ -3,11 +3,14 @@
 import { memo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 
-/** One row in the sidebar. The count is the number of products rendered. */
+/**
+ * One row in the sidebar. The count is the number of products rendered, or
+ * `null` while the category is still loading and there is no number to give.
+ */
 export interface CategorySidebarItem {
   id: string;
   name: string;
-  count: number;
+  count: number | null;
 }
 
 interface CategorySidebarProps {
@@ -95,15 +98,22 @@ const CategorySidebar = memo(function CategorySidebar({
                         Casing in CSS, not in the copy, keeps the dictionaries
                         readable and lets one rule cover both languages. */}
                     <span className="min-w-0 break-words uppercase">{group.name}</span>
-                    <span
-                      className={`shrink-0 text-xs tabular-nums ${
-                        isActive
-                          ? "text-primary/70 dark:text-pink-400/70"
-                          : "text-gray-400 dark:text-neutral-500"
-                      }`}
-                    >
-                      ({group.count})
-                    </span>
+                    {group.count === null ? (
+                      <span
+                        aria-hidden
+                        className="h-3 w-6 shrink-0 animate-pulse rounded-sm bg-gray-100 dark:bg-neutral-800"
+                      />
+                    ) : (
+                      <span
+                        className={`shrink-0 text-xs tabular-nums ${
+                          isActive
+                            ? "text-primary/70 dark:text-pink-400/70"
+                            : "text-gray-400 dark:text-neutral-500"
+                        }`}
+                      >
+                        ({group.count})
+                      </span>
+                    )}
                   </button>
                 </li>
               );

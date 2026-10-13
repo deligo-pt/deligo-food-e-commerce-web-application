@@ -574,6 +574,8 @@ const en = {
   riderInstructionsPlaceholder: "e.g. Leave at the door, ring the bell twice",
   required: "required",
   chooseUpTo: "Choose up to",
+  readMore: "Read more",
+  showLess: "Show less",
   selectRequiredAddons: "Please select the required options",
   increaseQuantity: "Increase quantity",
   decreaseQuantity: "Decrease quantity",

@@ -1,18 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   X,
   Plus,
   Minus,
-  Trash2,
   Tag,
   ShoppingCart,
   Sparkles,
-  FileText,
-  Circle,
-  CheckCircle,
+  Check,
+  ChevronDown,
   UtensilsCrossed,
   Moon,
 } from "lucide-react";
@@ -129,6 +127,11 @@ interface AddonGroup {
   isActive?: boolean;
 }
 
+/** A description longer than this gets the two-line clamp and "Read more". */
+const DESCRIPTION_CLAMP_AT = 110;
+/** With this many add-on choices or fewer, every group starts open. */
+const ADDONS_ALL_OPEN_UP_TO = 8;
+
 export default function ProductDetailsModal({
   isOpen,
   onClose,
@@ -155,6 +158,13 @@ export default function ProductDetailsModal({
   const [addonGroups, setAddonGroups] = useState<AddonGroup[]>([]);
   // Selected quantity per addon option, keyed by the option sku.
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
+  // Add-on groups the customer opened or closed by hand; the rest follow
+  // `isGroupOpen`'s default.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  // The required group "Add to cart" stopped on, outlined until it is filled.
+  const [flaggedGroupId, setFlaggedGroupId] = useState<string | null>(null);
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   // The cart page and the navbar badge both read the `useCart` query, so a
   // single invalidation after adding updates the icon and the page together.
   const { invalidate: invalidateCart } = useCartCache();
@@ -173,6 +183,9 @@ export default function ProductDetailsModal({
     // Reset any prior selection whenever the product changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAddonQty({});
+    setOpenGroups({});
+    setFlaggedGroupId(null);
+    setDescriptionOpen(false);
     if (!ids.length || !getAccessToken()) {
       setAddonGroups([]);
       return;
@@ -245,11 +258,13 @@ export default function ProductDetailsModal({
             preloaded[addon.sku] = addon.quantity;
           }
         }
-        setAddonQty(preloaded);
+        // Only a line that has add-ons replaces the selection. This runs
+        // again on every size change, and wiping here meant picking the extras
+        // first and the size second lost the extras.
+        if (Object.keys(preloaded).length > 0) setAddonQty(preloaded);
       } catch {
         // An unreadable cart just means no preload; the save path re-reads
         // authoritatively before writing anything.
-        if (!cancelled) setAddonQty({});
       }
     })();
 
@@ -260,6 +275,13 @@ export default function ProductDetailsModal({
 
   const groupSelectedCount = (group: AddonGroup) =>
     group.options.reduce((sum, o) => sum + (addonQty[o.sku] || 0), 0);
+
+  // A long list of optional extras is what made this modal a scroll: required
+  // groups start open, optional ones closed — unless there is little to hide.
+  const addonChoices = addonGroups.reduce((sum, g) => sum + g.options.length, 0);
+  const isGroupOpen = (group: AddonGroup) =>
+    openGroups[group._id] ??
+    (group.minSelectable > 0 || addonChoices <= ADDONS_ALL_OPEN_UP_TO);
 
   const incAddon = (group: AddonGroup, sku: string) => {
     if (groupSelectedCount(group) >= group.maxSelectable) return;
@@ -391,6 +413,9 @@ export default function ProductDetailsModal({
   const total = subtotal;
   const currency = currencySymbol(product?.pricing?.currency);
 
+  const description =
+    product?.description || t("freshlyPreparedWithPremiumIngredients");
+
   const handleOptionClick = (opt: VariantOption) => {
     if (
       selectedOption?.label === opt.label &&
@@ -437,6 +462,12 @@ export default function ProductDetailsModal({
     );
     if (unmetGroup) {
       toast.error(t("selectRequiredAddons"));
+      // Show which one: open it, outline it and bring it into view.
+      setOpenGroups((prev) => ({ ...prev, [unmetGroup._id]: true }));
+      setFlaggedGroupId(unmetGroup._id);
+      scrollRef.current
+        ?.querySelector(`[data-addon-group="${unmetGroup._id}"]`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
     }
 
@@ -532,14 +563,20 @@ export default function ProductDetailsModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-999 flex items-center justify-center bg-black/40 p-6 backdrop-blur-sm"
+      className="fixed inset-0 z-999 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:p-6"
     >
+      {/* A sheet from the bottom on a phone, a centred dialog from `sm`. The
+          panel is a column: the middle scrolls, the footer never does, so the
+          quantity and the price stay in reach however long the options are. */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative flex w-full max-w-145 flex-col overflow-hidden rounded-4xl bg-card border shadow-2xl dark:shadow-none"
+        role="dialog"
+        aria-modal="true"
+        aria-label={product?.name}
+        className="relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-4xl border bg-card shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:max-w-160 sm:rounded-4xl dark:shadow-none"
       >
-        {/* Drag handle */}
-        <div className="absolute left-1/2 top-3 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-gray-300 dark:bg-neutral-700" />
+        {/* Drag handle — a phone cue only */}
+        <div className="absolute left-1/2 top-2 z-20 h-1 w-12 -translate-x-1/2 rounded-full bg-gray-300 sm:hidden dark:bg-neutral-700" />
 
         {/* Close button */}
         <Button
@@ -547,15 +584,15 @@ export default function ProductDetailsModal({
           variant="secondary"
           onClick={onClose}
           aria-label={t("close")}
-          className="absolute right-4 top-4 z-20 rounded-full"
+          className="absolute right-3 top-3 z-20 rounded-full"
         >
           <X size={20} />
         </Button>
 
         {/* Content */}
-        <div className="max-h-[calc(100vh-140px)] flex-1 overflow-y-auto scrollbar-hide">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
           {loading && (
-            <div className="flex h-96 items-center justify-center p-8">
+            <div className="flex h-64 items-center justify-center p-8">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           )}
@@ -563,111 +600,106 @@ export default function ProductDetailsModal({
           {error && <div className="p-8 text-center text-red-500">{error}</div>}
 
           {!loading && !error && product && (
-            <div className="flex flex-col items-center px-8 pb-6 pt-8">
-              {/* Image */}
-              <div className="relative mb-6 h-64 w-64">
-                <div className="absolute inset-0 rounded-full bg-primary/10 blur-3xl" />
-                <div className="relative h-full w-full overflow-hidden rounded-full border-4 border-white shadow-xl">
+            <div className="flex flex-col gap-6 p-4 pt-6 sm:p-6">
+              {/* Header: picture beside the name, so the options start in the
+                  first screenful instead of under a 256px image. */}
+              <div className="flex items-start gap-4 pr-12">
+                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border bg-gray-50 sm:h-28 sm:w-28 dark:bg-neutral-900">
                   <SafeImage
                     src={getProductImage(product)}
                     fallbackSrc={DEFAULT_PRODUCT_IMAGE}
                     alt={product.name}
-                    sizes="256px"
-                    fallbackIcon={<UtensilsCrossed className="h-16 w-16" />}
+                    sizes="112px"
+                    fallbackIcon={<UtensilsCrossed className="h-8 w-8" />}
                   />
                 </div>
-              </div>
-
-              {/* Category Badge */}
-              <div className="mb-6 flex items-center gap-2 rounded-full bg-green-50 dark:bg-green-950/30 px-4 py-2 text-green-700 dark:text-green-400 border dark:border-green-900/30">
-                <UtensilsCrossed size={14} />
-                <span className="text-xs font-bold uppercase tracking-wider">
-                  {product.category?.name || t("product")}
-                </span>
-              </div>
-
-              {/* Product Info */}
-              <div className="mb-8 w-full">
-                <div className="flex items-start justify-between gap-4">
-                  <h2 className="max-w-[70%] text-xl font-bold leading-tight text-gray-900 dark:text-white">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex items-center gap-1 text-green-700 dark:text-green-400">
+                    <UtensilsCrossed size={12} />
+                    <span className="truncate text-xs font-bold uppercase tracking-wider">
+                      {product.category?.name || t("product")}
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-bold leading-tight text-gray-900 dark:text-white">
                     {product.name}
                   </h2>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-primary dark:text-pink-400">
+                  <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <p className="text-xl font-bold text-primary dark:text-pink-400">
                       {formatPrice(unitPrice, currency)}
                     </p>
                     {hasDiscount && (
-                      <p className="text-gray-400 dark:text-neutral-500 line-through">
+                      <p className="text-sm text-gray-400 line-through dark:text-neutral-500">
                         {formatPrice(currentOriginalUnitPrice, currency)}
                       </p>
                     )}
+                    {hasDiscount && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-primary dark:text-pink-400">
+                        <Tag size={12} className="fill-primary/15" />
+                        Save{" "}
+                        {formatPrice(
+                          currentOriginalUnitPrice - unitPrice,
+                          currency,
+                        )}
+                        {/* Only worth appending for a percentage — on a FLAT
+                            discount the rate *is* the saving already printed,
+                            so "(€0.60 Off)" would just say it twice. */}
+                        {product?.pricing?.discountType === "PERCENTAGE" &&
+                          ` (${formatDiscountValue(product.pricing, currency)} Off)`}
+                      </span>
+                    )}
                   </div>
                 </div>
-                {hasDiscount && (
-                  <div className="mt-3 flex items-center justify-end gap-1.5 text-primary dark:text-pink-400">
-                    <Tag size={14} className="fill-primary/15" />
-                    <span className="text-sm font-semibold">
-                      Save{" "}
-                      {formatPrice(
-                        currentOriginalUnitPrice - unitPrice,
-                        currency,
-                      )}
-                      {/* Only worth appending for a percentage — on a FLAT
-                          discount the rate *is* the saving already printed,
-                          so "(€0.60 Off)" would just say it twice. */}
-                      {product?.pricing?.discountType === "PERCENTAGE" &&
-                        ` (${formatDiscountValue(product.pricing, currency)} Off)`}
-                    </span>
-                  </div>
+              </div>
+
+              {/* Description — two lines until asked for more */}
+              <div className="text-sm leading-6 text-gray-600 dark:text-neutral-400">
+                <p className={descriptionOpen ? "" : "line-clamp-2"}>{description}</p>
+                {description.length > DESCRIPTION_CLAMP_AT && (
+                  <button
+                    type="button"
+                    onClick={() => setDescriptionOpen((open) => !open)}
+                    className="focus-ring mt-1 rounded-sm text-sm font-semibold text-primary dark:text-pink-400"
+                  >
+                    {descriptionOpen ? t("showLess") : t("readMore")}
+                  </button>
                 )}
               </div>
 
-              {/* Variants – Grouped, mutually exclusive, toggle on click */}
+              {/* Variants – Grouped, mutually exclusive, toggle on click.
+                  Chips that wrap: five options take two lines, not five rows. */}
               {groupedOptions.length > 0 && (
-                <div className="mb-8 w-full space-y-4">
+                <div className="space-y-4">
                   {groupedOptions.map((group) => (
                     <div key={group.groupName}>
-                      <h3 className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
+                      <h3 className="mb-2 text-sm font-semibold text-gray-900 dark:text-white">
                         {group.groupName}
                       </h3>
-                      <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
                         {group.options.map((opt) => {
                           const isSelected =
                             selectedOption?.label === opt.label &&
                             selectedOption?.groupName === opt.groupName;
                           return (
-                            <div
+                            <button
+                              type="button"
                               key={`${opt.groupName}-${opt.label}`}
                               onClick={() => handleOptionClick(opt)}
-                              className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 transition bg-card hover:bg-gray-50 dark:hover:bg-neutral-800"
+                              aria-pressed={isSelected}
+                              className={`focus-ring flex min-h-10 items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 text-primary dark:border-pink-400 dark:bg-pink-950/30 dark:text-pink-400"
+                                  : "border-border bg-card text-gray-800 hover:bg-gray-50 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                              }`}
                             >
-                              <div className="flex items-center gap-3">
-                                {isSelected ? (
-                                  <CheckCircle
-                                    size={20}
-                                    className="text-primary dark:text-pink-400"
-                                  />
-                                ) : (
-                                  <Circle size={20} className="text-gray-400 dark:text-neutral-500" />
+                              {isSelected && <Check size={14} strokeWidth={3} />}
+                              <span className="font-medium">{opt.label}</span>
+                              <span className={isSelected ? "font-semibold" : "text-gray-500 dark:text-neutral-400"}>
+                                {formatPrice(
+                                  applyProductDiscount(opt.price, product?.pricing),
+                                  currency,
                                 )}
-                                <span className="text-gray-800 dark:text-neutral-200">
-                                  {opt.label}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {hasDiscount && (
-                                  <span className="text-sm text-gray-400 dark:text-neutral-500 line-through">
-                                    {formatPrice(opt.price, currency)}
-                                  </span>
-                                )}
-                                <span className="font-medium text-primary dark:text-pink-400">
-                                  {formatPrice(
-                                    applyProductDiscount(opt.price, product?.pricing),
-                                    currency,
-                                  )}
-                                </span>
-                              </div>
-                            </div>
+                              </span>
+                            </button>
                           );
                         })}
                       </div>
@@ -676,140 +708,140 @@ export default function ProductDetailsModal({
                 </div>
               )}
 
-              {/* Quantity */}
-              <div className="mb-8 flex w-full items-center justify-end gap-4">
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  disabled={quantity <= 1}
-                  aria-label={quantity <= 1 ? t("remove") : t("decrease")}
-                  className="rounded-full"
-                >
-                  {quantity <= 1 ? <Trash2 size={16} /> : <Minus size={16} />}
-                </Button>
-                <span className="w-8 text-center text-xl font-bold text-gray-950 dark:text-white">
-                  {quantity}
-                </span>
-                <Button
-                  size="icon"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  aria-label={t("increase")}
-                  className="rounded-full"
-                >
-                  <Plus size={16} />
-                </Button>
-              </div>
-
-              {/* Summary */}
-              <div className="mb-6 w-full rounded-3xl border border-border bg-gray-50 dark:bg-neutral-900/50 p-6">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <span className="block text-xl font-semibold text-gray-900 dark:text-white">
-                      {t("total")}
-                    </span>
-                    <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-neutral-400">
-                      ({t("inclVat")} -&nbsp;{formatPrice(vatAmount, currency)})
-                    </span>
-                  </div>
-                  <span className="shrink-0 whitespace-nowrap text-xl font-bold text-primary dark:text-pink-400">
-                    {formatPrice(total, currency)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Add-ons */}
+              {/* Add-ons — one collapsible block per group */}
               {addonGroups.length > 0 && (
-                <div className="mb-8 w-full space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Sparkles size={18} className="text-primary dark:text-pink-400" />
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    <Sparkles size={16} className="text-primary dark:text-pink-400" />
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                       {t("customizeYourOrder")}
                     </h3>
                   </div>
                   {addonGroups.map((group) => {
                     const selectedCount = groupSelectedCount(group);
                     const atMax = selectedCount >= group.maxSelectable;
+                    const open = isGroupOpen(group);
+                    const unmet = flaggedGroupId === group._id && selectedCount < group.minSelectable;
+                    const picked = group.options
+                      .filter((o) => (addonQty[o.sku] || 0) > 0)
+                      .map((o) => ((addonQty[o.sku] || 0) > 1 ? `${addonQty[o.sku]}× ${o.name}` : o.name));
                     return (
-                      <div key={group._id}>
-                        <div className="mb-2 flex items-center justify-between">
-                          <h4 className="text-base font-semibold text-gray-900 dark:text-white">
-                            {group.title}
-                          </h4>
-                          <span className="text-xs text-gray-500 dark:text-neutral-400">
-                            {group.minSelectable > 0 ? t("required") : t("optional")}
-                            {" · "}
-                            {t("chooseUpTo")} {group.maxSelectable}
-                          </span>
-                        </div>
-                        <div className="space-y-2">
-                          {group.options.map((opt) => {
-                            const qty = addonQty[opt.sku] || 0;
-                            return (
-                              <div
-                                key={opt.sku}
-                                className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
+                      <div
+                        key={group._id}
+                        data-addon-group={group._id}
+                        className={`overflow-hidden rounded-2xl border ${
+                          unmet ? "border-red-400 dark:border-red-500" : "border-border"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setOpenGroups((prev) => ({ ...prev, [group._id]: !open }))}
+                          aria-expanded={open}
+                          className="focus-ring flex w-full items-center justify-between gap-3 bg-gray-50 px-4 py-3 text-left dark:bg-neutral-900/50"
+                        >
+                          <span className="min-w-0">
+                            <span className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {group.title}
+                              </span>
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+                                  group.minSelectable > 0
+                                    ? "bg-primary/10 text-primary dark:bg-pink-950/30 dark:text-pink-400"
+                                    : "bg-gray-200 text-gray-600 dark:bg-neutral-800 dark:text-neutral-400"
+                                }`}
                               >
-                                <div className="flex items-center gap-2">
-                                  <span className="text-gray-800 dark:text-neutral-200">
-                                    {opt.name}
-                                  </span>
-                                  <span className="text-sm font-medium text-primary dark:text-pink-400">
-                                    +{formatPrice(opt.price, currency)}
-                                  </span>
+                                {group.minSelectable > 0 ? t("required") : t("optional")}
+                              </span>
+                            </span>
+                            <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-neutral-400">
+                              {!open && picked.length > 0
+                                ? picked.join(", ")
+                                : `${t("chooseUpTo")} ${group.maxSelectable}`}
+                            </span>
+                          </span>
+                          <span className="flex shrink-0 items-center gap-2">
+                            <span
+                              className={`text-xs font-semibold ${
+                                selectedCount > 0
+                                  ? "text-primary dark:text-pink-400"
+                                  : "text-gray-500 dark:text-neutral-400"
+                              }`}
+                            >
+                              {selectedCount} / {group.maxSelectable}
+                            </span>
+                            <ChevronDown
+                              size={18}
+                              className={`text-gray-500 transition-transform dark:text-neutral-400 ${open ? "rotate-180" : ""}`}
+                            />
+                          </span>
+                        </button>
+                        {open && (
+                          <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
+                            {group.options.map((opt) => {
+                              const qty = addonQty[opt.sku] || 0;
+                              return (
+                                <div
+                                  key={opt.sku}
+                                  className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${
+                                    qty > 0
+                                      ? "border-primary/40 bg-primary/5 dark:border-pink-400/40 dark:bg-pink-950/20"
+                                      : "border-border bg-card"
+                                  }`}
+                                >
+                                  <div className="min-w-0">
+                                    <span className="block truncate text-sm text-gray-800 dark:text-neutral-200">
+                                      {opt.name}
+                                    </span>
+                                    <span className="block text-xs font-medium text-primary dark:text-pink-400">
+                                      +{formatPrice(opt.price, currency)}
+                                    </span>
+                                  </div>
+                                  <div className="flex shrink-0 items-center gap-1">
+                                    {qty > 0 && (
+                                      <>
+                                        <Button
+                                          size="icon-sm"
+                                          variant="outline"
+                                          onClick={() => decAddon(opt.sku)}
+                                          aria-label={t("decrease")}
+                                          className="rounded-full"
+                                        >
+                                          <Minus size={14} />
+                                        </Button>
+                                        <span className="w-5 text-center text-sm font-bold text-gray-900 dark:text-white">
+                                          {qty}
+                                        </span>
+                                      </>
+                                    )}
+                                    <Button
+                                      size="icon-sm"
+                                      variant={qty > 0 ? "default" : "outline"}
+                                      onClick={() => incAddon(group, opt.sku)}
+                                      disabled={atMax}
+                                      aria-label={t("increase")}
+                                      className="rounded-full"
+                                    >
+                                      <Plus size={14} />
+                                    </Button>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="icon-sm"
-                                    variant="outline"
-                                    onClick={() => decAddon(opt.sku)}
-                                    disabled={qty === 0}
-                                    aria-label={t("decrease")}
-                                    className="rounded-full"
-                                  >
-                                    <Minus size={14} />
-                                  </Button>
-                                  <span className="w-5 text-center text-sm font-bold text-gray-900 dark:text-white">
-                                    {qty}
-                                  </span>
-                                  <Button
-                                    size="icon-sm"
-                                    onClick={() => incAddon(group, opt.sku)}
-                                    disabled={atMax}
-                                    aria-label={t("increase")}
-                                    className="rounded-full"
-                                  >
-                                    <Plus size={14} />
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
               )}
-
-              {/* Details */}
-              <div className="w-full text-gray-900 dark:text-white">
-                <div className="mb-4 flex items-center gap-2">
-                  <FileText size={18} />
-                  <h3 className="text-xl font-semibold">{t("details")}</h3>
-                </div>
-                <p className="leading-7 text-gray-600 dark:text-neutral-400">
-                  {product.description ||
-                    t("freshlyPreparedWithPremiumIngredients")}
-                </p>
-              </div>
             </div>
           )}
         </div>
 
         {/* Sticky Footer */}
         {!loading && !error && product && (
-          <div className="border-t border-border bg-card p-8">
+          <div className="border-t border-border bg-card p-4 sm:px-6">
             {isStoreClosed && (
               <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4">
                 <Moon
@@ -826,32 +858,62 @@ export default function ProductDetailsModal({
                 </div>
               </div>
             )}
-            {/* Plan.md Phase 2/3: this was `py-4 text-lg` — a 68px slab with an
-                18px label, the shape that started the whole design pass. It is
-                now the `lg` size (48px, 14px label) and keeps its gradient and
-                shine, which are bespoke to the primary CTA. The gradient still
-                holds two of the seven pink literals; those belong to the Phase 4
-                sweep, not here. */}
-            <Button
-              size="lg"
-              onClick={handleAddToCart}
-              disabled={cartLoading || isStoreClosed}
-              className={`relative w-full gap-3 overflow-hidden rounded-2xl bg-linear-to-r from-primary to-primary-hover font-semibold shadow-lg hover:from-primary-hover hover:to-[#b01254] active:scale-[0.98] ${
-                cartLoading ? "" : "cart-cta"
-              }`}
-            >
-              {!cartLoading && (
-                <span className="cart-cta-shine" aria-hidden="true" />
-              )}
-              {cartLoading ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <span className="relative z-10 flex items-center gap-3">
-                  <ShoppingCart size={22} />
-                  {t("addToCart")} • {formatPrice(total, currency)}
+            <div className="flex items-center gap-3">
+              {/* Quantity — beside the button, so it is never scrolled away */}
+              <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-border p-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  disabled={quantity <= 1}
+                  aria-label={t("decrease")}
+                  className="rounded-xl"
+                >
+                  <Minus size={16} />
+                </Button>
+                <span className="w-6 text-center text-base font-bold text-gray-950 dark:text-white">
+                  {quantity}
                 </span>
-              )}
-            </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setQuantity((q) => q + 1)}
+                  aria-label={t("increase")}
+                  className="rounded-xl"
+                >
+                  <Plus size={16} />
+                </Button>
+              </div>
+              {/* Plan.md Phase 2/3: this was `py-4 text-lg` — a 68px slab with an
+                  18px label, the shape that started the whole design pass. It is
+                  now the `lg` size (48px, 14px label) and keeps its gradient and
+                  shine, which are bespoke to the primary CTA. The gradient still
+                  holds two of the seven pink literals; those belong to the Phase 4
+                  sweep, not here. */}
+              <Button
+                size="lg"
+                onClick={handleAddToCart}
+                disabled={cartLoading || isStoreClosed}
+                className={`relative min-w-0 flex-1 gap-3 overflow-hidden rounded-2xl bg-linear-to-r from-primary to-primary-hover font-semibold shadow-lg hover:from-primary-hover hover:to-[#b01254] active:scale-[0.98] ${
+                  cartLoading ? "" : "cart-cta"
+                }`}
+              >
+                {!cartLoading && (
+                  <span className="cart-cta-shine" aria-hidden="true" />
+                )}
+                {cartLoading ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <span className="relative z-10 flex items-center gap-2">
+                    <ShoppingCart size={20} />
+                    {t("addToCart")} • {formatPrice(total, currency)}
+                  </span>
+                )}
+              </Button>
+            </div>
+            <p className="mt-2 text-center text-xs text-gray-500 dark:text-neutral-400">
+              {t("inclVat")} -&nbsp;{formatPrice(vatAmount, currency)}
+            </p>
           </div>
         )}
       </div>

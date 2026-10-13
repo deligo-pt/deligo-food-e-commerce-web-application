@@ -851,7 +851,9 @@ check(
 );
 check(
   "🔴 the catalogue waits for both requests, so it cannot flash an empty page",
-  /const catalogueLoading =\s*userLoading \|\| productsLoading \|\| categoriesLoading \|\|/.test(page) &&
+  // Since 13 Oct 2026 products arrive a category at a time and no longer gate
+  // the page; with nothing at all to draw it still waits for the menu's answer.
+  /const catalogueLoading =\s*userLoading \|\|\s*categoriesLoading \|\|\s*\(categoryGroups\.length === 0 && \(!menuAnswered \|\|/.test(page) &&
     /\{catalogueLoading && \(/.test(page),
 );
 check(
@@ -1115,7 +1117,7 @@ check(
 );
 check(
   "the sidebar count is the rendered array's length, not a stored number",
-  /count: group\.products\.length/.test(page) && !/count:\s*\d/.test(page),
+  /count: group\.pending \? null : group\.products\.length/.test(page) && !/count:\s*\d/.test(page),
 );
 check(
   "the Other heading is cased like the data — uppercase in every view",
@@ -1233,6 +1235,147 @@ check(
   "verify:menu is unwired from package.json",
   !/verify:menu/.test(read("package.json")) && /verify:category/.test(read("package.json")),
 );
+
+section("§8  the menu arrives a category at a time (13 Oct 2026)");
+{
+  const { vendorCategoryOrder, withPendingCategories } = M;
+  const CATS = [
+    { _id: "c-soup", name: "Soups" },
+    { _id: "c-burger", name: "burgers" },
+    { _id: "c-empty", name: "Adult menu" },
+    { _id: "c-blank", name: "  " },
+    { _id: "c-soup", name: "Duplicate" },
+    { name: "No id" },
+    null,
+  ];
+  const order = vendorCategoryOrder(CATS, "en");
+  check(
+    "categories are asked for in the page's order: by name, case ignored, one per id",
+    order.map((c) => c.id).join() === "c-blank,c-empty,c-burger,c-soup",
+    order.map((c) => `${c.id}:${c.name}`).join(),
+  );
+  check(
+    "no list, or rubbish, is no categories — never a throw",
+    vendorCategoryOrder(null).length === 0 && vendorCategoryOrder("x").length === 0,
+  );
+
+  const burger = { _id: "p1", name: "Burger", category: { _id: "c-burger", name: "burgers" } };
+  const both = {
+    _id: "p2",
+    name: "Soup of the day",
+    category: { _id: "c-burger", name: "burgers" },
+    additionalCategories: [{ _id: "c-soup", name: "Soups" }],
+  };
+  const stray = { _id: "p3", name: "Stray", category: { _id: "c-gone", name: "Gone" } };
+  const loaded = groupByVendorCategories([burger, both, stray], CATS, "Other", "en").groups;
+
+  const none = withPendingCategories(loaded, order, new Set(), "en");
+  check("nothing pending hands back the same groups, untouched", none === loaded);
+
+  const some = withPendingCategories(loaded, order, new Set(["c-soup", "c-empty", "c-blank"]), "en");
+  check(
+    "\ud83d\udd34 every category still loading is on the page, in order, with Other last",
+    some.map((g) => g.id).join() === `c-empty,c-burger,c-soup,${UNCATEGORIZED_GROUP_ID}`,
+    some.map((g) => g.id).join(),
+  );
+  check(
+    "a loading category with nothing yet is an empty placeholder",
+    some[0].pending === true && some[0].products.length === 0 && some[0].name === "Adult menu",
+  );
+  check(
+    "a category reached early through additionalCategories is still marked loading",
+    some[2].pending === true && some[2].products.length === 1,
+  );
+  check(
+    "a category that has answered is not marked, and Other never is",
+    some[1].pending === undefined && some[3].pending === undefined,
+  );
+  check(
+    "a loading category without a name is not a heading yet",
+    !some.some((g) => g.id === "c-blank"),
+  );
+  check(
+    "the groups handed in are not mutated",
+    loaded.every((g) => g.pending === undefined) && loaded.length === 3,
+  );
+  const done = withPendingCategories(loaded, order, new Set(["c-nowhere"]), "en");
+  check(
+    "\ud83d\udd34 an empty category leaves the list once it has answered",
+    !done.some((g) => g.id === "c-empty") && done.length === loaded.length,
+  );
+
+  const hooks = stripComments(read("src/hooks/queries/useVendors.ts"));
+  const hook = hooks.slice(
+    hooks.indexOf("export function useVendorMenuByCategory"),
+    hooks.indexOf("export function useVendorProductCategories"),
+  );
+  check(
+    "one category is asked for with the backend's own filter, on both endpoints",
+    /`\$\{path\}&category=\$\{categoryId\}`/.test(hook) &&
+      /authed\s*\?\s*`\/products\?vendorId=\$\{vendorId\}`\s*:\s*`\/products\/open\?vendorId=\$\{vendorId\}`/.test(hook),
+  );
+  check(
+    "\ud83d\udd34 every category's list ends in ownedBy, like the whole menu",
+    /ownedBy\(\s*await everyMenuPage<T>\(/.test(hook),
+  );
+  check(
+    "categories load a few at a time, answered ones keep their place, the jumped-to one skips the queue",
+    /let slots = MENU_CATEGORIES_AT_ONCE;/.test(hook) &&
+      /const open = answered \|\| categoryId === options\?\.urgentId \|\| slots-- > 0;/.test(hook) &&
+      /enabled: ready && open/.test(hook),
+  );
+  check(
+    "the position is in each category's cache key, and in the total's",
+    /vendorKeys\.categoryProducts\(\s*lang,\s*authed,\s*vendorId \?\? "",\s*placeKey,\s*categoryId,?\s*\)/.test(hook) &&
+      /vendorKeys\.productTotal\(lang, authed, vendorId \?\? "", placeKey\)/.test(hook),
+  );
+  check(
+    "\ud83d\udd34 the page loads by category, top of the page first",
+    /useVendorMenuByCategory<Product>\(vendor\?\.id, menuPlace\.coords, categoryIds, \{/.test(page) &&
+      /categoryOrder\.map\(\(category\) => category\.id\)/.test(page),
+  );
+  check(
+    "\ud83d\udd34 silence before the menu is asked for is never read as an answer",
+    /const menuAsked = !!vendor\?\.id && !userLoading && !categoriesLoading;/.test(page) &&
+      /const menuAnswered =\s*menuAsked && categoriesAnswered && !menu\.totalPending && !wholeMenuPending;/.test(page) &&
+      /const needWholeMenu =\s*menuAsked &&/.test(page),
+    "an early \"empty\" asked the store's own position for the whole menu on every visit",
+  );
+  check(
+    "\ud83d\udd34 what no category reaches still arrives: Other, a failed category, an unread total",
+    /\(someCategoryFailed \|\| menu\.totalFailed \|\| \(menu\.total \?\? 0\) > categoryProducts\.length\)/.test(page) &&
+      /useVendorProducts<Product>\(vendor\?\.id, menuPlace\.coords, \{\s*enabled: needWholeMenu,/.test(page),
+  );
+  check(
+    "a product reached twice is drawn from one copy",
+    /uniqueProducts\(menu\.lists\.flatMap/.test(page) &&
+      /uniqueProducts\(\[\.\.\.categoryProducts, \.\.\.wholeMenu\]\)/.test(page),
+  );
+  check(
+    "the category jumped to goes to the front of the queue",
+    /setUrgentCategoryId\(groupId\);[^}]*scrollToGroup\(groupId\);/.test(page),
+  );
+  check(
+    "\ud83d\udd34 a jump made while the menu loads is held on its target, until done or the customer scrolls",
+    /heldJump\.current = stillLoading \? groupId : null;/.test(page) &&
+      /const target = heldJump\.current;\s*if \(!target\) return;\s*scrollToGroup\(target\);\s*if \(!stillLoading\) heldJump\.current = null;/.test(page) &&
+      /addEventListener\("wheel", release/.test(page) &&
+      /addEventListener\("touchmove", release/.test(page),
+    "categories above the target push it down as they arrive",
+  );
+  const groupFile = stripComments(read("src/components/vendors/CategoryGroup.tsx"));
+  const sidebarFile = stripComments(read("src/components/vendors/CategorySidebar.tsx"));
+  check(
+    "a loading category shows placeholders and no count, in the group and in the sidebar",
+    /group\.pending \?/.test(groupFile) &&
+      /group\.pending &&\s*Array\.from\(\{ length: PENDING_CARDS \}\)/.test(groupFile) &&
+      /group\.count === null \?/.test(sidebarFile),
+  );
+  check(
+    "categories that loaded stay on the page when the whole-menu request fails",
+    /!catalogueLoading && \(!productsError \|\| categoryGroups\.length > 0\)/.test(page),
+  );
+}
 
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed === 0 ? 0 : 1);

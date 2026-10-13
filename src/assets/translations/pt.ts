@@ -583,6 +583,8 @@ const pt = {
   riderInstructionsPlaceholder: "ex.: Deixar à porta, tocar duas vezes",
   required: "obrigatório",
   chooseUpTo: "Escolha até",
+  readMore: "Ler mais",
+  showLess: "Ler menos",
   selectRequiredAddons: "Selecione as opções obrigatórias",
   increaseQuantity: "Aumentar quantidade",
   decreaseQuantity: "Diminuir quantidade",
