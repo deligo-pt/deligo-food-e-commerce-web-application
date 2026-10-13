@@ -11,6 +11,8 @@ export interface RoutePath {
   total: number;
   /** Point at a 0..1 fraction of the route length. */
   pointAtFraction: (f: number) => LatLng;
+  /** Compass heading (degrees clockwise from north) of the route at `f`. */
+  headingAtFraction: (f: number) => number;
   /** Route points from the start up to `f`, plus the exact point at `f`. */
   pointsUpToFraction: (f: number) => LatLng[];
   /** Nearest fraction (and projected point) on the route to `p`. */
@@ -66,6 +68,21 @@ export function buildRoutePath(points: LatLng[]): RoutePath | null {
   const pointAtFraction = (f: number): LatLng =>
     pointAtDistance(clamp(f, 0, 1) * total);
 
+  const headingAtFraction = (f: number): number => {
+    const d = clamp(f, 0, 1) * total;
+    let i = 0;
+    while (i < points.length - 2 && cumulative[i + 1] <= d) i++;
+    // A repeated point has no direction; use the nearest stretch that has one.
+    let a = i;
+    while (a < points.length - 2 && cumulative[a + 1] === cumulative[a]) a++;
+    while (a > 0 && cumulative[a + 1] === cumulative[a]) a--;
+    const from = points[a];
+    const to = points[a + 1];
+    const east = (to.lng - from.lng) * Math.cos(((from.lat + to.lat) / 2) * DEG);
+    const north = to.lat - from.lat;
+    return (Math.atan2(east, north) / DEG + 360) % 360;
+  };
+
   const pointsUpToFraction = (f: number): LatLng[] => {
     const d = clamp(f, 0, 1) * total;
     const out: LatLng[] = [points[0]];
@@ -94,5 +111,5 @@ export function buildRoutePath(points: LatLng[]): RoutePath | null {
     return { fraction: best.fraction, point: best.point };
   };
 
-  return { points, total, pointAtFraction, pointsUpToFraction, snap };
+  return { points, total, pointAtFraction, headingAtFraction, pointsUpToFraction, snap };
 }

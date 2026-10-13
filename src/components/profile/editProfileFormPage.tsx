@@ -10,6 +10,7 @@ import EditProfileFormSkeleton from "./EditProfileFormSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
 import { normalizePortugueseNumber } from "@/lib/phone";
+import PhoneNumberField from "@/components/shared/PhoneNumberField";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import OtpInput from "@/components/auth/OtpInput";
@@ -533,14 +534,13 @@ export default function EditProfileFormPage() {
                   <label className="mb-2 block text-sm font-medium text-muted-foreground dark:text-neutral-400">
                     {t("mobileNumber")} *
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="tel"
-                      placeholder={t("mobilePlaceholder")}
-                      value={mobileNumber}
-                      onChange={(e) => setMobileNumber(e.target.value)}
-                      className="flex-1 rounded border border-border bg-card px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
-                    />
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    {/* Country and number apart, like the login page; the
+                        value stays the full `+351…`, so the checks below and
+                        `normalizePortugueseNumber` read it as before. On a
+                        phone the button goes underneath: beside the picker it
+                        left no room for the number. */}
+                    <PhoneNumberField value={mobileNumber} onChange={setMobileNumber} />
                     {!mobileOtpSent ? (
                       <Button
                         type="button"

@@ -9,7 +9,7 @@ import { getStatusScene, normalizeStatus } from "./statusScene";
 import { createHtmlOverlay, type HtmlOverlayHandle } from "./HtmlOverlay";
 import { buildRestaurantScene } from "./restaurantScene";
 import { buildCustomerScene } from "./customerScene";
-import { buildRiderMarker } from "./riderMarker";
+import { buildRiderMarker, setRiderHeading } from "./riderMarker";
 import { buildRoutePath, type RoutePath } from "./routePath";
 
 /**
@@ -384,6 +384,12 @@ export default function OrderMap({
           element: buildRiderMarker(),
           zIndex: 120,
         });
+        if (rp) {
+          setRiderHeading(
+            riderOverlayRef.current.getElement(),
+            rp.headingAtFraction(currentFractionRef.current),
+          );
+        }
       }
 
       // Draw/update the grey "already travelled" leg behind the rider.
@@ -412,6 +418,12 @@ export default function OrderMap({
           : currentFractionRef.current;
         currentFractionRef.current = target;
         riderOverlayRef.current?.setPosition(rp.pointAtFraction(target));
+        if (riderOverlayRef.current) {
+          setRiderHeading(
+            riderOverlayRef.current.getElement(),
+            rp.headingAtFraction(target),
+          );
+        }
         drawTraveled(rp, target);
       } else if (rp && riderTickRef.current === null) {
         const SIM_DEFAULT_MS = 45000;
@@ -444,6 +456,10 @@ export default function OrderMap({
 
           riderOverlayRef.current.setPosition(
             path.pointAtFraction(currentFractionRef.current),
+          );
+          setRiderHeading(
+            riderOverlayRef.current.getElement(),
+            path.headingAtFraction(currentFractionRef.current),
           );
 
           drawTraveled(path, currentFractionRef.current);
