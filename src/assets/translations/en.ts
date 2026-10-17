@@ -267,6 +267,10 @@ const en = {
   copyFailed: "Could not copy to clipboard",
   getDirections: "Get directions",
   orderCollected: "Collected",
+  // The order page while the system looks for a rider (AWAITING_PARTNER /
+  // DISPATCHING) — not a timeline step of its own.
+  findingRider: "Finding a rider",
+  findingRiderDescription: "Your order will be picked up as soon as a rider accepts it",
   orderCollectedDescription: "You collected your order from the store",
 
   processing: "Processing...",
@@ -561,7 +565,7 @@ const en = {
   lastName: "Last Name",
   emailAddress: "Email Address",
   mobileNumber: "Mobile Number",
-  nifTaxId: "NIF / Tax ID",
+  nifTaxId: "NIF",
   deliveryAddress: "Delivery Address",
 
   optional: "optional",
@@ -997,6 +1001,9 @@ const en = {
   loginHintOtpMobile: "Enter the OTP sent to your phone.",
   loginHintOtpEmail:
     "Enter the OTP sent to your email. If it isn't there, check your spam folder.",
+  // The words of `loginHintOtpEmail` the login page shows in bold. Must
+  // appear in that line exactly as written here.
+  loginHintSpamFolder: "spam folder",
 
   enterOtp: "Enter OTP",
 
@@ -1020,6 +1027,21 @@ const en = {
   // Replaces the generic `otpSentTo` caption on phone sends, which name their
   // channel; email sends have none.
   otpSentViaSms: "Code sent by SMS to",
+
+  // Login form errors we word ourselves (17 Oct 2026). The server's own text
+  // for a bad number was a generic "Validation failed. Please check the
+  // highlighted fields…", with nothing highlighted.
+  loginErrorPhoneRequired: "Enter your mobile number.",
+  loginErrorPhoneInvalid: "Enter a valid Portuguese mobile number — 9 digits, e.g. 912 345 678.",
+  loginErrorEmailRequired: "Enter your email address.",
+  loginErrorEmailInvalid: "Enter a valid email address, e.g. name@example.com.",
+  loginErrorRequestOtpFirst: "Request a new OTP first.",
+  loginErrorEnterOtp: "Enter the OTP sent to you.",
+  // Resend lock. The time is composed in JSX after this ("Resend OTP in 4:59").
+  resendOtpIn: "Resend OTP in",
+  // Send OTP pressed again for the same number or email while the last code
+  // is still within its resend lock: no new code is sent.
+  otpAlreadySent: "We already sent a code. Enter it below, or request a new one when the timer ends.",
 
   // Social login. `orWith` labels the rule separating the OTP form from the
   // provider buttons.
@@ -1838,6 +1860,19 @@ const en = {
   failedToCopyReferralCode: "Failed to copy referral code",
   referralInfoCopied: "Referral information copied to clipboard",
   failedToShareReferralCode: "Failed to share referral code",
+  // Referral Share Code menu (17 Oct 2026). The message is composed in JSX:
+  // "<intro> MR.X7FXX — <outro>: https://…/login?ref=MR.X7FXX".
+  shareViaWhatsApp: "WhatsApp",
+  shareViaEmail: "Email",
+  copyShareMessage: "Copy message",
+  shareMoreOptions: "More options…",
+  referralShareSubject: "Join me on DeliGo",
+  referralShareIntro: "Join DeliGo with my referral code",
+  referralShareOutro: "enter it when you sign up",
+  // Shown instead of the code while the account has none — a code is only
+  // issued once the profile has a name.
+  referralNeedsProfile: "Set up your profile first — add your name — and your referral code will appear here.",
+  completeProfile: "Complete profile",
   pleaseLogInToAddToCart: "Please log in to add items to your cart.",
   itemAddedToCart: "Item added to cart successfully!",
   failedToAddToCart: "Could not read your cart. Please try again.",
@@ -2135,6 +2170,16 @@ const en = {
   productOutOfAreaTitle: "Not available in your area",
   productOutOfAreaHint:
     "This item is on a menu that does not deliver to your current address.",
+  // Order notes: rider instructions and a note for the restaurant/store (15 Oct 2026)
+  instructions: "Instructions",
+  edit: "Edit",
+  noInstructions: "None",
+  noteForVendorRestaurant: "Note for the restaurant",
+  noteForVendorStore: "Note for the store",
+  noteForVendorPartner: "Note for the partner",
+  noteForVendorPlaceholderRestaurant: "e.g. No onions, extra sauce",
+  noteForVendorPlaceholderStore: "e.g. Call me if an item is unavailable",
+  noteForVendorPlaceholderPartner: "e.g. Anything they should know about your order",
 };
 
 export default en;

@@ -199,7 +199,11 @@ section("First Name is required in fact, not just in the label");
   // The label has carried an asterisk all along and nothing enforced it. It
   // matters most here: sign-up never asks for a name, so these accounts arrive
   // with an empty one and this is the screen where it gets filled in.
-  check("the label claims it is required", FORM.includes('{t("firstName")} *'));
+  // Since 17 Oct 2026 the asterisk is its own red span, not plain label text.
+  check(
+    "the label claims it is required",
+    /\{t\("firstName"\)\}[\s\S]{0,120}?>\*<\/span>/.test(FORM),
+  );
   check("blank first name blocks the save", /if \(!firstName\.trim\(\)\) \{/.test(FORM));
   check("it reports why", FORM.includes('t("firstNameRequired")'));
 

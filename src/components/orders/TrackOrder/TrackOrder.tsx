@@ -13,7 +13,7 @@ import {
   Loader2,
   MapPin,
   Navigation,
-  Receipt,
+  ReceiptEuro,
   ShoppingBag,
   Utensils,
   XCircle,
@@ -41,10 +41,11 @@ import {
   getTimelineStepIndex,
   getTimelineStepKeys,
   isPickupOrder,
+  toTimelineStatus,
 } from "@/lib/orderTimeline";
 import { getPaymentStatusDisplay } from "@/lib/paymentStatus";
 import { isCompletedStatus } from "@/lib/orderStatus";
-import { humanizeStatus } from "@/lib/orderStatusLabel";
+import { getOrderStatusLabel, humanizeStatus } from "@/lib/orderStatusLabel";
 import { useInvalidateOrders } from "@/hooks/queries/useOrders";
 import { useVendor, useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { formatAddressFull } from "@/lib/addressFormat";
@@ -54,6 +55,7 @@ import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { vendorRouteId } from "@/lib/vendorId";
 import { formatPickupMoment } from "@/lib/pickupTime";
 import OrderMap from "./OrderMap/OrderMap";
+import OrderStatusAnimation from "./OrderStatusAnimation";
 import DeliveryCodeCard from "./DeliveryCodeCard";
 import PickupCodeCard from "./PickupCodeCard";
 import PickupLocationCard from "./PickupLocationCard";
@@ -538,6 +540,39 @@ export default function TrackOrder() {
   const subtotalVat = calc.totalTaxAmount || 0;
 
   const steps = getOrderStep(order, t, getTerminalReason(order), isPickup);
+  // The order's own step, with the same label and line (and a vendor's
+  // rejection reason) the timeline shows. Not the last step: a delivery
+  // timeline always runs to DELIVERED. The dispatch statuses between PREPARING
+  // and a rider accepting are not timeline steps, so they get their own line.
+  const currentStatus = toTimelineStatus(order.orderStatus);
+  const currentStep = steps.find((step) => step.key === currentStatus);
+  const findingRider = currentStatus === "AWAITING_PARTNER" || currentStatus === "DISPATCHING";
+  const animationLabel = findingRider
+    ? t("findingRider")
+    : STEP_PRESENTATION[currentStatus] && currentStep
+      ? currentStep.label
+      : // A status with no step copy (e.g. NO_SHOW → "Not collected").
+        (getOrderStatusLabel(order.orderStatus, t) ?? "");
+  const animationDescription = findingRider
+    ? t("findingRiderDescription")
+    : (currentStep?.description ?? "");
+
+  // The live map only while the rider is moving and we know where they are;
+  // every other moment shows the status animation (17 Oct 2026). Until the
+  // rider's first location arrives, PICKED_UP / ON_THE_WAY show the "on the
+  // way" animation rather than an empty map.
+  const riderLatitude = order.deliveryPartnerId?.currentSessionLocation?.coordinates?.[1];
+  const riderLongitude = order.deliveryPartnerId?.currentSessionLocation?.coordinates?.[0];
+  const riderMoving = currentStatus === "PICKED_UP" || currentStatus === "ON_THE_WAY";
+  const showLiveMap =
+    riderMoving && typeof riderLatitude === "number" && typeof riderLongitude === "number";
+  const statusAnimation = (
+    <OrderStatusAnimation
+      status={order.orderStatus}
+      label={animationLabel}
+      description={animationDescription}
+    />
+  );
 
   // Derived from the payment fields, not `orderStatus` — a refund moves
   // `paymentStatus`/`isPaid` while the order stays REJECTED/CANCELED.
@@ -564,6 +599,7 @@ export default function TrackOrder() {
                 instead: the two things a collecting customer needs. */}
             {isPickup ? (
               <>
+                {statusAnimation}
                 {order.pickup?.code && (
                   <PickupCodeCard
                     code={order.pickup.code}
@@ -575,6 +611,8 @@ export default function TrackOrder() {
                   location={storeLocation}
                 />
               </>
+            ) : !showLiveMap ? (
+              statusAnimation
             ) : (
               <OrderMap
                 orderStatus={order.orderStatus}
@@ -584,8 +622,8 @@ export default function TrackOrder() {
                 deliveryLatitude={deliveryAddress?.latitude}
                 deliveryLongitude={deliveryAddress?.longitude}
                 deliveryAddress={addressString}
-                riderLatitude={order.deliveryPartnerId?.currentSessionLocation?.coordinates?.[1]}
-                riderLongitude={order.deliveryPartnerId?.currentSessionLocation?.coordinates?.[0]}
+                riderLatitude={riderLatitude}
+                riderLongitude={riderLongitude}
                 riderName={order.deliveryPartnerId ? `${order.deliveryPartnerId.name?.firstName || ""} ${order.deliveryPartnerId.name?.lastName || ""}` : ""}
                 etaMinutes={order.delivery?.estimatedTime}
               />
@@ -792,7 +830,7 @@ export default function TrackOrder() {
               <div className="md:col-span-7 bg-card rounded-3xl border border-transparent dark:border-neutral-800 shadow-md p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-primary/20 dark:bg-pink-950/30 rounded-xl">
-                    <Receipt className="w-5 h-5 text-primary dark:text-pink-400" />
+                    <ReceiptEuro className="w-5 h-5 text-primary dark:text-pink-400" />
                   </div>
                   <h4 className="text-sm font-semibold text-muted-foreground dark:text-neutral-400 uppercase tracking-wider">
                     {t("billSummary")}

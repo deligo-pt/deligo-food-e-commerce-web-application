@@ -1,5 +1,5 @@
 import axios from "axios";
-import { apiClient, getApiErrorMessage } from "./apiClient";
+import { apiClient, errorKeyOf, getApiErrorMessage, validationKeyOf } from "./apiClient";
 
 export type LoginIdentifier = {
   email?: string;
@@ -40,7 +40,9 @@ type ApiErrorResponse = {
   errorSources?: Array<{ path?: string; message?: string }>;
   // The backend attaches a stable, non-localized marker here (e.g.
   // "LIMIT_EXCEEDED" for the device limit). The human `message` is unreliable
-  // to branch on, so callers should key off `err.errorKey` instead.
+  // to branch on, so callers should key off the key instead. Production sends
+  // it only at the top level (no `err`), so read it with `errorKeyOf`.
+  errorKey?: string;
   err?: { statusCode?: number; errorKey?: string };
 };
 
@@ -128,20 +130,26 @@ async function requestJson<T>(url: string, body: unknown): Promise<T> {
       // 2xx body that still reports failure — surface its errorKey too.
       throw new AuthError(
         payload.message || payload.errorSources?.[0]?.message || "Request failed",
-        { errorKey: payload.err?.errorKey, statusCode: payload.err?.statusCode },
+        {
+          errorKey: errorKeyOf(payload) ?? validationKeyOf(payload),
+          statusCode: payload.err?.statusCode,
+        },
       );
     }
     return response.data;
   } catch (error) {
     if (error instanceof AuthError) throw error;
     // A non-2xx (e.g. 403 device limit) rejects here as an AxiosError; the
-    // stable marker lives in error.response.data.err.errorKey. Preserve it so
+    // stable marker is `errorKey` (top level; also under `err` on the test
+    // server). Preserve it so
     // callers can branch on the key instead of the free-text message.
     const data = axios.isAxiosError(error)
       ? (error.response?.data as ApiErrorResponse | undefined)
       : undefined;
     throw new AuthError(getApiErrorMessage(error), {
-      errorKey: data?.err?.errorKey,
+      // A validation rejection has no errorKey; its field code stands in, so
+      // the login form can word e.g. a bad phone number itself.
+      errorKey: errorKeyOf(data) ?? validationKeyOf(data),
       statusCode:
         data?.err?.statusCode ??
         (axios.isAxiosError(error) ? error.response?.status : undefined),

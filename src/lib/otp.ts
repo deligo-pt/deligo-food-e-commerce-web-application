@@ -11,6 +11,19 @@
 export const EMAIL_OTP_LENGTH = 4;
 export const MOBILE_OTP_LENGTH = 6;
 
+/**
+ * How long "Resend OTP" stays locked after a code is sent (17 Oct 2026, the
+ * owner's call: five minutes, for SMS and email alike). The lock is the
+ * browser's only — the backend sets no limit of its own that we know of.
+ */
+export const OTP_RESEND_COOLDOWN_MS = 5 * 60 * 1000;
+
+/** `m:ss` for the resend countdown; never negative. */
+export function formatCountdown(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
 /** The email code's length, and the default where no method is known. */
 export const OTP_LENGTH = EMAIL_OTP_LENGTH;
 

@@ -11,6 +11,7 @@ import {
   useTransition,
 } from "react";
 import Image from "next/image";
+import { isOptimizableImageHost } from "@/lib/imageHosts";
 import Logo from "@/components/shared/Logo";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -850,6 +851,10 @@ export default function Navbar() {
                       height={36}
                       width={36}
                       src={profilePhoto}
+                      // Deligo's own storage cannot go through the optimizer
+                      // (see `lib/imageHosts`). Fetched as is, it is also the
+                      // same URL the edit form preloads after an upload.
+                      unoptimized={!isOptimizableImageHost(profilePhoto)}
                     />
                   ) : (
                     <svg

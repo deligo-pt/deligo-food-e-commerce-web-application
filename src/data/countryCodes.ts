@@ -2,10 +2,13 @@ export type CountryOption = {
   name: string;
   dialCode: string;
   flagCode: string;
+  /** Digits in a mobile number after the dial code. The login form checks it
+   *  before asking for a code, so a mistyped number never reaches the API. */
+  nationalLength: number;
 };
 
 export const COUNTRY_OPTIONS: CountryOption[] = [
-  { name: "Portugal", dialCode: "+351", flagCode: "pt" },
+  { name: "Portugal", dialCode: "+351", flagCode: "pt", nationalLength: 9 },
   // { name: "India", dialCode: "+91", flagCode: "in" },
   // { name: "United Kingdom", dialCode: "+44", flagCode: "gb" },
   // { name: "United States", dialCode: "+1", flagCode: "us" },

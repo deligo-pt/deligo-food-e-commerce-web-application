@@ -13,8 +13,38 @@ type ApiErrorResponse = {
   // Stable machine-readable code (e.g. "STORE_CLOSED_OR_UNAPPROVED"). Unlike
   // `message`, which the backend sends in English only, this is safe to branch
   // on — see `getApiErrorKey`.
+  //
+  // ⚠️ Production sends it only at the top level: `api-food.deligo.pt` drops
+  // `err` (and `stack`) from every error body, while the test server sends
+  // both. Reading only `err.errorKey` made every key-based branch dead on the
+  // live site — a customer blocked by an earlier payment got the raw 409 text
+  // instead of the Continue / Cancel box (14 Oct 2026). Read it through
+  // `errorKeyOf`, never `err.errorKey` directly.
+  errorKey?: string;
   err?: { statusCode?: number; errorKey?: string };
 };
+
+/** The error key from either place the backend puts it (see `errorKey` above). */
+export function errorKeyOf(
+  payload: { errorKey?: string; err?: { errorKey?: string } } | null | undefined,
+): string | undefined {
+  return payload?.errorKey ?? payload?.err?.errorKey ?? undefined;
+}
+
+/**
+ * The stable code of the first field that failed validation, e.g.
+ * `VALIDATION_CONTACT_NUMBER_INVALID`. A Zod rejection carries no `errorKey`;
+ * its code sits on the issue, at `err.issues[].params.messageKey`.
+ */
+export function validationKeyOf(payload: unknown): string | undefined {
+  const issues = (payload as { err?: { issues?: unknown } } | null | undefined)?.err?.issues;
+  if (!Array.isArray(issues)) return undefined;
+  for (const issue of issues) {
+    const key = (issue as { params?: { messageKey?: unknown } })?.params?.messageKey;
+    if (typeof key === "string" && key) return key;
+  }
+  return undefined;
+}
 
 /**
  * The backend's stable error code for a request, or `null`.
@@ -25,7 +55,7 @@ type ApiErrorResponse = {
 export function getApiErrorKey(error: unknown): string | null {
   if (!axios.isAxiosError(error)) return null;
   const payload = error.response?.data as ApiErrorResponse | undefined;
-  return payload?.err?.errorKey ?? null;
+  return errorKeyOf(payload) ?? null;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api/v1";
@@ -87,7 +117,7 @@ apiClient.interceptors.response.use(
 
     if (
       sentToken &&
-      isSessionEndedResponse(error.response?.status, payload?.err?.errorKey) &&
+      isSessionEndedResponse(error.response?.status, errorKeyOf(payload)) &&
       typeof window !== "undefined" &&
       !isRedirecting
     ) {
@@ -109,8 +139,10 @@ apiClient.interceptors.response.use(
 // Backend validation failures arrive wrapped in a generic top-level message
 // (e.g. "Validation Error" / "Zod Validation Error") while the actionable
 // detail lives in errorSources[]. Treat those wrappers as non-descriptive so
-// we surface the field-level reason instead of the opaque wrapper.
-const GENERIC_ERROR_MESSAGE = /validation error/i;
+// we surface the field-level reason instead of the opaque wrapper. Since Oct
+// 2026 the wrapper reads "Validation failed. Please check the highlighted
+// fields…" (pt: "Falha na validação…") — which highlights nothing on our side.
+const GENERIC_ERROR_MESSAGE = /validation error|validation failed|falha na valida/i;
 
 /**
  * Translations for backend error codes.
@@ -160,9 +192,8 @@ export function getApiErrorMessage(error: unknown, fallbackMessage = "Request fa
     const lang = useStore.getState().lang ?? "pt";
 
     // A known error code wins over the server's English prose.
-    const keyed = payload?.err?.errorKey
-      ? ERROR_KEY_MESSAGES[payload.err.errorKey]
-      : undefined;
+    const errorKey = errorKeyOf(payload);
+    const keyed = errorKey ? ERROR_KEY_MESSAGES[errorKey] : undefined;
     if (keyed) return resolveLocalized(keyed, lang);
 
     const topMessage = resolveLocalized(payload?.message, lang);
@@ -170,7 +201,9 @@ export function getApiErrorMessage(error: unknown, fallbackMessage = "Request fa
     const source = payload?.errorSources?.[0];
     const rawSourceMessage = resolveLocalized(source?.message, lang);
     const sourceMessage = rawSourceMessage
-      ? source?.path
+      ? // "body" is the request as a whole, not a field the customer can find:
+        // "body: Unrecognized key(s)…" reached the login page that way.
+        source?.path && source.path !== "body"
         ? `${source.path}: ${rawSourceMessage}`
         : rawSourceMessage
       : undefined;

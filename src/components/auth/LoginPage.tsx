@@ -1,11 +1,13 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
   ChevronDown,
   CircleX,
   Check,
+  Clock,
   Globe,
   Gift,
   KeyRound,
@@ -21,7 +23,7 @@ import { COUNTRY_OPTIONS, type CountryOption } from "../../data/countryCodes";
 import { FacebookMark } from "./BrandIcons";
 import GoogleSignInButton from "./GoogleSignInButton";
 import OtpInput from "./OtpInput";
-import { otpLengthFor } from "@/lib/otp";
+import { formatCountdown, otpLengthFor } from "@/lib/otp";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import SocialButton from "./SocialButton";
 import { useTheme } from "@/hooks/useTheme";
@@ -109,12 +111,19 @@ function ClearSessionModal({
   );
 }
 
-export default function LoginPage() {
+export default function LoginPage({
+  initialReferralCode = "",
+}: {
+  /** From a shared `/login?ref=` link; the customer can still edit it. */
+  initialReferralCode?: string;
+}) {
   const { t } = useTranslation();
   const lang = useStore((state) => state.lang);
   // Google's button has no automatic dark mode; it has to be told.
   const { theme } = useTheme();
   const setLang = useStore((state) => state.setLang);
+  // The OTP row, so a resend can hand focus back to its input.
+  const otpRowRef = useRef<HTMLDivElement>(null);
   const {
     mode,
     step,
@@ -132,6 +141,12 @@ export default function LoginPage() {
     errorMessage,
     errorMessageKey,
     successMessage,
+    successMessageKey,
+    invalidField,
+    resendRemainingMs,
+    showEmailHint,
+    canSendOtp,
+    markEmailTouched,
     loginHint,
     loginIdentifier,
     socialProviderInFlight,
@@ -153,7 +168,7 @@ export default function LoginPage() {
     resendOtp,
     backToCredentials,
     clearSessionAndRetry,
-  } = useLoginFlow();
+  } = useLoginFlow(initialReferralCode);
 
   // The language sheet closes on Escape, as on its ✕ and its backdrop.
   useEscapeToClose(showLanguageModal, () => setShowLanguageModal(false));
@@ -258,7 +273,23 @@ export default function LoginPage() {
 
             <div className="mt-8 space-y-4 sm:mt-8">
               <p className="text-base leading-6 text-muted-foreground dark:text-neutral-400">
-                {loginHint}
+                {/* "spam folder" in bold: it is the step people miss. t() returns
+                    plain text, so the phrase is split out here; a line without
+                    it renders unchanged. */}
+                {(() => {
+                  const phrase = t("loginHintSpamFolder");
+                  const at = loginHint.indexOf(phrase);
+                  if (at === -1) return loginHint;
+                  return (
+                    <>
+                      {loginHint.slice(0, at)}
+                      <strong className="font-semibold text-foreground dark:text-neutral-200">
+                        {phrase}
+                      </strong>
+                      {loginHint.slice(at + phrase.length)}
+                    </>
+                  );
+                })()}
               </p>
 
               {/* `errorMessageKey` holds copy we word ourselves and must
@@ -266,6 +297,7 @@ export default function LoginPage() {
                   localized text. Only one is ever set at a time. */}
               {errorMessageKey || errorMessage ? (
                 <div
+                  id="login-error"
                   role="alert"
                   className="rounded-2xl border border-primary/20 dark:border-red-950 bg-[#fff4f7] dark:bg-red-950/20 px-4 py-3 text-sm font-medium text-[#b81f57] dark:text-red-400"
                 >
@@ -273,13 +305,21 @@ export default function LoginPage() {
                 </div>
               ) : null}
 
-              {successMessage ? (
+              {successMessageKey || successMessage ? (
                 <div className="rounded-2xl border border-[#cdeed9] dark:border-green-950 bg-[#f2fbf5] dark:bg-green-950/20 px-4 py-3 text-sm font-medium text-[#166534] dark:text-green-400">
-                  {successMessage}
+                  {successMessageKey ? t(successMessageKey) : successMessage}
                 </div>
               ) : null}
 
-              <div className="relative rounded-2xl border border-[#dcdcdc] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-4 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none sm:px-4">
+              {/* Outlined red while the error above is about this field; the
+                  outline goes as soon as the field is edited. */}
+              <div
+                className={`relative rounded-2xl border ${
+                  step === "credentials" && (invalidField || (mode === "email" && showEmailHint))
+                    ? "border-red-400 dark:border-red-500"
+                    : "border-[#dcdcdc] dark:border-neutral-800"
+                } bg-white dark:bg-neutral-950 px-4 py-4 shadow-[0_1px_0_rgba(0,0,0,0.02)] dark:shadow-none sm:px-4`}
+              >
                 {step === "credentials" ? (
                   mode === "mobile" ? (
                     <div className="flex items-center gap-3 sm:gap-4">
@@ -312,6 +352,8 @@ export default function LoginPage() {
                             setMobileNumber(event.target.value)
                           }
                           placeholder={t("mobileNumber")}
+                          aria-invalid={invalidField === "phone"}
+                          aria-describedby={invalidField === "phone" ? "login-error" : undefined}
                           className="w-full border-0 bg-transparent text-base text-muted-foreground dark:text-neutral-200 outline-none placeholder:text-muted-foreground dark:placeholder:text-neutral-500"
                         />
                       </div>
@@ -323,13 +365,22 @@ export default function LoginPage() {
                         type="email"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
+                        onBlur={markEmailTouched}
                         placeholder={t("emailAddress")}
+                        aria-invalid={invalidField === "email" || showEmailHint}
+                        aria-describedby={
+                          invalidField === "email"
+                            ? "login-error"
+                            : showEmailHint
+                              ? "login-email-hint"
+                              : undefined
+                        }
                         className="w-full border-0 bg-transparent text-base text-muted-foreground dark:text-neutral-200 outline-none placeholder:text-muted-foreground dark:placeholder:text-neutral-500"
                       />
                     </div>
                   )
                 ) : (
-                  <div className="flex items-center gap-3 px-1">
+                  <div ref={otpRowRef} className="flex items-center gap-3 px-1">
                     {/* Fades rather than unmounting when the code is
                         accepted: it keeps its width, so the square the tiles
                         gather into forms exactly where the row was. */}
@@ -404,6 +455,18 @@ export default function LoginPage() {
                 ) : null}
               </div>
 
+              {/* Says why "Send OTP" is greyed out, right under
+                  the field it is about — a disabled button alone
+                  does not. Only after the field has been left once. */}
+              {step === "credentials" && mode === "email" && showEmailHint ? (
+                <p
+                  id="login-email-hint"
+                  className="-mt-2 px-1 text-sm font-medium text-[#b81f57] dark:text-red-400"
+                >
+                  {t("loginErrorEmailInvalid")}
+                </p>
+              ) : null}
+
               {/* Always visible rather than hidden behind a "Have a referral
                   code?" toggle: the placeholder already says it is optional, so
                   the toggle only cost a click for the people who did have a
@@ -429,7 +492,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => sendOtp()}
-                  disabled={isSendingOtp}
+                  disabled={isSendingOtp || !canSendOtp}
                   className="focus-ring mt-1 flex h-14 w-full items-center justify-center rounded-4xl bg-linear-to-r from-[#d9357b] to-[#ff65b4] text-xl font-bold text-white shadow-[0_12px_28px_rgba(217,53,123,0.32)] transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSendingOtp ? (
@@ -494,14 +557,29 @@ export default function LoginPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                   <button
                     type="button"
-                    onClick={resendOtp}
-                    disabled={isResendingOtp}
+                    onClick={async () => {
+                      // A fresh code empties the tiles; put the caret back in
+                      // them so it can be typed or autofilled at once.
+                      if (await resendOtp()) {
+                        otpRowRef.current?.querySelector("input")?.focus();
+                      }
+                    }}
+                    disabled={isResendingOtp || resendRemainingMs > 0}
                     className="focus-ring inline-flex items-center gap-2 rounded-sm text-base font-medium text-primary dark:text-pink-400 transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isResendingOtp ? (
                       <span className="inline-flex items-center gap-2">
                         <LoaderCircle size={16} className="animate-spin" />
                         {t("resendingOtp")}
+                      </span>
+                    ) : resendRemainingMs > 0 ? (
+                      // Locked after each send. Composed in JSX: t() has no
+                      // placeholders. Not a live region — a screen reader
+                      // reading the time out every second would be noise.
+                      <span className="inline-flex items-center gap-2">
+                        <Clock size={16} aria-hidden="true" />
+                        {t("resendOtpIn")}{" "}
+                        <span className="tabular-nums">{formatCountdown(resendRemainingMs)}</span>
                       </span>
                     ) : (
                       t("resendOtp")

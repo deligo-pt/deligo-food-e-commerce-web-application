@@ -28,9 +28,11 @@ import ProductImage from "@/components/shared/ProductImage";
 import Loader from "@/components/shared/Loader";
 import { toast } from "sonner";
 import {
-  DELIVERY_NOTES_KEY,
-  outgoingDeliveryNotes,
+  MAX_RIDER_INSTRUCTIONS,
+  MAX_VENDOR_INSTRUCTIONS,
+  checkoutNotesBody,
 } from "@/lib/deliveryNotes";
+import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
 import { apiClient, getApiErrorKey, getApiErrorMessage } from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
 import {
@@ -115,7 +117,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const pendingAddonQtyRef = useRef<Record<string, number>>({});
   const addonSyncTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
   const addonIsSyncingRef = useRef<Record<string, boolean>>({});
+  // The two notes sent with the checkout (see `lib/deliveryNotes.ts`): one
+  // for the rider, one for the restaurant or store.
   const [instructions, setInstructions] = useState("");
+  const [vendorNote, setVendorNote] = useState("");
   const [isProceeding, setIsProceeding] = useState(false);
   /**
    * `POST /checkout` refused because another checkout of this cart has a
@@ -190,6 +195,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     () => getCartVendorDetails(cartData?.items, vendorId),
     [cartData, vendorId],
   );
+  // "restaurant", "store" or "partner", for the note box's wording.
+  const vendorKind = getVendorKind(cartVendor?.businessType);
 
   /**
    * Everything the pickup model needs, from whichever source actually has it.
@@ -735,21 +742,18 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         ...(isSelfPickup && pickupSlot
           ? { fulfillmentType: "PICKUP", pickupTime: slotToIso(pickupSlot) }
           : {}),
+        // Stored on the checkout since 15 Oct 2026. Only keys with something
+        // to say are sent, and pickup never sends the rider note.
+        ...checkoutNotesBody({
+          deliveryNotes: instructions,
+          vendorInstructions: vendorNote,
+          isPickup: isSelfPickup,
+        }),
       });
       return response.data.data._id;
     };
 
     const goToPayment = (checkoutId: string) => {
-      // What the customer typed for the courier. `/checkout` has no field for
-      // it — the order does, as `deliveryNotes` — so it rides across in
-      // sessionStorage to the payment page, which shows it back as "Rider
-      // Instructions" and sends it when the order is created. Until now this
-      // text was local state on a screen the customer then left.
-      sessionStorage.setItem(
-        DELIVERY_NOTES_KEY,
-        outgoingDeliveryNotes(instructions, { isPickup: isSelfPickup }),
-      );
-
       // Redirect to payment page under the same vendor route
       router.push(
         `/cart/checkout/${vendorId}/payment?checkoutId=${checkoutId}`,
@@ -1213,24 +1217,48 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               )}
             </div>
 
-            {/* Hidden for pickup: the placeholder reads "Leave at door, ring
-                bell twice", which describes a courier who does not exist on a
-                collected order. `instructions` is local-only state and is not
-                sent to /checkout, so nothing is lost by dropping it here. */}
-            {!isSelfPickup && (
-              <div className="border-t border-border p-6">
-                <label className="mb-2 block font-semibold text-gray-900 dark:text-neutral-50">
-                  {t("deliveryInstructions")}
+            {/* The two notes, sent with the checkout. The rider one is hidden
+                for pickup: its placeholder describes a courier who does not
+                exist on a collected order. The note for the restaurant or store
+                stays — "no onions" matters either way. */}
+            <div className="space-y-4 border-t border-border p-6">
+              {!isSelfPickup && (
+                <div>
+                  <label
+                    htmlFor="rider-instructions"
+                    className="mb-2 block font-semibold text-gray-900 dark:text-neutral-50"
+                  >
+                    {t("deliveryInstructions")}
+                  </label>
+                  <textarea
+                    id="rider-instructions"
+                    rows={3}
+                    maxLength={MAX_RIDER_INSTRUCTIONS}
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    placeholder={t("riderInstructionsPlaceholder")}
+                    className="w-full rounded-2xl border border-border bg-card p-4 outline-none transition focus:border-primary dark:focus:border-pink-400 text-gray-900 dark:text-neutral-50 placeholder:text-gray-400 dark:placeholder:text-neutral-600"
+                  />
+                </div>
+              )}
+              <div>
+                <label
+                  htmlFor="vendor-instructions"
+                  className="mb-2 block font-semibold text-gray-900 dark:text-neutral-50"
+                >
+                  {t(vendorCopyKey("noteForVendor", vendorKind))}
                 </label>
                 <textarea
-                  rows={4}
-                  value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
-                  placeholder={t("deliveryInstructionsPlaceholder")}
+                  id="vendor-instructions"
+                  rows={3}
+                  maxLength={MAX_VENDOR_INSTRUCTIONS}
+                  value={vendorNote}
+                  onChange={(e) => setVendorNote(e.target.value)}
+                  placeholder={t(vendorCopyKey("noteForVendorPlaceholder", vendorKind))}
                   className="w-full rounded-2xl border border-border bg-card p-4 outline-none transition focus:border-primary dark:focus:border-pink-400 text-gray-900 dark:text-neutral-50 placeholder:text-gray-400 dark:placeholder:text-neutral-600"
                 />
               </div>
-            )}
+            </div>
 
             <div className="border-t border-border p-6">
               {blockedCheckout && (
