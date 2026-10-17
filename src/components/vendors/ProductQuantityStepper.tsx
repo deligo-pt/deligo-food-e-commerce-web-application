@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
@@ -98,6 +98,9 @@ export default function ProductQuantityStepper({
   const inFlightRef = useRef(false);
 
   const shown = draft ?? quantity;
+  // Busy from the tap, not from the commit: `pending` only starts after the
+  // debounce, and a draft is held until the cart has been read back.
+  const busy = pending || draft !== null;
 
   useEffect(() => {
     if (!expanded) return;
@@ -213,9 +216,11 @@ export default function ProductQuantityStepper({
         aria-label={
           disabled ? t(vendorCopyKey("storeClosedTitle", vendorKind)) : t("addToCart")
         }
+        aria-busy={busy}
         className="size-9 shrink-0 rounded-xl hover:scale-105 disabled:hover:scale-100"
       >
-        <Plus size={16} />
+        {/* Busy here means a removal is still landing. */}
+        {busy ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
       </Button>
     );
   }
@@ -230,14 +235,21 @@ export default function ProductQuantityStepper({
         }}
         disabled={disabled}
         aria-label={t("changeQuantity").replace("{product}", productName)}
-        // `aria-busy` and no spinner. Swapping the count for one was the whole
-        // of the "it takes a moment" complaint: the number is already correct
-        // the instant it is tapped, and replacing it with a spinner turned an
-        // optimistic update back into a wait.
-        aria-busy={pending}
-        className="size-9 shrink-0 rounded-xl tabular-nums hover:scale-105 disabled:hover:scale-100"
+        // The spinner sits beside the count, never in its place. Swapping the
+        // count for one was the whole of the "it takes a moment" complaint:
+        // the number is already correct the instant it is tapped.
+        aria-busy={busy}
+        className="relative size-9 shrink-0 rounded-xl tabular-nums hover:scale-105 disabled:hover:scale-100"
       >
         {shown}
+        {busy && (
+          <span
+            aria-hidden
+            className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-primary text-white ring-2 ring-card"
+          >
+            <Loader2 size={12} strokeWidth={3} className="animate-spin" />
+          </span>
+        )}
       </Button>
     );
   }
@@ -246,7 +258,7 @@ export default function ProductQuantityStepper({
     <div
       ref={rootRef}
       onClick={stop}
-      aria-busy={pending}
+      aria-busy={busy}
       className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-card p-1"
     >
       <Button
@@ -281,7 +293,9 @@ export default function ProductQuantityStepper({
         aria-label={t("increase")}
         className="size-8 rounded-lg"
       >
-        <Plus size={14} />
+        {/* Still tappable while saving: the next tap moves the draft and is
+            sent once the current request lands. */}
+        {busy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
       </Button>
     </div>
   );

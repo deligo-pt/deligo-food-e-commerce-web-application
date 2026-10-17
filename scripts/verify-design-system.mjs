@@ -1502,6 +1502,7 @@ const ROUNDED_4XL_ALLOWED = [
   "home/HeroSection.tsx", // the sponsor banner — a media frame
   "orders/TrackOrder/OrderMap/OrderMap.tsx", // the map frame
   "orders/TrackOrder/TrackOrder.tsx", // …and the map's skeleton, which must match it
+  "orders/TrackOrder/OrderStatusAnimation.tsx", // the status animation that stands in for the map, same frame
   "vendors/ProductDetailsModal.tsx", // dialog surfaces, not cards
   "shared/LocationPromptModal.tsx",
   "auth/LoginPage.tsx", // the auth panel, plus three pill CTAs at h-14

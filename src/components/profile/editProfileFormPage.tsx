@@ -8,7 +8,11 @@ import Image from "next/image";
 import { isOptimizableImageHost } from "@/lib/imageHosts";
 import EditProfileFormSkeleton from "./EditProfileFormSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useProfile, useInvalidateProfile } from "@/hooks/queries/useProfile";
+import {
+  useProfile,
+  useInvalidateProfile,
+  usePatchProfileCache,
+} from "@/hooks/queries/useProfile";
 import { normalizePortugueseNumber } from "@/lib/phone";
 import PhoneNumberField from "@/components/shared/PhoneNumberField";
 import { toast } from "sonner";
@@ -35,6 +39,7 @@ export default function EditProfileFormPage() {
   const { data: profile, isLoading: loading, error: profileError } =
     useProfile<ProfileData>();
   const invalidateProfile = useInvalidateProfile();
+  const patchProfileCache = usePatchProfileCache();
   const [submitting, setSubmitting] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -44,6 +49,9 @@ export default function EditProfileFormPage() {
   const [email, setEmail] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [nif, setNif] = useState("");
+  // What the saveable fields held when the form was seeded or last saved.
+  // "Save Changes" is only offered when the form differs from it.
+  const [saved, setSaved] = useState({ firstName: "", lastName: "", nif: "" });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -132,6 +140,11 @@ export default function EditProfileFormPage() {
     setMobileNumber(d.contactNumber || "");
     setOriginalMobile(d.contactNumber || "");
     setNif(d.NIF || "");
+    setSaved({
+      firstName: d.name?.firstName || "",
+      lastName: d.name?.lastName || "",
+      nif: d.NIF || "",
+    });
     setImagePreview(d.profilePhoto || "");
   }, [profile]);
 
@@ -297,6 +310,18 @@ export default function EditProfileFormPage() {
    * photo in the same form are perfectly saveable.
    */
   const emailUnverified = email.trim() !== "" && email !== originalEmail;
+
+  /**
+   * Something the save would actually send is different. Email and phone are
+   * left out on purpose — they change through their own OTP buttons, never
+   * through this one (see above). Edges are trimmed, as the save trims them,
+   * so a stray space is not a change.
+   */
+  const hasChanges =
+    selectedFile !== null ||
+    firstName.trim() !== saved.firstName.trim() ||
+    lastName.trim() !== saved.lastName.trim() ||
+    nif.trim() !== saved.nif.trim();
   const mobileUnverified =
     mobileNumber.trim() !== "" && mobileNumber !== originalMobile;
 
@@ -324,6 +349,9 @@ export default function EditProfileFormPage() {
         setImageUploading(true);
         try {
           uploadedPhotoUrl = await uploadProfilePhoto(selectedFile);
+          // Start fetching it now, while the save is still in flight, so the
+          // navbar has it cached by the time it switches over.
+          new window.Image().src = uploadedPhotoUrl;
         } catch (uploadErr) {
           toast.error(getApiErrorMessage(uploadErr, "Failed to upload profile photo"));
           setSubmitting(false);
@@ -351,6 +379,20 @@ export default function EditProfileFormPage() {
 
       await apiClient.patch(`/customers/${profileData.userId}`, payload);
 
+      // The navbar first. It used to hear about a new photo only after the
+      // refetch below came back, about a second later. Writing the saved
+      // fields into the shared cache updates it — and every other reader — now.
+      patchProfileCache({
+        name: payload.name,
+        NIF: payload.NIF,
+        ...(uploadedPhotoUrl ? { profilePhoto: uploadedPhotoUrl } : {}),
+      });
+      setSaved({
+        firstName: payload.name.firstName,
+        lastName: payload.name.lastName,
+        nif: payload.NIF,
+      });
+
       // Not a plain success when something on screen was not saved. The rest of
       // the form did go; saying so and naming what did not is the difference
       // between a confusing screen and an actionable one.
@@ -365,11 +407,6 @@ export default function EditProfileFormPage() {
       // longer does this on the way back, and the blob dies with the page.
       if (uploadedPhotoUrl) setImagePreview(uploadedPhotoUrl);
 
-      // Refresh the shared profile cache so every other consumer (Navbar,
-      // profile view) picks up the change. This form is not among them — it
-      // seeds once, and what is on screen is what was just sent.
-      await invalidateProfile();
-
       // Notify Navbar's photo state instantly (it keeps a local copy).
       const newPhoto = uploadedPhotoUrl ?? profileData.profilePhoto ?? null;
       window.dispatchEvent(
@@ -377,6 +414,11 @@ export default function EditProfileFormPage() {
           detail: { profilePhoto: newPhoto },
         })
       );
+
+      // Then bring back the server's full copy for every other consumer. Not
+      // awaited: the cache already holds what was saved, so nothing on screen
+      // is waiting for it. This form seeds once and is unaffected.
+      void invalidateProfile();
     } catch (err) {
       console.error("Update error:", err);
       toast.error(getApiErrorMessage(err, "Failed to update profile"));
@@ -460,7 +502,8 @@ export default function EditProfileFormPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-muted-foreground dark:text-neutral-400">
-                    {t("firstName")} *
+                    {t("firstName")}{" "}
+                    <span aria-hidden className="text-red-500 dark:text-red-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -532,7 +575,8 @@ export default function EditProfileFormPage() {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-muted-foreground dark:text-neutral-400">
-                    {t("mobileNumber")} *
+                    {t("mobileNumber")}{" "}
+                    <span aria-hidden className="text-red-500 dark:text-red-400">*</span>
                   </label>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     {/* Country and number apart, like the login page; the
@@ -599,8 +643,12 @@ export default function EditProfileFormPage() {
                 </label>
                 <input
                   type="text"
+                  // Digits only: anything else is dropped as it is typed or
+                  // pasted, so "PT 123 456 789" lands as "123456789". No length
+                  // cap — saved NIFs on the test server are not all 9 digits.
+                  inputMode="numeric"
                   value={nif}
-                  onChange={(e) => setNif(e.target.value)}
+                  onChange={(e) => setNif(e.target.value.replace(/\D/g, ""))}
                   className="w-full rounded border border-border bg-card px-4 py-3 outline-none text-gray-900 dark:text-neutral-100 focus:border-primary dark:focus:border-pink-500"
                 />
               </div>
@@ -619,7 +667,7 @@ export default function EditProfileFormPage() {
               <Button
                 type="submit"
                 size="lg"
-                disabled={submitting || imageUploading}
+                disabled={submitting || imageUploading || !hasChanges}
                 className="rounded px-12 font-bold shadow-lg"
               >
                 {imageUploading

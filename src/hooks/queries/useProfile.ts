@@ -88,6 +88,20 @@ export function useActiveAddressCoords(): { lat: number; lng: number } | null {
  * Call after mutations that change profile/address data (edit profile, save
  * address, etc.) instead of manually re-fetching in each component.
  */
+/**
+ * Writes fields straight into the cached profile, so everything reading it —
+ * the navbar's avatar above all — shows a just-saved change at once instead of
+ * after the next `/profile` round trip (~1s on the test server). Pair it with
+ * an invalidation, which still brings back the server's full copy.
+ */
+export function usePatchProfileCache() {
+  const queryClient = useQueryClient();
+  return (patch: Record<string, unknown>) =>
+    queryClient.setQueryData(profileKeys.profile, (old: unknown) =>
+      old && typeof old === "object" ? { ...old, ...patch } : old,
+    );
+}
+
 export function useInvalidateProfile() {
   const queryClient = useQueryClient();
   return () =>

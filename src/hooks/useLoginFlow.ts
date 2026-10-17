@@ -15,7 +15,11 @@ import {
 import { storeAuthTokens } from "../lib/authCookies";
 import { COUNTRY_OPTIONS } from "../data/countryCodes";
 import { requestFCMToken } from "../lib/fcmToken";
-import { VERIFIED_HOLD_MS, VERIFIED_HOLD_REDUCED_MS } from "@/lib/otp";
+import {
+  OTP_RESEND_COOLDOWN_MS,
+  VERIFIED_HOLD_MS,
+  VERIFIED_HOLD_REDUCED_MS,
+} from "@/lib/otp";
 import { apiClient } from "@/lib/apiClient";
 import { updateLiveLocation } from "@/services/addressApi";
 import { useLocationStore } from "@/stores/locationStore";
@@ -32,11 +36,44 @@ type LoginMode = "mobile" | "email";
 type LoginStep = "credentials" | "otp";
 /** What to repeat with `forceLogin` after the user clears a device session. */
 type PendingAction = "verify" | "social" | null;
+/** The credentials field an error is about, outlined until it is edited. */
+type InvalidField = "phone" | "email" | null;
+
+/**
+ * Enough of an email's shape to be worth sending: something, @, a domain with
+ * a dot and at least two letters after it, no spaces. "Send OTP" stays
+ * disabled until the address passes; the server still has the final word.
+ */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/**
+ * When "Resend OTP" unlocks for a number or email, kept in localStorage so
+ * neither a reload nor "Change details" → "Send OTP" to the same address
+ * skips the wait. Keyed on the address alone: the referral code does not
+ * make it a different request.
+ */
+function resendLockKey(identifier: LoginIdentifier) {
+  return `deligo-otp-resend:${identifier.contactNumber ?? identifier.email ?? ""}`;
+}
+
+function readResendLock(identifier: LoginIdentifier): number {
+  try {
+    return Number(window.localStorage.getItem(resendLockKey(identifier))) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeResendLock(identifier: LoginIdentifier, readyAt: number) {
+  try {
+    window.localStorage.setItem(resendLockKey(identifier), String(readyAt));
+  } catch {}
+}
 // Defined next to the request that carries it, in lib/auth.ts. Re-exported here
 // because the login UI imports its types from this hook.
 export type { SocialProvider };
 
-export function useLoginFlow() {
+export function useLoginFlow(initialReferralCode = "") {
   const router = useRouter();
   const lang = useStore((state) => state.lang);
   // `t` keeps a stable identity across renders (see useTranslation), so the
@@ -51,7 +88,7 @@ export function useLoginFlow() {
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_OPTIONS[0]);
   const [email, setEmail] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
-  const [referralCode, setReferralCode] = useState("");
+  const [referralCode, setReferralCode] = useState(initialReferralCode);
   const [otp, setOtp] = useState("");
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
@@ -68,6 +105,21 @@ export function useLoginFlow() {
   // `err.errorKey` values onto our copy instead of showing the raw API message.
   const [errorMessageKey, setErrorMessageKey] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  // Same split as the error pair: our own copy, translated at render.
+  const [successMessageKey, setSuccessMessageKey] = useState("");
+  const [invalidField, setInvalidField] = useState<InvalidField>(null);
+  // The email field has been left once: only then is a half-typed address
+  // called out, so the hint does not nag while someone is still typing.
+  const [emailTouched, setEmailTouched] = useState(false);
+  const emailValid = EMAIL_PATTERN.test(email.trim());
+  const showEmailHint = emailTouched && email.trim() !== "" && !emailValid;
+  const canSendOtp = mode === "mobile" || emailValid;
+  // Resend lock: when it opens, and a clock ticked once a second while it is
+  // shut. `now` starts at 0 and is only ever read from event handlers and the
+  // interval, so rendering stays pure.
+  const [resendReadyAt, setResendReadyAt] = useState(0);
+  const [now, setNow] = useState(0);
+  const resendRemainingMs = Math.max(0, resendReadyAt - now);
   const [loginIdentifier, setLoginIdentifier] = useState<LoginIdentifier | null>(null);
   const [showDeviceLimitModal, setShowDeviceLimitModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
@@ -91,6 +143,30 @@ export function useLoginFlow() {
     loadFacebookSdk(facebookAppId, lang).catch(() => {});
   }, [lang]);
 
+  useEffect(() => {
+    if (resendReadyAt <= Date.now()) return;
+    const timer = window.setInterval(() => {
+      // Read from the real clock each tick, so a throttled background tab
+      // shows the right time the moment it is looked at again.
+      const current = Date.now();
+      setNow(current);
+      if (current >= resendReadyAt) window.clearInterval(timer);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendReadyAt]);
+
+  function showResendLock(readyAt: number) {
+    setResendReadyAt(readyAt);
+    setNow(Date.now());
+  }
+
+  /** A code just went out: lock "Resend OTP" for this address. */
+  function startResendLock(identifier: LoginIdentifier) {
+    const readyAt = Date.now() + OTP_RESEND_COOLDOWN_MS;
+    writeResendLock(identifier, readyAt);
+    showResendLock(readyAt);
+  }
+
   const languageLabel = language === "english" ? "English" : "Português";
 
   // Translated, not hardcoded: these four lines were the only English left in
@@ -108,25 +184,73 @@ export function useLoginFlow() {
     setErrorMessage("");
     setErrorMessageKey("");
     setSuccessMessage("");
+    setSuccessMessageKey("");
+    setInvalidField(null);
   }
 
-  function buildIdentifier() {
+  /** Shows one of our own errors and outlines the field it is about. */
+  function flagField(field: InvalidField, messageKey: string) {
+    setErrorMessageKey(messageKey);
+    setInvalidField(field);
+  }
+
+  /**
+   * The address to send a code to, or the error that stops it — checked here
+   * so a mistyped number gets a clear line at once instead of a round trip to
+   * the server's generic "Validation failed".
+   */
+  function buildIdentifier():
+    | { identifier: LoginIdentifier }
+    | { field: InvalidField; messageKey: string } {
     const referral = referralCode.trim();
+    const extra = referral ? { referralCode: referral } : {};
     if (mode === "email") {
       const value = email.trim().toLowerCase();
-      if (!value) throw new Error("Enter your email address.");
-      return { email: value, ...(referral ? { referralCode: referral } : {}) };
+      if (!value) return { field: "email", messageKey: "loginErrorEmailRequired" };
+      // The button is disabled for this; the check stands behind it.
+      if (!EMAIL_PATTERN.test(value)) return { field: "email", messageKey: "loginErrorEmailInvalid" };
+      return { identifier: { email: value, ...extra } };
     }
-    const number = mobileNumber.replace(/\D/g, "");
-    if (!number) throw new Error("Enter your mobile number.");
+    let number = mobileNumber.replace(/\D/g, "");
+    if (!number) return { field: "phone", messageKey: "loginErrorPhoneRequired" };
+    // A pasted "+351 912 345 678" or "00351…" carries the dial code the
+    // picker already supplies; drop it rather than reject the number.
+    const dialDigits = selectedCountry.dialCode.replace(/\D/g, "");
+    for (const prefix of [`00${dialDigits}`, dialDigits]) {
+      if (
+        number.startsWith(prefix) &&
+        number.length === prefix.length + selectedCountry.nationalLength
+      ) {
+        number = number.slice(prefix.length);
+        break;
+      }
+    }
+    if (number.length !== selectedCountry.nationalLength) {
+      return { field: "phone", messageKey: "loginErrorPhoneInvalid" };
+    }
     return {
-      contactNumber: `${selectedCountry.dialCode}${number}`,
-      ...(referral ? { referralCode: referral } : {}),
+      identifier: { contactNumber: `${selectedCountry.dialCode}${number}`, ...extra },
     };
+  }
+
+  function updateMobileNumber(value: string) {
+    setMobileNumber(value);
+    if (invalidField === "phone") clearMessages();
+  }
+
+  function updateEmail(value: string) {
+    setEmail(value);
+    if (invalidField === "email") clearMessages();
   }
 
   /** Reports an OTP request failure, keeping the backend's localized text. */
   function reportOtpError(error: unknown) {
+    // Our own check should catch a bad number first; this covers any number
+    // the server's stricter rule still refuses. Keyed on the code, not text.
+    if (error instanceof AuthError && error.errorKey === "VALIDATION_CONTACT_NUMBER_INVALID") {
+      flagField("phone", "loginErrorPhoneInvalid");
+      return;
+    }
     setErrorMessage(
       error instanceof Error ? error.message : "Unable to request OTP.",
     );
@@ -136,14 +260,33 @@ export function useLoginFlow() {
     clearMessages();
     setShowDeviceLimitModal(false);
 
+    const built = buildIdentifier();
+    if (!("identifier" in built)) {
+      flagField(built.field, built.messageKey);
+      return;
+    }
+    const { identifier } = built;
+
+    // A code went to this address less than the lock ago: it is still the
+    // one to type, so go back to it rather than send another.
+    const lockedUntil = readResendLock(identifier);
+    if (lockedUntil > Date.now()) {
+      setLoginIdentifier(identifier);
+      setStep("otp");
+      setOtp("");
+      setSuccessMessageKey("otpAlreadySent");
+      showResendLock(lockedUntil);
+      return;
+    }
+
     try {
-      const identifier = buildIdentifier();
       setIsSendingOtp(true);
       const response = await sendLoginOtp(identifier);
       setLoginIdentifier(identifier);
       setStep("otp");
       setOtp("");
       setSuccessMessage(response.message);
+      startResendLock(identifier);
     } catch (error) {
       reportOtpError(error);
     } finally {
@@ -244,12 +387,12 @@ export function useLoginFlow() {
     setShowDeviceLimitModal(false);
 
     if (!loginIdentifier) {
-      setErrorMessage("Request a new OTP first.");
+      setErrorMessageKey("loginErrorRequestOtpFirst");
       return;
     }
     const trimmedOtp = otp.trim();
     if (!trimmedOtp) {
-      setErrorMessage("Enter the OTP sent to you.");
+      setErrorMessageKey("loginErrorEnterOtp");
       return;
     }
 
@@ -264,8 +407,17 @@ export function useLoginFlow() {
       const deviceDetails = { ...buildDeviceDetails(), fcmToken };
       console.log("[FCM] deviceDetails being sent:", deviceDetails);
 
+      // The address only — never the referral code. It was applied when the
+      // code was requested (`/login-customer`), and `/verify-otp`'s schema is
+      // strict: sending `referralCode` refused the whole request with
+      // "Unrecognized key(s) in object: 'referralCode'", so anyone who had
+      // typed a code — or opened a shared `/login?ref=` link — could not
+      // sign in (17 Oct 2026).
+      const address = loginIdentifier.email
+        ? { email: loginIdentifier.email }
+        : { contactNumber: loginIdentifier.contactNumber };
       const response = await verifyLoginOtp({
-        ...loginIdentifier,
+        ...address,
         otp: trimmedOtp,
         deviceDetails,
         forceLogin,
@@ -295,18 +447,27 @@ export function useLoginFlow() {
     }
   }
 
-  async function resendOtp() {
+  /** Sends a fresh code. True once it has gone out, so the page can refocus. */
+  async function resendOtp(): Promise<boolean> {
+    // The button is disabled while locked; this guards a stale click.
+    if (resendReadyAt > Date.now()) return false;
     clearMessages();
     if (!loginIdentifier) {
-      setErrorMessage("Request a new OTP first.");
-      return;
+      setErrorMessageKey("loginErrorRequestOtpFirst");
+      return false;
     }
     try {
       setIsResendingOtp(true);
       const response = await sendLoginOtp(loginIdentifier);
       setSuccessMessage(response.message);
+      // The old code died with this send. Left in the tiles it could only
+      // fail on Verify. A failed resend keeps it: nothing replaced it.
+      setOtp("");
+      startResendLock(loginIdentifier);
+      return true;
     } catch (error) {
       reportOtpError(error);
+      return false;
     } finally {
       setIsResendingOtp(false);
     }
@@ -495,6 +656,12 @@ export function useLoginFlow() {
     errorMessage,
     errorMessageKey,
     successMessage,
+    successMessageKey,
+    invalidField,
+    resendRemainingMs,
+    showEmailHint,
+    canSendOtp,
+    markEmailTouched: () => setEmailTouched(true),
     languageLabel,
     loginHint,
     loginIdentifier,
@@ -504,8 +671,9 @@ export function useLoginFlow() {
     setShowCountryMenu,
     setLanguage,
     setSelectedCountry,
-    setEmail,
-    setMobileNumber,
+    // Editing the field an error is about clears that error.
+    setEmail: updateEmail,
+    setMobileNumber: updateMobileNumber,
     setReferralCode,
     setOtp,
     changeMode,

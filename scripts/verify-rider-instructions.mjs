@@ -48,6 +48,8 @@ register("./ts-resolve-hook.mjs", import.meta.url);
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (file) => readFileSync(join(here, "..", file), "utf8");
+const stripComments = (code) =>
+  code.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 
 let passed = 0;
 let failed = 0;
@@ -67,7 +69,10 @@ const section = (title) => console.log(`\n${title}`);
 const {
   DELIVERY_NOTES_KEY,
   MAX_RIDER_INSTRUCTIONS,
+  MAX_VENDOR_INSTRUCTIONS,
+  checkoutNotesBody,
   outgoingDeliveryNotes,
+  outgoingVendorInstructions,
 } = await import(join(here, "../src/lib/deliveryNotes.ts"));
 
 const payment = read("src/components/payment/PaymentPage.tsx");
@@ -76,129 +81,90 @@ const result = read("src/components/payment/PaymentResult.tsx");
 const en = read("src/assets/translations/en.ts");
 const pt = read("src/assets/translations/pt.ts");
 
-section("The box is where the app puts it");
+section("🔴 The cart page sends both notes with the checkout (15 Oct 2026)");
 {
+  const code = stripComments(cart);
+  const create = code.match(/const createCheckout = async[\s\S]*?\n {4}\};/)?.[0] ?? "";
   check(
-    "the payment page renders the instructions field",
-    /t\("riderInstructions"\)/.test(payment) &&
-      /id="rider-instructions"/.test(payment),
-    "the app shows it on this screen, under the delivery address",
+    "🔴 `POST /checkout` carries them, through the one helper",
+    /apiClient\.post\("\/checkout"/.test(create) &&
+      /\.\.\.checkoutNotesBody\(\{\s*deliveryNotes: instructions,\s*vendorInstructions: vendorNote,\s*isPickup: isSelfPickup,?\s*\}\)/.test(create),
+    "the backend stores both on the checkout; nothing else carries them now",
   );
   check(
-    "🔴 it is drawn only for a delivery",
-    // Asserted as the condition it is under, not as a position in the file.
-    // The first version of this rule pinned the box between the address and
-    // the distance panel, and went red the moment the two were laid out as a
-    // row — which is a layout decision, not the rule. What must stay true is
-    // that a collected order never renders a box for instructing a rider it
-    // does not have, and that `handlePlaceOrder` sends nothing when it is a
-    // pickup even if one was typed before the customer switched.
-    /\{!isPickup && \([\s\S]{0,900}id="rider-instructions"/.test(payment) &&
-      /isPickup: summary\.fulfillmentType === "PICKUP"/.test(payment),
+    "the old sessionStorage hop is gone",
+    !/sessionStorage\.setItem\(\s*DELIVERY_NOTES_KEY/.test(code),
+    "the checkout holds the notes; a second copy in the browser can only disagree with it",
+  );
+  check(
+    "🔴 the rider box is drawn only for a delivery",
+    /\{!isSelfPickup && \([\s\S]{0,800}id="rider-instructions"/.test(code),
     "a collected order has no rider to instruct",
   );
   check(
-    "it shares the row with the distance panel rather than the address",
-    (() => {
-      const box = payment.indexOf('id="rider-instructions"');
-      const distance = payment.indexOf('{t("distanceAndTime")}');
-      // Same test for both: the nearest two-column wrapper above each of them
-      // must be the *same* one — which is what "side by side in one row"
-      // means, and stays true however the row is restyled.
-      const gridAbove = (index) => payment.lastIndexOf("md:grid-cols-2", index);
-      return (
-        box > 0 &&
-        distance > 0 &&
-        distance < box &&
-        gridAbove(box) === gridAbove(distance) &&
-        gridAbove(box) > payment.indexOf('{t("deliveryTo")}')
-      );
-    })(),
-    "under the address it doubled the right column's height and pushed the fee off a phone screen",
+    "the note for the restaurant or store is drawn for pickup too, named for the vendor",
+    /id="vendor-instructions"/.test(code) &&
+      /t\(vendorCopyKey\("noteForVendor", vendorKind\)\)/.test(code) &&
+      !/\{!isSelfPickup && \([\s\S]{0,300}id="vendor-instructions"/.test(code),
   );
   check(
-    "it says it is optional, and the label is bound to the field",
-    /\(\{t\("optional"\)\}\)/.test(payment) &&
-      /htmlFor="rider-instructions"/.test(payment),
-  );
-  check(
-    "the typing cap is the shared one, not a number typed twice",
-    /maxLength=\{MAX_RIDER_INSTRUCTIONS\}/.test(payment),
-  );
-  check(
-    "the copy exists in both languages",
-    /riderInstructions:/.test(en) &&
-      /riderInstructions:/.test(pt) &&
-      /riderInstructionsPlaceholder:/.test(en) &&
-      /riderInstructionsPlaceholder:/.test(pt),
+    "both boxes use the shared caps",
+    /maxLength=\{MAX_RIDER_INSTRUCTIONS\}/.test(code) && /maxLength=\{MAX_VENDOR_INSTRUCTIONS\}/.test(code),
   );
 }
 
-section("🔴 It survives the hop to the page that creates the order");
+section("🔴 The payment page shows them back and never sends them to a payment call");
 {
+  const code = stripComments(payment);
   check(
-    "the cart page stores what was typed",
-    /sessionStorage\.setItem\(\s*DELIVERY_NOTES_KEY/.test(cart),
-    "`/checkout` has no field for it, so it cannot ride on the summary",
+    "it reads them from the checkout",
+    /summary\.deliveryNotes/.test(code) && /summary\.vendorInstructions/.test(code),
   );
   check(
-    "the payment page reads it back",
-    /sessionStorage\.getItem\(DELIVERY_NOTES_KEY\)/.test(payment),
-    "otherwise the customer types it twice, or believes they already did",
+    "no editable copy here — Edit goes back to the cart page",
+    !/<textarea[\s\S]{0,200}rider-instructions/.test(code) && /href=\{editNotesHref\}/.test(code),
+    "no call edits notes on an existing checkout, and rebuilding it would drop a voucher",
   );
   check(
-    "🔴 the storage key is the constant, never a literal",
-    // Scoped to `sessionStorage` on purpose. `searchParams.get("deliveryNotes")`
-    // on the return page is a different namespace — that spelling is the
-    // gateway's, not ours, and renaming our key must not silently rename what
-    // we read off the URL.
-    ![payment, cart, result].some((file) =>
-      /sessionStorage\.(get|set|remove)Item\(\s*["']deliveryNotes["']/.test(file),
-    ),
-    "`sessionStorage` is one global namespace; two spellings of one key is a silent drop",
+    "🔴 the rider line is hidden on a pickup",
+    /const riderNote = isPickup \? "" :/.test(code) && /\{!isPickup && \([\s\S]{0,200}t\("riderInstructions"\)/.test(code),
   );
   check(
-    "it is cleared once the order exists",
-    /ORDER_PLACED[\s\S]{0,300}sessionStorage\.removeItem\(DELIVERY_NOTES_KEY\)/.test(result),
-    "otherwise the next order inherits the last one's note",
+    "🔴 changing the address keeps the notes",
+    /toggle-delivery-address-status[\s\S]{0,600}apiClient\.post\("\/checkout", \{\s*useCart: true,\s*\.\.\.checkoutNotesBody\(\{\s*deliveryNotes: summary\?\.deliveryNotes,\s*vendorInstructions: summary\?\.vendorInstructions,?\s*\}\)/.test(code),
+    "a rebuilt checkout starts without them",
+  );
+  const call = code.match(/payWithSavedCard\(\{[\s\S]*?\}\);/)?.[0] ?? "";
+  check(
+    "🔴 one-click does NOT send the note — the endpoint rejects the key",
+    call !== "" && !/deliveryNotes/.test(call),
+    "pay-with-saved-token answers 400 \"Unrecognized key(s) in object: 'deliveryNotes'\"",
+  );
+  check(
+    "🔴 …and the payload type cannot carry it",
+    !/deliveryNotes/.test(stripComments(read("src/types/payment.ts")).match(/interface PayWithSavedCardPayload \{[\s\S]*?\n\}/)?.[0] ?? "deliveryNotes"),
+  );
+  const intent = code.match(/createPaymentSession\(\{[\s\S]*?\}\);/)?.[0] ?? "";
+  check(
+    "🔴 the hosted payment call does not send it either",
+    intent !== "" && !/deliveryNotes|vendorInstructions/.test(intent),
+  );
+  check(
+    "the return page still clears the old session key",
+    /sessionStorage\.removeItem\(DELIVERY_NOTES_KEY\)/.test(result),
+    "a note left by an older build must not linger",
   );
 }
 
-section("🔴 Every path that creates an order carries it");
+section("Every label is translated");
 {
-  check(
-    "the redirect flow no longer hard-codes an empty note",
-    !/deliveryNotes: ""/.test(payment),
-    'this was `deliveryNotes: ""` from the day the file was written',
-  );
-  check(
-    "the pending order carries what the customer typed",
-    /deliveryNotes: notes,/.test(payment),
-  );
-  check(
-    "🔴 one-click sends it on the call that creates the order",
-    /payWithSavedCard\(\{[\s\S]{0,900}deliveryNotes: notes/.test(payment),
-    "this path never reaches our `create-order`, so the note travels here or not at all",
-  );
-  check(
-    "one-click omits it when there is nothing to say",
-    /\.\.\.\(notes \? \{ deliveryNotes: notes \} : \{\}\)/.test(payment),
-    "a silent customer must make the request this endpoint has always received",
-  );
-  check(
-    "🔴 the redirect flow keeps it in the pending order, ready for the backend",
-    /savePendingOrder\(\{[\s\S]{0,300}deliveryNotes: notes,/.test(payment),
-    "the backend creates this order now and takes no note yet (plan.md, Phase 0); dropping it here loses it for good",
-  );
-  check(
-    "no return page pretends to send it through create-order",
-    !/create-order/.test(result.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1")),
-    "that call is retired: the backend creates the order",
-  );
-  check(
-    "both are trimmed through the one helper",
-    /outgoingDeliveryNotes\(/.test(payment) && /outgoingDeliveryNotes\(/.test(cart),
-  );
+  const keys = [
+    "deliveryInstructions", "riderInstructions", "riderInstructionsPlaceholder", "instructions", "edit", "noInstructions",
+    "noteForVendorRestaurant", "noteForVendorStore", "noteForVendorPartner",
+    "noteForVendorPlaceholderRestaurant", "noteForVendorPlaceholderStore", "noteForVendorPlaceholderPartner",
+  ];
+  const missing = keys.filter((k) => !new RegExp(`\\n  ${k}:`).test(en) || !new RegExp(`\\n  ${k}:`).test(pt));
+  check("en and pt both have every key", missing.length === 0, missing.join(", "));
 }
 
 section("The model, executed");
@@ -230,9 +196,23 @@ section("The model, executed");
     String(MAX_RIDER_INSTRUCTIONS),
   );
   check(
-    "the key is the one the order field is called",
+    "the old session key is still known, so it can be cleared",
     DELIVERY_NOTES_KEY === "deliveryNotes",
   );
+  check(
+    "the note for the vendor is trimmed and capped, and kept on pickup",
+    outgoingVendorInstructions("  no onions  ") === "no onions" &&
+      outgoingVendorInstructions("x".repeat(500)).length === MAX_VENDOR_INSTRUCTIONS,
+  );
+  const both = checkoutNotesBody({ deliveryNotes: " ring ", vendorInstructions: " no onions " });
+  check("🔴 the checkout body carries both, trimmed", both.deliveryNotes === "ring" && both.vendorInstructions === "no onions");
+  check(
+    "🔴 nothing to say sends no keys at all",
+    Object.keys(checkoutNotesBody({ deliveryNotes: "  ", vendorInstructions: "" })).length === 0,
+    "a customer who types nothing makes the request the endpoint has always received",
+  );
+  const pickup = checkoutNotesBody({ deliveryNotes: "ring", vendorInstructions: "no onions", isPickup: true });
+  check("🔴 pickup drops the rider note, keeps the vendor note", !("deliveryNotes" in pickup) && pickup.vendorInstructions === "no onions");
 }
 
 section("The guard is wired in");

@@ -129,8 +129,6 @@ interface AddonGroup {
 
 /** A description longer than this gets the two-line clamp and "Read more". */
 const DESCRIPTION_CLAMP_AT = 110;
-/** With this many add-on choices or fewer, every group starts open. */
-const ADDONS_ALL_OPEN_UP_TO = 8;
 
 export default function ProductDetailsModal({
   isOpen,
@@ -204,7 +202,10 @@ export default function ProductDetailsModal({
             ...g,
             options: (g.options || []).filter((o) => o.isActive !== false),
           }))
-          .filter((g) => g.options.length > 0);
+          .filter((g) => g.options.length > 0)
+          // Single-choice groups first, then by how many can be picked; ties
+          // keep the vendor's order (sort is stable).
+          .sort((a, b) => a.maxSelectable - b.maxSelectable);
         setAddonGroups(groups);
       } catch {
         if (!cancelled) setAddonGroups([]);
@@ -276,12 +277,10 @@ export default function ProductDetailsModal({
   const groupSelectedCount = (group: AddonGroup) =>
     group.options.reduce((sum, o) => sum + (addonQty[o.sku] || 0), 0);
 
-  // A long list of optional extras is what made this modal a scroll: required
-  // groups start open, optional ones closed — unless there is little to hide.
-  const addonChoices = addonGroups.reduce((sum, g) => sum + g.options.length, 0);
-  const isGroupOpen = (group: AddonGroup) =>
-    openGroups[group._id] ??
-    (group.minSelectable > 0 || addonChoices <= ADDONS_ALL_OPEN_UP_TO);
+  // Every group starts open, so every choice is in view without a tap (the
+  // owner's call, 17 Oct 2026 — reversing a brief all-closed default). Each
+  // header still closes its own group.
+  const isGroupOpen = (group: AddonGroup) => openGroups[group._id] ?? true;
 
   const incAddon = (group: AddonGroup, sku: string) => {
     if (groupSelectedCount(group) >= group.maxSelectable) return;
@@ -290,6 +289,19 @@ export default function ProductDetailsModal({
 
   const decAddon = (sku: string) => {
     setAddonQty((prev) => ({ ...prev, [sku]: Math.max(0, (prev[sku] || 0) - 1) }));
+  };
+
+  // "Choose up to 1" groups are radios: picking one replaces the other.
+  // Tapping the picked one clears it, unless the group is required.
+  const pickAddon = (group: AddonGroup, sku: string) => {
+    setAddonQty((prev) => {
+      const wasPicked = (prev[sku] || 0) > 0;
+      if (wasPicked && group.minSelectable > 0) return prev;
+      const next = { ...prev };
+      for (const o of group.options) delete next[o.sku];
+      if (!wasPicked) next[sku] = 1;
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -720,6 +732,7 @@ export default function ProductDetailsModal({
                   {addonGroups.map((group) => {
                     const selectedCount = groupSelectedCount(group);
                     const atMax = selectedCount >= group.maxSelectable;
+                    const single = group.maxSelectable === 1;
                     const open = isGroupOpen(group);
                     const unmet = flaggedGroupId === group._id && selectedCount < group.minSelectable;
                     const picked = group.options
@@ -777,26 +790,57 @@ export default function ProductDetailsModal({
                           </span>
                         </button>
                         {open && (
-                          <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
+                          <div
+                            role={single ? "radiogroup" : undefined}
+                            aria-label={single ? group.title : undefined}
+                            className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2"
+                          >
                             {group.options.map((opt) => {
                               const qty = addonQty[opt.sku] || 0;
+                              const cardClass = `flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${
+                                qty > 0
+                                  ? "border-primary/40 bg-primary/5 dark:border-pink-400/40 dark:bg-pink-950/20"
+                                  : "border-border bg-card"
+                              }`;
+                              const label = (
+                                <div className="min-w-0">
+                                  <span className="block truncate text-sm text-gray-800 dark:text-neutral-200">
+                                    {opt.name}
+                                  </span>
+                                  <span className="block text-xs font-medium text-primary dark:text-pink-400">
+                                    +{formatPrice(opt.price, currency)}
+                                  </span>
+                                </div>
+                              );
+                              if (single) {
+                                return (
+                                  <button
+                                    key={opt.sku}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={qty > 0}
+                                    onClick={() => pickAddon(group, opt.sku)}
+                                    className={`focus-ring w-full text-left ${cardClass}`}
+                                  >
+                                    {label}
+                                    <span
+                                      aria-hidden
+                                      className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                                        qty > 0
+                                          ? "border-primary dark:border-pink-400"
+                                          : "border-gray-300 dark:border-neutral-600"
+                                      }`}
+                                    >
+                                      {qty > 0 && (
+                                        <span className="size-2.5 rounded-full bg-primary dark:bg-pink-400" />
+                                      )}
+                                    </span>
+                                  </button>
+                                );
+                              }
                               return (
-                                <div
-                                  key={opt.sku}
-                                  className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${
-                                    qty > 0
-                                      ? "border-primary/40 bg-primary/5 dark:border-pink-400/40 dark:bg-pink-950/20"
-                                      : "border-border bg-card"
-                                  }`}
-                                >
-                                  <div className="min-w-0">
-                                    <span className="block truncate text-sm text-gray-800 dark:text-neutral-200">
-                                      {opt.name}
-                                    </span>
-                                    <span className="block text-xs font-medium text-primary dark:text-pink-400">
-                                      +{formatPrice(opt.price, currency)}
-                                    </span>
-                                  </div>
+                                <div key={opt.sku} className={cardClass}>
+                                  {label}
                                   <div className="flex shrink-0 items-center gap-1">
                                     {qty > 0 && (
                                       <>

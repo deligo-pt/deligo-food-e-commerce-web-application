@@ -69,11 +69,8 @@ import {
 } from "@/lib/paymentAction";
 import PaymentInProgressCard from "@/components/payment/PaymentInProgressCard";
 import { toast } from "sonner";
-import {
-  DELIVERY_NOTES_KEY,
-  MAX_RIDER_INSTRUCTIONS,
-  outgoingDeliveryNotes,
-} from "@/lib/deliveryNotes";
+import { checkoutNotesBody, outgoingDeliveryNotes } from "@/lib/deliveryNotes";
+import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -212,6 +209,10 @@ interface CheckoutSummary {
   fulfillmentType?: "DELIVERY" | "PICKUP";
   /** ISO instant, present only on pickup. */
   pickupTime?: string;
+  /** For the rider, as sent on `POST /checkout` (15 Oct 2026); `""` when none. */
+  deliveryNotes?: string;
+  /** For the restaurant or store, as sent on `POST /checkout`; `""` when none. */
+  vendorInstructions?: string;
   paymentStatus: string;
   offer: {
     isApplied: boolean;
@@ -443,26 +444,6 @@ export default function PaymentPage() {
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [isContinuingPayment, setIsContinuingPayment] = useState(false);
   const [isReleasingPayment, setIsReleasingPayment] = useState(false);
-
-  /**
-   * What the customer wants the rider to know — the app's "Rider Instructions
-   * (Optional)" box, under the delivery address.
-   *
-   * Seeded from the instructions typed on the cart page, which until now went
-   * nowhere: `/checkout` has no field for them, so they were local state on a
-   * screen the customer then left. They survive the hop in `sessionStorage`,
-   * the same place the pending order already lives, and are cleared by the
-   * return page when the order is created.
-   *
-   * For card and wallet payments they can't reach the order yet: the backend
-   * now creates it, and no payment endpoint accepts `deliveryNotes` (8 Oct
-   * 2026). They wait in the pending order until one does.
-   */
-  const [riderInstructions, setRiderInstructions] = useState("");
-  useEffect(() => {
-    const carried = sessionStorage.getItem(DELIVERY_NOTES_KEY);
-    if (carried) setRiderInstructions(carried.slice(0, MAX_RIDER_INSTRUCTIONS));
-  }, []);
 
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [availableOffers, setAvailableOffers] = useState<AvailableOffer[]>([]);
@@ -790,7 +771,15 @@ export default function PaymentPage() {
       await apiClient.patch(
         `/customers/toggle-delivery-address-status/${addr._id}`,
       );
-      const res = await apiClient.post("/checkout", { useCart: true });
+      // The rebuilt checkout keeps the notes the customer left on this one:
+      // they live on the checkout, and a new one starts without them.
+      const res = await apiClient.post("/checkout", {
+        useCart: true,
+        ...checkoutNotesBody({
+          deliveryNotes: summary?.deliveryNotes,
+          vendorInstructions: summary?.vendorInstructions,
+        }),
+      });
       const newCheckoutId = res.data?.data?._id;
       if (!newCheckoutId) {
         throw new Error("Checkout response did not include an id");
@@ -916,7 +905,7 @@ export default function PaymentPage() {
     // customer switched away from would follow them to a counter.
     // (`isPickup` is derived further down, after the loading guard, so the
     // test is spelled out here rather than reaching forward to it.)
-    const notes = outgoingDeliveryNotes(riderInstructions, {
+    const notes = outgoingDeliveryNotes(summary.deliveryNotes, {
       isPickup: summary.fulfillmentType === "PICKUP",
     });
 
@@ -932,13 +921,12 @@ export default function PaymentPage() {
         await payWithSavedCard({
           checkoutSummaryId: summary._id,
           paymentTokenId: selectedCardId,
-          // This path creates the order server-side, so there is no
-          // `create-order` of ours to attach the note to — it has to travel
-          // here or not at all. Sent only when there is something to say, so a
-          // customer who types nothing makes exactly the request this endpoint
-          // has always received. Whether the backend stores it is ⚠️ unverified:
-          // it takes one one-click order on a real card to find out.
-          ...(notes ? { deliveryNotes: notes } : {}),
+          // No `deliveryNotes` here. The endpoint's schema is strict and
+          // answers 400 "Unrecognized key(s) in object: 'deliveryNotes'", so
+          // sending the note failed every one-click payment that had rider
+          // instructions (reproduced 14 Oct 2026). The note is lost on this
+          // path until the backend accepts it — the same as the redirect path,
+          // where it only waits in the pending order.
         });
 
         // Straight to the orders list, not the tracking page. Nothing is read
@@ -1034,6 +1022,13 @@ export default function PaymentPage() {
    * was actually booked.
    */
   const isPickup = summary.fulfillmentType === "PICKUP";
+  // The notes left on the cart page, shown back read-only: the checkout
+  // already carries them, and no call edits them in place (see
+  // `lib/deliveryNotes.ts`). "Edit" goes back to the cart page.
+  const riderNote = isPickup ? "" : (summary.deliveryNotes ?? "").trim();
+  const vendorNote = (summary.vendorInstructions ?? "").trim();
+  const vendorKind = getVendorKind(vendor?.businessDetails?.businessType);
+  const editNotesHref = pathname.replace(/\/payment\/?$/, "");
 
   // Guarded rather than assumed: these are typed as required, but an order the
   // backend has not priced a route for would report 0, and "0 km • 0 min" is
@@ -1231,8 +1226,10 @@ export default function PaymentPage() {
                   were under the address at first, which pushed the fee and the
                   distance a screen down on a phone and left the right column
                   twice the height of the left. */}
-              {(hasDeliveryDistance || hasDeliveryEta || !isPickup) && (
-                <div className="mt-6 grid gap-6 md:grid-cols-2">
+              {/* Always drawn: the notes box is in it, for pickup too. Two
+                  columns only when the distance panel shares the row. */}
+              {(
+                <div className={`mt-6 grid gap-6 ${hasDeliveryDistance || hasDeliveryEta ? "md:grid-cols-2" : ""}`}>
                   {(hasDeliveryDistance || hasDeliveryEta) && (
                     <div className="flex items-center gap-3 rounded-lg border border-dashed border-primary/20 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
                       <MapPinned className="h-5 w-5 shrink-0 text-primary dark:text-pink-400" />
@@ -1255,33 +1252,40 @@ export default function PaymentPage() {
                     </div>
                   )}
 
-                  {/* Only on a delivery: a collected order has no rider to
-                      instruct. Same dashed frame as the panel beside it so the
-                      two read as one row rather than a box next to a form. */}
-                  {!isPickup && (
-                    <div className="rounded-lg border border-dashed border-primary/20 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <label
-                          htmlFor="rider-instructions"
-                          className="font-medium text-gray-900 dark:text-neutral-100"
-                        >
-                          {t("riderInstructions")}
-                        </label>
-                        <span className="text-sm text-gray-500 dark:text-neutral-400">
-                          ({t("optional")})
-                        </span>
-                      </div>
-                      <textarea
-                        id="rider-instructions"
-                        rows={2}
-                        maxLength={MAX_RIDER_INSTRUCTIONS}
-                        value={riderInstructions}
-                        onChange={(e) => setRiderInstructions(e.target.value)}
-                        placeholder={t("riderInstructionsPlaceholder")}
-                        className="w-full rounded-lg border border-border bg-card p-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary dark:text-neutral-50 dark:placeholder:text-neutral-600 dark:focus:border-pink-400"
-                      />
+                  {/* The notes, read-only. The rider line only on a delivery;
+                      a collected order has no rider. Same dashed frame as the
+                      panel beside it so the two read as one row. */}
+                  <div className="rounded-lg border border-dashed border-primary/20 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <p className="font-medium text-gray-900 dark:text-neutral-100">
+                        {t("instructions")}
+                      </p>
+                      <Link
+                        href={editNotesHref}
+                        className="focus-ring rounded-sm text-sm font-semibold text-primary transition hover:opacity-80"
+                      >
+                        {t("edit")}
+                      </Link>
                     </div>
-                  )}
+                    <dl className="space-y-2 text-sm">
+                      {!isPickup && (
+                        <div>
+                          <dt className="text-gray-500 dark:text-neutral-400">{t("riderInstructions")}</dt>
+                          <dd className="break-words text-gray-900 dark:text-neutral-100">
+                            {riderNote || t("noInstructions")}
+                          </dd>
+                        </div>
+                      )}
+                      <div>
+                        <dt className="text-gray-500 dark:text-neutral-400">
+                          {t(vendorCopyKey("noteForVendor", vendorKind))}
+                        </dt>
+                        <dd className="break-words text-gray-900 dark:text-neutral-100">
+                          {vendorNote || t("noInstructions")}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
                 </div>
               )}
             </div>

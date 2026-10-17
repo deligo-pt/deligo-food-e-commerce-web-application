@@ -1,37 +1,44 @@
 /**
- * The rider instructions: where they are kept between two screens, and what
- * counts as an instruction at all.
+ * The two notes a customer can leave on an order, and what counts as a note.
+ *
+ * - `deliveryNotes` — for the rider ("ring the bell, 2nd floor"). Delivery
+ *   only: a collected order has no rider.
+ * - `vendorInstructions` — for the restaurant or store ("no onions"). Both
+ *   delivery and pickup.
  *
  * No React and no `apiClient`, so `pnpm verify:rider-instructions` can assert
  * the rules with no token and no network — the same arrangement as
  * `cancelReason.ts` and `vendorKind.ts`.
  *
- * ## Why they travel in sessionStorage
+ * ## Where they go
  *
- * The customer types them on the cart page; the order that carries them is
- * created two screens later. `POST /checkout` has **no field for them** — the
- * summary it returns knows nothing about a note. `POST /orders/create-order`
- * used to carry it, but since 8 Oct 2026 the backend creates RedUniq orders
- * itself and that call is gone — no payment endpoint accepts the note yet
- * (see `plan.md`, Phase 0). It waits in the pending order until one does. So
- * the text has to survive the hop, and
- * the hop includes a full page load back from the payment gateway, which rules
- * out React state. `sessionStorage` is where the pending order already waits
- * for the same reason.
+ * Since 15 Oct 2026 `POST /checkout` takes both and stores them on the
+ * checkout (checked on Tasca do Bairro and Anchor; the summary returns them).
+ * The cart page sends them when it creates the checkout; the payment page only
+ * shows them back. There is no call that changes the notes on an existing
+ * checkout, and rebuilding one from the payment page would drop an applied
+ * voucher — so editing happens on the cart page.
  *
- * The payment page is the one that shows them back, under the delivery
- * address, because that is where the mobile app puts them and because it is
- * the last screen before the money moves.
+ * The payment calls (`pay-with-saved-token`, `create-payment-intent`) still
+ * reject a `deliveryNotes` key outright (400 "Unrecognized key(s)"), so the
+ * notes must never ride on them.
+ *
+ * The backend sets no length limit (600 characters were accepted) and stores
+ * spaces as typed, so the cap and the trim are ours.
  */
-
-/** The one key both screens use. The return page clears it once the order exists. */
-export const DELIVERY_NOTES_KEY = "deliveryNotes";
 
 /**
- * A client-side cap. The server's own limit, if it has one, is unknown: this is
- * a line for a courier to read at a door, not a message.
+ * The old sessionStorage key the notes travelled in before `/checkout` took
+ * them. Nothing writes it any more; the return page still clears it, so a
+ * value left by an older build cannot linger.
  */
+export const DELIVERY_NOTES_KEY = "deliveryNotes";
+
+/** A line for a courier to read at a door, not a message. */
 export const MAX_RIDER_INSTRUCTIONS = 200;
+
+/** Same cap for the kitchen or the shop floor. */
+export const MAX_VENDOR_INSTRUCTIONS = 200;
 
 /**
  * What to send as `deliveryNotes`, or `""` for nothing to say.
@@ -48,4 +55,27 @@ export function outgoingDeliveryNotes(
 ): string {
   if (options?.isPickup) return "";
   return (raw ?? "").trim().slice(0, MAX_RIDER_INSTRUCTIONS);
+}
+
+/** What to send as `vendorInstructions`, or `""`. Pickup keeps it. */
+export function outgoingVendorInstructions(raw: string | null | undefined): string {
+  return (raw ?? "").trim().slice(0, MAX_VENDOR_INSTRUCTIONS);
+}
+
+/**
+ * The notes part of a `POST /checkout` body. A key is present only when there
+ * is something to say, so a customer who types nothing makes the request the
+ * endpoint has always received.
+ */
+export function checkoutNotesBody(notes: {
+  deliveryNotes?: string | null;
+  vendorInstructions?: string | null;
+  isPickup?: boolean;
+}): { deliveryNotes?: string; vendorInstructions?: string } {
+  const deliveryNotes = outgoingDeliveryNotes(notes.deliveryNotes, { isPickup: notes.isPickup });
+  const vendorInstructions = outgoingVendorInstructions(notes.vendorInstructions);
+  return {
+    ...(deliveryNotes ? { deliveryNotes } : {}),
+    ...(vendorInstructions ? { vendorInstructions } : {}),
+  };
 }

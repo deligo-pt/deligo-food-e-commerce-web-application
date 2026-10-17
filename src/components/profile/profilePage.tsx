@@ -8,7 +8,7 @@ import {
   Edit,
   Ticket,
   Gift,
-  Receipt,
+  ReceiptEuro,
   CreditCard,
   UserPlus,
   MapPin,
@@ -120,7 +120,7 @@ export default function AccountPage() {
     {
       title: t("orders"),
       description: t("ordersDescription"),
-      icon: Receipt,
+      icon: ReceiptEuro,
       path: "/orders",
     },
     {

@@ -270,6 +270,10 @@ const pt = {
   copyFailed: "Não foi possível copiar",
   getDirections: "Obter direções",
   orderCollected: "Recolhido",
+  // A página do pedido enquanto o sistema procura um estafeta (AWAITING_PARTNER
+  // / DISPATCHING) — não é um passo da cronologia.
+  findingRider: "A procurar um estafeta",
+  findingRiderDescription: "O seu pedido será recolhido assim que um estafeta o aceitar",
   orderCollectedDescription: "Recolheu o seu pedido na loja",
 
   processing: "Processando...",
@@ -570,7 +574,7 @@ const pt = {
   lastName: "Apelido",
   emailAddress: "Endereço de Email",
   mobileNumber: "Número de Telemóvel",
-  nifTaxId: "NIF / ID Fiscal",
+  nifTaxId: "NIF",
   deliveryAddress: "Morada de Entrega",
 
   optional: "opcional",
@@ -997,6 +1001,9 @@ const pt = {
   loginHintOtpMobile: "Introduza o OTP enviado para o seu telemóvel.",
   loginHintOtpEmail:
     "Introduza o OTP enviado para o seu e-mail. Se não o encontrar, verifique a pasta de spam.",
+  // As palavras de `loginHintOtpEmail` que a página de login mostra a negrito.
+  // Têm de aparecer nessa frase exatamente como aqui.
+  loginHintSpamFolder: "pasta de spam",
 
   enterOtp: "Introduza o OTP",
 
@@ -1020,6 +1027,21 @@ const pt = {
   // Substitui a legenda genérica `otpSentTo` nos envios por telemóvel, que
   // nomeiam o canal; os envios por email não têm canal.
   otpSentViaSms: "Código enviado por SMS para",
+
+  // Erros do formulário de login redigidos por nós (17 out 2026). O texto do
+  // servidor para um número errado era um genérico "Falha na validação.
+  // Verifique os campos destacados…", sem nada destacado.
+  loginErrorPhoneRequired: "Introduza o seu número de telemóvel.",
+  loginErrorPhoneInvalid: "Introduza um número de telemóvel português válido — 9 dígitos, ex.: 912 345 678.",
+  loginErrorEmailRequired: "Introduza o seu endereço de email.",
+  loginErrorEmailInvalid: "Introduza um endereço de email válido, ex.: nome@exemplo.com.",
+  loginErrorRequestOtpFirst: "Peça primeiro um novo OTP.",
+  loginErrorEnterOtp: "Introduza o OTP que recebeu.",
+  // Bloqueio do reenvio. O tempo é composto no JSX a seguir ("Reenviar OTP em 4:59").
+  resendOtpIn: "Reenviar OTP em",
+  // "Enviar OTP" de novo para o mesmo número ou email durante o bloqueio:
+  // não é enviado um novo código.
+  otpAlreadySent: "Já enviámos um código. Introduza-o abaixo, ou peça um novo quando o tempo terminar.",
 
   // Autenticação social. `orWith` identifica a linha que separa o formulário de
   // OTP dos botões dos fornecedores.
@@ -1821,6 +1843,19 @@ const pt = {
   referralInfoCopied:
     "Informação de referência copiada para a área de transferência",
   failedToShareReferralCode: "Falha ao partilhar o código de referência",
+  // Menu "Partilhar Código" das referências (17 out 2026). A mensagem é
+  // composta no JSX: "<intro> MR.X7FXX — <outro>: https://…/login?ref=MR.X7FXX".
+  shareViaWhatsApp: "WhatsApp",
+  shareViaEmail: "Email",
+  copyShareMessage: "Copiar mensagem",
+  shareMoreOptions: "Mais opções…",
+  referralShareSubject: "Junte-se a mim na DeliGo",
+  referralShareIntro: "Junte-se à DeliGo com o meu código de referência",
+  referralShareOutro: "introduza-o ao registar-se",
+  // Mostrado em vez do código enquanto a conta não tem um — o código só é
+  // emitido quando o perfil tem um nome.
+  referralNeedsProfile: "Configure primeiro o seu perfil — adicione o seu nome — e o seu código de referência aparecerá aqui.",
+  completeProfile: "Completar perfil",
   pleaseLogInToAddToCart: "Inicie sessão para adicionar itens ao seu carrinho.",
   itemAddedToCart: "Item adicionado ao carrinho com sucesso!",
   failedToAddToCart: "Não foi possível ler o seu carrinho. Tente novamente.",
@@ -2123,6 +2158,16 @@ const pt = {
   productOutOfAreaTitle: "Indisponível na sua área",
   productOutOfAreaHint:
     "Este artigo pertence a um menu que não entrega na sua morada atual.",
+  // Order notes: rider instructions and a note for the restaurant/store (15 Oct 2026)
+  instructions: "Instruções",
+  edit: "Editar",
+  noInstructions: "Nenhuma",
+  noteForVendorRestaurant: "Nota para o restaurante",
+  noteForVendorStore: "Nota para a loja",
+  noteForVendorPartner: "Nota para o parceiro",
+  noteForVendorPlaceholderRestaurant: "ex.: Sem cebola, molho extra",
+  noteForVendorPlaceholderStore: "ex.: Ligue-me se um artigo não estiver disponível",
+  noteForVendorPlaceholderPartner: "ex.: Algo que devam saber sobre o seu pedido",
 };
 
 export default pt;
