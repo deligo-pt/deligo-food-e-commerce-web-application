@@ -9,6 +9,8 @@ import ProductImage from "@/components/shared/ProductImage";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getAddonsTotal } from "@/lib/cart";
 import type { CartAddon } from "@/types/cart";
+import type { LineSdr } from "@/types/sdr";
+import { lineDeposit } from "@/lib/sdr";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +30,8 @@ interface CartItem {
   image: string;
   isActive: boolean;
   addons?: CartAddon[];
+  /** Container deposit — see `lib/sdr.ts`. Not in `grandTotal`. */
+  sdr?: LineSdr;
   itemSummary: {
     quantity: number;
     grandTotal: number;
@@ -164,6 +168,13 @@ export default function CartProductRow({
             <p className="text-xl font-bold text-primary dark:text-pink-400">
               €{item.itemSummary.grandTotal.toFixed(2)}
             </p>
+            {/* Beside the price, not in it: the cart total excludes the
+                deposit, which is charged at payment. */}
+            {lineDeposit(item).total > 0 && (
+              <p className="text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
+                +€{lineDeposit(item).total.toFixed(2)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × €{lineDeposit(item).unit.toFixed(2)})
+              </p>
+            )}
           </div>
         </div>
       </div>

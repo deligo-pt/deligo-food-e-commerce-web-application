@@ -64,6 +64,7 @@ import {
   type PickupVendorHours,
 } from "@/lib/pickupTime";
 import { Button } from "@/components/ui/button";
+import { lineDeposit } from "@/lib/sdr";
 
 interface CheckoutPageProps {
   vendorId: string;
@@ -452,9 +453,12 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         acc.discount += item.itemSummary.totalProductDiscount;
         acc.vat += item.itemSummary.totalTaxAmount;
         acc.total += item.itemSummary.grandTotal;
+        // Kept apart from `total`: the cart's totals exclude the container
+        // deposit, and the checkout adds it to the amount charged.
+        acc.deposit += lineDeposit(item).total;
         return acc;
       },
-      { originalPrice: 0, discount: 0, vat: 0, total: 0 },
+      { originalPrice: 0, discount: 0, vat: 0, total: 0, deposit: 0 },
     );
   }, [vendorItems]);
 
@@ -1091,6 +1095,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                           <p className="text-2xl font-bold text-primary dark:text-pink-400">
                             €{item.itemSummary.grandTotal.toFixed(2)}
                           </p>
+                          {lineDeposit(item).total > 0 && (
+                            <p className="text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
+                              +€{lineDeposit(item).total.toFixed(2)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × €{lineDeposit(item).unit.toFixed(2)})
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1139,6 +1148,20 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                   </span>
                 </div>
               </div>
+              {/* Its own row under the final price, never folded into it:
+                  this figure is the cart's, and the deposit is added to the
+                  amount charged only at payment. */}
+              {summary.deposit > 0 && (
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-gray-600 dark:text-neutral-400">{t("sdrDeposit")}</span>
+                    <span className="mt-1 block text-xs text-gray-500 dark:text-neutral-400">{t("sdrAddedAtPayment")}</span>
+                  </div>
+                  <span className="shrink-0 font-semibold text-gray-900 dark:text-neutral-50">
+                    +€{summary.deposit.toFixed(2)}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Self-pickup sits between the summary and the instructions, the
@@ -1303,6 +1326,17 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                       </p>
                     </div>
                   </div>
+                  {/* An unknown result: the cart never releases a payment itself.
+                      The payment page does, behind its confirmation — so this
+                      is the way there, not a dead end of "Check again". */}
+                  {blockedCheckout.kind === "verifying" && blockedCheckout.checkoutId && (
+                    <Link
+                      href={paymentPagePath(blockedCheckout.checkoutId, vendorId) ?? "/cart"}
+                      className="mt-3 inline-block text-sm font-semibold text-primary hover:opacity-80 dark:text-pink-400"
+                    >
+                      {t("viewThatPayment")}
+                    </Link>
+                  )}
                   {blockedCheckout.kind === "in-progress" && blockedCheckout.checkoutId && (
                     <Button
                       size="lg"

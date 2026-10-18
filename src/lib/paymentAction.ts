@@ -113,6 +113,12 @@ export type PaymentActionResult = {
   orderId: string | null;
   /** The `ORD-…` number customers and support read. */
   displayOrderId: string | null;
+  /**
+   * The error's own key, for refusals that carry no `data.code` — chiefly
+   * `CHECKOUT_TOTALS_CHANGED` (409): the deposit changed after the checkout
+   * was built and the summary must be refreshed before paying (`sdr.md` §3.3).
+   */
+  errorKey: string | null;
 };
 
 const text = (value: unknown): string | null =>
@@ -138,7 +144,15 @@ export function readPaymentActionResponse(body: unknown): PaymentActionResult {
     paymentToken: text(bag.paymentToken),
     orderId: text(bag.orderId),
     displayOrderId: text(bag.displayOrderId),
+    errorKey: errorKeyIn(body),
   };
+}
+
+/** `errorKey` at the top level, or under `err` as the test server also sends it. */
+function errorKeyIn(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const b = body as { errorKey?: unknown; err?: { errorKey?: unknown } | null };
+  return text(b.errorKey) ?? text(b.err?.errorKey);
 }
 
 /**

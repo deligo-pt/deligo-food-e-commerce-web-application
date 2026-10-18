@@ -38,7 +38,8 @@
     "verify:payment-action": "node --no-warnings scripts/verify-payment-action.mjs",
     "verify:branch": "node --no-warnings scripts/verify-branch.mjs",
     "verify:product-image": "node --no-warnings scripts/verify-product-image.mjs",
-    "verify:home-vendors": "node --no-warnings scripts/verify-home-vendors.mjs"
+    "verify:home-vendors": "node --no-warnings scripts/verify-home-vendors.mjs",
+    "verify:sdr": "node --no-warnings scripts/verify-sdr.mjs"
   },
   "dependencies": {
     "@lottiefiles/dotlottie-react": "0.19.16",

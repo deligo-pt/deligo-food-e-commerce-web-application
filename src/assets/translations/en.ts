@@ -269,6 +269,17 @@ const en = {
   orderCollected: "Collected",
   // The order page while the system looks for a rider (AWAITING_PARTNER /
   // DISPATCHING) — not a timeline step of its own.
+  // SDR — Portugal's container deposit (sdr.md). Amounts are composed in JSX:
+  // t() has no placeholders.
+  sdrDeposit: "Container deposit (SDR)",
+  sdrDepositShort: "deposit",
+  sdrPerItem: "deposit per item",
+  sdrPlusDeposit: "plus deposit",
+  sdrAddedAtPayment: "Added to your total at payment",
+  // 409 CHECKOUT_TOTALS_CHANGED: nothing was charged, the summary was re-priced.
+  checkoutTotalsChanged: "The total was updated since this page opened. Check the new amount, then pay again.",
+  sdrContainerDepositAtPayment: "container deposit, added at payment",
+  sdrExplanation: "A deposit charged per container under Portugal's deposit return system (SDR).",
   findingRider: "Finding a rider",
   findingRiderDescription: "Your order will be picked up as soon as a rider accepts it",
   orderCollectedDescription: "You collected your order from the store",
@@ -502,6 +513,9 @@ const en = {
   confirmCancelPaymentBody: "If you already paid on REDUNIQ, please wait instead: we're still confirming it. Cancelling lets you choose a new payment.",
   keepPayment: "Keep payment",
   cancelPayment: "Cancel payment",
+  // Releasing a payment whose result is unknown: the backend keeps watching it.
+  confirmCancelUnknownPaymentBody: "We couldn't confirm this payment. If it still goes through, your order will be created automatically, so check your orders before paying again.",
+  viewThatPayment: "View that payment",
   previousPaymentCancelled: "Previous payment cancelled. You can pay again now.",
   paymentVerifyingTitle: "We're confirming a payment",
   paymentVerifyingBody: "A payment for this order is being confirmed. To avoid charging you twice, please check again in a moment.",

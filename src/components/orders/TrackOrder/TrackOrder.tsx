@@ -56,6 +56,7 @@ import { vendorRouteId } from "@/lib/vendorId";
 import { formatPickupMoment } from "@/lib/pickupTime";
 import OrderMap from "./OrderMap/OrderMap";
 import OrderStatusAnimation from "./OrderStatusAnimation";
+import { lineDeposit, orderDepositTotal } from "@/lib/sdr";
 import DeliveryCodeCard from "./DeliveryCodeCard";
 import PickupCodeCard from "./PickupCodeCard";
 import PickupLocationCard from "./PickupLocationCard";
@@ -535,6 +536,9 @@ export default function TrackOrder() {
   const offerDiscount = calc.totalOfferDiscount || 0;
   const deliveryFee = order.delivery?.totalDeliveryCharge || 0;
   const deliveryVat = getDeliveryVat(order.delivery || {});
+  // Container deposit (SDR), copied from the checkout when the order was
+  // placed. Already inside `grandTotal`: a row of its own, never added again.
+  const depositTotal = orderDepositTotal(order);
   // VAT embedded in the items subtotal — shown inline on the subtotal row,
   // matching the app, rather than as a standalone line.
   const subtotalVat = calc.totalTaxAmount || 0;
@@ -820,8 +824,13 @@ export default function TrackOrder() {
                           {item.name}
                         </span>
                       </div>
-                      <span className="text-foreground dark:text-neutral-250 font-bold">
+                      <span className="text-right text-foreground dark:text-neutral-250 font-bold">
                         €{item.itemSummary?.grandTotal?.toFixed(2)}
+                        {lineDeposit(item).total > 0 && (
+                          <span className="block text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
+                            +€{lineDeposit(item).total.toFixed(2)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × €{lineDeposit(item).unit.toFixed(2)})
+                          </span>
+                        )}
                       </span>
                     </div>
                   ))}
@@ -889,6 +898,12 @@ export default function TrackOrder() {
                         )}
                       </span>
                       <span className="shrink-0 whitespace-nowrap">€{serviceCharge.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {depositTotal > 0 && (
+                    <div className="flex items-baseline justify-between gap-3 text-muted-foreground dark:text-neutral-400">
+                      <span className="min-w-0" title={t("sdrExplanation")}>{t("sdrDeposit")}</span>
+                      <span className="shrink-0 whitespace-nowrap">€{depositTotal.toFixed(2)}</span>
                     </div>
                   )}
                   {offerDiscount > 0 && (

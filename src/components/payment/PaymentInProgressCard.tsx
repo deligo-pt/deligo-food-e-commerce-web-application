@@ -25,8 +25,12 @@ import { useTranslation } from "@/hooks/useTranslation";
  *   twice. Cancelling asks first, because they may already have paid on
  *   RedUniq's page.
  * - `verifying`: the backend answered with a code this app doesn't know, or
- *   couldn't be reached. Nothing is offered but "Check again" — the payment may
- *   already have gone through.
+ *   couldn't be reached. "Check again" first — the payment may already have
+ *   gone through. Once its attempt window has passed (`canCancel`), the same
+ *   confirmed "Cancel and start a new payment" is offered too (18 Oct 2026): a
+ *   saved-card charge left `PAYMENT_STATUS_UNKNOWN` forever and locked the
+ *   customer's cart, while the backend accepts the release and keeps watching
+ *   the old payment ("if it completes, your order is created automatically").
  */
 type Props = {
   mode: "in-progress" | "verifying";
@@ -35,6 +39,9 @@ type Props = {
   onContinue: () => void;
   onCancelAndStartNew: () => Promise<void> | void;
   onCheckAgain: () => void;
+  /** `verifying` only: the payment's attempt window has passed, so it may be
+   *  released. Never offered while it could still be going through. */
+  canCancel?: boolean;
   isContinuing?: boolean;
   isReleasing?: boolean;
   isChecking?: boolean;
@@ -46,6 +53,7 @@ export default function PaymentInProgressCard({
   onContinue,
   onCancelAndStartNew,
   onCheckAgain,
+  canCancel = false,
   isContinuing = false,
   isReleasing = false,
   isChecking = false,
@@ -86,10 +94,23 @@ export default function PaymentInProgressCard({
 
       <div className="mt-6 flex flex-col gap-2">
         {verifying ? (
-          <Button size="lg" onClick={onCheckAgain} disabled={isChecking} className="w-full gap-2 font-semibold">
-            {isChecking ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
-            {t("checkAgain")}
-          </Button>
+          <>
+            <Button size="lg" onClick={onCheckAgain} disabled={isChecking || isReleasing} className="w-full gap-2 font-semibold">
+              {isChecking ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
+              {t("checkAgain")}
+            </Button>
+            {canCancel && (
+              <Button
+                variant="ghost"
+                onClick={() => setConfirmOpen(true)}
+                disabled={isChecking || isReleasing}
+                className="w-full font-semibold text-gray-600 hover:text-primary dark:text-neutral-400 dark:hover:text-pink-400"
+              >
+                {isReleasing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {t("cancelAndStartNew")}
+              </Button>
+            )}
+          </>
         ) : (
           <>
             <Button
@@ -120,7 +141,9 @@ export default function PaymentInProgressCard({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("confirmCancelPaymentTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("confirmCancelPaymentBody")}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {verifying ? t("confirmCancelUnknownPaymentBody") : t("confirmCancelPaymentBody")}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("keepPayment")}</AlertDialogCancel>
