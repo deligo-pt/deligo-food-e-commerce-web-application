@@ -63,6 +63,8 @@ import { useCartQuantities } from "@/hooks/useCartQuantities";
 import { useCartCache } from "@/hooks/queries/useCart";
 import { Button } from "@/components/ui/button";
 import { getProductImage } from "@/lib/productImage";
+import { productDeposit } from "@/lib/sdr";
+import type { ProductSdr } from "@/types/sdr";
 import { DEFAULT_PRODUCT_IMAGE } from "@/components/shared/ProductImage";
 
 function getDistanceKm(
@@ -187,6 +189,8 @@ interface Product {
     currency: string;
   };
   category?: { name: string };
+  /** Container deposit per unit — read through `productDeposit`. */
+  sdr?: ProductSdr;
   /**
    * Both arrive on `GET /products` already — verified against the live list:
    * every one of the 45 products carries `variations` and `addonGroups`, so
@@ -363,6 +367,16 @@ const MenuProductCard = memo(function MenuProductCard({
             {hasDiscount && (
               <p className="truncate text-xs text-gray-400 line-through dark:text-neutral-500">
                 {formatPrice(originalPrice, currency)}
+              </p>
+            )}
+            {/* SDR products: a mark, not the amount — the modal and the cart
+                give the figure, and the card stays short. */}
+            {productDeposit(product) > 0 && (
+              <p
+                className="truncate text-xs font-medium text-muted-foreground dark:text-neutral-400"
+                title={t("sdrExplanation")}
+              >
+                + {t("sdrDepositShort")}
               </p>
             )}
           </div>

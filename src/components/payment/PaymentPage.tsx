@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { apiClient, getApiErrorKey, getApiErrorMessage } from "@/lib/apiClient";
 import { isVendorObjectId, vendorHref, vendorRouteId } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { vendorCoords, withCoords } from "@/lib/customerCoords";
@@ -73,6 +73,8 @@ import { checkoutNotesBody, outgoingDeliveryNotes } from "@/lib/deliveryNotes";
 import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import type { LineSdr, OrderCalculationSdr, PayoutSdr } from "@/types/sdr";
+import { lineDeposit, orderDepositTotal } from "@/lib/sdr";
 
 interface CheckoutItem {
   productId: string;
@@ -93,6 +95,8 @@ interface CheckoutItem {
    *  price of zero — the discount that pays for it is in `totalOfferDiscount`
    *  (customer-offer-api.md, "FIXED_PRODUCT" and "CUSTOMER_CHOICE"). */
   isPromoRewardLine?: boolean;
+  /** The line's container deposit — see `lib/sdr.ts`. */
+  sdr?: LineSdr;
 }
 
 interface OrderCalculation {
@@ -104,6 +108,8 @@ interface OrderCalculation {
   serviceCharge?: number;
   serviceChargeVatRate?: number;
   serviceChargeVatAmount?: number;
+  /** Absent when the checkout has no deposit. */
+  sdr?: OrderCalculationSdr;
 }
 
 interface Delivery {
@@ -117,7 +123,9 @@ interface Delivery {
 }
 
 interface PayoutSummary {
+  /** Includes the container deposit (`sdr.amount`) when there is one. */
   grandTotal: number;
+  sdr?: PayoutSdr;
 }
 
 interface DeliveryAddress {
@@ -214,6 +222,9 @@ interface CheckoutSummary {
   /** For the restaurant or store, as sent on `POST /checkout`; `""` when none. */
   vendorInstructions?: string;
   paymentStatus: string;
+  /** ISO instant the current payment attempt stops being "in flight"; set
+   *  once a payment starts. Gates releasing a payment whose result is unknown. */
+  paymentAttemptExpiresAt?: string | null;
   offer: {
     isApplied: boolean;
     offerApplied: OfferApplied | null;
@@ -433,6 +444,9 @@ export default function PaymentPage() {
   const isInstantPayment = showSavedCards && selectedCardId !== null;
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  // The deposit (or another price) changed after this checkout was built, and
+  // the summary was refreshed: say so beside the new total before they pay.
+  const [totalsChanged, setTotalsChanged] = useState(false);
   /**
    * This checkout's payment, as `/action` reports it (8 Oct 2026). While one
    * is open (`IN_PROGRESS`) or unknown (`VERIFYING`, `UNREACHABLE` on a
@@ -441,6 +455,10 @@ export default function PaymentPage() {
    * `lib/paymentAction.ts`.
    */
   const [openPayment, setOpenPayment] = useState<PaymentActionResult | null>(null);
+  // An unknown payment may be released only once its attempt window is over —
+  // before that it may genuinely still be going through. Flipped by a timer
+  // (never read off the clock during render).
+  const [attemptWindowOver, setAttemptWindowOver] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [isContinuingPayment, setIsContinuingPayment] = useState(false);
   const [isReleasingPayment, setIsReleasingPayment] = useState(false);
@@ -825,6 +843,16 @@ export default function PaymentPage() {
     setOpenPayment(null);
   };
 
+  useEffect(() => {
+    const until = summary?.paymentAttemptExpiresAt ? Date.parse(summary.paymentAttemptExpiresAt) : 0;
+    const wait = Number.isFinite(until) ? Math.max(0, until - Date.now()) : 0;
+    const timer = window.setTimeout(() => setAttemptWindowOver(true), wait);
+    return () => {
+      window.clearTimeout(timer);
+      setAttemptWindowOver(false);
+    };
+  }, [summary?.paymentAttemptExpiresAt]);
+
   // Where is this checkout's payment? Asked once per checkout. Only reads: it
   // never starts or cancels anything.
   useEffect(() => {
@@ -896,8 +924,27 @@ export default function PaymentPage() {
     }
   };
 
+  /**
+   * `409 CHECKOUT_TOTALS_CHANGED` when a payment starts: the deposit changed
+   * since this checkout was priced (`sdr.md` §3.3). Nothing was charged. Ask
+   * the backend to re-price it, show the new summary, and let the customer
+   * pay again with the amount in front of them — never retry silently.
+   */
+  const refreshChangedTotals = async () => {
+    if (!summary) return;
+    try {
+      await apiClient.post(`/checkout/summary/${summary._id}/refresh`);
+      const res = await apiClient.get(`/checkout/summary/${summary._id}`);
+      setSummary(res.data.data);
+      setTotalsChanged(true);
+    } catch (err) {
+      setPaymentError(getApiErrorMessage(err, t("paymentCouldNotStart")));
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (!summary) return;
+    setTotalsChanged(false);
 
     // Trimmed once, here, so both payment paths send the same string and a box
     // holding only spaces is no instruction at all. Pickup never sends one:
@@ -945,6 +992,13 @@ export default function PaymentPage() {
         ...(paymentMethod === "CARD" && { saveCard }),
       });
 
+      // No `data.code` on this refusal, so it is read off the error key
+      // before the states below would call it "unreachable".
+      if (result.errorKey === "CHECKOUT_TOTALS_CHANGED") {
+        await refreshChangedTotals();
+        return;
+      }
+
       if (result.state === "IN_PROGRESS" && result.code === "REDUNIQ_PAYMENT_SESSION_CREATED" && result.redirectUrl) {
         // RedUniq's return URL carries the checkout id (checked); this is the
         // fallback, plus the rider note until the backend can take it.
@@ -973,6 +1027,10 @@ export default function PaymentPage() {
     } catch (err) {
       // Only the one-click saved-card path throws here. `handle-payment-failure`
       // is no longer called: the backend removed it (404, 8 Oct 2026).
+      if (getApiErrorKey(err) === "CHECKOUT_TOTALS_CHANGED") {
+        await refreshChangedTotals();
+        return;
+      }
       setPaymentError(getApiErrorMessage(err, t("paymentCouldNotStart")));
     } finally {
       setIsPlacingOrder(false);
@@ -1007,6 +1065,9 @@ export default function PaymentPage() {
   // so the breakdown should say how much of it is VAT.
   const serviceChargeVat = getServiceChargeVat(orderCalculation);
   const orderTotal = payoutSummary.grandTotal;
+  // Container deposit (SDR) — already inside `orderTotal`. A row of its own in
+  // the breakdown, never added to the total a second time.
+  const depositTotal = orderDepositTotal(summary);
 
   // Both VAT figures are the backend's own: `totalTaxAmount` for the items,
   // `delivery.vatAmount` for the (gross) delivery charge.
@@ -1370,6 +1431,11 @@ export default function PaymentPage() {
                       {item.isPromoRewardLine
                         ? t("free")
                         : `€${item.itemSummary.grandTotal.toFixed(2)}`}
+                      {lineDeposit(item).total > 0 && (
+                        <span className="block text-right text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
+                          +€{lineDeposit(item).total.toFixed(2)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × €{lineDeposit(item).unit.toFixed(2)})
+                        </span>
+                      )}
                     </p>
                   </div>
                 ))}
@@ -1442,6 +1508,19 @@ export default function PaymentPage() {
                       {delivery.totalDeliveryCharge > 0
                         ? `€${delivery.totalDeliveryCharge.toFixed(2)}`
                         : t("free")}
+                    </span>
+                  </div>
+                )}
+
+                {/* Its own row, untouched by vouchers: the API never discounts
+                    it, and it is already part of Total to Pay below. */}
+                {depositTotal > 0 && (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 text-gray-500 dark:text-neutral-400" title={t("sdrExplanation")}>
+                      {t("sdrDeposit")}
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap font-semibold text-gray-900 dark:text-neutral-50">
+                      €{depositTotal.toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -1568,6 +1647,7 @@ export default function PaymentPage() {
                   onContinue={continueOpenPayment}
                   onCancelAndStartNew={cancelAndStartNewPayment}
                   onCheckAgain={checkPaymentAgain}
+                  canCancel={openPayment.state === "VERIFYING" && attemptWindowOver}
                   isContinuing={isContinuingPayment}
                   isReleasing={isReleasingPayment}
                   isChecking={isCheckingPayment}
@@ -1742,6 +1822,12 @@ export default function PaymentPage() {
                     />
                   </span>
                 </label>
+              )}
+
+              {totalsChanged && !paymentError && (
+                <div role="status" className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+                  {t("checkoutTotalsChanged")}
+                </div>
               )}
 
               {paymentError && (

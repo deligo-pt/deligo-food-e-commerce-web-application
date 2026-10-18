@@ -272,6 +272,17 @@ const pt = {
   orderCollected: "Recolhido",
   // A página do pedido enquanto o sistema procura um estafeta (AWAITING_PARTNER
   // / DISPATCHING) — não é um passo da cronologia.
+  // SDR — o depósito de embalagens em Portugal (sdr.md). Os valores são
+  // compostos no JSX: t() não tem marcadores.
+  sdrDeposit: "Depósito de embalagem (SDR)",
+  sdrDepositShort: "depósito",
+  sdrPerItem: "de depósito por artigo",
+  sdrPlusDeposit: "mais depósito",
+  sdrAddedAtPayment: "Adicionado ao total no pagamento",
+  // 409 CHECKOUT_TOTALS_CHANGED: nada foi cobrado, o resumo foi recalculado.
+  checkoutTotalsChanged: "O total foi atualizado desde que abriu esta página. Confirme o novo valor e pague novamente.",
+  sdrContainerDepositAtPayment: "de depósito de embalagem, adicionado no pagamento",
+  sdrExplanation: "Depósito cobrado por embalagem, ao abrigo do sistema de depósito e reembolso (SDR).",
   findingRider: "A procurar um estafeta",
   findingRiderDescription: "O seu pedido será recolhido assim que um estafeta o aceitar",
   orderCollectedDescription: "Recolheu o seu pedido na loja",
@@ -508,6 +519,9 @@ const pt = {
   confirmCancelPaymentBody: "Se já pagou na REDUNIQ, aguarde: ainda estamos a confirmar. Ao cancelar, pode escolher um novo pagamento.",
   keepPayment: "Manter pagamento",
   cancelPayment: "Cancelar pagamento",
+  // Cancelar um pagamento cujo resultado é desconhecido: o backend continua a acompanhá-lo.
+  confirmCancelUnknownPaymentBody: "Não conseguimos confirmar este pagamento. Se ainda for concluído, o seu pedido será criado automaticamente, por isso verifique os seus pedidos antes de pagar novamente.",
+  viewThatPayment: "Ver esse pagamento",
   previousPaymentCancelled: "Pagamento anterior cancelado. Já pode pagar novamente.",
   paymentVerifyingTitle: "Estamos a confirmar um pagamento",
   paymentVerifyingBody: "Um pagamento deste pedido está a ser confirmado. Para não ser cobrado duas vezes, verifique novamente dentro de momentos.",

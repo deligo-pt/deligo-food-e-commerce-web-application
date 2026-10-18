@@ -28,6 +28,8 @@ import { hasCoords, isOutOfArea, withCoords, type Coords } from "@/lib/customerC
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
 import { currencySymbol } from "@/lib/currency";
+import type { ProductSdr } from "@/types/sdr";
+import { productDeposit } from "@/lib/sdr";
 import {
   applyProductDiscount,
   formatDiscountValue,
@@ -74,6 +76,8 @@ interface Product {
     finalPrice: number;
   };
   category?: { name: string };
+  /** Container deposit per unit — read through `productDeposit`. */
+  sdr?: ProductSdr;
   variations?: {
     name: string;
     options: {
@@ -424,6 +428,9 @@ export default function ProductDetailsModal({
     productSubtotal - productSubtotal / (1 + vatRate / 100) + addonsVat;
   const total = subtotal;
   const currency = currencySymbol(product?.pricing?.currency);
+  // Container deposit (SDR) per item. Charged at checkout, not in the cart:
+  // the button keeps the food total and the line under it names the deposit.
+  const depositPerItem = productDeposit(product);
 
   const description =
     product?.description || t("freshlyPreparedWithPremiumIngredients");
@@ -660,6 +667,14 @@ export default function ProductDetailsModal({
                       </span>
                     )}
                   </div>
+                  {depositPerItem > 0 && (
+                    <p
+                      className="mt-1 text-xs font-medium text-muted-foreground dark:text-neutral-400"
+                      title={t("sdrExplanation")}
+                    >
+                      +{formatPrice(depositPerItem, currency)} {t("sdrPerItem")}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -957,6 +972,12 @@ export default function ProductDetailsModal({
             </div>
             <p className="mt-2 text-center text-xs text-gray-500 dark:text-neutral-400">
               {t("inclVat")} -&nbsp;{formatPrice(vatAmount, currency)}
+              {depositPerItem > 0 && (
+                <>
+                  {" · "}
+                  {t("sdrPlusDeposit")}&nbsp;{formatPrice(depositPerItem * quantity, currency)}
+                </>
+              )}
             </p>
           </div>
         )}

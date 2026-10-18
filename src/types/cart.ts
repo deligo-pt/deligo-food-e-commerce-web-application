@@ -1,3 +1,5 @@
+import type { LineSdr } from "./sdr";
+
 export interface CartAddon {
   // Localized to a string by the backend (Accept-Language); the bilingual
   // object shape is tolerated as a fallback.
@@ -17,6 +19,8 @@ export interface CartItem {
   variationSku: string | null;
   isActive: boolean;
   addons?: CartAddon[];
+  /** The line's container deposit — see `lib/sdr.ts`. */
+  sdr?: LineSdr;
 
   // /carts/view-cart may return this populated as an object or as a bare id
   // string. Use getCartVendorId()/getCartVendorName() to read it safely.
@@ -91,7 +95,10 @@ export interface CartResponse {
     totalOriginalPrice: number;
     totalProductDiscount: number;
     totalTaxAmount: number;
+    /** Does NOT include the deposit — that is `sdrTotal`, shown beside it. */
     grandTotal: number;
     taxableAmount?: number;
+    /** Sum of the active lines' deposits. */
+    sdrTotal?: number;
   };
 }

@@ -2,6 +2,7 @@ import axios from "axios";
 import { apiClient, getApiErrorMessage } from "./apiClient";
 import { resolveLocalized, type Lang, type LocalizedField } from "./localizedField";
 import { getServiceChargeGross } from "./vat";
+import { lineDeposit, orderDepositTotal } from "./sdr";
 import { useStore } from "@/stores/translationStore";
 
 /** The `t` from `useTranslation`, passed in because this is not a component. */
@@ -37,6 +38,8 @@ interface InvoiceItem {
   variationSku?: string | null;
   addons?: InvoiceAddon[];
   itemSummary?: { quantity?: number; grandTotal?: number };
+  /** Container deposit (SDR) on this line — see `lib/sdr.ts`. */
+  sdr?: { applicable?: boolean; containers?: number; unitDeposit?: number; lineTotal?: number };
 }
 
 interface InvoiceOrder {
@@ -57,7 +60,8 @@ interface InvoiceOrder {
     serviceChargeVatAmount?: number;
   };
   delivery?: { totalDeliveryCharge?: number; vatAmount?: number };
-  payoutSummary?: { grandTotal?: number };
+  /** `grandTotal` already includes `sdr.amount` when there is a deposit. */
+  payoutSummary?: { grandTotal?: number; sdr?: { amount?: number } };
 }
 
 type RGB = [number, number, number];
@@ -362,6 +366,9 @@ export async function downloadInvoice(
     const productTotal = total - addonsTotal;
     const unit = qty > 0 ? productTotal / qty : productTotal;
     const sku = item.variationSku || item.sku;
+    // Noted under the item, priced once in the totals below: the Total column
+    // adds up to the subtotal, and the deposit is not part of it.
+    const deposit = lineDeposit(item);
 
     // Measured in the face the name is drawn in, so the wrap matches what
     // actually gets printed.
@@ -376,7 +383,8 @@ export async function downloadInvoice(
       7.4 +
       (nameLines.length - 1) * NAME_LINE_H +
       (sku ? 4.4 : 0) +
-      addons.length * 4.6;
+      addons.length * 4.6 +
+      (deposit.total > 0 ? 4.6 : 0);
 
     // Keep a row — its wrapped name, sku and add-on lines included — from
     // splitting across a break.
@@ -431,6 +439,18 @@ export async function downloadInvoice(
       money(addon.lineTotal, xTotal, rowY);
     });
 
+    if (deposit.total > 0) {
+      rowY += 4.6;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      setColor(GRAY);
+      doc.text(
+        `${t("sdrDeposit")}: ${deposit.containers} × €${amount(deposit.unit)}`,
+        xItem + 2,
+        rowY,
+      );
+    }
+
     y = rowY + 7.4;
   });
 
@@ -448,11 +468,14 @@ export async function downloadInvoice(
   const serviceCharge = getServiceChargeGross(calc);
   const deliveryFee = order.delivery?.totalDeliveryCharge ?? 0;
   const grandTotal = order.payoutSummary?.grandTotal ?? 0;
+  // Container deposit (SDR): its own row, already inside `grandTotal`, so the
+  // rows still add up to the amount charged — never added to it again.
+  const depositTotal = orderDepositTotal(order);
 
   const T_ROW = 6.6;
   const PAY_H = 12;
-  // Total Price, Discount, Subtotal, [Offer], Service Fee, Delivery fee.
-  const totalsRows = 5 + (offerDiscount > 0 ? 1 : 0);
+  // Total Price, Discount, Subtotal, [Offer], Service Fee, Delivery fee, [Deposit].
+  const totalsRows = 5 + (offerDiscount > 0 ? 1 : 0) + (depositTotal > 0 ? 1 : 0);
   const panelW = 98;
   const panelX = right - panelW;
   // Derived from where the last row's baseline actually lands (first baseline
@@ -511,6 +534,9 @@ export async function downloadInvoice(
   // up to it.
   if (!isPickup) {
     totalRow(t("invoiceDeliveryFee"), deliveryFee);
+  }
+  if (depositTotal > 0) {
+    totalRow(t("sdrDeposit"), depositTotal);
   }
 
   // The amount actually charged is the one number a reader scans for, so it

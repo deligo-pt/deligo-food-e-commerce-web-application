@@ -31,6 +31,8 @@ import { Button } from "@/components/ui/button";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import type { BranchNameSource } from "@/lib/vendorName";
 import type { VendorIdentifiers } from "@/lib/vendorId";
+import type { LineSdr } from "@/types/sdr";
+import { lineDeposit } from "@/lib/sdr";
 
 interface CartItem {
   productId: string;
@@ -39,6 +41,8 @@ interface CartItem {
   name: string;
   image: string;
   isActive: boolean;
+  /** Container deposit — see `lib/sdr.ts`. Not in `grandTotal`. */
+  sdr?: LineSdr;
   itemSummary: {
     quantity: number;
     grandTotal: number;
@@ -110,6 +114,12 @@ export default function CartStoreCard({
   const activeTotal = useMemo(
     () =>
       activeItems.reduce((sum, item) => sum + item.itemSummary.grandTotal, 0),
+    [activeItems],
+  );
+  // The active lines' container deposit, charged at payment on top of
+  // `activeTotal` (which, like the cart's own total, excludes it).
+  const activeDeposit = useMemo(
+    () => activeItems.reduce((sum, item) => sum + lineDeposit(item).total, 0),
     [activeItems],
   );
   const storeTotal = useMemo(
@@ -369,6 +379,11 @@ export default function CartStoreCard({
             </span>
           )}
         </Link>
+        {hasActive && activeDeposit > 0 && (
+          <p className="mt-2 text-center text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
+            +€{activeDeposit.toFixed(2)} {t("sdrContainerDepositAtPayment")}
+          </p>
+        )}
         {!hasActive && (
           <p className="mt-2 text-center text-sm text-gray-500 dark:text-neutral-400">
             {t("activateToCheckout")}

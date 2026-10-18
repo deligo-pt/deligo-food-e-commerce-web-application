@@ -23,6 +23,7 @@ import {
   Bell,
   User,
   LogOut,
+  LogIn,
   LoaderCircle,
   Plus,
   Check,
@@ -132,6 +133,10 @@ export default function Navbar() {
   });
   // Pending while the post-logout navigation is in flight — see `handleLogout`.
   const [isLoggingOut, startLogout] = useTransition();
+  // Pending while a guest's tap on "Login" navigates — the login page has to
+  // load, and on a slow connection a button that does nothing looks broken.
+  // Same transition trick as logout: the spinner lasts exactly as long as the wait.
+  const [isGoingToLogin, startGoToLogin] = useTransition();
 
   // Badge count: cached query that polls at 60s and pauses on hidden tabs.
   const { data: unreadCount = 0 } = useUnreadNotificationCount({
@@ -594,7 +599,8 @@ export default function Navbar() {
 
   const handleAccountClick = () => {
     if (!isLoggedIn) {
-      router.push("/login");
+      if (isGoingToLogin) return;
+      startGoToLogin(() => router.push("/login"));
     } else {
       setShowAccountDropdown(!showAccountDropdown);
     }
@@ -828,6 +834,26 @@ export default function Navbar() {
           </div>
 
           <div className="relative min-w-0" ref={dropdownRef}>
+            {/* A guest gets a plain "Login" button (18 Oct 2026). It used to
+                be an avatar labelled "Account", which read as already signed
+                in. Only after mount: before it the session is unknown, and the
+                placeholder below holds the space without naming either. */}
+            {mounted && !isLoggedIn ? (
+              <button
+                type="button"
+                onClick={handleAccountClick}
+                disabled={isGoingToLogin}
+                aria-busy={isGoingToLogin}
+                className="focus-ring flex h-10 shrink-0 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-white/90 disabled:cursor-wait sm:h-11"
+              >
+                {isGoingToLogin ? (
+                  <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <LogIn size={16} aria-hidden="true" />
+                )}
+                {t("login")}
+              </button>
+            ) : (
             <button
               onClick={handleAccountClick}
               className="focus-ring flex min-w-0 items-center gap-2 rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:gap-3"
@@ -871,10 +897,17 @@ export default function Navbar() {
                   <User size={22} className="text-primary" />
                 )}
               </div>
-              <span className="min-w-0 max-w-[84px] truncate text-sm font-semibold leading-5 sm:max-w-[140px]">
-                {mounted && isLoggedIn && firstName ? firstName : t("account")}
-              </span>
+              {mounted ? (
+                <span className="min-w-0 max-w-[84px] truncate text-sm font-semibold leading-5 sm:max-w-[140px]">
+                  {firstName || t("account")}
+                </span>
+              ) : (
+                // Session not known yet: a bar, not "Account", so a guest
+                // never sees "Account" flash before "Login".
+                <span aria-hidden="true" className="h-4 w-14 rounded-full bg-white/30" />
+              )}
             </button>
+            )}
             {isLoggedIn && showAccountDropdown && (
               <div className="absolute right-0 z-50 mt-2 w-48 rounded-md bg-white dark:bg-neutral-800 py-1 shadow-lg ring-1 ring-black/5 dark:ring-white/10 transition-all">
                 <Link
