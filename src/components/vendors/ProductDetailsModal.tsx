@@ -822,9 +822,13 @@ export default function ProductDetailsModal({
                                   <span className="block truncate text-sm text-gray-800 dark:text-neutral-200">
                                     {opt.name}
                                   </span>
-                                  <span className="block text-xs font-medium text-primary dark:text-pink-400">
-                                    +{formatPrice(opt.price, currency)}
-                                  </span>
+                                  {/* A free add-on (€0) shows its name only;
+                                      picking and the group limit work the same. */}
+                                  {opt.price > 0 && (
+                                    <span className="block text-xs font-medium text-primary dark:text-pink-400">
+                                      +{formatPrice(opt.price, currency)}
+                                    </span>
+                                  )}
                                 </div>
                               );
                               if (single) {

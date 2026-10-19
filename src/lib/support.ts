@@ -41,6 +41,14 @@
 
 import { DATE_LOCALES } from "./dateFormat";
 
+/**
+ * DeliGo's support contacts — frontend constants, as in the app
+ * (`GET /globalSettings` is 403 for customers). Shared by the Help Center and
+ * the Contact Support dialog so the two can't drift apart.
+ */
+export const SUPPORT_EMAIL = "contact@deligo.pt";
+export const SUPPORT_PHONE = "+351 920 136 680";
+
 /* ────────────────────────────────────────────────────────────────────────────
  * The enums the API validates against
  *

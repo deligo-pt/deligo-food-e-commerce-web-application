@@ -838,6 +838,9 @@ const pt = {
   realTimeSupport: "Fale com o suporte",
   emailUs: "Envie-nos um email",
   callUs: "Ligue-nos",
+  contactSupportTitle: "Como podemos ajudar?",
+  contactSupportDescription: "Fale já com a nossa equipa, ou contacte-nos por email ou telefone.",
+  supportPaymentPrefill: "Problema com o pagamento",
   generalFaqs: "Perguntas Frequentes",
   generalFaqsDescription: "Respostas, seguimento de pedidos e mais",
 

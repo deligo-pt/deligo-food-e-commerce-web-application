@@ -27,7 +27,7 @@ import {
 import { useInvalidateSavedCards } from "@/hooks/queries/usePaymentTokens";
 import { useTranslation } from "@/hooks/useTranslation";
 import { callPaymentAction, clearPendingOrder, readPendingOrder } from "@/services/paymentActionApi";
-import { openSupportChat } from "@/stores/supportChatStore";
+import ContactSupportDialog from "@/components/support/ContactSupportDialog";
 import PaymentStateCard from "./PaymentStateCard";
 
 /**
@@ -59,14 +59,48 @@ type View =
 
 export default function PaymentResult({ routeVendorId }: { routeVendorId?: string }) {
   const { t } = useTranslation();
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const invalidateSavedCards = useInvalidateSavedCards();
-
   // RedUniq's return URL carries `summaryId` (checked); storage is the fallback.
   const [pending] = useState(() => readPendingOrder());
   const summaryId =
     searchParams.get("summaryId") || searchParams.get("checkoutSummaryId") || pending?.checkoutSummaryId || null;
+  const [supportOpen, setSupportOpen] = useState(false);
+
+  return (
+    <>
+      <PaymentResultCard
+        routeVendorId={routeVendorId}
+        summaryId={summaryId}
+        pending={pending}
+        onContactSupport={() => setSupportOpen(true)}
+      />
+      {/* "Contact Support": chat (with this payment's reference typed in),
+          email or phone. */}
+      <ContactSupportDialog
+        open={supportOpen}
+        onOpenChange={setSupportOpen}
+        category="PAYMENT"
+        topic={t("supportPaymentPrefill")}
+        reference={summaryId}
+      />
+    </>
+  );
+}
+
+function PaymentResultCard({
+  routeVendorId,
+  summaryId,
+  pending,
+  onContactSupport,
+}: {
+  routeVendorId?: string;
+  summaryId: string | null;
+  pending: ReturnType<typeof readPendingOrder>;
+  onContactSupport: () => void;
+}) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const invalidateSavedCards = useInvalidateSavedCards();
 
   const [view, setView] = useState<View>(() => (summaryId ? { kind: "checking", attempt: 0 } : { kind: "missing" }));
   const [vendorId, setVendorId] = useState<string | null>(
@@ -183,7 +217,7 @@ export default function PaymentResult({ routeVendorId }: { routeVendorId?: strin
     router.push(paymentPage ? `${paymentPage}#${PAYMENT_METHODS_ANCHOR}` : "/cart");
   const contactSupport: { label: string; onClick: () => void; icon: typeof Headphones } = {
     label: t("contactSupport"),
-    onClick: () => openSupportChat({ category: "PAYMENT" }),
+    onClick: onContactSupport,
     icon: Headphones,
   };
   const myOrders = { label: t("myOrders"), onClick: () => router.push("/orders"), icon: PackageSearch };

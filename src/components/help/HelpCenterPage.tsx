@@ -13,7 +13,7 @@ import {
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfile } from "@/hooks/queries/useProfile";
 import { useActiveSupportTicket } from "@/hooks/queries/useSupport";
-import { getUnreadCount } from "@/lib/support";
+import { getUnreadCount, SUPPORT_EMAIL, SUPPORT_PHONE } from "@/lib/support";
 import { useAuthed } from "@/hooks/useAuthed";
 import { toTelHref } from "@/lib/phone";
 import { openSupportChat } from "@/stores/supportChatStore";
@@ -35,10 +35,6 @@ import HelpAccordion from "./HelpAccordion";
  * - **The card grids.** The app draws every one of these as a row with a tinted
  *   icon circle and a chevron; `HelpRow` is that row.
  */
-
-/** Frontend constants, as in the app — `GET /globalSettings` is 403 for customers. */
-const SUPPORT_EMAIL = "contact@deligo.pt";
-const SUPPORT_PHONE = "+351 920 136 680";
 
 export default function HelpCenterPage() {
   const { t } = useTranslation();

@@ -1002,9 +1002,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                                       <span className="text-primary dark:text-pink-400">+ </span>
                                       {resolveAddonName(addon.name, lang)}
                                     </span>
-                                    <span className="text-xs text-gray-400 dark:text-neutral-500">
-                                      €{addon.unitPrice.toFixed(2)} × {addon.quantity}
-                                    </span>
+                                    {/* Free add-ons (€0) show no price; the
+                                        stepper beside it carries the quantity. */}
+                                    {addon.unitPrice > 0 && (
+                                      <span className="text-xs text-gray-400 dark:text-neutral-500">
+                                        €{addon.unitPrice.toFixed(2)} × {addon.quantity}
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="flex shrink-0 items-center rounded-full border border-gray-200 dark:border-neutral-700 bg-card">
                                     <Button
@@ -1034,8 +1038,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                                       <Plus size={13} />
                                     </Button>
                                   </div>
+                                  {/* The slot stays for a free add-on so the
+                                      steppers line up with the priced rows. */}
                                   <span className="w-14 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-neutral-50">
-                                    €{addon.lineTotal.toFixed(2)}
+                                    {addon.unitPrice > 0 && `€${addon.lineTotal.toFixed(2)}`}
                                   </span>
                                 </li>
                               ))}
