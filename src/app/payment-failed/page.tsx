@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import PaymentResult from "@/components/payment/PaymentResult";
 import Loader from "@/components/shared/Loader";
+import SupportChatDialogLazy from "@/components/support/SupportChatDialogLazy";
 
 /**
  * Where RedUniq sends the customer after a declined or cancelled payment
@@ -16,8 +17,13 @@ import Loader from "@/components/shared/Loader";
  */
 export default function PaymentFailedPage() {
   return (
-    <Suspense fallback={<Loader fullScreen />}>
-      <PaymentResult />
-    </Suspense>
+    <>
+      <Suspense fallback={<Loader fullScreen />}>
+        <PaymentResult />
+      </Suspense>
+      {/* Outside the (main) layout, which is where the chat panel normally
+          lives — "Contact Support" → Live chat needs it here too. */}
+      <SupportChatDialogLazy />
+    </>
   );
 }

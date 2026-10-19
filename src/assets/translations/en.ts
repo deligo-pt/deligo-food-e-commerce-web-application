@@ -836,6 +836,9 @@ const en = {
   realTimeSupport: "Chat with support",
   emailUs: "Email Us",
   callUs: "Call Us",
+  contactSupportTitle: "How can we help?",
+  contactSupportDescription: "Chat with our team now, or reach us by email or phone.",
+  supportPaymentPrefill: "Payment problem",
   generalFaqs: "FAQs",
   generalFaqsDescription: "Find answers, track orders, and more",
 
