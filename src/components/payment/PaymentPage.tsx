@@ -1415,10 +1415,10 @@ export default function PaymentPage() {
                                 {resolveAddonName(addon.name, lang)}
                                 {addon.quantity > 1 ? ` ×${addon.quantity}` : ""}
                               </span>
-                              {/* Free add-ons (€0): name and quantity only. */}
-                              {addon.lineTotal > 0 && (
-                                <span className="ml-auto">€{addon.lineTotal.toFixed(2)}</span>
-                              )}
+                              {/* Free add-ons (€0) say "Free"/"Grátis". */}
+                              <span className="ml-auto">
+                                {addon.lineTotal > 0 ? `€${addon.lineTotal.toFixed(2)}` : t("addonFree")}
+                              </span>
                             </li>
                           ))}
                         </ul>

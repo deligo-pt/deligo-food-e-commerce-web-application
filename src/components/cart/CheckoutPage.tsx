@@ -1002,8 +1002,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                                       <span className="text-primary dark:text-pink-400">+ </span>
                                       {resolveAddonName(addon.name, lang)}
                                     </span>
-                                    {/* Free add-ons (€0) show no price; the
-                                        stepper beside it carries the quantity. */}
+                                    {/* Free add-ons (€0) skip the unit line; the
+                                        total column says "Free"/"Grátis". */}
                                     {addon.unitPrice > 0 && (
                                       <span className="text-xs text-gray-400 dark:text-neutral-500">
                                         €{addon.unitPrice.toFixed(2)} × {addon.quantity}
@@ -1038,10 +1038,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                                       <Plus size={13} />
                                     </Button>
                                   </div>
-                                  {/* The slot stays for a free add-on so the
-                                      steppers line up with the priced rows. */}
                                   <span className="w-14 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-neutral-50">
-                                    {addon.unitPrice > 0 && `€${addon.lineTotal.toFixed(2)}`}
+                                    {addon.unitPrice > 0 ? `€${addon.lineTotal.toFixed(2)}` : t("addonFree")}
                                   </span>
                                 </li>
                               ))}

@@ -141,6 +141,18 @@ const en = {
   // Button on the cart-expiry notification. Not `myShoppingCart`, which is a
   // page heading — a button says what pressing it does.
   viewCart: "View Cart",
+  // Store page cart bar: "2 items in cart", "Loaded Hot Dog & 1 more".
+  cartBarItem: "item in cart",
+  cartBarItems: "items in cart",
+  // {n} = number of other lines.
+  cartBarAndMore: "& {n} more",
+  // The bar's ✕, then the pill that confirms it: "Remove" over "2 items".
+  cartBarRemoveAria: "Remove this store's items from your cart",
+  cartBarRemove: "Remove",
+  cartBarRemoveOne: "1 item",
+  // {n} = number of items (quantity) that will be removed.
+  cartBarRemoveMany: "{n} items",
+  cartBarConfirmHint: "Press Remove to confirm, or Cancel to keep them.",
 
   itemsInCart: "item(s) in your cart",
 
@@ -317,6 +329,8 @@ const en = {
   totalToPay: "Total to Pay",
 
   free: "FREE",
+  // Price label of a €0 add-on (modal, checkout, payment summary).
+  addonFree: "Free",
 
   applyVoucherCode: "Apply voucher code",
   enterVoucherCode: "Enter voucher code",
@@ -592,6 +606,13 @@ const en = {
   riderInstructionsPlaceholder: "e.g. Leave at the door, ring the bell twice",
   required: "required",
   chooseUpTo: "Choose up to",
+  // Required add-on groups: "Choose at least 1 · up to 2" / "Choose 1".
+  chooseAtLeast: "Choose at least",
+  upTo: "up to",
+  chooseExactly: "Choose",
+  // Toast after "Add to cart": "Test Sauces: choose at least 1".
+  groupChooseAtLeast: "choose at least",
+  selectVariationFirst: "Choose an option above before adding to cart",
   readMore: "Read more",
   showLess: "Show less",
   selectRequiredAddons: "Please select the required options",
