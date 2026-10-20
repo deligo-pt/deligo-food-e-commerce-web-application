@@ -18,6 +18,7 @@ import { useProfile, useActiveAddressCoords } from "@/hooks/queries/useProfile";
 import dynamic from "next/dynamic";
 
 // Heavy overlays — split into their own chunks that download only when opened.
+import ViewCartBar from "@/components/cart/ViewCartBar";
 const ProductDetailsModal = dynamic(() => import("./ProductDetailsModal"), {
   ssr: false,
 });
@@ -1146,6 +1147,15 @@ export default function VendorDetailsPage({
             nothing: the menu no longer lists it, and a modal over an empty
             menu would sell it anyway. Only ids the page is actually showing
             can open. */}
+        {/* "View cart" bar (like the app) → this store's checkout. */}
+        <ViewCartBar
+          storeId={vendor.id ?? vendor._id ?? vendorId}
+          storeName={storeTitle.title}
+          storePhoto={heroImage}
+          enabled={authed}
+          hidden={!!selectedProductId}
+        />
+
         {selectedProductId && sellableProductIds.has(selectedProductId) && (
           <ProductDetailsModal
             isOpen={!!selectedProductId}

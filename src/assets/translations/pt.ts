@@ -145,6 +145,18 @@ const pt = {
   myShoppingCart: "Meu Carrinho de Compras",
 
   viewCart: "Ver Carrinho",
+  // Barra do carrinho na página da loja: "2 artigos no carrinho", "Cachorro-quente e mais 1".
+  cartBarItem: "artigo no carrinho",
+  cartBarItems: "artigos no carrinho",
+  // {n} = número de outros artigos.
+  cartBarAndMore: "e mais {n}",
+  // O ✕ da barra e o botão que o confirma: "Remover" sobre "2 artigos".
+  cartBarRemoveAria: "Remover os artigos desta loja do carrinho",
+  cartBarRemove: "Remover",
+  cartBarRemoveOne: "1 artigo",
+  // {n} = número de artigos (quantidade) a remover.
+  cartBarRemoveMany: "{n} artigos",
+  cartBarConfirmHint: "Prima Remover para confirmar ou Cancelar para os manter.",
 
   itemsInCart: "item(ns) no seu carrinho",
 
@@ -322,6 +334,8 @@ const pt = {
   totalToPay: "Total a Pagar",
 
   free: "GRÁTIS",
+  // Preço de um complemento a 0 € (modal, checkout, resumo do pagamento).
+  addonFree: "Grátis",
 
   applyVoucherCode: "Aplicar código promocional",
   enterVoucherCode: "Digite o código promocional",
@@ -601,6 +615,13 @@ const pt = {
   riderInstructionsPlaceholder: "ex.: Deixar à porta, tocar duas vezes",
   required: "obrigatório",
   chooseUpTo: "Escolha até",
+  // Grupos de complementos obrigatórios: "Escolha pelo menos 1 · até 2" / "Escolha 1".
+  chooseAtLeast: "Escolha pelo menos",
+  upTo: "até",
+  chooseExactly: "Escolha",
+  // Aviso ao "Adicionar ao carrinho": "Molhos: escolha pelo menos 1".
+  groupChooseAtLeast: "escolha pelo menos",
+  selectVariationFirst: "Escolha uma opção acima antes de adicionar ao carrinho",
   readMore: "Ler mais",
   showLess: "Ler menos",
   selectRequiredAddons: "Selecione as opções obrigatórias",

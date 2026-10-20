@@ -9,7 +9,6 @@ import {
   Tag,
   ShoppingCart,
   Sparkles,
-  Check,
   ChevronDown,
   UtensilsCrossed,
   Moon,
@@ -158,6 +157,9 @@ export default function ProductDetailsModal({
   );
   const [cartLoading, setCartLoading] = useState(false);
   const [addonGroups, setAddonGroups] = useState<AddonGroup[]>([]);
+  // True while the groups load — until then required groups are unknown, so
+  // "Add to cart" waits (greyed) instead of skipping their minimums.
+  const [addonsPending, setAddonsPending] = useState(false);
   // Selected quantity per addon option, keyed by the option sku.
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
   // Add-on groups the customer opened or closed by hand; the rest follow
@@ -165,6 +167,8 @@ export default function ProductDetailsModal({
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   // The required group "Add to cart" stopped on, outlined until it is filled.
   const [flaggedGroupId, setFlaggedGroupId] = useState<string | null>(null);
+  // "Add to cart" without a variation: outline the options block until one is picked.
+  const [variationFlagged, setVariationFlagged] = useState(false);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   // The cart page and the navbar badge both read the `useCart` query, so a
@@ -187,12 +191,15 @@ export default function ProductDetailsModal({
     setAddonQty({});
     setOpenGroups({});
     setFlaggedGroupId(null);
+    setVariationFlagged(false);
     setDescriptionOpen(false);
     if (!ids.length || !getAccessToken()) {
       setAddonGroups([]);
+      setAddonsPending(false);
       return;
     }
     let cancelled = false;
+    setAddonsPending(true);
     (async () => {
       try {
         const results = await Promise.all(
@@ -213,6 +220,8 @@ export default function ProductDetailsModal({
         setAddonGroups(groups);
       } catch {
         if (!cancelled) setAddonGroups([]);
+      } finally {
+        if (!cancelled) setAddonsPending(false);
       }
     })();
     return () => {
@@ -443,7 +452,16 @@ export default function ProductDetailsModal({
       setSelectedOption(null);
     } else {
       setSelectedOption(opt);
+      setVariationFlagged(false);
     }
+  };
+
+  // Group subtitle: optional "Choose up to 2"; required "Choose at least 1 · up to 2",
+  // or "Choose 1" when the minimum is the maximum.
+  const requirementLabel = (group: { minSelectable: number; maxSelectable: number }) => {
+    if (group.minSelectable <= 0) return `${t("chooseUpTo")} ${group.maxSelectable}`;
+    if (group.minSelectable >= group.maxSelectable) return `${t("chooseExactly")} ${group.minSelectable}`;
+    return `${t("chooseAtLeast")} ${group.minSelectable} · ${t("upTo")} ${group.maxSelectable}`;
   };
 
   // Only an explicit `false` means closed — if the backend omits the flag,
@@ -455,6 +473,13 @@ export default function ProductDetailsModal({
   // restaurant is closed — you can browse the menu"; the vendor's own record
   // says which noun belongs here.
   const vendorKind = getVendorKind(product?.vendorId?.businessDetails?.businessType);
+
+  // Greys "Add to cart" (like the app) until a variation and every required
+  // add-on group are chosen. The button stays tappable: the tap says what's missing.
+  const missingRequired =
+    addonsPending ||
+    (groupedOptions.length > 0 && !selectedOption) ||
+    addonGroups.some((g) => g.minSelectable > 0 && groupSelectedCount(g) < g.minSelectable);
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -475,12 +500,28 @@ export default function ProductDetailsModal({
       return;
     }
 
+    // Add-on groups still loading: their minimums aren't known yet.
+    if (addonsPending) return;
+
+    // A product with variations needs one picked — the cart rejects it otherwise
+    // ("Please select an option or size"). Say so here and point at the options.
+    if (groupedOptions.length > 0 && !selectedOption) {
+      // One toast id for both checks: the newer message replaces the older one.
+      toast.error(t("selectVariationFirst"), { id: "product-required" });
+      setVariationFlagged(true);
+      scrollRef.current
+        ?.querySelector("[data-variations]")
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    }
+
     // Enforce each group's minimum selection before hitting the API.
     const unmetGroup = addonGroups.find(
       (g) => g.minSelectable > 0 && groupSelectedCount(g) < g.minSelectable,
     );
     if (unmetGroup) {
-      toast.error(t("selectRequiredAddons"));
+      // Name the group, so the message can't be read as being about something else.
+      toast.error(`${unmetGroup.title}: ${t("groupChooseAtLeast")} ${unmetGroup.minSelectable}`, { id: "product-required" });
       // Show which one: open it, outline it and bring it into view.
       setOpenGroups((prev) => ({ ...prev, [unmetGroup._id]: true }));
       setFlaggedGroupId(unmetGroup._id);
@@ -692,16 +733,20 @@ export default function ProductDetailsModal({
                 )}
               </div>
 
-              {/* Variants – Grouped, mutually exclusive, toggle on click.
-                  Chips that wrap: five options take two lines, not five rows. */}
+              {/* Variants — full-width radio rows like the mobile app: group
+                  label, then one row per option (radio · name · price). One
+                  option is chosen across all groups (one SKU per cart line). */}
               {groupedOptions.length > 0 && (
-                <div className="space-y-4">
+                <div
+                  data-variations
+                  className={`space-y-4 rounded-2xl ${
+                    variationFlagged ? "p-3 ring-2 ring-red-400 dark:ring-red-500" : ""
+                  }`}
+                >
                   {groupedOptions.map((group) => (
-                    <div key={group.groupName}>
-                      <h3 className="mb-2 text-sm font-semibold text-gray-900 dark:text-white">
-                        {group.groupName}
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
+                    <div key={group.groupName} role="radiogroup" aria-label={group.groupName}>
+                      <h3 className="mb-2 text-sm text-gray-500 dark:text-neutral-400">{group.groupName}</h3>
+                      <div className="flex flex-col gap-2">
                         {group.options.map((opt) => {
                           const isSelected =
                             selectedOption?.label === opt.label &&
@@ -710,21 +755,17 @@ export default function ProductDetailsModal({
                             <button
                               type="button"
                               key={`${opt.groupName}-${opt.label}`}
+                              role="radio"
+                              aria-checked={isSelected}
                               onClick={() => handleOptionClick(opt)}
-                              aria-pressed={isSelected}
-                              className={`focus-ring flex min-h-10 items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors ${
-                                isSelected
-                                  ? "border-primary bg-primary/10 text-primary dark:border-pink-400 dark:bg-pink-950/30 dark:text-pink-400"
-                                  : "border-border bg-card text-gray-800 hover:bg-gray-50 dark:text-neutral-200 dark:hover:bg-neutral-800"
-                              }`}
+                              className={`focus-ring ${optionRowClass(isSelected)}`}
                             >
-                              {isSelected && <Check size={14} strokeWidth={3} />}
-                              <span className="font-medium">{opt.label}</span>
-                              <span className={isSelected ? "font-semibold" : "text-gray-500 dark:text-neutral-400"}>
-                                {formatPrice(
-                                  applyProductDiscount(opt.price, product?.pricing),
-                                  currency,
-                                )}
+                              <RadioDot checked={isSelected} />
+                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900 dark:text-neutral-100">
+                                {opt.label}
+                              </span>
+                              <span className="shrink-0 text-sm text-gray-500 tabular-nums dark:text-neutral-400">
+                                {formatPrice(applyProductDiscount(opt.price, product?.pricing), currency)}
                               </span>
                             </button>
                           );
@@ -757,8 +798,9 @@ export default function ProductDetailsModal({
                       <div
                         key={group._id}
                         data-addon-group={group._id}
+                        // Every group is outlined; red = a required group still unpicked.
                         className={`overflow-hidden rounded-2xl border ${
-                          unmet ? "border-red-400 dark:border-red-500" : "border-border"
+                          unmet ? "border-red-400 dark:border-red-500" : "border-gray-200 dark:border-neutral-700"
                         }`}
                       >
                         <button
@@ -785,7 +827,7 @@ export default function ProductDetailsModal({
                             <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-neutral-400">
                               {!open && picked.length > 0
                                 ? picked.join(", ")
-                                : `${t("chooseUpTo")} ${group.maxSelectable}`}
+                                : requirementLabel(group)}
                             </span>
                           </span>
                           <span className="flex shrink-0 items-center gap-2">
@@ -808,28 +850,21 @@ export default function ProductDetailsModal({
                           <div
                             role={single ? "radiogroup" : undefined}
                             aria-label={single ? group.title : undefined}
-                            className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2"
+                            className="flex flex-col gap-2 p-3"
                           >
                             {group.options.map((opt) => {
                               const qty = addonQty[opt.sku] || 0;
-                              const cardClass = `flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${
-                                qty > 0
-                                  ? "border-primary/40 bg-primary/5 dark:border-pink-400/40 dark:bg-pink-950/20"
-                                  : "border-border bg-card"
-                              }`;
-                              const label = (
-                                <div className="min-w-0">
-                                  <span className="block truncate text-sm text-gray-800 dark:text-neutral-200">
-                                    {opt.name}
-                                  </span>
-                                  {/* A free add-on (€0) shows its name only;
-                                      picking and the group limit work the same. */}
-                                  {opt.price > 0 && (
-                                    <span className="block text-xs font-medium text-primary dark:text-pink-400">
-                                      +{formatPrice(opt.price, currency)}
-                                    </span>
-                                  )}
-                                </div>
+                              const name = (
+                                <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900 dark:text-neutral-100">
+                                  {opt.name}
+                                </span>
+                              );
+                              // A free add-on (€0) says "Free"/"Grátis"; picking and
+                              // the group limit work the same.
+                              const price = (
+                                <span className="shrink-0 text-sm text-gray-500 tabular-nums dark:text-neutral-400">
+                                  {opt.price > 0 ? `+${formatPrice(opt.price, currency)}` : t("addonFree")}
+                                </span>
                               );
                               if (single) {
                                 return (
@@ -839,27 +874,18 @@ export default function ProductDetailsModal({
                                     role="radio"
                                     aria-checked={qty > 0}
                                     onClick={() => pickAddon(group, opt.sku)}
-                                    className={`focus-ring w-full text-left ${cardClass}`}
+                                    className={`focus-ring ${optionRowClass(qty > 0)}`}
                                   >
-                                    {label}
-                                    <span
-                                      aria-hidden
-                                      className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                                        qty > 0
-                                          ? "border-primary dark:border-pink-400"
-                                          : "border-gray-300 dark:border-neutral-600"
-                                      }`}
-                                    >
-                                      {qty > 0 && (
-                                        <span className="size-2.5 rounded-full bg-primary dark:bg-pink-400" />
-                                      )}
-                                    </span>
+                                    <RadioDot checked={qty > 0} />
+                                    {name}
+                                    {price}
                                   </button>
                                 );
                               }
                               return (
-                                <div key={opt.sku} className={cardClass}>
-                                  {label}
+                                <div key={opt.sku} className={optionRowClass(qty > 0)}>
+                                  {name}
+                                  {price}
                                   <div className="flex shrink-0 items-center gap-1">
                                     {qty > 0 && (
                                       <>
@@ -957,19 +983,24 @@ export default function ProductDetailsModal({
                 size="lg"
                 onClick={handleAddToCart}
                 disabled={cartLoading || isStoreClosed}
-                className={`relative min-w-0 flex-1 gap-3 overflow-hidden rounded-2xl bg-linear-to-r from-primary to-primary-hover font-semibold shadow-lg hover:from-primary-hover hover:to-[#b01254] active:scale-[0.98] ${
-                  cartLoading ? "" : "cart-cta"
+                aria-disabled={missingRequired || undefined}
+                className={`relative min-w-0 flex-1 gap-3 overflow-hidden rounded-2xl font-semibold active:scale-[0.98] ${
+                  missingRequired
+                    ? "bg-gray-200 text-gray-500 shadow-none hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                    : `bg-linear-to-r from-primary to-primary-hover shadow-lg hover:from-primary-hover hover:to-[#b01254] ${cartLoading ? "" : "cart-cta"}`
                 }`}
               >
-                {!cartLoading && (
+                {!cartLoading && !missingRequired && (
                   <span className="cart-cta-shine" aria-hidden="true" />
                 )}
                 {cartLoading ? (
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (
-                  <span className="relative z-10 flex items-center gap-2">
-                    <ShoppingCart size={20} />
-                    {t("addToCart")} • {formatPrice(total, currency)}
+                  <span className="relative z-10 flex min-w-0 items-center gap-2">
+                    <ShoppingCart size={20} className="shrink-0" />
+                    {/* Long PT label on a phone: the words shorten, the price always shows. */}
+                    <span className="truncate">{t("addToCart")}</span>
+                    <span className="shrink-0">• {formatPrice(total, currency)}</span>
                   </span>
                 )}
               </Button>
@@ -987,5 +1018,28 @@ export default function ProductDetailsModal({
         )}
       </div>
     </div>
+  );
+}
+
+/** Full-width option row (variations and add-ons), as in the mobile app. */
+function optionRowClass(selected: boolean) {
+  return `flex min-h-12 w-full items-center gap-3 rounded-xl border px-4 py-2.5 text-left transition-colors ${
+    selected
+      ? "border-primary bg-primary/5 dark:border-pink-400 dark:bg-pink-950/20"
+      : "border-gray-200 bg-card hover:bg-gray-50 dark:border-neutral-700 dark:hover:bg-neutral-800/60"
+  }`;
+}
+
+/** The radio circle at the start of a single-choice row. */
+function RadioDot({ checked }: { checked: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${
+        checked ? "border-primary dark:border-pink-400" : "border-gray-300 dark:border-neutral-600"
+      }`}
+    >
+      {checked && <span className="size-2.5 rounded-full bg-primary dark:bg-pink-400" />}
+    </span>
   );
 }
