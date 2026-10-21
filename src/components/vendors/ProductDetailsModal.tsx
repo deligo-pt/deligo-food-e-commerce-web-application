@@ -165,8 +165,6 @@ export default function ProductDetailsModal({
   // Add-on groups the customer opened or closed by hand; the rest follow
   // `isGroupOpen`'s default.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  // The required group "Add to cart" stopped on, outlined until it is filled.
-  const [flaggedGroupId, setFlaggedGroupId] = useState<string | null>(null);
   // "Add to cart" without a variation: outline the options block until one is picked.
   const [variationFlagged, setVariationFlagged] = useState(false);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
@@ -190,7 +188,6 @@ export default function ProductDetailsModal({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAddonQty({});
     setOpenGroups({});
-    setFlaggedGroupId(null);
     setVariationFlagged(false);
     setDescriptionOpen(false);
     if (!ids.length || !getAccessToken()) {
@@ -524,7 +521,6 @@ export default function ProductDetailsModal({
       toast.error(`${unmetGroup.title}: ${t("groupChooseAtLeast")} ${unmetGroup.minSelectable}`, { id: "product-required" });
       // Show which one: open it, outline it and bring it into view.
       setOpenGroups((prev) => ({ ...prev, [unmetGroup._id]: true }));
-      setFlaggedGroupId(unmetGroup._id);
       scrollRef.current
         ?.querySelector(`[data-addon-group="${unmetGroup._id}"]`)
         ?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -790,7 +786,6 @@ export default function ProductDetailsModal({
                     const atMax = selectedCount >= group.maxSelectable;
                     const single = group.maxSelectable === 1;
                     const open = isGroupOpen(group);
-                    const unmet = flaggedGroupId === group._id && selectedCount < group.minSelectable;
                     const picked = group.options
                       .filter((o) => (addonQty[o.sku] || 0) > 0)
                       .map((o) => ((addonQty[o.sku] || 0) > 1 ? `${addonQty[o.sku]}× ${o.name}` : o.name));
@@ -798,10 +793,8 @@ export default function ProductDetailsModal({
                       <div
                         key={group._id}
                         data-addon-group={group._id}
-                        // Every group is outlined; red = a required group still unpicked.
-                        className={`overflow-hidden rounded-2xl border ${
-                          unmet ? "border-red-400 dark:border-red-500" : "border-gray-200 dark:border-neutral-700"
-                        }`}
+                        // Every group carries the red outline (design request), filled or not.
+                        className="overflow-hidden rounded-2xl border border-red-400 dark:border-red-500"
                       >
                         <button
                           type="button"

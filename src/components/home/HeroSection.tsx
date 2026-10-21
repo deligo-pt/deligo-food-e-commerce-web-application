@@ -276,14 +276,13 @@ export default function HeroSection() {
                       className="relative aspect-21/8 min-w-0 flex-[0_0_100%]"
                     >
                       {href ? (
-                        // The sponsor's site, in a new tab. A drag that swipes
+                        // The sponsor's link, in the same tab. A drag that swipes
                         // the carousel also ends in a click; Embla cancels that
                         // click itself (its drag handler's capture listener).
                         <a
                           href={href}
-                          target="_blank"
-                          rel="noopener noreferrer sponsored"
-                          aria-label={`${slide.sponsorName} — ${t("opensInNewTab")}`}
+                          rel="sponsored"
+                          aria-label={slide.sponsorName}
                           className="focus-ring absolute inset-0 block rounded-4xl"
                         >
                           {image}
