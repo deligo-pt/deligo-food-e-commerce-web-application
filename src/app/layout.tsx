@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import FCMProvider from "@/components/shared/FCMProvider";
 import QueryProvider from "@/providers/QueryProvider";
 import WebVitals from "@/components/shared/WebVitals";
+import AppReadyMarker from "@/components/shared/AppReadyMarker";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,32 @@ export default function RootLayout({
     >
       <head>
         <meta name="google" content="notranslate" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var nav = performance.getEntriesByType('navigation')[0];
+                  if (!nav || nav.type !== 'back_forward') return;
+                  var key = 'deligo-bf-reload';
+                  function recover() {
+                    if (document.documentElement.hasAttribute('data-app-ready')) return;
+                    if (sessionStorage.getItem(key) === location.href) return;
+                    sessionStorage.setItem(key, location.href);
+                    location.reload();
+                  }
+                  // An app script that fails to load means this copy of the
+                  // page is stale: reload at once instead of waiting.
+                  window.addEventListener('error', function(e) {
+                    var el = e.target;
+                    if (el && el.tagName === 'SCRIPT' && el.src && el.src.indexOf('/_next/') > -1) recover();
+                  }, true);
+                  setTimeout(recover, 5000);
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -59,6 +86,7 @@ export default function RootLayout({
           <Toaster position="top-center" richColors />
           <FCMProvider />
           <WebVitals />
+          <AppReadyMarker />
         </QueryProvider>
       </body>
     </html>
