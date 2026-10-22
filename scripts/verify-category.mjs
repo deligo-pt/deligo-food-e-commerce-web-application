@@ -23,13 +23,13 @@
  *    the control it replaced. §5 asserts the nav's only outward effect is a
  *    scroll.
  *
- * A third rule replaced an inherited one on 25 Sep 2026. Order used to be
- * copied from `/product-categories/open?vendorId=…` — the schema has no
- * `sortOrder`, so its response order was treated as the vendor's order. The
- * sidebar is **alphabetical by displayed name** now, collated with the viewer's
- * locale, with "Other" pinned last. The vendor lost the ability to put "DINNER
- * MENU" before "DESSERT"; restoring that needs a field on the category first.
- * §5 asserts that endpoint is still requested from exactly one file.
+ * A third rule, on order. From 25 Sep 2026 the sidebar was alphabetical by
+ * displayed name, because the category had no order field. Since 22 Oct 2026
+ * it has one: `/product-categories/open?vendorId=…` lists the categories by
+ * the `displayOrder` the vendor sets by dragging them in the vendor panel, and
+ * the page **keeps that order**, with "Other" pinned last. Products inside a
+ * category are still alphabetical, collated with the viewer's locale. §5
+ * asserts that endpoint is still requested from exactly one file.
  *
  * The scale of the mismatch, measured across all seven live vendors on
  * 2026-08-29: 22 of 34 products sit outside their own vendor's list, and three
@@ -39,7 +39,7 @@
  * ## Sections
  *
  *   §1  the model is total — fuzzed, never throws, for shapes nobody has sent yet
- *   §2  grouping loses no product, and sorts the groups by name
+ *   §2  grouping loses no product, and keeps the vendor's category order
  *   §3  DOM ids are stable, safe, and collision-free
  *   §4  nothing is dropped — every product is placed, Other catches the rest
  *   §5  source guards: the nav navigates, renders nothing when useless, derives
@@ -280,25 +280,25 @@ const TASCA = [
 const tasca = groupByVendorCategories(TASCA, TASCA_OWNS, "Other");
 
 check(
-  "🔴 groups come out alphabetical, not in the endpoint's order",
-  tasca.groups.map((g) => g.name).join(" | ") === "DESSERT | DINNER MENU | FAST FOOD TESTING",
+  "🔴 groups come out in the vendor's order, the category list's, not A–Z",
+  tasca.groups.map((g) => g.name).join(" | ") === "DINNER MENU | DESSERT | FAST FOOD TESTING",
   tasca.groups.map((g) => g.name).join(" | "),
 );
 check(
-  "reordering the category list changes nothing",
+  "🔴 reordering the category list reorders the page",
   groupByVendorCategories(TASCA, [...TASCA_OWNS].reverse(), "Other")
     .groups.map((g) => g.name)
-    .join(" | ") === "DESSERT | DINNER MENU | FAST FOOD TESTING",
-  "the API's order is no longer the page's order",
+    .join(" | ") === "FAST FOOD TESTING | DESSERT | DINNER MENU",
+  "the vendor drags a category up in the vendor panel; the store must follow",
 );
 check(
-  "reordering the products changes nothing either",
+  "reordering the products changes nothing",
   groupByVendorCategories([...TASCA].reverse(), TASCA_OWNS, "Other")
     .groups.map((g) => g.name)
-    .join(" | ") === "DESSERT | DINNER MENU | FAST FOOD TESTING",
+    .join(" | ") === "DINNER MENU | DESSERT | FAST FOOD TESTING",
 );
 check(
-  "🔴 accents are collated, not compared by code point",
+  "the vendor's order wins over the alphabet, in Portuguese too",
   groupByVendorCategories(
     [
       { productId: "p1", category: { _id: "c1", name: "Sobremesa" } },
@@ -314,8 +314,7 @@ check(
     "pt",
   )
     .groups.map((g) => g.name)
-    .join(" | ") === "Bebidas | Chá | Sobremesa",
-  "a code-point sort files Chá after Z, at the bottom of a Portuguese menu",
+    .join(" | ") === "Sobremesa | Chá | Bebidas",
 );
 check(
   "🔴 Other is pinned last, never sorted into the run",
@@ -611,7 +610,7 @@ check(
 );
 check(
   "headings come from the owned list, not the unresolved { en, pt } on the product",
-  extra.groups.map((g) => g.name).join(" | ") === "DESSERT | DINNER MENU | FAST FOOD TESTING",
+  extra.groups.map((g) => g.name).join(" | ") === "DINNER MENU | DESSERT | FAST FOOD TESTING",
   extra.groups.map((g) => g.name).join(" | "),
 );
 check("each group lists a product once", extra.groups.every((g) => new Set(g.products).size === g.products.length));
@@ -772,12 +771,13 @@ check(
   !/finalPrice|pricing|discount|price/i.test(model),
 );
 check(
-  "🔴 the model sorts both levels with one comparator, and the nav still does not",
+  "🔴 the model sorts products by name, never the categories, and the nav sorts nothing",
   /const byName = \(a: string, b: string\) =>\s*a\.localeCompare\(b, locale/.test(model) &&
-    /\.sort\(\(a, b\) => byName\(a\.name, b\.name\)\)/.test(model) &&
+    !/byName\(a\.name, b\.name\)/.test(model) &&
+    !/a\.name\.localeCompare/.test(model) &&
     /group\.products\.sort\(/.test(model) &&
     !/\.sort\(/.test(nav),
-  "a heading and the cards under it must not be ordered by different rules",
+  "an A–Z sort of the categories would undo the order the vendor set",
 );
 check(
   "the page hands the model the viewer's language to collate with",
@@ -1248,10 +1248,10 @@ section("§8  the menu arrives a category at a time (13 Oct 2026)");
     { name: "No id" },
     null,
   ];
-  const order = vendorCategoryOrder(CATS, "en");
+  const order = vendorCategoryOrder(CATS);
   check(
-    "categories are asked for in the page's order: by name, case ignored, one per id",
-    order.map((c) => c.id).join() === "c-blank,c-empty,c-burger,c-soup",
+    "categories are asked for in the page's order: the vendor's, one per id",
+    order.map((c) => c.id).join() === "c-soup,c-burger,c-empty,c-blank",
     order.map((c) => `${c.id}:${c.name}`).join(),
   );
   check(
@@ -1269,22 +1269,22 @@ section("§8  the menu arrives a category at a time (13 Oct 2026)");
   const stray = { _id: "p3", name: "Stray", category: { _id: "c-gone", name: "Gone" } };
   const loaded = groupByVendorCategories([burger, both, stray], CATS, "Other", "en").groups;
 
-  const none = withPendingCategories(loaded, order, new Set(), "en");
+  const none = withPendingCategories(loaded, order, new Set());
   check("nothing pending hands back the same groups, untouched", none === loaded);
 
-  const some = withPendingCategories(loaded, order, new Set(["c-soup", "c-empty", "c-blank"]), "en");
+  const some = withPendingCategories(loaded, order, new Set(["c-soup", "c-empty", "c-blank"]));
   check(
-    "\ud83d\udd34 every category still loading is on the page, in order, with Other last",
-    some.map((g) => g.id).join() === `c-empty,c-burger,c-soup,${UNCATEGORIZED_GROUP_ID}`,
+    "\ud83d\udd34 every category still loading is on the page, in the vendor's order, with Other last",
+    some.map((g) => g.id).join() === `c-soup,c-burger,c-empty,${UNCATEGORIZED_GROUP_ID}`,
     some.map((g) => g.id).join(),
   );
   check(
     "a loading category with nothing yet is an empty placeholder",
-    some[0].pending === true && some[0].products.length === 0 && some[0].name === "Adult menu",
+    some[2].pending === true && some[2].products.length === 0 && some[2].name === "Adult menu",
   );
   check(
     "a category reached early through additionalCategories is still marked loading",
-    some[2].pending === true && some[2].products.length === 1,
+    some[0].pending === true && some[0].products.length === 1,
   );
   check(
     "a category that has answered is not marked, and Other never is",
@@ -1298,7 +1298,7 @@ section("§8  the menu arrives a category at a time (13 Oct 2026)");
     "the groups handed in are not mutated",
     loaded.every((g) => g.pending === undefined) && loaded.length === 3,
   );
-  const done = withPendingCategories(loaded, order, new Set(["c-nowhere"]), "en");
+  const done = withPendingCategories(loaded, order, new Set(["c-nowhere"]));
   check(
     "\ud83d\udd34 an empty category leaves the list once it has answered",
     !done.some((g) => g.id === "c-empty") && done.length === loaded.length,

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { memo, useEffect, useState, useMemo } from "react";
 import SafeImage from "@/components/shared/SafeImage";
 import Link from "next/link";
 import { Star, Truck, Check, Store, Moon } from "lucide-react";
@@ -13,11 +13,8 @@ import { useCuisineFilterStore } from "@/stores/cuisineFilterStore";
 import { useLocationStore } from "@/stores/locationStore";
 import { useActiveAddressCoords } from "@/hooks/queries/useProfile";
 import { useVendorsNearbyAll } from "@/hooks/queries/useVendors";
-import {
-  getDistanceKm,
-  HOME_VENDORS_PAGE_SIZE,
-  sortVendorsByDistance,
-} from "@/lib/vendorDistance";
+import { HOME_VENDORS_PAGE_SIZE, sortVendorsByDistance } from "@/lib/vendorDistance";
+import { deliveryEstimateText } from "@/lib/deliveryEstimate";
 import { X } from "lucide-react";
 import type { Vendor } from "@/types/vendor";
 import { cuisineMatches, formatCuisine } from "@/lib/cuisine";
@@ -29,71 +26,14 @@ import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { cardVariants } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
 
-function formatTimeRange(totalMinutes: number): string {
-  if (totalMinutes < 60) {
-    return `${Math.floor(totalMinutes)} to ${Math.ceil(totalMinutes + 10)} mins`;
-  }
-  const hours = totalMinutes / 60;
-  if (hours < 24) {
-    const low = Math.floor(hours);
-    const high = Math.ceil(hours + 10 / 60);
-    return low === high
-      ? `${low} hour${low !== 1 ? "s" : ""}`
-      : `${low} to ${high} hours`;
-  }
-  const days = totalMinutes / (60 * 24);
-  if (days < 7) {
-    const low = Math.floor(days);
-    const high = Math.ceil(days + 10 / (60 * 24));
-    return low === high
-      ? `${low} day${low !== 1 ? "s" : ""}`
-      : `${low} to ${high} days`;
-  }
-  const weeks = totalMinutes / (60 * 24 * 7);
-  if (weeks < 4) {
-    const low = Math.floor(weeks);
-    const high = Math.ceil(weeks + 10 / (60 * 24 * 7));
-    return low === high
-      ? `${low} week${low !== 1 ? "s" : ""}`
-      : `${low} to ${high} weeks`;
-  }
-  const months = totalMinutes / (60 * 24 * 30);
-  if (months < 12) {
-    const low = Math.floor(months);
-    const high = Math.ceil(months + 10 / (60 * 24 * 30));
-    return low === high
-      ? `${low} month${low !== 1 ? "s" : ""}`
-      : `${low} to ${high} months`;
-  }
-  const years = totalMinutes / (60 * 24 * 365);
-  const low = Math.floor(years);
-  const high = Math.ceil(years + 10 / (60 * 24 * 365));
-  return low === high
-    ? `${low} year${low !== 1 ? "s" : ""}`
-    : `${low} to ${high} years`;
-}
-
-function getVendorCoords(vendor: Vendor): { lat: number; lng: number } | null {
-  const { latitude, longitude } = vendor.businessLocation;
-  return latitude && longitude ? { lat: latitude, lng: longitude } : null;
-}
-
-// Memoized card — delivery-time estimates resolve one vendor at a time, so
-// without this every resolution would re-render the whole grid. Now only the
-// card whose `deliveryTime`/`isTimeLoading` changed re-renders.
-const RestaurantCard = memo(function RestaurantCard({
-  vendor,
-  deliveryTime,
-  isTimeLoading,
-}: {
-  vendor: Vendor;
-  deliveryTime?: string;
-  isTimeLoading?: boolean;
-}) {
+// Memoized card: "Load more" and filter changes re-render the grid, and a card
+// whose `vendor` is unchanged has nothing to redraw.
+const RestaurantCard = memo(function RestaurantCard({ vendor }: { vendor: Vendor }) {
   const { t } = useTranslation();
-  const displayTime = isTimeLoading
-    ? t("calculating")
-    : deliveryTime || t("under10Min");
+  // The backend's estimate, sent with the list (see `lib/deliveryEstimate.ts`).
+  // No estimate, no badge: this used to ask Google once per card and fall back
+  // to "Under 10 min" whenever that failed.
+  const displayTime = deliveryEstimateText(vendor.estimatedDeliveryTime, t);
 
   // Closed stores are shown dimmed with a "Currently Closed" badge but stay
   // openable — the menu is browsable, only ordering is withdrawn. Only an
@@ -141,7 +81,7 @@ const RestaurantCard = memo(function RestaurantCard({
             {vendor.rating?.average ?? 0}
           </span>
         </div>
-        {!isClosed && (
+        {!isClosed && displayTime && (
           <div className="absolute bottom-3 right-3">
             <span className="flex h-8 items-center gap-2 rounded-full bg-black/70 px-3 text-xs font-bold text-white backdrop-blur-md">
               <Truck size={14} />
@@ -255,11 +195,9 @@ const RestaurantCard = memo(function RestaurantCard({
 export default function RestaurantsSection() {
   const { t } = useTranslation();
   // Phase 6 #2. `revealed` is rendered as the container's own attribute rather
-  // than written to the DOM by the hook, so the re-render that lands each
-  // delivery-time estimate cannot reset it to hidden.
+  // than written to the DOM by the hook, so a re-render (Load more, a filter)
+  // cannot reset it to hidden.
   const [gridRef, revealed] = useRevealOnScroll<HTMLDivElement>();
-  const [deliveryTimes, setDeliveryTimes] = useState<Record<string, string>>({});
-  const [loadingTimes, setLoadingTimes] = useState<Record<string, boolean>>({});
 
   const { coords: geoCoords, permissionStatus } = useLocationStore();
   const {
@@ -372,101 +310,6 @@ export default function RestaurantsSection() {
   const hasMoreVendors = filteredVendors.length > visibleCount;
   const loadMoreVendors = () =>
     setShown({ key: listKey, count: visibleCount + HOME_VENDORS_PAGE_SIZE });
-
-  const estimateDeliveryTime = useCallback(
-    async (vendor: Vendor) => {
-      const refCoords =
-        activeAddressCoords ??
-        (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null);
-
-      if (!refCoords) {
-        setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: "Under 10 min" }));
-        return;
-      }
-      const vendorCoords = getVendorCoords(vendor);
-      if (!vendorCoords) {
-        setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: "Under 10 min" }));
-        return;
-      }
-
-      setLoadingTimes((prev) => ({ ...prev, [vendor.userId]: true }));
-      try {
-        const url = `/api/distance-matrix?originLat=${vendorCoords.lat}&originLng=${vendorCoords.lng}&destLat=${refCoords.lat}&destLng=${refCoords.lng}`;
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (
-          data.status === "OK" &&
-          data.rows?.[0]?.elements?.[0]?.status === "OK"
-        ) {
-          const minutes = Math.round(
-            data.rows[0].elements[0].duration.value / 60,
-          );
-          setDeliveryTimes((prev) => ({
-            ...prev,
-            [vendor.userId]: formatTimeRange(minutes),
-          }));
-          return;
-        }
-        const distance = getDistanceKm(
-          vendorCoords.lat,
-          vendorCoords.lng,
-          refCoords.lat,
-          refCoords.lng,
-        );
-        const estimatedMinutes = Math.round((distance / 30) * 60);
-        const timeStr =
-          estimatedMinutes < 10
-            ? "Under 10 min"
-            : formatTimeRange(estimatedMinutes);
-        setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: timeStr }));
-      } catch (err) {
-        console.error("Time estimation error", err);
-        setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: "Under 10 min" }));
-      } finally {
-        setLoadingTimes((prev) => ({ ...prev, [vendor.userId]: false }));
-      }
-    },
-    [activeAddressCoords, geoCoords],
-  );
-
-  const lastFetchedCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
-
-  // Only the cards on screen: each estimate is a maps request, and the list
-  // now holds every vendor. "Load more" estimates the new ones as they appear.
-  useEffect(() => {
-    if (loading || visibleVendors.length === 0) return;
-
-    const currentCoords =
-      activeAddressCoords ??
-      (geoCoords ? { lat: geoCoords.latitude, lng: geoCoords.longitude } : null);
-
-    if (!currentCoords) {
-      visibleVendors.forEach((vendor) => {
-        setDeliveryTimes((prev) => ({ ...prev, [vendor.userId]: "Under 10 min" }));
-      });
-      return;
-    }
-
-    const coordsChanged =
-      !lastFetchedCoordsRef.current ||
-      lastFetchedCoordsRef.current.lat !== currentCoords.lat ||
-      lastFetchedCoordsRef.current.lng !== currentCoords.lng;
-
-    const hasUnestimatedVendors = visibleVendors.some(
-      (vendor) => !deliveryTimes[vendor.userId]
-    );
-
-    if (coordsChanged || hasUnestimatedVendors) {
-      lastFetchedCoordsRef.current = currentCoords;
-      visibleVendors.forEach((vendor) => {
-        const hasTime = deliveryTimes[vendor.userId];
-        if (coordsChanged || !hasTime) {
-          estimateDeliveryTime(vendor);
-        }
-      });
-    }
-  }, [activeAddressCoords, geoCoords, loading, visibleVendors, deliveryTimes, estimateDeliveryTime]);
 
   if (loading) {
     return (
@@ -630,12 +473,7 @@ export default function RestaurantsSection() {
         className="reveal-group grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
       >
         {visibleVendors.map((vendor) => (
-          <RestaurantCard
-            key={vendor.userId}
-            vendor={vendor}
-            deliveryTime={deliveryTimes[vendor.userId]}
-            isTimeLoading={loadingTimes[vendor.userId]}
-          />
+          <RestaurantCard key={vendor.userId} vendor={vendor} />
         ))}
       </div>
 

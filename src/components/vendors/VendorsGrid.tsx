@@ -126,11 +126,7 @@ export default function VendorsGrid() {
         className="reveal-group grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
       >
         {vendors.map((vendor) => (
-          <VendorCard
-            key={vendor.id}
-            vendor={vendor}
-            userCoords={resolvedCoords}
-          />
+          <VendorCard key={vendor.id} vendor={vendor} />
         ))}
       </div>
 

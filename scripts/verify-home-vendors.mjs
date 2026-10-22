@@ -107,11 +107,45 @@ console.log("\n🔴 The section shows them all, with Load more");
     "a new position or filter starts from the top again",
     /shown\.key === listKey \? shown\.count : HOME_VENDORS_PAGE_SIZE/.test(section),
   );
+  // 22 Oct 2026: the delivery time is the backend's `estimatedDeliveryTime`,
+  // sent with the list, instead of a Google distance request per card (up to
+  // 100 for this section) with "Under 10 min" whenever one failed.
   check(
-    "🔴 delivery times are estimated for visible cards only",
-    /visibleVendors\.forEach\(\(vendor\) => \{\s*const hasTime/.test(section) &&
-      !/filteredVendors\.forEach/.test(section),
-    "each estimate is a maps request; the list now holds every vendor",
+    "🔴 the cards show the backend's estimate and ask Google for nothing",
+    /deliveryEstimateText\(vendor\.estimatedDeliveryTime, t\)/.test(section) &&
+      !/distance-matrix/.test(section) &&
+      !/under10Min|Under 10 min/.test(section),
+    "a maps request per card, and a made-up time when it failed",
+  );
+  check(
+    "no estimate, no badge",
+    /\{!isClosed && displayTime && \(/.test(section),
+  );
+}
+
+{
+  const { deliveryEstimateText } = await import(src("lib/deliveryEstimate.ts"));
+  const t = (key) => ({ deliveryMinutesRange: "{min}–{max} min", deliveryMinutes: "{min} min" })[key] ?? key;
+  check(
+    "the estimate reads as a range, or one number when both ends agree",
+    deliveryEstimateText({ minMinutes: 30, maxMinutes: 40 }, t) === "30–40 min" &&
+      deliveryEstimateText({ minMinutes: 25, maxMinutes: 25 }, t) === "25 min",
+  );
+  check(
+    "🔴 no estimate, or a broken one, is null, never a guess",
+    deliveryEstimateText(null, t) === null &&
+      deliveryEstimateText(undefined, t) === null &&
+      deliveryEstimateText({ minMinutes: 40, maxMinutes: 30 }, t) === null &&
+      deliveryEstimateText({ minMinutes: "x", maxMinutes: 30 }, t) === null &&
+      deliveryEstimateText({ minMinutes: -5, maxMinutes: 10 }, t) === null,
+  );
+  const card = code("components/vendors/VendorCard.tsx");
+  check(
+    "🔴 the vendors page and search cards follow the same rule",
+    /deliveryEstimateText\(vendor\.estimatedDeliveryTime, t\)/.test(card) &&
+      !/distance-matrix/.test(card) &&
+      !/Under 10 min/.test(card) &&
+      /\{!isClosed && displayTime && \(/.test(card),
   );
 }
 
