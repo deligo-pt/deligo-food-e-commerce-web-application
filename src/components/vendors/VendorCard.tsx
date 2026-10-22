@@ -1,16 +1,16 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import SafeImage from "@/components/shared/SafeImage";
 import Link from "next/link";
 import { Star, Truck, Check, Store, Moon } from "lucide-react";
-import { memo, useCallback, useEffect, useState, useRef } from "react";
+import { memo } from "react";
 import { formatCuisine } from "@/lib/cuisine";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 import { vendorHref } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { cardVariants } from "@/components/ui/card";
+import { deliveryEstimateText, type EstimatedDeliveryTime } from "@/lib/deliveryEstimate";
 
 export interface Vendor {
   id: string;
@@ -33,91 +33,18 @@ export interface Vendor {
   };
   storePhoto: string[];
   rating: { average: number; totalReviews: number };
+  /** The backend's estimate for the position the list was asked for. */
+  estimatedDeliveryTime?: EstimatedDeliveryTime | null;
 }
 
 interface VendorCardProps {
   vendor: Vendor;
-  userCoords?: { lat: number; lng: number } | null;
 }
 
-function getDistanceKm(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function formatTimeRange(totalMinutes: number): string {
-  if (totalMinutes < 60) {
-    return `${Math.floor(totalMinutes)} to ${Math.ceil(totalMinutes + 10)} mins`;
-  }
-
-  const hours = totalMinutes / 60;
-  if (hours < 24) {
-    const low = Math.floor(hours);
-    const high = Math.ceil(hours + 10 / 60); // add 10 min buffer
-    return low === high
-      ? `${low} hour${low !== 1 ? "s" : ""}`
-      : `${low} to ${high} hours`;
-  }
-
-  const days = totalMinutes / (60 * 24);
-  if (days < 7) {
-    const low = Math.floor(days);
-    const high = Math.ceil(days + 10 / (60 * 24));
-    return low === high
-      ? `${low} day${low !== 1 ? "s" : ""}`
-      : `${low} to ${high} days`;
-  }
-
-  const weeks = totalMinutes / (60 * 24 * 7);
-  if (weeks < 4) {
-    const low = Math.floor(weeks);
-    const high = Math.ceil(weeks + 10 / (60 * 24 * 7));
-    return low === high
-      ? `${low} week${low !== 1 ? "s" : ""}`
-      : `${low} to ${high} weeks`;
-  }
-
-  const months = totalMinutes / (60 * 24 * 30);
-  if (months < 12) {
-    const low = Math.floor(months);
-    const high = Math.ceil(months + 10 / (60 * 24 * 30));
-    return low === high
-      ? `${low} month${low !== 1 ? "s" : ""}`
-      : `${low} to ${high} months`;
-  }
-
-  const years = totalMinutes / (60 * 24 * 365);
-  const low = Math.floor(years);
-  const high = Math.ceil(years + 10 / (60 * 24 * 365));
-  return low === high
-    ? `${low} year${low !== 1 ? "s" : ""}`
-    : `${low} to ${high} years`;
-}
-
-function getVendorCoords(vendor: Vendor): { lat: number; lng: number } | null {
-  const { latitude, longitude } = vendor.businessLocation;
-  return latitude && longitude ? { lat: latitude, lng: longitude } : null;
-}
-
-// Memoized: the grid renders many cards, and each runs its own distance-matrix
-// estimate — so skip re-rendering a card whose `vendor`/`userCoords` are
-// unchanged when the parent re-renders (pagination, coords resolving, etc.).
-function VendorCard({ vendor, userCoords }: VendorCardProps) {
+// Memoized: the grid renders many cards, so skip re-rendering a card whose
+// `vendor` is unchanged when the parent re-renders (pagination and the like).
+function VendorCard({ vendor }: VendorCardProps) {
   const { t } = useTranslation();
-  const [estimatedTime, setEstimatedTime] = useState<string | null>(null);
-  const [loadingTime, setLoadingTime] = useState(false);
 
   // Closed stores are shown dimmed with a "Currently Closed" badge but stay
   // openable — matching the app, where a closed store's menu is browsable and
@@ -127,78 +54,9 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
   const isClosed = vendor.businessDetails?.isStoreOpen === false;
   const cardTitle = useVendorCardTitle(vendor);
 
-  // Coords are always resolved by the parent (VendorsGrid) from the shared,
-  // cached profile — no per-card /profile fetch.
-  const coordsToUse = userCoords ?? null;
-
-  const fetchTime = useCallback(async () => {
-    const vendorCoords = getVendorCoords(vendor);
-    if (!vendorCoords || !coordsToUse) {
-      setEstimatedTime("Under 10 min");
-      return;
-    }
-
-    setLoadingTime(true);
-    try {
-      // 1) Try Google Distance Matrix via our proxy
-      const url = `/api/distance-matrix?originLat=${vendorCoords.lat}&originLng=${vendorCoords.lng}&destLat=${coordsToUse.lat}&destLng=${coordsToUse.lng}`;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (
-        data.status === "OK" &&
-        data.rows?.[0]?.elements?.[0]?.status === "OK"
-      ) {
-        const minutes = Math.round(
-          data.rows[0].elements[0].duration.value / 60,
-        );
-        setEstimatedTime(formatTimeRange(minutes));
-        return;
-      }
-
-      // 2) Fallback: straight‑line distance + average speed (30 km/h)
-      const distance = getDistanceKm(
-        vendorCoords.lat,
-        vendorCoords.lng,
-        coordsToUse.lat,
-        coordsToUse.lng,
-      );
-      const estimatedMinutes = Math.round((distance / 30) * 60);
-      setEstimatedTime(
-        estimatedMinutes < 10
-          ? "Under 10 min"
-          : formatTimeRange(estimatedMinutes),
-      );
-    } catch (err) {
-      console.error("Time estimation error", err);
-      setEstimatedTime("Under 10 min");
-    } finally {
-      setLoadingTime(false);
-    }
-  }, [vendor, coordsToUse]);
-
-  const lastCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
-
-  useEffect(() => {
-    if (!coordsToUse) {
-      setEstimatedTime("Under 10 min");
-      return;
-    }
-
-    const coordsChanged =
-      !lastCoordsRef.current ||
-      lastCoordsRef.current.lat !== coordsToUse.lat ||
-      lastCoordsRef.current.lng !== coordsToUse.lng;
-
-    if (coordsChanged) {
-      lastCoordsRef.current = coordsToUse;
-      fetchTime();
-    }
-  }, [coordsToUse, fetchTime]);
-
-  const displayTime = loadingTime
-    ? "Calculating..."
-    : estimatedTime || "Under 10 min";
+  // The backend's estimate, sent with the list (see `lib/deliveryEstimate.ts`).
+  // No estimate, no badge: this used to fall back to "Under 10 min".
+  const displayTime = deliveryEstimateText(vendor.estimatedDeliveryTime, t);
 
   const cardBody = (
     /* Plan.md Phase 7 #1 — the same card as the homepage's, class for class.
@@ -231,7 +89,7 @@ function VendorCard({ vendor, userCoords }: VendorCardProps) {
         {/* The delivery estimate was a pink row in the footer here and an
             overlay pill on the homepage — the same fact drawn two ways in two
             files. It is the overlay in both now. */}
-        {!isClosed && (
+        {!isClosed && displayTime && (
           <div className="absolute bottom-3 right-3">
             <span className="flex h-8 items-center gap-2 rounded-full bg-black/70 px-3 text-xs font-bold text-white backdrop-blur-md">
               <Truck size={14} />

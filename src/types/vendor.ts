@@ -2,6 +2,8 @@
 // real API, which returns restaurantCuisineType as an array of strings
 // (occasionally a single string, sometimes absent). Typing it as a union here is
 // what prevents the string-only assumptions that crashed search (see Issue.md #11).
+import type { EstimatedDeliveryTime } from "@/lib/deliveryEstimate";
+
 export interface Vendor {
   _id?: string;
   id?: string;
@@ -29,6 +31,11 @@ export interface Vendor {
     average: number;
     totalReviews: number;
   };
+  /**
+   * The backend's delivery estimate for the position the list was asked for.
+   * Only `/vendors/nearby/open` sends it; `null` when it has none.
+   */
+  estimatedDeliveryTime?: EstimatedDeliveryTime | null;
   availableCategories?: {
     _id: string;
     name: string;

@@ -578,11 +578,7 @@ export default function SearchContent() {
           </h2>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {places.map((place) => (
-              <VendorCard
-                key={place.id ?? place.userId}
-                vendor={place}
-                userCoords={searchCoords}
-              />
+              <VendorCard key={place.id ?? place.userId} vendor={place} />
             ))}
           </div>
         </section>

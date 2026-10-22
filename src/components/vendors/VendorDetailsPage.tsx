@@ -495,8 +495,9 @@ export default function VendorDetailsPage({
   // requiring a category on every product.
   //
   // Public endpoint, no auth branch, and the only second request this page
-  // makes. Its order is not used: the schema has no `sortOrder`, and since
-  // 25 Sep 2026 the page sorts these alphabetically itself.
+  // makes. Its order is the page's order: since 22 Oct 2026 it lists the
+  // categories by the `displayOrder` the vendor sets by dragging them in the
+  // vendor panel (A–Z, sorted here, before that).
   const { data: vendorCategories = [], isLoading: categoriesLoading } =
     useVendorProductCategories<VendorCategory>(vendor?.id, { enabled: !!vendor?.id });
 
@@ -509,10 +510,7 @@ export default function VendorDetailsPage({
   // own products arrive (about 0.8 s), top of the page first; the one the
   // customer jumps to goes to the front. See `useVendorMenuByCategory`.
   // ---------------------------------------------------------------------------
-  const categoryOrder = useMemo(
-    () => vendorCategoryOrder(vendorCategories, i18n.language),
-    [vendorCategories, i18n.language],
-  );
+  const categoryOrder = useMemo(() => vendorCategoryOrder(vendorCategories), [vendorCategories]);
   const categoryIds = useMemo(() => categoryOrder.map((category) => category.id), [categoryOrder]);
   const [urgentCategoryId, setUrgentCategoryId] = useState<string | null>(null);
   // Asked only once there is a store, a settled position and a category list.
@@ -677,8 +675,8 @@ export default function VendorDetailsPage({
   // Every category is on the page from the start; the ones still loading are
   // placeholders until their products arrive.
   const categoryGroups = useMemo(
-    () => withPendingCategories(loadedGroups, categoryOrder, pendingCategoryIds, i18n.language),
-    [loadedGroups, categoryOrder, pendingCategoryIds, i18n.language],
+    () => withPendingCategories(loadedGroups, categoryOrder, pendingCategoryIds),
+    [loadedGroups, categoryOrder, pendingCategoryIds],
   );
 
   // Development only. Nothing is broken for the customer — those products are

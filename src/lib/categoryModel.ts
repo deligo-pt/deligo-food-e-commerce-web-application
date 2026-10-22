@@ -324,8 +324,8 @@ export interface VendorCategory {
 
 export interface VendorCategoryView<P> {
   /**
-   * Owned categories that have at least one product, sorted by name, followed
-   * by the "Other" group when anything landed in it.
+   * Owned categories that have at least one product, in the vendor's order,
+   * followed by the "Other" group when anything landed in it.
    */
   groups: CategoryGroup<P>[];
   /**
@@ -356,11 +356,10 @@ export interface VendorCategoryView<P> {
  *
  * Rules, each one a guard in `verify:category`:
  *
- * - **Order is alphabetical by the name on screen**, compared with the caller's
- *   locale so `Chá` and `Sobremesa` land where a Portuguese reader expects
- *   rather than where their code points fall. Equal names keep their input
- *   order. The "Other" group is always last, never sorted into the run — but
- *   the products inside it are sorted like any other group's.
+ * - **Categories keep the order of the category list**, which is the vendor's
+ *   own: since 22 Oct 2026 `/product-categories/open` lists them by the
+ *   `displayOrder` the vendor sets by dragging (A–Z on screen before that).
+ *   The "Other" group is always last.
  * - **Names come from the category list**, not from the product's embedded
  *   copy. Two sources carry a name; the owned list is the authority, so a stale
  *   name on an old product document cannot reach the screen.
@@ -374,8 +373,9 @@ export interface VendorCategoryView<P> {
  *   categories is owned. A product in an owned additional category isn't
  *   "uncategorized" just because its main one is foreign.
  * - **Products are sorted the same way inside every group**, including
- *   "Other", by the name the customer reads — the string `/products`
- *   localized, or the right half of a `{ en, pt }` stub.
+ *   "Other", alphabetically by the name the customer reads — the string
+ *   `/products` localized, or the right half of a `{ en, pt }` stub — compared
+ *   with the caller's locale so `Chá` lands where a Portuguese reader expects.
  */
 export function groupByVendorCategories<P extends CategorizedProduct>(
   products: readonly P[] | null | undefined,
@@ -428,8 +428,7 @@ export function groupByVendorCategories<P extends CategorizedProduct>(
     if (!placed) uncategorized.push(product);
   }
 
-  // One comparator for both levels, so a heading and the cards under it are
-  // ordered by the same rules.
+  // Products only: the categories keep the vendor's order.
   const byName = (a: string, b: string) =>
     a.localeCompare(b, locale, { sensitivity: "base", numeric: true });
 
@@ -442,17 +441,11 @@ export function groupByVendorCategories<P extends CategorizedProduct>(
     byName(productDisplayName(a, locale), productDisplayName(b, locale)),
   );
 
-  const rendered = groups
-    .filter((group) => group.products.length > 0)
-    // `localeCompare` rather than `<`: the Portuguese storefront has `Chá` and
-    // `Sobremesa`, and comparing code points files accented letters after `Z`.
-    // `sort` is stable in every engine we target, so equal names keep the order
-    // the endpoint gave them.
-    .sort((a, b) => byName(a.name, b.name));
+  // In the order the category list gave them: the vendor's.
+  const rendered = groups.filter((group) => group.products.length > 0);
 
-  // Appended after the sort, so "Other" stays last whatever it is called in the
-  // current language — sorted in, the Portuguese "Outros" would land mid-list
-  // and read like one of the vendor's own categories. Omitted entirely when
+  // Appended at the end, so "Other" stays last — the Portuguese "Outros" must
+  // not read like one of the vendor's own categories. Omitted entirely when
   // empty, which is what a fully migrated vendor looks like.
   if (uncategorized.length > 0) {
     rendered.push({
@@ -480,24 +473,23 @@ export function categoryDomId(groupId: string): string {
   return `category-${safe}`;
 }
 
-/** A vendor category the page can show: its id and the name to sort it by. */
+/** A vendor category the page can show: its id and its name. */
 export interface OrderedCategory {
   id: string;
   name: string;
 }
 
 /**
- * The vendor's categories in the order the page shows them — by name, the
- * same comparison `groupByVendorCategories` sorts its groups with — so the
- * menu can be asked for from the top of the page down.
+ * The vendor's categories in the order the page shows them — the vendor's own,
+ * as the category list gives it, the order `groupByVendorCategories` keeps —
+ * so the menu can be asked for from the top of the page down.
  *
  * Categories without a usable id are dropped, as they are there. A blank name
- * is kept (as `""`, sorting first): it can still be loaded, and takes the name
- * its products carry once they arrive.
+ * is kept (as `""`): it can still be loaded, and takes the name its products
+ * carry once they arrive.
  */
 export function vendorCategoryOrder(
   categories: readonly VendorCategory[] | null | undefined,
-  locale?: string,
 ): OrderedCategory[] {
   const ordered: OrderedCategory[] = [];
   const seen = new Set<string>();
@@ -508,9 +500,7 @@ export function vendorCategoryOrder(
     seen.add(id);
     ordered.push({ id, name: text(category.name) ?? "" });
   }
-  return ordered.sort((a, b) =>
-    a.name.localeCompare(b.name, locale, { sensitivity: "base", numeric: true }),
-  );
+  return ordered;
 }
 
 /**
@@ -524,7 +514,7 @@ export function vendorCategoryOrder(
  *   shows is not yet all of it.
  * - A pending category with no name cannot be a heading, so it waits for its
  *   products to name it.
- * - Sorted as `groupByVendorCategories` sorts, with "Other" kept last.
+ * - In the vendor's order (`ordered`), with "Other" kept last.
  * - Nothing pending returns `groups` itself, untouched.
  *
  * A category that turns out to be empty simply stops being pending and, having
@@ -534,7 +524,6 @@ export function withPendingCategories<P>(
   groups: readonly CategoryGroup<P>[],
   ordered: readonly OrderedCategory[],
   pendingIds: ReadonlySet<string>,
-  locale?: string,
 ): CategoryGroup<P>[] {
   if (pendingIds.size === 0) return groups as CategoryGroup<P>[];
 
@@ -554,8 +543,9 @@ export function withPendingCategories<P>(
     present.add(category.id);
     own.push({ id: category.id, name: category.name, products: [], pending: true });
   }
-  own.sort((a, b) =>
-    a.name.localeCompare(b.name, locale, { sensitivity: "base", numeric: true }),
-  );
+  // A group the list doesn't name (it shouldn't happen) goes after the rest.
+  const rank = new Map(ordered.map((category, i) => [category.id, i]));
+  const at = (id: string) => rank.get(id) ?? ordered.length;
+  own.sort((a, b) => at(a.id) - at(b.id));
   return other ? [...own, other] : own;
 }

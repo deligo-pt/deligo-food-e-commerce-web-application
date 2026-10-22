@@ -49,6 +49,9 @@ const en = {
 
   calculating: "Calculating...",
   under10Min: "Under 10 min",
+  // The backend's delivery estimate on a vendor card (lib/deliveryEstimate.ts).
+  deliveryMinutesRange: "{min}–{max} min",
+  deliveryMinutes: "{min} min",
 
   openNow: "Open Now",
   closed: "Closed",

@@ -55,6 +55,9 @@ const pt = {
 
   calculating: "Calculando...",
   under10Min: "Menos de 10 min",
+  // A estimativa de entrega do backend num cartão de loja (lib/deliveryEstimate.ts).
+  deliveryMinutesRange: "{min}–{max} min",
+  deliveryMinutes: "{min} min",
 
   openNow: "Aberto Agora",
   closed: "Fechado",
