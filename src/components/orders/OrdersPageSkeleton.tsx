@@ -5,7 +5,7 @@ export default function OrdersPageSkeleton() {
         {/* Header */}
         <div className="mb-8">
           <div className="h-10 w-52 rounded bg-gray-200 dark:bg-neutral-800" />
-          <div className="mt-3 h-4 w-80 rounded bg-gray-200 dark:bg-neutral-800" />
+          <div className="mt-3 h-4 w-80 max-w-full rounded bg-gray-200 dark:bg-neutral-800" />
         </div>
 
         {/* Search bar — same rounded-full footprint and the same reserved line
@@ -34,17 +34,19 @@ export default function OrdersPageSkeleton() {
               className="rounded-xl border border-border bg-card p-4 shadow-sm"
             >
               {/* Header */}
-              <div className="flex items-start justify-between">
-                <div className="flex gap-3">
-                  <div className="h-12 w-12 rounded-full bg-gray-200 dark:bg-neutral-800" />
+              {/* Shrinks with the card (23 Oct 2026): at 320 px the fixed bars
+                  were wider than the screen while the orders loaded. */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-1 gap-3">
+                  <div className="h-12 w-12 shrink-0 rounded-full bg-gray-200 dark:bg-neutral-800" />
 
-                  <div>
-                    <div className="h-5 w-40 rounded bg-gray-200 dark:bg-neutral-800" />
-                    <div className="mt-2 h-3 w-32 rounded bg-gray-200 dark:bg-neutral-800" />
+                  <div className="min-w-0 flex-1">
+                    <div className="h-5 w-40 max-w-full rounded bg-gray-200 dark:bg-neutral-800" />
+                    <div className="mt-2 h-3 w-32 max-w-full rounded bg-gray-200 dark:bg-neutral-800" />
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex shrink-0 flex-col items-end gap-2">
                   <div className="h-5 w-16 rounded bg-gray-200 dark:bg-neutral-800" />
                   <div className="h-6 w-20 rounded-full bg-gray-200 dark:bg-neutral-800" />
                 </div>
@@ -57,9 +59,9 @@ export default function OrdersPageSkeleton() {
 
               {/* Progress */}
               <div className="mt-4">
-                <div className="mb-2 flex justify-between">
-                  <div className="h-3 w-40 rounded bg-gray-200 dark:bg-neutral-800" />
-                  <div className="h-3 w-32 rounded bg-gray-200 dark:bg-neutral-800" />
+                <div className="mb-2 flex justify-between gap-3">
+                  <div className="h-3 w-40 max-w-[48%] rounded bg-gray-200 dark:bg-neutral-800" />
+                  <div className="h-3 w-32 max-w-[40%] rounded bg-gray-200 dark:bg-neutral-800" />
                 </div>
 
                 <div className="h-1.5 rounded-full bg-gray-200 dark:bg-neutral-800" />
