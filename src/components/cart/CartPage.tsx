@@ -162,38 +162,41 @@ export default function CartPage() {
               key={idx}
               className="rounded-3xl border border-border bg-card p-6 shadow-sm"
             >
-              <div className="mb-6 flex items-start justify-between">
-                <div className="flex gap-4">
-                  <div className="h-20 w-20 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
-                  <div>
-                    <div className="h-8 w-56 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
+              {/* Fixed widths capped by the card (23 Oct 2026): the 80 px circle
+                  beside a 224 px bar was wider than a 360 px phone and gave
+                  the page a sideways scroll while the cart loaded. */}
+              <div className="mb-6 flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-1 gap-4">
+                  <div className="h-20 w-20 shrink-0 animate-pulse rounded-full bg-gray-200 dark:bg-neutral-800" />
+                  <div className="min-w-0 flex-1">
+                    <div className="h-8 w-56 max-w-full animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
                     <div className="mt-3 flex gap-3">
-                      <div className="h-10 w-24 animate-pulse rounded-xl bg-gray-200 dark:bg-neutral-800" />
-                      <div className="h-10 w-28 animate-pulse rounded-xl bg-gray-200 dark:bg-neutral-800" />
+                      <div className="h-10 w-24 min-w-0 animate-pulse rounded-xl bg-gray-200 dark:bg-neutral-800" />
+                      <div className="h-10 w-28 min-w-0 animate-pulse rounded-xl bg-gray-200 dark:bg-neutral-800" />
                     </div>
                   </div>
                 </div>
-                <div className="h-6 w-6 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
+                <div className="h-6 w-6 shrink-0 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
               </div>
               {/* Product rows skeleton */}
               <div className="space-y-4">
                 {[1, 2].map((i) => (
                   <div key={i} className="flex gap-4">
-                    <div className="h-24 w-24 animate-pulse rounded-2xl bg-gray-200 dark:bg-neutral-800" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-6 w-48 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
-                      <div className="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
-                      <div className="flex justify-between">
-                        <div className="h-10 w-28 animate-pulse rounded-2xl bg-gray-200 dark:bg-neutral-800" />
-                        <div className="h-8 w-20 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
+                    <div className="h-24 w-24 shrink-0 animate-pulse rounded-2xl bg-gray-200 dark:bg-neutral-800" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="h-6 w-48 max-w-full animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
+                      <div className="h-4 w-32 max-w-full animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
+                      <div className="flex justify-between gap-2">
+                        <div className="h-10 w-28 min-w-0 animate-pulse rounded-2xl bg-gray-200 dark:bg-neutral-800" />
+                        <div className="h-8 w-20 min-w-0 animate-pulse rounded bg-gray-200 dark:bg-neutral-800" />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex animate-pulse items-center justify-between rounded-3xl bg-gray-200 dark:bg-neutral-800 px-6 py-4">
-                <div className="h-7 w-40 rounded bg-gray-300 dark:bg-neutral-700" />
-                <div className="h-10 w-24 rounded-xl bg-gray-300 dark:bg-neutral-700" />
+              <div className="mt-4 flex animate-pulse items-center justify-between gap-3 rounded-3xl bg-gray-200 dark:bg-neutral-800 px-6 py-4">
+                <div className="h-7 w-40 min-w-0 rounded bg-gray-300 dark:bg-neutral-700" />
+                <div className="h-10 w-24 min-w-0 rounded-xl bg-gray-300 dark:bg-neutral-700" />
               </div>
             </div>
           ))}

@@ -261,13 +261,15 @@ export default function VouchersPageContent() {
                 </Button>
               </div>
 
-              <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-                <div className="flex items-center gap-1 text-xs text-muted-foreground dark:text-neutral-400">
+              <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
+                <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground dark:text-neutral-400">
                   <Clock3 size={12} />
                   <span>{getRemainingDays(offer.expiresAt)}</span>
                 </div>
 
-                <Button variant="link" size="sm" className="h-auto px-0 text-xs">
+                {/* Wraps (23 Oct 2026): as a one-line button the sentence was
+                    355 px wide and pushed the page past every phone screen. */}
+                <Button variant="link" size="sm" className="h-auto min-w-0 shrink whitespace-normal px-0 text-right text-xs">
                   {t("termsAndConditions")}
                 </Button>
               </div>

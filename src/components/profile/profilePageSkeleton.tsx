@@ -1,15 +1,18 @@
+// Placeholder bars are capped by their container (max-w-full, 23 Oct 2026):
+// fixed widths wider than a 320–360 px phone made the page scroll sideways
+// while it loaded.
 export default function ProfilePageSkeleton() {
   return (
     <section className="bg-[#f7f7f7] dark:bg-neutral-950 min-h-screen p-4 md:p-6 animate-pulse transition-colors duration-200">
       <div className="mx-auto max-w-7xl">
-        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
           {/* Left Side */}
           <div className="space-y-4">
             <div className="rounded-xl bg-card p-6 shadow-sm border border-border">
               <div className="flex flex-col items-center">
                 <div className="h-24 w-24 rounded-full bg-gray-200 dark:bg-neutral-800" />
-                <div className="mt-4 h-6 w-40 rounded bg-gray-200 dark:bg-neutral-800" />
-                <div className="mt-3 h-4 w-56 rounded bg-gray-200 dark:bg-neutral-800" />
+                <div className="mt-4 h-6 w-40 rounded bg-gray-200 dark:bg-neutral-800 max-w-full" />
+                <div className="mt-3 h-4 w-56 rounded bg-gray-200 dark:bg-neutral-800 max-w-full" />
                 <div className="mt-4 h-12 w-full rounded-lg bg-gray-200 dark:bg-neutral-800" />
               </div>
             </div>
@@ -42,11 +45,11 @@ export default function ProfilePageSkeleton() {
                     key={item}
                     className="flex items-center justify-between border-b border-border p-4"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-full bg-gray-200 dark:bg-neutral-800" />
-                      <div>
+                    <div className="flex min-w-0 items-center gap-4">
+                      <div className="h-12 w-12 shrink-0 rounded-full bg-gray-200 dark:bg-neutral-800" />
+                      <div className="min-w-0">
                         <div className="h-4 w-32 rounded bg-gray-200 dark:bg-neutral-800" />
-                        <div className="mt-2 h-3 w-48 rounded bg-gray-200 dark:bg-neutral-800" />
+                        <div className="mt-2 h-3 w-48 rounded bg-gray-200 dark:bg-neutral-800 max-w-full" />
                       </div>
                     </div>
                     <div className="h-5 w-5 rounded bg-gray-200 dark:bg-neutral-800" />
@@ -56,7 +59,7 @@ export default function ProfilePageSkeleton() {
             </div>
 
             <div>
-              <div className="mb-3 h-4 w-40 rounded bg-gray-200 dark:bg-neutral-800" />
+              <div className="mb-3 h-4 w-40 rounded bg-gray-200 dark:bg-neutral-800 max-w-full" />
 
               <div className="grid gap-4 md:grid-cols-2">
                 {[1, 2, 3, 4, 5, 6].map((item) => (
