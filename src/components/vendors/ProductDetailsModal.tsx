@@ -28,7 +28,7 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
 import { currencySymbol } from "@/lib/currency";
 import type { ProductSdr } from "@/types/sdr";
-import { productDeposit } from "@/lib/sdr";
+import { addonDeposit, productDeposit } from "@/lib/sdr";
 import {
   applyProductDiscount,
   formatDiscountValue,
@@ -119,6 +119,8 @@ interface AddonOption {
   price: number;
   tax?: { taxRate: number };
   isActive?: boolean;
+  /** Container deposit — read through `addonDeposit`. */
+  sdr?: ProductSdr;
 }
 
 interface AddonGroup {
@@ -437,6 +439,13 @@ export default function ProductDetailsModal({
   // Container deposit (SDR) per item. Charged at checkout, not in the cart:
   // the button keeps the food total and the line under it names the deposit.
   const depositPerItem = productDeposit(product);
+  // Add-ons carry their own deposit, per add-on unit (not per product).
+  const addonsDeposit = addonGroups.reduce(
+    (sum, g) =>
+      sum + g.options.reduce((s, o) => s + (addonQty[o.sku] || 0) * addonDeposit(o), 0),
+    0,
+  );
+  const depositTotal = depositPerItem * quantity + addonsDeposit;
 
   const description =
     product?.description || t("freshlyPreparedWithPremiumIngredients");
@@ -847,9 +856,20 @@ export default function ProductDetailsModal({
                           >
                             {group.options.map((opt) => {
                               const qty = addonQty[opt.sku] || 0;
+                              const optDeposit = addonDeposit(opt);
                               const name = (
-                                <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900 dark:text-neutral-100">
-                                  {opt.name}
+                                <span className="min-w-0 flex-1 text-left">
+                                  <span className="block truncate text-sm font-medium text-gray-900 dark:text-neutral-100">
+                                    {opt.name}
+                                  </span>
+                                  {optDeposit > 0 && (
+                                    <span
+                                      className="block text-xs font-medium text-muted-foreground dark:text-neutral-400"
+                                      title={t("sdrExplanation")}
+                                    >
+                                      +{formatPrice(optDeposit, currency)} {t("sdrDepositShort")}
+                                    </span>
+                                  )}
                                 </span>
                               );
                               // A free add-on (€0) says "Free"/"Grátis"; picking and
@@ -1000,10 +1020,10 @@ export default function ProductDetailsModal({
             </div>
             <p className="mt-2 text-center text-xs text-gray-500 dark:text-neutral-400">
               {t("inclVat")} -&nbsp;{formatPrice(vatAmount, currency)}
-              {depositPerItem > 0 && (
+              {depositTotal > 0 && (
                 <>
                   {" · "}
-                  {t("sdrPlusDeposit")}&nbsp;{formatPrice(depositPerItem * quantity, currency)}
+                  {t("sdrPlusDeposit")}&nbsp;{formatPrice(depositTotal, currency)}
                 </>
               )}
             </p>

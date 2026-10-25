@@ -2,7 +2,8 @@ import axios from "axios";
 import { apiClient, getApiErrorMessage } from "./apiClient";
 import { resolveLocalized, type Lang, type LocalizedField } from "./localizedField";
 import { getServiceChargeGross } from "./vat";
-import { lineDeposit, orderDepositTotal } from "./sdr";
+import { addonLineDeposit, lineDeposit, orderDepositTotal } from "./sdr";
+import type { LineSdr } from "@/types/sdr";
 import { useStore } from "@/stores/translationStore";
 
 /** The `t` from `useTranslation`, passed in because this is not a component. */
@@ -30,6 +31,8 @@ interface InvoiceAddon {
   name?: LocalizedField;
   quantity?: number;
   lineTotal?: number;
+  /** Its container deposit, counted into the line's by `lineDeposit`. */
+  sdr?: LineSdr;
 }
 
 interface InvoiceItem {
@@ -436,6 +439,17 @@ export async function downloadInvoice(
       const addonQty = addon.quantity ?? 0;
       const label = `+ ${resolveAddonName(addon.name, lang)}${addonQty > 1 ? ` x${addonQty}` : ""}`;
       doc.text(label, xItem + 2, rowY);
+      // An SDR add-on names its own share of the line's deposit note below.
+      const addonDeposit = addonLineDeposit(addon);
+      if (addonDeposit.total > 0) {
+        setColor(GRAY);
+        doc.text(
+          `  · +€${amount(addonDeposit.total)} ${t("sdrDepositShort")}`,
+          xItem + 2 + doc.getTextWidth(label),
+          rowY,
+        );
+        setColor(BRAND_DEEP);
+      }
       money(addon.lineTotal, xTotal, rowY);
     });
 

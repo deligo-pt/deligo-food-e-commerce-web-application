@@ -56,7 +56,8 @@ import { vendorRouteId } from "@/lib/vendorId";
 import { formatPickupMoment } from "@/lib/pickupTime";
 import OrderMap from "./OrderMap/OrderMap";
 import OrderStatusAnimation from "./OrderStatusAnimation";
-import { lineDeposit, orderDepositTotal } from "@/lib/sdr";
+import { addonLineDeposit, lineDeposit, orderDepositTotal } from "@/lib/sdr";
+import { resolveAddonName } from "@/lib/cart";
 import DeliveryCodeCard from "./DeliveryCodeCard";
 import PickupCodeCard from "./PickupCodeCard";
 import PickupLocationCard from "./PickupLocationCard";
@@ -812,26 +813,57 @@ export default function TrackOrder() {
                 </div>
                 <div className="space-y-2">
                   {items.map((item: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-primary dark:text-pink-400 font-bold">
-                          {item.itemSummary?.quantity}x
-                        </span>
-                        <span className="text-foreground dark:text-neutral-300 font-semibold">
-                          {item.name}
+                    <div key={idx}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="text-primary dark:text-pink-400 font-bold">
+                            {item.itemSummary?.quantity}x
+                          </span>
+                          <span className="text-foreground dark:text-neutral-300 font-semibold">
+                            {item.name}
+                          </span>
+                        </div>
+                        <span className="shrink-0 text-right text-foreground dark:text-neutral-250 font-bold">
+                          €{item.itemSummary?.grandTotal?.toFixed(2)}
+                          {lineDeposit(item).total > 0 && (
+                            <span className="block text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
+                              +€{lineDeposit(item).total.toFixed(2)} {t("sdrDepositShort")}{" "}
+                              <span className="whitespace-nowrap">
+                                ({lineDeposit(item).containers} × €{lineDeposit(item).unit.toFixed(2)})
+                              </span>
+                            </span>
+                          )}
                         </span>
                       </div>
-                      <span className="text-right text-foreground dark:text-neutral-250 font-bold">
-                        €{item.itemSummary?.grandTotal?.toFixed(2)}
-                        {lineDeposit(item).total > 0 && (
-                          <span className="block text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
-                            +€{lineDeposit(item).total.toFixed(2)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × €{lineDeposit(item).unit.toFixed(2)})
-                          </span>
-                        )}
-                      </span>
+                      {/* The add-ons inside the line's total, as on the payment
+                          page; an SDR add-on names its own share of the deposit. */}
+                      {item.addons?.length > 0 && (
+                        <ul className="mt-1 space-y-0.5 pl-7">
+                          {item.addons.map((addon: any, addonIdx: number) => {
+                            const addonDeposit = addonLineDeposit(addon);
+                            return (
+                              <li
+                                key={addon.sku ?? addonIdx}
+                                className="flex items-baseline gap-2 text-xs text-muted-foreground dark:text-neutral-400"
+                              >
+                                <span className="text-primary dark:text-pink-400">+</span>
+                                <span className="min-w-0">
+                                  {resolveAddonName(addon.name, lang === "pt" ? "pt" : "en")}
+                                  {addon.quantity > 1 ? ` ×${addon.quantity}` : ""}
+                                  {addonDeposit.total > 0 && (
+                                    <span className="whitespace-nowrap" title={t("sdrExplanation")}>
+                                      {" · "}+€{addonDeposit.total.toFixed(2)} {t("sdrDepositShort")}
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="ml-auto shrink-0">
+                                  {addon.lineTotal > 0 ? `€${addon.lineTotal.toFixed(2)}` : t("addonFree")}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
                     </div>
                   ))}
                 </div>

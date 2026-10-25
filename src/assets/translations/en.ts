@@ -261,6 +261,7 @@ const en = {
   // values is a swap nobody would ever notice — in pt they differ only in case.
   pickupSheetTitle: "Pick-up time",
   timeSlot: "Time slot",
+  pickupTimesInLisbon: "Times shown in Portugal time (Lisbon).",
   tomorrow: "Tomorrow",
   selectPickupDay: "Choose a day",
   noSlotsToday: "Closed for the rest of today",

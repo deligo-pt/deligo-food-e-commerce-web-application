@@ -263,6 +263,7 @@ const pt = {
   // Ver a nota em en.ts: nome pela função, não pelo texto.
   pickupSheetTitle: "Hora de recolha",
   timeSlot: "Intervalo",
+  pickupTimesInLisbon: "Horário de Portugal (Lisboa).",
   tomorrow: "Amanhã",
   selectPickupDay: "Escolha um dia",
   noSlotsToday: "Fechado para o resto do dia",

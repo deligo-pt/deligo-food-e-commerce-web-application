@@ -79,6 +79,32 @@ section("§1 lib/sdr.ts — every shape of \"no deposit\" reads as none");
   );
 }
 
+section("§1b add-on deposits (25 Oct 2026) — counted into the line, per add-on unit");
+{
+  const { productDeposit, addonDeposit, lineDeposit } = sdr;
+  // Shapes from the test API: product "Banana" ×2 with the "Tissue" add-on
+  // "Medium" ×3, every item one container at €0.10.
+  const cartLine = {
+    sdr: { applicable: true, containerCount: 1, totalContainers: 2, unitDeposit: 0.1, depositPerUnit: 0.1, lineTotal: 0.2 },
+    addons: [{ quantity: 3, sdr: { applicable: true, containerCount: 1, totalContainers: 3, unitDeposit: 0.1, depositPerUnit: 0.1, lineTotal: 0.3 } }],
+  };
+  const checkoutLine = {
+    sdr: { applicable: true, containerCount: 1, containers: 2, unitDeposit: 0.1, lineTotal: 0.2 },
+    addons: [{ quantity: 3, sdr: { applicable: true, containerCount: 1, unitDeposit: 0.1, lineTotal: 0.3 } }],
+  };
+  check("cart line: product + add-on", same(lineDeposit(cartLine), { unit: 0.1, total: 0.5, containers: 5 }), JSON.stringify(lineDeposit(cartLine)));
+  check("checkout line: add-on containers derived", same(lineDeposit(checkoutLine), { unit: 0.1, total: 0.5, containers: 5 }), JSON.stringify(lineDeposit(checkoutLine)));
+  check(
+    "add-on deposit on a product without one",
+    same(lineDeposit({ sdr: { applicable: false }, addons: [checkoutLine.addons[0], { sdr: { applicable: false } }] }), { unit: 0.1, total: 0.3, containers: 3 }),
+  );
+  check("line without add-ons is unchanged", same(lineDeposit({ sdr: checkoutLine.sdr }), { unit: 0.1, total: 0.2, containers: 2 }));
+  check("add-on option, 1 container", addonDeposit({ sdr: { applicable: true, containerCount: 1, unitDeposit: 0.1, depositAmount: 0.1 } }) === 0.1);
+  check("add-on option, 6 containers", addonDeposit({ sdr: { applicable: true, containerCount: 6, unitDeposit: 0.1 } }) === 0.6);
+  check("add-on option, SDR off", addonDeposit({ sdr: { applicable: false, containerCount: 1, unitDeposit: 0.1 } }) === 0);
+  check("product with containerCount 2", productDeposit({ sdr: { applicable: true, containerCount: 2, unitDeposit: 0.1, depositAmount: 0.1 } }) === 0.2);
+}
+
 // ─── screens read through lib/sdr ───────────────────────────────────────────
 const files = {
   modal: stripComments(read("src/components/vendors/ProductDetailsModal.tsx")),
@@ -100,9 +126,20 @@ section("§2 every screen reads the deposit through lib/sdr.ts");
   }
 }
 
+section("§2b add-ons named with their own deposit (order page, invoice)");
+{
+  const { addonLineDeposit } = sdr;
+  check("an add-on line's own deposit", same(addonLineDeposit({ sdr: { applicable: true, containerCount: 1, unitDeposit: 0.1, lineTotal: 0.1 } }), { unit: 0.1, total: 0.1, containers: 1 }));
+  check("an add-on without SDR has none", addonLineDeposit({ sdr: { applicable: false } }).total === 0 && addonLineDeposit(undefined).total === 0);
+  check("order page lists each item's add-ons", /item\.addons\.map\(/.test(files.order) && /resolveAddonName\(addon\.name/.test(files.order));
+  check("order page: an SDR add-on shows its deposit", /addonLineDeposit\(addon\)/.test(files.order));
+  check("order page: the container count never splits", /whitespace-nowrap">\s*\(\{lineDeposit\(item\)\.containers\}/.test(files.order));
+  check("invoice: an SDR add-on row shows its deposit", /addonLineDeposit\(addon\)/.test(files.invoice));
+}
+
 section("§3 🔴 cart totals exclude the deposit — shown beside, never folded in");
 {
-  check("product modal: Add to Cart keeps the food total", /const total = subtotal;/.test(files.modal) && !/total\s*\+\s*depositPerItem|depositPerItem\s*\*\s*quantity\s*\+/.test(files.modal));
+  check("product modal: Add to Cart keeps the food total", /const total = subtotal;/.test(files.modal) && !/(total|subtotal)\s*\+\s*(depositPerItem|depositTotal|addonsDeposit)/.test(files.modal));
   check("product modal: says \"plus deposit\" under the button", /t\("sdrPlusDeposit"\)/.test(files.modal));
   check("checkout step: Final Price is the cart's own total", /€\{summary\.total\.toFixed\(2\)\}/.test(files.checkout));
   // Exactly the items' own total — any other right-hand side (a deposit added
