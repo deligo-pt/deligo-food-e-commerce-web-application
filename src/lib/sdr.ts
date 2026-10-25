@@ -10,20 +10,38 @@
  * - the **cart** `grandTotal` does NOT include the deposit — show it beside;
  * - the **checkout / order** `payoutSummary.grandTotal` DOES — never add it again.
  *
+ * Add-on options carry their own deposit (25 Oct 2026): each add-on line has
+ * an `sdr` beside the product's, charged per add-on unit × its containers and
+ * NOT multiplied by the product quantity. A line's deposit is the two together.
+ *
  * Pure, no imports, so `pnpm verify:sdr` runs it directly.
  */
 
-type ProductLike = {
-  sdr?: { applicable?: boolean; depositAmount?: number } | null;
+type ItemSdr = {
+  applicable?: boolean;
+  /** Containers in one unit (a 6-pack carries 6). */
+  containerCount?: number;
+  /** Per container. */
+  unitDeposit?: number;
+  /** Older shape: the deposit for one unit. */
+  depositAmount?: number;
+} | null | undefined;
+
+type ProductLike = { sdr?: ItemSdr } | null | undefined;
+
+type LineSdrLike = {
+  applicable?: boolean;
+  /** Checkout and orders. */
+  containers?: number;
+  /** The cart. */
+  totalContainers?: number;
+  unitDeposit?: number;
+  lineTotal?: number;
 } | null | undefined;
 
 type LineLike = {
-  sdr?: {
-    applicable?: boolean;
-    containers?: number;
-    unitDeposit?: number;
-    lineTotal?: number;
-  } | null;
+  sdr?: LineSdrLike;
+  addons?: ({ sdr?: LineSdrLike } | null | undefined)[] | null;
 } | null | undefined;
 
 type TotalsLike = {
@@ -38,10 +56,23 @@ function money(value: unknown): number {
     : 0;
 }
 
+/** Deposit for one unit of an item: per container × its containers, or 0. */
+function itemDeposit(sdr: ItemSdr): number {
+  if (sdr?.applicable !== true) return 0;
+  const perContainer = money(sdr.unitDeposit);
+  if (perContainer === 0) return money(sdr.depositAmount);
+  const count = typeof sdr.containerCount === "number" && sdr.containerCount >= 1 ? sdr.containerCount : 1;
+  return money(perContainer * count);
+}
+
 /** Per-unit deposit on a product, or 0. Display only — the server prices it. */
 export function productDeposit(product: ProductLike): number {
-  const sdr = product?.sdr;
-  return sdr?.applicable === true ? money(sdr.depositAmount) : 0;
+  return itemDeposit(product?.sdr);
+}
+
+/** Per-unit deposit on an add-on option (`GET /add-ons/:id`), or 0. */
+export function addonDeposit(option: { sdr?: ItemSdr } | null | undefined): number {
+  return itemDeposit(option?.sdr);
 }
 
 export interface LineDeposit {
@@ -55,18 +86,38 @@ export interface LineDeposit {
 
 const NO_LINE_DEPOSIT: LineDeposit = { unit: 0, total: 0, containers: 0 };
 
-/** A cart, checkout or order line's deposit; all zeros when it has none. */
-export function lineDeposit(line: LineLike): LineDeposit {
-  const sdr = line?.sdr;
+/** One `sdr` block (the product's or an add-on's) on a line. */
+function sdrPart(sdr: LineSdrLike): LineDeposit {
   if (sdr?.applicable !== true) return NO_LINE_DEPOSIT;
   const unit = money(sdr.unitDeposit);
   const total = money(sdr.lineTotal);
   if (unit === 0 || total === 0) return NO_LINE_DEPOSIT;
+  const counted = sdr.containers ?? sdr.totalContainers;
   const containers =
-    typeof sdr.containers === "number" && sdr.containers > 0
-      ? sdr.containers
-      : Math.round(total / unit);
+    typeof counted === "number" && counted > 0 ? counted : Math.round(total / unit);
   return { unit, total, containers };
+}
+
+/** One add-on line's own deposit (it is also inside `lineDeposit`'s total). */
+export function addonLineDeposit(addon: { sdr?: LineSdrLike } | null | undefined): LineDeposit {
+  return sdrPart(addon?.sdr);
+}
+
+/**
+ * A cart, checkout or order line's deposit — the product's and its add-ons'
+ * together; all zeros when it has none. One deposit is in force at a time, so
+ * every part shares the per-container `unit`.
+ */
+export function lineDeposit(line: LineLike): LineDeposit {
+  const parts = [line?.sdr, ...(line?.addons ?? []).map((addon) => addon?.sdr)]
+    .map(sdrPart)
+    .filter((part) => part.total > 0);
+  if (parts.length === 0) return NO_LINE_DEPOSIT;
+  return {
+    unit: parts[0].unit,
+    total: money(parts.reduce((sum, part) => sum + part.total, 0)),
+    containers: parts.reduce((sum, part) => sum + part.containers, 0),
+  };
 }
 
 /**

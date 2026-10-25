@@ -1,10 +1,13 @@
+// Placeholder bars are capped by their container (max-w-full, 23 Oct 2026):
+// fixed widths wider than a 320–360 px phone made the page scroll sideways
+// while it loaded.
 export default function VouchersSkeleton() {
   return (
     <section className="w-full bg-[#f8f9fa] dark:bg-neutral-950 px-8 py-12 animate-pulse transition-colors duration-200 min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <div className="mb-3 h-10 w-48 rounded bg-gray-200 dark:bg-neutral-800" />
-        <div className="h-4 w-80 rounded bg-gray-200 dark:bg-neutral-800" />
+        <div className="mb-3 h-10 w-48 rounded bg-gray-200 dark:bg-neutral-800 max-w-full" />
+        <div className="h-4 w-80 rounded bg-gray-200 dark:bg-neutral-800 max-w-full" />
       </div>
 
       {/* Tabs */}

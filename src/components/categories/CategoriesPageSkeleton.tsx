@@ -1,6 +1,9 @@
 import { cn } from "@/lib/utils";
 import { cardVariants } from "@/components/ui/card";
 
+// Placeholder bars are capped by their container (max-w-full, 23 Oct 2026):
+// fixed widths wider than a 320–360 px phone made the page scroll sideways
+// while it loaded.
 export default function CategoriesPageSkeleton() {
   return (
     <div className="animate-pulse mx-auto w-full max-w-7xl px-4 py-8 lg:px-16">
@@ -8,9 +11,9 @@ export default function CategoriesPageSkeleton() {
       <div className="mb-8">
         <div className="mb-4 h-5 w-32 rounded bg-gray-200" />
 
-        <div className="h-10 w-64 rounded bg-gray-200" />
+        <div className="h-10 w-64 rounded bg-gray-200 max-w-full" />
 
-        <div className="mt-3 h-5 w-80 rounded bg-gray-200" />
+        <div className="mt-3 h-5 w-80 rounded bg-gray-200 max-w-full" />
       </div>
 
       {/* Categories Grid */}

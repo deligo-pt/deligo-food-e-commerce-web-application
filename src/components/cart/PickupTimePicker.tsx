@@ -267,6 +267,12 @@ export default function PickupTimePicker({
         <p className="shrink-0 px-6 text-xs font-semibold tracking-wider text-gray-400 uppercase dark:text-neutral-500">
           {t("timeSlot")}
         </p>
+        {/* The slots are Lisbon wall-clock time (see lib/pickupTime.ts), which
+            is what the backend checks — said, so a customer elsewhere does not
+            read them as their own clock. */}
+        <p className="shrink-0 px-6 pt-1 text-xs text-gray-500 dark:text-neutral-400">
+          {t("pickupTimesInLisbon")}
+        </p>
 
         {/* The only scrolling region: the day row and the confirm button stay
             put, so the customer never scrolls past the thing they came to

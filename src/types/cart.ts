@@ -10,6 +10,8 @@ export interface CartAddon {
   lineTotal: number;
   taxRate?: number;
   taxAmount?: number;
+  /** This add-on's container deposit — see `lib/sdr.ts`. */
+  sdr?: LineSdr;
 }
 
 export interface CartItem {

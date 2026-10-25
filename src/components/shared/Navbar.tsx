@@ -802,10 +802,13 @@ export default function Navbar() {
             {/* Language toggle: styled to match the Bell/Cart icon buttons so it
                 sits inline with the other actions on every screen size. */}
             <LanguageSwitcher />
+            {/* A guest has no notifications: under 360 px the bell gives its
+                room to the Login button, which otherwise pushed the page past
+                the screen (23 Oct 2026). Signed in, it always shows. */}
             <Link
               href="/notifications"
               aria-label={t("notifications")}
-              className="focus-ring relative rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:p-2"
+              className={`focus-ring relative rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:p-2 ${mounted && !isLoggedIn ? "max-[359px]:hidden" : ""}`}
             >
               <span className="relative block">
                 <Bell size={22} />
@@ -844,19 +847,26 @@ export default function Navbar() {
                 onClick={handleAccountClick}
                 disabled={isGoingToLogin}
                 aria-busy={isGoingToLogin}
-                className="focus-ring flex h-10 shrink-0 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-white/90 disabled:cursor-wait sm:h-11"
+                // Phones (23 Oct 2026): tighter, and the icon only from `sm` —
+                // with it the bar was 6 px wider than a 360 px screen.
+                className="focus-ring flex h-10 shrink-0 items-center gap-2 rounded-full bg-white px-3 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-white/90 disabled:cursor-wait sm:h-11 sm:px-4"
               >
                 {isGoingToLogin ? (
                   <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
                 ) : (
-                  <LogIn size={16} aria-hidden="true" />
+                  <LogIn size={16} aria-hidden="true" className="hidden sm:block" />
                 )}
                 {t("login")}
               </button>
             ) : (
+            // On phones only the avatar (23 Oct 2026): with the name the
+            // button was wider than the space left beside the language,
+            // bell and cart, and pushed every page past a 360 px screen
+            // (a sideways scroll bar). The name shows from `sm` up.
             <button
               onClick={handleAccountClick}
-              className="focus-ring flex min-w-0 items-center gap-2 rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:gap-3"
+              aria-label={mounted && isLoggedIn ? firstName || t("account") : undefined}
+              className="focus-ring flex shrink-0 items-center gap-2 rounded-full p-1.5 text-white transition-colors hover:bg-white/10 sm:min-w-0 sm:shrink sm:gap-3"
             >
               <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-white/20 bg-[#edeeef] flex items-center justify-center sm:h-9 sm:w-9">
                 {!mounted ? (
@@ -898,13 +908,13 @@ export default function Navbar() {
                 )}
               </div>
               {mounted ? (
-                <span className="min-w-0 max-w-[84px] truncate text-sm font-semibold leading-5 sm:max-w-[140px]">
+                <span className="hidden min-w-0 truncate text-sm font-semibold leading-5 sm:block sm:max-w-[140px]">
                   {firstName || t("account")}
                 </span>
               ) : (
                 // Session not known yet: a bar, not "Account", so a guest
                 // never sees "Account" flash before "Login".
-                <span aria-hidden="true" className="h-4 w-14 rounded-full bg-white/30" />
+                <span aria-hidden="true" className="hidden h-4 w-14 rounded-full bg-white/30 sm:block" />
               )}
             </button>
             )}
