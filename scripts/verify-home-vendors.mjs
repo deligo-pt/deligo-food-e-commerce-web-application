@@ -124,8 +124,30 @@ console.log("\n🔴 The section shows them all, with Load more");
 }
 
 {
-  const { deliveryEstimateText } = await import(src("lib/deliveryEstimate.ts"));
-  const t = (key) => ({ deliveryMinutesRange: "{min}–{max} min", deliveryMinutes: "{min} min" })[key] ?? key;
+  const { deliveryEstimateText, formatMinutes } = await import(src("lib/deliveryEstimate.ts"));
+  const en = await import(src("assets/translations/en.ts"));
+  const pt = await import(src("assets/translations/pt.ts"));
+  const dict = (mod) => mod.default ?? mod.en ?? mod.pt ?? Object.values(mod)[0];
+  const t = (key) => dict(en)[key] ?? key;
+  const tPt = (key) => dict(pt)[key] ?? key;
+  // 26 Oct 2026: long estimates read in hours, days, weeks — same numbers.
+  const cases = [
+    [[45, 55], "45–55 min"],
+    [[50, 70], "50 min – 1h 10m"],
+    [[165, 175], "2h 45m – 2h 55m"],
+    [[180, 190], "3h – 3h 10m"],
+    [[120, 120], "2h"],
+    [[1500, 1560], "1–2 days"],
+    [[1440, 1440], "1 day"],
+    [[2880, 2880], "2 days"],
+    [[10080, 20000], "1–2 weeks"],
+  ];
+  for (const [[min, max], want] of cases) {
+    const got = deliveryEstimateText({ minMinutes: min, maxMinutes: max }, t);
+    check(`${min}–${max} min reads "${want}"`, got === want, got);
+  }
+  check("PT: hours and days", deliveryEstimateText({ minMinutes: 165, maxMinutes: 175 }, tPt) === "2h 45min – 2h 55min" && deliveryEstimateText({ minMinutes: 1500, maxMinutes: 1560 }, tPt) === "1–2 dias", deliveryEstimateText({ minMinutes: 165, maxMinutes: 175 }, tPt));
+  check("one duration: 13 min, 1h 5m", formatMinutes(13, t) === "13 min" && formatMinutes(65, t) === "1h 5m");
   check(
     "the estimate reads as a range, or one number when both ends agree",
     deliveryEstimateText({ minMinutes: 30, maxMinutes: 40 }, t) === "30–40 min" &&

@@ -65,6 +65,8 @@ import {
 } from "@/lib/pickupTime";
 import { Button } from "@/components/ui/button";
 import { lineDeposit } from "@/lib/sdr";
+import { subtotalBreakdown } from "@/lib/vatBreakdown";
+import VatInfoButton from "@/components/shared/VatInfoButton";
 
 interface CheckoutPageProps {
   vendorId: string;
@@ -461,6 +463,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       { originalPrice: 0, discount: 0, vat: 0, total: 0, deposit: 0 },
     );
   }, [vendorItems]);
+  // The ⓘ breakdown of `summary.vat`: products and add-ons only — the fees
+  // are priced at the payment step, which the popup says.
+  const vatBreakdown = subtotalBreakdown({ items: vendorItems, lang, t, totalLabel: t("finalPrice") });
 
   const executeSync = async (key: string, item: any) => {
     const targetQty = pendingQtyRef.current[key];
@@ -1143,8 +1148,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                     <span className="block text-xl font-bold text-gray-900 dark:text-neutral-50">
                       {t("finalPrice")}
                     </span>
-                    <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-neutral-400">
+                    <span className="mt-0.5 flex items-center gap-1 text-xs font-normal text-gray-500 dark:text-neutral-400">
                       ({t("inclVat")} -&nbsp;€{summary.vat.toFixed(2)})
+                      <VatInfoButton breakdown={vatBreakdown} label={t("vatBreakdownOpen")} />
                     </span>
                   </div>
                   <span className="shrink-0 whitespace-nowrap text-2xl font-extrabold text-primary dark:text-pink-400">

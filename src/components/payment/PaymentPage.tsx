@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
+import { formatMinutes } from "@/lib/deliveryEstimate";
 import {
   Home,
   Store,
@@ -75,6 +76,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { LineSdr, OrderCalculationSdr, PayoutSdr } from "@/types/sdr";
 import { lineDeposit, orderDepositTotal } from "@/lib/sdr";
+import { deliveryBreakdown, subtotalBreakdown } from "@/lib/vatBreakdown";
+import VatInfoButton from "@/components/shared/VatInfoButton";
 
 interface CheckoutItem {
   productId: string;
@@ -89,7 +92,8 @@ interface CheckoutItem {
     /** The offer's discount on this whole line. */
     totalPromoDiscount?: number;
   };
-  productPricing: { priceAfterProductDiscount: number };
+  /** `taxRate` (VAT %) is read by the ⓘ breakdown. */
+  productPricing: { priceAfterProductDiscount: number; taxRate?: number };
   addons?: CartAddon[];
   /** A free item the offer added to the checkout. It is a real line with a
    *  price of zero — the discount that pays for it is in `totalOfferDiscount`
@@ -976,10 +980,12 @@ export default function PaymentPage() {
           // where it only waits in the pending order.
         });
 
-        // Straight to the orders list, not the tracking page. Nothing is read
-        // out of the response, which also sidesteps its undocumented shape —
-        // the spec never says whether the id comes back as `orderId` or `_id`.
-        router.replace("/orders");
+        // The same success screen every other method returns to (26 Oct
+        // 2026; this used to jump to the orders list with no confirmation).
+        // It asks `/action`, which answers PAYMENT_COMPLETED with the order's
+        // id for a paid checkout, so nothing is read out of this response —
+        // its shape is undocumented.
+        router.replace(`/payment-success?summaryId=${encodeURIComponent(summary._id)}`);
         return;
       }
 
@@ -1073,6 +1079,11 @@ export default function PaymentPage() {
   // `delivery.vatAmount` for the (gross) delivery charge.
   const subtotalVat = orderCalculation.totalTaxAmount;
   const deliveryVat = getDeliveryVat(delivery);
+  // The service fee is shown inside the Subtotal (27 Oct 2026), not as a row
+  // of its own: the Subtotal ⓘ breaks it out (net + VAT), so the row, its
+  // "Incl. VAT" and the popup all describe the same figure.
+  const subtotalShown = subtotal + serviceCharge;
+  const subtotalShownVat = subtotalVat + serviceChargeVat;
 
   /**
    * Whether this order is collected by the customer rather than delivered.
@@ -1083,6 +1094,17 @@ export default function PaymentPage() {
    * was actually booked.
    */
   const isPickup = summary.fulfillmentType === "PICKUP";
+
+  // The two ⓘ: Subtotal (items' VAT + the service fee) and Delivery fee.
+  const vatBreakdown = subtotalBreakdown({
+    items,
+    lang: lang === "pt" ? "pt" : "en",
+    t,
+    service: { gross: serviceCharge, vat: serviceChargeVat, rate: orderCalculation.serviceChargeVatRate },
+    voucherDiscount: offerDiscount,
+    pageSubtotal: subtotal + serviceCharge,
+  });
+  const deliveryInfo = deliveryBreakdown({ delivery, t });
   // The notes left on the cart page, shown back read-only: the checkout
   // already carries them, and no call edits them in place (see
   // `lib/deliveryNotes.ts`). "Edit" goes back to the cart page.
@@ -1305,7 +1327,7 @@ export default function PaymentPage() {
                           {hasDeliveryDistance && hasDeliveryEta && " • "}
                           {hasDeliveryEta && (
                             <>
-                              {t("estimatedTime")}: {delivery.estimatedTime} min
+                              {t("estimatedTime")}: {formatMinutes(delivery.estimatedTime, t)}
                             </>
                           )}
                         </p>
@@ -1467,31 +1489,16 @@ export default function PaymentPage() {
                   <span className="min-w-0 text-gray-500 dark:text-neutral-400">
                     {t("subtotal")}
                     <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
-                      ({t("inclVat")} -&nbsp;€{subtotalVat.toFixed(2)})
+                      ({t("inclVat")} -&nbsp;€{subtotalShownVat.toFixed(2)})
+                    </span>
+                    <span className="ml-1 inline-flex align-middle">
+                      <VatInfoButton breakdown={vatBreakdown} label={t("vatBreakdownOpen")} />
                     </span>
                   </span>
                   <span className="shrink-0 whitespace-nowrap font-semibold text-gray-900 dark:text-neutral-50">
-                    €{subtotal.toFixed(2)}
+                    €{subtotalShown.toFixed(2)}
                   </span>
                 </div>
-                {/* The service fee is part of `payoutSummary.grandTotal`, so it
-                    must be shown or the breakdown won't reconcile with the
-                    amount charged. */}
-                {serviceCharge > 0 && (
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 text-gray-500 dark:text-neutral-400">
-                      {t("serviceCharge")}
-                      {serviceChargeVat > 0 && (
-                        <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
-                          ({t("inclVat")} -&nbsp;€{serviceChargeVat.toFixed(2)})
-                        </span>
-                      )}
-                    </span>
-                    <span className="shrink-0 whitespace-nowrap font-semibold text-gray-900 dark:text-neutral-50">
-                      €{serviceCharge.toFixed(2)}
-                    </span>
-                  </div>
-                )}
                 {/* Dropped entirely on pickup rather than shown as "Free".
                     The backend does send 0, so the row would render — but
                     "Delivery fee: Free" claims there is a delivery that was not
@@ -1502,9 +1509,14 @@ export default function PaymentPage() {
                     <span className="min-w-0 text-gray-500 dark:text-neutral-400">
                       {t("deliveryFee")}
                       {delivery.totalDeliveryCharge > 0 && (
-                        <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
-                          ({t("inclVat")} -&nbsp;€{deliveryVat.toFixed(2)})
-                        </span>
+                        <>
+                          <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
+                            ({t("inclVat")} -&nbsp;€{deliveryVat.toFixed(2)})
+                          </span>
+                          <span className="ml-1 inline-flex align-middle">
+                            <VatInfoButton breakdown={deliveryInfo} label={t("deliveryBreakdownOpen")} />
+                          </span>
+                        </>
                       )}
                     </span>
                     <span className="shrink-0 whitespace-nowrap font-semibold text-green-600 dark:text-green-400">

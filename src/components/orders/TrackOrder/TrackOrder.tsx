@@ -58,6 +58,8 @@ import OrderMap from "./OrderMap/OrderMap";
 import OrderStatusAnimation from "./OrderStatusAnimation";
 import { addonLineDeposit, lineDeposit, orderDepositTotal } from "@/lib/sdr";
 import { resolveAddonName } from "@/lib/cart";
+import { deliveryBreakdown, subtotalBreakdown } from "@/lib/vatBreakdown";
+import VatInfoButton from "@/components/shared/VatInfoButton";
 import DeliveryCodeCard from "./DeliveryCodeCard";
 import PickupCodeCard from "./PickupCodeCard";
 import PickupLocationCard from "./PickupLocationCard";
@@ -543,6 +545,20 @@ export default function TrackOrder() {
   // VAT embedded in the items subtotal — shown inline on the subtotal row,
   // matching the app, rather than as a standalone line.
   const subtotalVat = calc.totalTaxAmount || 0;
+  // The service fee is shown inside the Subtotal, matching the payment page
+  // (27 Oct 2026): the Subtotal ⓘ breaks it out (net + VAT).
+  const subtotalShown = subtotal + serviceCharge;
+  const subtotalShownVat = subtotalVat + serviceChargeVat;
+  // The two ⓘ, from the order's own saved figures so they match the charge.
+  const vatBreakdown = subtotalBreakdown({
+    items,
+    lang: lang === "pt" ? "pt" : "en",
+    t,
+    service: { gross: serviceCharge, vat: serviceChargeVat, rate: calc.serviceChargeVatRate },
+    voucherDiscount: offerDiscount,
+    pageSubtotal: subtotalShown,
+  });
+  const deliveryInfo = deliveryBreakdown({ delivery: order.delivery || {}, t });
 
   const steps = getOrderStep(order, t, getTerminalReason(order), isPickup);
   // The order's own step, with the same label and line (and a vendor's
@@ -838,7 +854,7 @@ export default function TrackOrder() {
                       {/* The add-ons inside the line's total, as on the payment
                           page; an SDR add-on names its own share of the deposit. */}
                       {item.addons?.length > 0 && (
-                        <ul className="mt-1 space-y-0.5 pl-7">
+                        <ul className="mt-1 space-y-1 pl-8">
                           {item.addons.map((addon: any, addonIdx: number) => {
                             const addonDeposit = addonLineDeposit(addon);
                             return (
@@ -897,10 +913,13 @@ export default function TrackOrder() {
                     <span className="min-w-0">
                       {t("subtotal")}
                       <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
-                        ({t("inclVat")}&nbsp;€{subtotalVat.toFixed(2)})
+                        ({t("inclVat")}&nbsp;€{subtotalShownVat.toFixed(2)})
+                      </span>
+                      <span className="ml-1 inline-flex align-middle">
+                        <VatInfoButton breakdown={vatBreakdown} label={t("vatBreakdownOpen")} />
                       </span>
                     </span>
-                    <span className="shrink-0 whitespace-nowrap">€{subtotal.toFixed(2)}</span>
+                    <span className="shrink-0 whitespace-nowrap">€{subtotalShown.toFixed(2)}</span>
                   </div>
                   {/* Dropped on pickup rather than shown as €0.00: there was no
                       delivery to charge for, which is a different statement
@@ -911,25 +930,17 @@ export default function TrackOrder() {
                       <span className="min-w-0">
                         {t("deliveryFee")}
                         {deliveryFee > 0 && (
-                          <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
-                            ({t("inclVat")}&nbsp;€{deliveryVat.toFixed(2)})
-                          </span>
+                          <>
+                            <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
+                              ({t("inclVat")}&nbsp;€{deliveryVat.toFixed(2)})
+                            </span>
+                            <span className="ml-1 inline-flex align-middle">
+                              <VatInfoButton breakdown={deliveryInfo} label={t("deliveryBreakdownOpen")} />
+                            </span>
+                          </>
                         )}
                       </span>
                       <span className="shrink-0 whitespace-nowrap">€{deliveryFee.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {serviceCharge > 0 && (
-                    <div className="flex items-baseline justify-between gap-3 text-muted-foreground dark:text-neutral-400">
-                      <span className="min-w-0">
-                        {t("serviceCharge")}
-                        {serviceChargeVat > 0 && (
-                          <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
-                            ({t("inclVat")}&nbsp;€{serviceChargeVat.toFixed(2)})
-                          </span>
-                        )}
-                      </span>
-                      <span className="shrink-0 whitespace-nowrap">€{serviceCharge.toFixed(2)}</span>
                     </div>
                   )}
                   {depositTotal > 0 && (

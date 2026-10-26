@@ -1,5 +1,6 @@
 "use client";
 
+import { formatMinutes } from "@/lib/deliveryEstimate";
 import {
   ArrowLeft,
   Share2,
@@ -370,8 +371,9 @@ export default function VendorDetailsModal({
                     {t("preparationTime")}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-neutral-400">
-                    {vendorData?.businessDetails?.preparationTimeMinutes ?? "—"}{" "}
-                    {t("minutes")}
+                    {typeof vendorData?.businessDetails?.preparationTimeMinutes === "number"
+                      ? formatMinutes(vendorData.businessDetails.preparationTimeMinutes, t)
+                      : "—"}
                   </p>
                 </div>
               </div>

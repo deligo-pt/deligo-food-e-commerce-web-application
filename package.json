@@ -39,7 +39,8 @@
     "verify:branch": "node --no-warnings scripts/verify-branch.mjs",
     "verify:product-image": "node --no-warnings scripts/verify-product-image.mjs",
     "verify:home-vendors": "node --no-warnings scripts/verify-home-vendors.mjs",
-    "verify:sdr": "node --no-warnings scripts/verify-sdr.mjs"
+    "verify:sdr": "node --no-warnings scripts/verify-sdr.mjs",
+    "verify:vat-breakdown": "node --no-warnings scripts/verify-vat-breakdown.mjs"
   },
   "dependencies": {
     "@lottiefiles/dotlottie-react": "0.19.16",
