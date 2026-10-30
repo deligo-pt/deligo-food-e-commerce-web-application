@@ -362,6 +362,7 @@ const pt = {
   free: "GRÁTIS",
   // Preço de um complemento a 0 € (modal, checkout, resumo do pagamento).
   addonFree: "Grátis",
+  addonRequiredHint: "Obrigatório: pelo menos {min} deste grupo tem de ficar",
 
   applyVoucherCode: "Aplicar código promocional",
   enterVoucherCode: "Digite o código promocional",
@@ -1853,7 +1854,7 @@ const pt = {
   goBack: "Voltar",
   referenceLabel: "Referência",
   weekendSpecial: "Especial de Fim de Semana",
-  weekendSpecialOffer: "€10 de desconto em pedidos acima de €50",
+  weekendSpecialOffer: "10 € de desconto em pedidos acima de 50 €",
   unlockExclusiveFeatures: "Desbloqueie Funcionalidades Exclusivas",
   unlockExclusiveFeaturesDesc:
     "Utilize a aplicação regularmente e faça mais encomendas para desbloquear e aproveitar estas funcionalidades exclusivas.",

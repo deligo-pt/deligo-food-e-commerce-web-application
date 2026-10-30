@@ -70,7 +70,7 @@ for (const c of cases) {
   check("the VAT column adds up to the page's \"Incl. VAT\"", cents(b.total.vat) === cents(c.pageVat) && cents(sum(b.rows, "vat")) === cents(c.pageVat));
   if (c.voucher) {
     check("after the voucher: Price total = Subtotal − voucher", cents(b.total.price) === cents(c.pageSubtotal - c.voucher));
-    check("the voucher line quotes the page", b.voucherLine === "Subtotal €48.12 − voucher €9.60 = €38.52", b.voucherLine);
+    check("the voucher line quotes the page", b.voucherLine === "Subtotal 48.12\u00A0€ − voucher 9.60\u00A0€ = 38.52\u00A0€", b.voucherLine);
     check("and says VAT is on the discounted prices", b.notes.includes(tEn("vatAfterVoucher")));
   } else {
     check("the Price column adds up to the Subtotal row", cents(b.total.price) === cents(c.pageSubtotal));
@@ -110,8 +110,8 @@ console.log("\nthe service fee lives inside the Subtotal (payment and order page
   const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
   for (const [name, file] of [["payment page", "src/components/payment/PaymentPage.tsx"], ["order page", "src/components/orders/TrackOrder/TrackOrder.tsx"]]) {
     const src = strip(readFileSync(join(here, "..", file), "utf8"));
-    check(`${name}: Subtotal = items + service fee`, /const subtotalShown = subtotal \+ serviceCharge;/.test(src) && /€\{subtotalShown\.toFixed\(2\)\}/.test(src));
-    check(`${name}: its "Incl. VAT" includes the fee's VAT`, /const subtotalShownVat = subtotalVat \+ serviceChargeVat;/.test(src) && /subtotalShownVat\.toFixed\(2\)/.test(src));
+    check(`${name}: Subtotal = items + service fee`, /const subtotalShown = subtotal \+ serviceCharge;/.test(src) && /\{formatEuro\(subtotalShown\)\}/.test(src));
+    check(`${name}: its "Incl. VAT" includes the fee's VAT`, /const subtotalShownVat = subtotalVat \+ serviceChargeVat;/.test(src) && /formatEuro\(subtotalShownVat\)/.test(src));
     check(`${name}: no separate Service Fee row`, !/\{t\("serviceCharge"\)\}/.test(src));
   }
   // The row, its caption and the popup describe one figure: €15.12 incl. €1.75.

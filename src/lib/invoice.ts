@@ -190,22 +190,21 @@ export async function downloadInvoice(
   // jsPDF's standard-Helvetica metrics under-report the euro glyph's advance
   // (1.96mm where a digit is 2.04mm), so a plain "€24.30" prints with the
   // symbol overlapping the 2. Drawing the symbol as its own right-aligned run,
-  // one size-proportional kern clear of the number, sidesteps the bad metric
-  // while keeping the `€12.15` format the app uses on screen. Every amount on
-  // the invoice is right-aligned, so one helper covers them all.
+  // one space clear of the number, sidesteps the bad metric while keeping the
+  // `12.15 €` format the app uses on screen. Every amount on the invoice is
+  // right-aligned, so one helper covers them all.
   const money = (
     value: number | undefined,
     x: number,
     yy: number,
     opts: { negative?: boolean } = {},
   ) => {
-    // The sign rides with the symbol ("-€4.40"), and the symbol ends its own
-    // run, so the short advance has nothing left to collide with.
-    const n = amount(value);
-    doc.text(n, x, yy, { align: "right" });
-    const kern = doc.getFontSize() * 0.075;
-    const prefix = opts.negative ? "-€" : "€";
-    doc.text(prefix, x - doc.getTextWidth(n) - kern, yy, { align: "right" });
+    // The symbol goes after the amount ("-4.40 €", 29 Oct 2026) and is drawn
+    // as its own run, so its short advance has nothing left to collide with.
+    const n = `${opts.negative ? "-" : ""}${amount(value)}`;
+    doc.text("€", x, yy, { align: "right" });
+    const gap = doc.getTextWidth(" ");
+    doc.text(n, x - doc.getTextWidth("€") - gap, yy, { align: "right" });
   };
 
   // The footer is pinned to the bottom of the page, so body content has to stop
@@ -443,9 +442,14 @@ export async function downloadInvoice(
       const addonDeposit = addonLineDeposit(addon);
       if (addonDeposit.total > 0) {
         setColor(GRAY);
+        // The word after the € is its own run, a space clear of it: the
+        // euro glyph's short advance would otherwise swallow that space.
+        const depositX = xItem + 2 + doc.getTextWidth(label);
+        const depositAmount = `  · +${amount(addonDeposit.total)} €`;
+        doc.text(depositAmount, depositX, rowY);
         doc.text(
-          `  · +€${amount(addonDeposit.total)} ${t("sdrDepositShort")}`,
-          xItem + 2 + doc.getTextWidth(label),
+          t("sdrDepositShort"),
+          depositX + doc.getTextWidth(depositAmount) + doc.getTextWidth(" ") * 1.5,
           rowY,
         );
         setColor(BRAND_DEEP);
@@ -459,7 +463,7 @@ export async function downloadInvoice(
       doc.setFontSize(8.5);
       setColor(GRAY);
       doc.text(
-        `${t("sdrDeposit")}: ${deposit.containers} × €${amount(deposit.unit)}`,
+        `${t("sdrDeposit")}: ${deposit.containers} × ${amount(deposit.unit)} €`,
         xItem + 2,
         rowY,
       );

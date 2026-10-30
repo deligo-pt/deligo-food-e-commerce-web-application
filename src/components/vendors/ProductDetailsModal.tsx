@@ -26,7 +26,7 @@ import { useCustomerCoords } from "@/hooks/useCustomerCoords";
 import { hasCoords, isOutOfArea, withCoords, type Coords } from "@/lib/customerCoords";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
-import { currencySymbol } from "@/lib/currency";
+import { currencySymbol, formatEuro } from "@/lib/currency";
 import type { ProductSdr } from "@/types/sdr";
 import { addonDeposit, productDeposit } from "@/lib/sdr";
 import {
@@ -374,7 +374,7 @@ export default function ProductDetailsModal({
   // Decimal point, matching the cart, checkout, payment and invoice surfaces —
   // this modal was the only place rendering the same product as "€5,42".
   const formatPrice = (price: number, currency = "€") => {
-    return `${currency}${price.toFixed(2)}`;
+    return formatEuro(price, currency);
   };
 
   const groupedOptions: { groupName: string; options: VariantOption[] }[] = [];

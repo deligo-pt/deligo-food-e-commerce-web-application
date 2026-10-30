@@ -10,7 +10,7 @@ import { usePrefersReducedMotion } from "@/hooks/useMotion";
 import { useTranslation } from "@/hooks/useTranslation";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import { getCartVendorId } from "@/lib/cart";
-import { currencySymbol } from "@/lib/currency";
+import { formatEuro } from "@/lib/currency";
 import SafeImage from "@/components/shared/SafeImage";
 import type { CartItem } from "@/types/cart";
 
@@ -351,8 +351,7 @@ export default function ViewCartBar({
               <ArrowRight aria-hidden size={16} />
             </span>
             <span className="text-base font-bold tabular-nums">
-              {currencySymbol()}
-              {summary.total.toFixed(2)}
+              {formatEuro(summary.total)}
             </span>
           </Link>
         )}

@@ -357,6 +357,8 @@ const en = {
   free: "FREE",
   // Price label of a €0 add-on (modal, checkout, payment summary).
   addonFree: "Free",
+  // Tooltip on a required add-on's disabled − in the checkout.
+  addonRequiredHint: "Required: at least {min} from this group must stay",
 
   applyVoucherCode: "Apply voucher code",
   enterVoucherCode: "Enter voucher code",
@@ -1872,7 +1874,7 @@ const en = {
   goBack: "Go Back",
   referenceLabel: "Reference",
   weekendSpecial: "Weekend Special",
-  weekendSpecialOffer: "Get €10 off orders over €50",
+  weekendSpecialOffer: "Get 10 € off orders over 50 €",
   unlockExclusiveFeatures: "Unlock Exclusive Features",
   unlockExclusiveFeaturesDesc:
     "Use the app regularly and place more orders to unlock and enjoy these exclusive features.",

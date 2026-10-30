@@ -33,6 +33,7 @@ import type { BranchNameSource } from "@/lib/vendorName";
 import type { VendorIdentifiers } from "@/lib/vendorId";
 import type { LineSdr } from "@/types/sdr";
 import { lineDeposit } from "@/lib/sdr";
+import { formatEuro } from "@/lib/currency";
 
 interface CartItem {
   productId: string;
@@ -272,7 +273,7 @@ export default function CartStoreCard({
           <div className="flex items-center gap-1.5 rounded-xl bg-primary/5 dark:bg-pink-950/20 px-2.5 py-1.5">
             <UtensilsCrossed size={14} className="text-primary dark:text-pink-400" />
             <span className="text-sm font-semibold text-primary dark:text-pink-400">
-              {items.length} {t("items")} · €{storeTotal.toFixed(2)}
+              {items.length} {t("items")} · {formatEuro(storeTotal)}
             </span>
           </div>
           <span
@@ -375,13 +376,13 @@ export default function CartStoreCard({
               next to a label telling you to select the store first. */}
           {hasActive && (
             <span className="relative z-10 shrink-0 font-bold">
-              €{activeTotal.toFixed(2)}
+              {formatEuro(activeTotal)}
             </span>
           )}
         </Link>
         {hasActive && activeDeposit > 0 && (
           <p className="mt-2 text-center text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
-            +€{activeDeposit.toFixed(2)} {t("sdrContainerDepositAtPayment")}
+            +{formatEuro(activeDeposit)} {t("sdrContainerDepositAtPayment")}
           </p>
         )}
         {!hasActive && (

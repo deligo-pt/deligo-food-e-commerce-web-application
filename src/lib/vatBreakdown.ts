@@ -57,7 +57,7 @@ export interface Breakdown {
   rows: BreakdownRow[];
   /** The rows added up — the figure on the page row the ⓘ sits beside. */
   total: { label: string; price: number; vat: number };
-  /** With a voucher: "Subtotal €48.12 − voucher €9.60 = €38.52". */
+  /** With a voucher: "Subtotal 48.12 € − voucher 9.60 € = 38.52 €". */
   voucherLine?: string;
   notes: string[];
 }
@@ -66,7 +66,7 @@ function rateLabel(rate: number | null, t: Translate): string | undefined {
   return rate === null ? undefined : t("vatRate").replace("{rate}", String(rate));
 }
 
-const euro = (n: number) => `€${n.toFixed(2)}`;
+const euro = (n: number) => `${n.toFixed(2)}\u00A0€`;
 
 /**
  * Each product and add-on as the backend priced it: the line's

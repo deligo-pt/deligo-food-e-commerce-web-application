@@ -2,6 +2,7 @@
 
 import { useTranslation } from "@/hooks/useTranslation";
 import { Button } from "@/components/ui/button";
+import { formatEuro } from "@/lib/currency";
 
 interface CartSummaryProps {
   originalPrice?: number;
@@ -40,7 +41,7 @@ export default function CartSummary({
           </span>
 
           <span className="font-medium text-gray-900">
-            €{originalPrice.toFixed(2)}
+            {formatEuro(originalPrice)}
           </span>
         </div>
 
@@ -50,7 +51,7 @@ export default function CartSummary({
           </span>
 
           <span className="font-medium text-green-600">
-            -€{discount.toFixed(2)}
+            -{formatEuro(discount)}
           </span>
         </div>
 
@@ -60,7 +61,7 @@ export default function CartSummary({
           </span>
 
           <span className="font-medium text-gray-900">
-            €{vatableAmount.toFixed(2)}
+            {formatEuro(vatableAmount)}
           </span>
         </div>
 
@@ -70,7 +71,7 @@ export default function CartSummary({
           </span>
 
           <span className="font-medium text-gray-900">
-            €{vat.toFixed(2)}
+            {formatEuro(vat)}
           </span>
         </div>
 
@@ -81,7 +82,7 @@ export default function CartSummary({
             </span>
 
             <span className="text-2xl font-extrabold text-primary">
-              €{total.toFixed(2)}
+              {formatEuro(total)}
             </span>
           </div>
         </div>

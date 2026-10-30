@@ -78,6 +78,7 @@ import type { LineSdr, OrderCalculationSdr, PayoutSdr } from "@/types/sdr";
 import { lineDeposit, orderDepositTotal } from "@/lib/sdr";
 import { deliveryBreakdown, subtotalBreakdown } from "@/lib/vatBreakdown";
 import VatInfoButton from "@/components/shared/VatInfoButton";
+import { formatEuro } from "@/lib/currency";
 
 interface CheckoutItem {
   productId: string;
@@ -1420,10 +1421,8 @@ export default function PaymentPage() {
                         )}
                       </div>
                       <p className="text-sm text-gray-500 dark:text-neutral-400">
-                        {t("basePrice")} €
-                        {item.productPricing.priceAfterProductDiscount.toFixed(
-                          2,
-                        )}
+                        {t("basePrice")}{" "}
+                        {formatEuro(item.productPricing.priceAfterProductDiscount)}
                       </p>
                       {item.addons && item.addons.length > 0 && (
                         <ul className="mt-1 space-y-0.5">
@@ -1439,7 +1438,7 @@ export default function PaymentPage() {
                               </span>
                               {/* Free add-ons (€0) say "Free"/"Grátis". */}
                               <span className="ml-auto">
-                                {addon.lineTotal > 0 ? `€${addon.lineTotal.toFixed(2)}` : t("addonFree")}
+                                {addon.lineTotal > 0 ? formatEuro(addon.lineTotal) : t("addonFree")}
                               </span>
                             </li>
                           ))}
@@ -1455,10 +1454,10 @@ export default function PaymentPage() {
                     >
                       {item.isPromoRewardLine
                         ? t("free")
-                        : `€${item.itemSummary.grandTotal.toFixed(2)}`}
+                        : formatEuro(item.itemSummary.grandTotal)}
                       {lineDeposit(item).total > 0 && (
                         <span className="block text-right text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
-                          +€{lineDeposit(item).total.toFixed(2)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × €{lineDeposit(item).unit.toFixed(2)})
+                          +{formatEuro(lineDeposit(item).total)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × {formatEuro(lineDeposit(item).unit)})
                         </span>
                       )}
                     </p>
@@ -1476,27 +1475,27 @@ export default function PaymentPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-neutral-400">{t("totalPrice")}</span>
                   <span className="font-semibold text-gray-900 dark:text-neutral-50">
-                    €{orderCalculation.totalOriginalPrice.toFixed(2)}
+                    {formatEuro(orderCalculation.totalOriginalPrice)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-neutral-400">{t("discount")}</span>
                   <span className="font-semibold text-green-600 dark:text-green-400">
-                    -€{orderCalculation.totalProductDiscount.toFixed(2)}
+                    -{formatEuro(orderCalculation.totalProductDiscount)}
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="min-w-0 text-gray-500 dark:text-neutral-400">
                     {t("subtotal")}
                     <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
-                      ({t("inclVat")} -&nbsp;€{subtotalShownVat.toFixed(2)})
+                      ({t("inclVat")} -&nbsp;{formatEuro(subtotalShownVat)})
                     </span>
                     <span className="ml-1 inline-flex align-middle">
                       <VatInfoButton breakdown={vatBreakdown} label={t("vatBreakdownOpen")} />
                     </span>
                   </span>
                   <span className="shrink-0 whitespace-nowrap font-semibold text-gray-900 dark:text-neutral-50">
-                    €{subtotalShown.toFixed(2)}
+                    {formatEuro(subtotalShown)}
                   </span>
                 </div>
                 {/* Dropped entirely on pickup rather than shown as "Free".
@@ -1511,7 +1510,7 @@ export default function PaymentPage() {
                       {delivery.totalDeliveryCharge > 0 && (
                         <>
                           <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
-                            ({t("inclVat")} -&nbsp;€{deliveryVat.toFixed(2)})
+                            ({t("inclVat")} -&nbsp;{formatEuro(deliveryVat)})
                           </span>
                           <span className="ml-1 inline-flex align-middle">
                             <VatInfoButton breakdown={deliveryInfo} label={t("deliveryBreakdownOpen")} />
@@ -1521,7 +1520,7 @@ export default function PaymentPage() {
                     </span>
                     <span className="shrink-0 whitespace-nowrap font-semibold text-green-600 dark:text-green-400">
                       {delivery.totalDeliveryCharge > 0
-                        ? `€${delivery.totalDeliveryCharge.toFixed(2)}`
+                        ? formatEuro(delivery.totalDeliveryCharge)
                         : t("free")}
                     </span>
                   </div>
@@ -1535,7 +1534,7 @@ export default function PaymentPage() {
                       {t("sdrDeposit")}
                     </span>
                     <span className="shrink-0 whitespace-nowrap font-semibold text-gray-900 dark:text-neutral-50">
-                      €{depositTotal.toFixed(2)}
+                      {formatEuro(depositTotal)}
                     </span>
                   </div>
                 )}
@@ -1554,7 +1553,7 @@ export default function PaymentPage() {
                         : t("offerDiscount")}
                     </span>
                     <span className="font-semibold text-green-700 dark:text-green-400">
-                      -€{offerDiscount.toFixed(2)}
+                      -{formatEuro(offerDiscount)}
                     </span>
                   </div>
                 )}
@@ -1647,7 +1646,7 @@ export default function PaymentPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xl font-bold text-gray-900 dark:text-neutral-50">{t("totalToPay")}</span>
                   <span className="text-2xl font-bold text-primary dark:text-pink-400">
-                    €{orderTotal.toFixed(2)}
+                    {formatEuro(orderTotal)}
                   </span>
                 </div>
               </div>
@@ -2042,10 +2041,10 @@ export default function PaymentPage() {
                                       )
                                   : offer.offerType === "PERCENT"
                                     ? `${offer.discountValue}% off`
-                                    : `€${offer.discountValue} off`}
+                                    : `${offer.discountValue}\u00A0€ off`}
                               </span>
                               {offer.minOrderAmount > 0 && (
-                                <span>Min. €{offer.minOrderAmount}</span>
+                                <span>Min. {offer.minOrderAmount}&nbsp;€</span>
                               )}
                               <span>
                                 Expires{" "}

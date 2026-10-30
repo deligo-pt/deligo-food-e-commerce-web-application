@@ -104,6 +104,6 @@ export function formatDiscountValue(
   const discount = pricing?.discount ?? 0;
 
   return pricing?.discountType === "FLAT"
-    ? `${currency}${discount.toFixed(2)}`
+    ? `${discount.toFixed(2)}\u00A0${currency}`
     : `${discount}%`;
 }

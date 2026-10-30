@@ -141,7 +141,7 @@ section("§3 🔴 cart totals exclude the deposit — shown beside, never folded
 {
   check("product modal: Add to Cart keeps the food total", /const total = subtotal;/.test(files.modal) && !/(total|subtotal)\s*\+\s*(depositPerItem|depositTotal|addonsDeposit)/.test(files.modal));
   check("product modal: says \"plus deposit\" under the button", /t\("sdrPlusDeposit"\)/.test(files.modal));
-  check("checkout step: Final Price is the cart's own total", /€\{summary\.total\.toFixed\(2\)\}/.test(files.checkout));
+  check("checkout step: Final Price is the cart's own total", /\{formatEuro\(summary\.total\)\}/.test(files.checkout));
   // Exactly the items' own total — any other right-hand side (a deposit added
   // on the same line, a second +=) is what this guards against.
   check(

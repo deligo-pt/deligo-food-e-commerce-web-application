@@ -13,6 +13,15 @@ export function currencySymbol(code?: string | null): string {
 }
 
 /**
+ * A price as the app shows it: the symbol after the amount, "15.00 €"
+ * (29 Oct 2026). The space is non-breaking so the symbol never wraps onto a
+ * line of its own. A sign goes in front of the whole thing: "-3.00 €".
+ */
+export function formatEuro(amount: number, symbol = "€"): string {
+  return `${amount.toFixed(2)}\u00A0${symbol}`;
+}
+
+/**
  * An order's total, as it appears on an order card.
  *
  * Always `payoutSummary.grandTotal` — the one field that is the number the
@@ -25,5 +34,5 @@ export function currencySymbol(code?: string | null): string {
  * "€undefined" — hence the dash.
  */
 export function formatOrderPrice(amount?: number | null): string {
-  return typeof amount === "number" ? `€${amount.toFixed(2)}` : "—";
+  return typeof amount === "number" ? formatEuro(amount) : "—";
 }

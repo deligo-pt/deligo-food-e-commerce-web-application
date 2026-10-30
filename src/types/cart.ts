@@ -12,6 +12,9 @@ export interface CartAddon {
   taxAmount?: number;
   /** This add-on's container deposit — see `lib/sdr.ts`. */
   sdr?: LineSdr;
+  /** Its group's limits; above 0 the group is required — see `lib/requiredAddons.ts`. */
+  minSelectable?: number;
+  maxSelectable?: number;
 }
 
 export interface CartItem {

@@ -205,6 +205,11 @@ export default function AddAddressPage() {
           const lat = typeof loc.lat === "function" ? loc.lat() : loc.lat;
           const lng = typeof loc.lng === "function" ? loc.lng() : loc.lng;
           setCoordinates({ lat, lng });
+          // A place the customer picked always fills the form. Without this,
+          // a pick that lands before the GPS / profile position (location
+          // blocked, slow profile) was taken for the opening position, which
+          // deliberately doesn't prefill, and the form stayed empty.
+          setPrefillRequestId((id) => id + 1);
         },
       );
     },

@@ -6,6 +6,7 @@ import { Info, ReceiptEuro, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { Breakdown } from "@/lib/vatBreakdown";
+import { formatEuro } from "@/lib/currency";
 
 interface VatInfoButtonProps {
   breakdown: Breakdown;
@@ -117,10 +118,10 @@ export default function VatInfoButton({ breakdown, label }: VatInfoButtonProps) 
                         )}
                       </td>
                       <td className="whitespace-nowrap py-2 pl-3 text-right text-gray-900 dark:text-neutral-50">
-                        €{row.price.toFixed(2)}
+                        {formatEuro(row.price)}
                       </td>
                       <td className="whitespace-nowrap py-2 pl-3 text-right text-gray-500 dark:text-neutral-400">
-                        €{row.vat.toFixed(2)}
+                        {formatEuro(row.vat)}
                       </td>
                     </tr>
                   ))}
@@ -129,10 +130,10 @@ export default function VatInfoButton({ breakdown, label }: VatInfoButtonProps) 
                   <tr className="border-t border-border">
                     <td className="pt-3 font-bold text-gray-900 dark:text-neutral-50">{breakdown.total.label}</td>
                     <td className="whitespace-nowrap pt-3 pl-3 text-right text-base font-extrabold text-primary dark:text-pink-400">
-                      €{breakdown.total.price.toFixed(2)}
+                      {formatEuro(breakdown.total.price)}
                     </td>
                     <td className="whitespace-nowrap pt-3 pl-3 text-right font-bold text-gray-900 dark:text-neutral-50">
-                      €{breakdown.total.vat.toFixed(2)}
+                      {formatEuro(breakdown.total.vat)}
                     </td>
                   </tr>
                 </tfoot>
