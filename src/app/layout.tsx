@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "DeliGo | Fresh Delivery Right to Your Door",
+  title: "DeliGo, sempre contigo",
   description: "Discover the best restaurants and local stores in Rua Augusta delivered right to your doorstep.",
 };
 
