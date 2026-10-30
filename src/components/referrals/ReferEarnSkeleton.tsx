@@ -28,16 +28,31 @@ export default function ReferEarnSkeleton() {
           </div>
         </section>
 
-        {/* Stats */}
-        <section className="mb-12 grid grid-cols-1 gap-4 md:grid-cols-3">
-          {[1, 2, 3].map((item) => (
+        {/* Stats — Friends referred and Points earned */}
+        <section className="mb-8 grid grid-cols-2 gap-4">
+          {[1, 2].map((item) => (
             <div
               key={item}
               className="rounded-xl bg-card p-4 text-center shadow-sm border border-border"
             >
               <div className="mx-auto mb-3 h-8 w-8 rounded-full bg-gray-200 dark:bg-neutral-800" />
-              <div className="mx-auto mb-2 h-8 w-20 rounded bg-gray-200 dark:bg-neutral-800" />
-              <div className="mx-auto h-4 w-28 rounded bg-gray-200 dark:bg-neutral-800" />
+              <div className="mx-auto mb-2 h-8 w-16 rounded bg-gray-200 dark:bg-neutral-800" />
+              <div className="mx-auto h-4 w-24 rounded bg-gray-200 dark:bg-neutral-800" />
+            </div>
+          ))}
+        </section>
+
+        {/* Your invites */}
+        <section className="mb-12 rounded-2xl bg-card p-4 shadow-sm border border-border md:p-6">
+          <div className="mb-4 h-6 w-32 rounded bg-gray-200 dark:bg-neutral-800" />
+          {[1, 2].map((item) => (
+            <div key={item} className="flex items-center gap-3 py-3">
+              <div className="h-10 w-10 shrink-0 rounded-full bg-gray-200 dark:bg-neutral-800" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-32 rounded bg-gray-200 dark:bg-neutral-800" />
+                <div className="h-3 w-24 rounded bg-gray-200 dark:bg-neutral-800" />
+              </div>
+              <div className="h-6 w-16 rounded-full bg-gray-200 dark:bg-neutral-800" />
             </div>
           ))}
         </section>

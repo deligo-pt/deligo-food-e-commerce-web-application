@@ -38,6 +38,7 @@ import Image from "next/image";
 import { isOptimizableImageHost } from "@/lib/imageHosts";
 import Link from "next/link";
 import ProfilePageSkeleton from "./profilePageSkeleton";
+import RewardsModal from "@/components/rewards/RewardsModal";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import {
@@ -87,6 +88,7 @@ export default function AccountPage() {
   // Pending while the post-logout navigation is in flight — see `handleLogout`.
   const [isLoggingOut, startLogout] = useTransition();
   const [showProModal, setShowProModal] = useState(false);
+  const [showRewardsModal, setShowRewardsModal] = useState(false);
   // The DeliGo Pro sheet closes on Escape, as on its ✕ and its backdrop.
   useEscapeToClose(showProModal, () => setShowProModal(false));
 
@@ -285,11 +287,19 @@ export default function AccountPage() {
                 </div>
               </Link>
 
-              <div className="rounded-xl bg-card p-4 text-center shadow-sm border border-border">
+              {/* Opens the balance and its history. Vouchers, beside it, stays
+                  a link to its own page. */}
+              <button
+                type="button"
+                onClick={() => setShowRewardsModal(true)}
+                aria-haspopup="dialog"
+                aria-label={`${t("openRewardPoints")}: ${rewardPoints}`}
+                className="focus-ring rounded-xl bg-card p-4 text-center shadow-sm border border-border transition hover:shadow-md cursor-pointer"
+              >
                 <Gift className="mx-auto mb-2 text-primary dark:text-pink-400" />
                 <h3 className="font-bold text-gray-900 dark:text-neutral-50">{rewardPoints}</h3>
                 <p className="text-sm text-gray-500 dark:text-neutral-400">{t("rewardPoints")}</p>
-              </div>
+              </button>
             </div>
 
             {/* Pro Banner */}
@@ -413,6 +423,10 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
+      <RewardsModal
+        open={showRewardsModal}
+        onClose={() => setShowRewardsModal(false)}
+      />
       {showProModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}

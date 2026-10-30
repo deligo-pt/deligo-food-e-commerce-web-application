@@ -45,16 +45,41 @@ export function useOffersCount(options?: { enabled?: boolean }) {
   });
 }
 
-/** The user's current reward-points balance. */
-export function useRewardPoints(options?: { enabled?: boolean }) {
+/** `GET /points/my-points`. A holder who never earned anything gets zeros. */
+export interface PointsBalance {
+  currentPoints: number;
+  totalEarned: number;
+  totalSpent: number;
+}
+
+/**
+ * The whole balance — what the Reward Points modal shows. One cached entry
+ * with `useRewardPoints`, which reads only `currentPoints` from it.
+ *
+ * Refetched on focus: points move with no push to say so (an order completes,
+ * a claim is refunded, a lot expires overnight).
+ */
+export function usePointsBalance(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: profileKeys.rewardPoints,
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ signal }): Promise<PointsBalance> => {
       const res = await apiClient.get("/points/my-points", { signal });
-      return (res.data?.data?.currentPoints ?? 0) as number;
+      const data = res.data?.data ?? {};
+      return {
+        currentPoints: data.currentPoints ?? 0,
+        totalEarned: data.totalEarned ?? 0,
+        totalSpent: data.totalSpent ?? 0,
+      };
     },
     enabled: options?.enabled ?? true,
+    refetchOnWindowFocus: true,
   });
+}
+
+/** The user's current reward-points balance. */
+export function useRewardPoints(options?: { enabled?: boolean }) {
+  const query = usePointsBalance(options);
+  return { ...query, data: query.data?.currentPoints };
 }
 
 interface DeliveryAddressCoords {

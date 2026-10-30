@@ -2,12 +2,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { AlertTriangle, ChevronRight, KeyRound, Pencil, User, X } from "lucide-react";
+import { AlertTriangle, KeyRound, Pencil, User, X } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
 import Image from "next/image";
 import { isOptimizableImageHost } from "@/lib/imageHosts";
 import EditProfileFormSkeleton from "./EditProfileFormSkeleton";
 import { useTranslation } from "@/hooks/useTranslation";
+import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import {
   useProfile,
   useInvalidateProfile,
@@ -437,15 +438,15 @@ export default function EditProfileFormPage() {
   return (
     <section className="motion-fade bg-[#f8f9fa] dark:bg-neutral-950 py-8 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-250 px-4">
-        <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground dark:text-neutral-400">
-          <span>{t("home")}</span>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 dark:text-neutral-500" />
-          <span>{t("settings")}</span>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 dark:text-neutral-500" />
-          <span className="font-semibold text-foreground dark:text-neutral-200">
-            {t("editProfile")}
-          </span>
-        </div>
+        <Breadcrumbs
+          label={t("breadcrumb")}
+          className="text-sm"
+          items={[
+            { label: t("home"), href: "/" },
+            { label: t("settings"), href: "/profile" },
+            { label: t("editProfile") },
+          ]}
+        />
 
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <div className="flex flex-col items-center border-b border-neutral-200/50 dark:border-neutral-800 bg-linear-to-b from-neutral-50 dark:from-neutral-800/10 to-transparent py-8">
