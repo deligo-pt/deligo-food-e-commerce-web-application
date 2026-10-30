@@ -52,6 +52,14 @@ const en = {
   // The backend's delivery estimate on a vendor card (lib/deliveryEstimate.ts).
   deliveryMinutesRange: "{min}–{max} min",
   deliveryMinutes: "{min} min",
+  durationHours: "{h}h",
+  durationHoursMinutes: "{h}h {m}m",
+  durationDay: "{n} day",
+  durationDays: "{n} days",
+  durationDaysRange: "{min}–{max} days",
+  durationWeek: "{n} week",
+  durationWeeks: "{n} weeks",
+  durationWeeksRange: "{min}–{max} weeks",
 
   openNow: "Open Now",
   closed: "Closed",
@@ -239,6 +247,20 @@ const en = {
   withoutDiscount: "without discount",
   incl: "incl.",
   inclVat: "Incl. VAT",
+  vatBreakdownOpen: "See VAT details",
+  vatBreakdownTitle: "VAT details",
+  vatBreakdownIntro: "All prices include VAT. This shows how much of each price is VAT.",
+  vatRate: "VAT {rate}%",
+  vatBreakdownDone: "Got it",
+  breakdownPrice: "Price",
+  breakdownVatColumn: "of which VAT",
+  breakdownAfterVoucher: "After voucher",
+  breakdownVoucherLine: "Subtotal {subtotal} − voucher {voucher} = {total}",
+  vatAfterVoucher: "Your voucher is applied first, so VAT is calculated on the discounted prices.",
+  vatFeesAtPayment: "Service and delivery fees are added at the payment step.",
+  deliveryBreakdownOpen: "See delivery fee details",
+  deliveryBreakdownTitle: "Delivery fee details",
+  deliveryDistanceNote: "Priced by distance: {km} km from the store to your address.",
   finalPrice: "Final Price",
   serviceCharge: "Service Fee",
   total: "Total",
@@ -335,6 +357,8 @@ const en = {
   free: "FREE",
   // Price label of a €0 add-on (modal, checkout, payment summary).
   addonFree: "Free",
+  // Tooltip on a required add-on's disabled − in the checkout.
+  addonRequiredHint: "Required: at least {min} from this group must stay",
 
   applyVoucherCode: "Apply voucher code",
   enterVoucherCode: "Enter voucher code",
@@ -1850,7 +1874,7 @@ const en = {
   goBack: "Go Back",
   referenceLabel: "Reference",
   weekendSpecial: "Weekend Special",
-  weekendSpecialOffer: "Get €10 off orders over €50",
+  weekendSpecialOffer: "Get 10 € off orders over 50 €",
   unlockExclusiveFeatures: "Unlock Exclusive Features",
   unlockExclusiveFeaturesDesc:
     "Use the app regularly and place more orders to unlock and enjoy these exclusive features.",

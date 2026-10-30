@@ -58,12 +58,15 @@ import OrderMap from "./OrderMap/OrderMap";
 import OrderStatusAnimation from "./OrderStatusAnimation";
 import { addonLineDeposit, lineDeposit, orderDepositTotal } from "@/lib/sdr";
 import { resolveAddonName } from "@/lib/cart";
+import { deliveryBreakdown, subtotalBreakdown } from "@/lib/vatBreakdown";
+import VatInfoButton from "@/components/shared/VatInfoButton";
 import DeliveryCodeCard from "./DeliveryCodeCard";
 import PickupCodeCard from "./PickupCodeCard";
 import PickupLocationCard from "./PickupLocationCard";
 import RefundBanner from "./RefundBanner";
 import CancelOrderDialog from "../CancelOrderDialog";
 import { Button } from "@/components/ui/button";
+import { formatEuro } from "@/lib/currency";
 
 
 // A live order changes minute to minute, so it is worth watching closely. A
@@ -543,6 +546,20 @@ export default function TrackOrder() {
   // VAT embedded in the items subtotal — shown inline on the subtotal row,
   // matching the app, rather than as a standalone line.
   const subtotalVat = calc.totalTaxAmount || 0;
+  // The service fee is shown inside the Subtotal, matching the payment page
+  // (27 Oct 2026): the Subtotal ⓘ breaks it out (net + VAT).
+  const subtotalShown = subtotal + serviceCharge;
+  const subtotalShownVat = subtotalVat + serviceChargeVat;
+  // The two ⓘ, from the order's own saved figures so they match the charge.
+  const vatBreakdown = subtotalBreakdown({
+    items,
+    lang: lang === "pt" ? "pt" : "en",
+    t,
+    service: { gross: serviceCharge, vat: serviceChargeVat, rate: calc.serviceChargeVatRate },
+    voucherDiscount: offerDiscount,
+    pageSubtotal: subtotalShown,
+  });
+  const deliveryInfo = deliveryBreakdown({ delivery: order.delivery || {}, t });
 
   const steps = getOrderStep(order, t, getTerminalReason(order), isPickup);
   // The order's own step, with the same label and line (and a vendor's
@@ -824,12 +841,12 @@ export default function TrackOrder() {
                           </span>
                         </div>
                         <span className="shrink-0 text-right text-foreground dark:text-neutral-250 font-bold">
-                          €{item.itemSummary?.grandTotal?.toFixed(2)}
+                          {formatEuro(item.itemSummary?.grandTotal ?? 0)}
                           {lineDeposit(item).total > 0 && (
                             <span className="block text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
-                              +€{lineDeposit(item).total.toFixed(2)} {t("sdrDepositShort")}{" "}
+                              +{formatEuro(lineDeposit(item).total)} {t("sdrDepositShort")}{" "}
                               <span className="whitespace-nowrap">
-                                ({lineDeposit(item).containers} × €{lineDeposit(item).unit.toFixed(2)})
+                                ({lineDeposit(item).containers} × {formatEuro(lineDeposit(item).unit)})
                               </span>
                             </span>
                           )}
@@ -838,7 +855,7 @@ export default function TrackOrder() {
                       {/* The add-ons inside the line's total, as on the payment
                           page; an SDR add-on names its own share of the deposit. */}
                       {item.addons?.length > 0 && (
-                        <ul className="mt-1 space-y-0.5 pl-7">
+                        <ul className="mt-1 space-y-1 pl-8">
                           {item.addons.map((addon: any, addonIdx: number) => {
                             const addonDeposit = addonLineDeposit(addon);
                             return (
@@ -852,12 +869,12 @@ export default function TrackOrder() {
                                   {addon.quantity > 1 ? ` ×${addon.quantity}` : ""}
                                   {addonDeposit.total > 0 && (
                                     <span className="whitespace-nowrap" title={t("sdrExplanation")}>
-                                      {" · "}+€{addonDeposit.total.toFixed(2)} {t("sdrDepositShort")}
+                                      {" · "}+{formatEuro(addonDeposit.total)} {t("sdrDepositShort")}
                                     </span>
                                   )}
                                 </span>
                                 <span className="ml-auto shrink-0">
-                                  {addon.lineTotal > 0 ? `€${addon.lineTotal.toFixed(2)}` : t("addonFree")}
+                                  {addon.lineTotal > 0 ? formatEuro(addon.lineTotal) : t("addonFree")}
                                 </span>
                               </li>
                             );
@@ -885,22 +902,25 @@ export default function TrackOrder() {
                         ({t("withoutDiscount")})
                       </span>
                     </span>
-                    <span className="shrink-0 whitespace-nowrap">€{totalOriginalPrice.toFixed(2)}</span>
+                    <span className="shrink-0 whitespace-nowrap">{formatEuro(totalOriginalPrice)}</span>
                   </div>
                   {productDiscount > 0 && (
                     <div className="flex justify-between text-green-600 dark:text-green-400">
                       <span>{t("discount")}</span>
-                      <span>-€{productDiscount.toFixed(2)}</span>
+                      <span>-{formatEuro(productDiscount)}</span>
                     </div>
                   )}
                   <div className="flex items-baseline justify-between gap-3 text-muted-foreground dark:text-neutral-400">
                     <span className="min-w-0">
                       {t("subtotal")}
                       <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
-                        ({t("inclVat")}&nbsp;€{subtotalVat.toFixed(2)})
+                        ({t("inclVat")}&nbsp;{formatEuro(subtotalShownVat)})
+                      </span>
+                      <span className="ml-1 inline-flex align-middle">
+                        <VatInfoButton breakdown={vatBreakdown} label={t("vatBreakdownOpen")} />
                       </span>
                     </span>
-                    <span className="shrink-0 whitespace-nowrap">€{subtotal.toFixed(2)}</span>
+                    <span className="shrink-0 whitespace-nowrap">{formatEuro(subtotalShown)}</span>
                   </div>
                   {/* Dropped on pickup rather than shown as €0.00: there was no
                       delivery to charge for, which is a different statement
@@ -911,37 +931,29 @@ export default function TrackOrder() {
                       <span className="min-w-0">
                         {t("deliveryFee")}
                         {deliveryFee > 0 && (
-                          <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
-                            ({t("inclVat")}&nbsp;€{deliveryVat.toFixed(2)})
-                          </span>
+                          <>
+                            <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
+                              ({t("inclVat")}&nbsp;{formatEuro(deliveryVat)})
+                            </span>
+                            <span className="ml-1 inline-flex align-middle">
+                              <VatInfoButton breakdown={deliveryInfo} label={t("deliveryBreakdownOpen")} />
+                            </span>
+                          </>
                         )}
                       </span>
-                      <span className="shrink-0 whitespace-nowrap">€{deliveryFee.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {serviceCharge > 0 && (
-                    <div className="flex items-baseline justify-between gap-3 text-muted-foreground dark:text-neutral-400">
-                      <span className="min-w-0">
-                        {t("serviceCharge")}
-                        {serviceChargeVat > 0 && (
-                          <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
-                            ({t("inclVat")}&nbsp;€{serviceChargeVat.toFixed(2)})
-                          </span>
-                        )}
-                      </span>
-                      <span className="shrink-0 whitespace-nowrap">€{serviceCharge.toFixed(2)}</span>
+                      <span className="shrink-0 whitespace-nowrap">{formatEuro(deliveryFee)}</span>
                     </div>
                   )}
                   {depositTotal > 0 && (
                     <div className="flex items-baseline justify-between gap-3 text-muted-foreground dark:text-neutral-400">
                       <span className="min-w-0" title={t("sdrExplanation")}>{t("sdrDeposit")}</span>
-                      <span className="shrink-0 whitespace-nowrap">€{depositTotal.toFixed(2)}</span>
+                      <span className="shrink-0 whitespace-nowrap">{formatEuro(depositTotal)}</span>
                     </div>
                   )}
                   {offerDiscount > 0 && (
                     <div className="flex justify-between text-green-600 dark:text-green-400">
                       <span>{t("offerDiscount")}</span>
-                      <span>-€{offerDiscount.toFixed(2)}</span>
+                      <span>-{formatEuro(offerDiscount)}</span>
                     </div>
                   )}
                   <div className="pt-4 mt-2 border-t border-border flex justify-between items-center">
@@ -949,7 +961,7 @@ export default function TrackOrder() {
                       {t("totalAmount")}
                     </span>
                     <span className="text-2xl font-extrabold text-primary dark:text-pink-400">
-                      €{grandTotal.toFixed(2)}
+                      {formatEuro(grandTotal)}
                     </span>
                   </div>
                 </div>

@@ -61,7 +61,8 @@ const list = page.slice(
 /** The one-click payment call. */
 const token = page.slice(
   page.indexOf("await payWithSavedCard({"),
-  page.indexOf("router.replace(\"/orders\")"),
+  // Ends where the one-click path leaves for the success screen (26 Oct 2026).
+  page.indexOf("router.replace(`/payment-success?summaryId="),
 );
 
 section("🔴 A card that was chosen by mistake can be un-chosen");

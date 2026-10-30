@@ -159,6 +159,7 @@ export default function AddressForm({
 
         // Extract every component we care about (empty string = not present)
         let street = "",
+          streetNumber = "",
           city = "",
           state = "",
           country = "",
@@ -169,12 +170,19 @@ export default function AddressForm({
           if (c.types.includes("route")) street = c.long_name;
           else if (!street && c.types.includes("sublocality_level_1"))
             street = c.long_name;
+          if (c.types.includes("street_number")) streetNumber = c.long_name;
           if (c.types.includes("locality")) city = c.long_name;
           if (c.types.includes("administrative_area_level_1"))
             state = c.long_name;
           if (c.types.includes("country")) country = c.long_name;
           if (c.types.includes("postal_code")) postalCode = c.long_name;
         });
+
+        // The door number is its own component ("street_number"), and reading
+        // only "route" dropped it: "R. de Bafatá 2" was saved as "Rua de
+        // Bafatá" (30 Oct 2026). It goes after the street, the Portuguese
+        // order Google itself uses. A sublocality fallback has no number.
+        if (street && streetNumber) street = `${street} ${streetNumber}`;
 
         // Always replace all geocoded fields — clear any that the geocoder didn't return
         setFormData((prev) => ({

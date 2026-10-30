@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { formatEuro } from "@/lib/currency";
 
 interface CartItem {
   productId: string;
@@ -157,22 +158,21 @@ export default function CartProductRow({
           <div className="text-right">
             {item.productPricing.productDiscountAmount > 0 && (
               <p className="text-xs text-gray-400 dark:text-neutral-500 line-through">
-                €
-                {(
+                {formatEuro(
                   item.productPricing.originalPrice *
                     item.itemSummary.quantity +
-                  getAddonsTotal(item)
-                ).toFixed(2)}
+                  getAddonsTotal(item),
+                )}
               </p>
             )}
             <p className="text-xl font-bold text-primary dark:text-pink-400">
-              €{item.itemSummary.grandTotal.toFixed(2)}
+              {formatEuro(item.itemSummary.grandTotal)}
             </p>
             {/* Beside the price, not in it: the cart total excludes the
                 deposit, which is charged at payment. */}
             {lineDeposit(item).total > 0 && (
               <p className="text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
-                +€{lineDeposit(item).total.toFixed(2)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × €{lineDeposit(item).unit.toFixed(2)})
+                +{formatEuro(lineDeposit(item).total)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × {formatEuro(lineDeposit(item).unit)})
               </p>
             )}
           </div>

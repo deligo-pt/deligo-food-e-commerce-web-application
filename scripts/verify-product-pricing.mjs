@@ -115,7 +115,7 @@ section("No discount, and discounts we don't understand");
 
 section("The badge says which kind it is");
 {
-  check("FLAT reads as money", formatDiscountValue(FLAT, "€") === "€0.60", formatDiscountValue(FLAT, "€"));
+  check("FLAT reads as money", formatDiscountValue(FLAT, "€") === "0.60\u00A0€", formatDiscountValue(FLAT, "€"));
   check("PERCENTAGE reads as a rate", formatDiscountValue(PCT, "€") === "10%", formatDiscountValue(PCT, "€"));
   // The whole visible symptom, in one line.
   check(

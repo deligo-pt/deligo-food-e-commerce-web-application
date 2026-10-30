@@ -6,7 +6,7 @@ import { UtensilsCrossed, SearchX, MapPin, LoaderCircle } from "lucide-react";
 import ProductImage from "@/components/shared/ProductImage";
 import ShareButton from "@/components/shared/ShareButton";
 import { productShareText, productShareUrl, type ShareData } from "@/lib/share";
-import { currencySymbol } from "@/lib/currency";
+import { currencySymbol, formatEuro } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   useSearch,
@@ -199,7 +199,7 @@ function DishCard({
 
         {/* Rendered exactly as the API sent it — the backend owns the money. */}
         <div className="mt-auto pt-3 font-bold text-primary dark:text-pink-500">
-          {currencySymbol(hit.currency)} {hit.price?.toFixed(2) ?? "0.00"}
+          {formatEuro(hit.price ?? 0, currencySymbol(hit.currency))}
         </div>
       </div>
     </article>

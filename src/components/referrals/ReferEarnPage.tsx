@@ -339,7 +339,7 @@ export default function ReferEarnPage() {
           <div className="rounded-xl bg-card p-4 text-center shadow-sm border border-border">
             <Wallet className="mx-auto mb-3 h-8 w-8 text-primary dark:text-pink-400" />
             <h3 className="mb-0 text-2xl font-bold text-primary dark:text-pink-400">
-              €{referralData?.summary.totalEarned ?? 0}
+              {referralData?.summary.totalEarned ?? 0}&nbsp;€
             </h3>
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
               {t("rewardsEarned")}

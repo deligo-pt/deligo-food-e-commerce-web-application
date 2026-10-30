@@ -50,7 +50,7 @@ import CategorySidebar from "./CategorySidebar";
 import CategoryGroup from "./CategoryGroup";
 import { useLocationStore } from "@/stores/locationStore";
 import { formatCuisine } from "@/lib/cuisine";
-import { currencySymbol } from "@/lib/currency";
+import { currencySymbol, formatEuro } from "@/lib/currency";
 import { formatDiscountValue, hasProductDiscount } from "@/lib/productPricing";
 import SafeImage from "@/components/shared/SafeImage";
 import ShareButton from "@/components/shared/ShareButton";
@@ -227,9 +227,10 @@ function isOneTapAddable(product: Product): boolean {
 
 
 // Pure + module-scoped so it has a stable identity (safe as a memo dep).
-// Decimal point, matching the cart, checkout, payment and invoice surfaces.
+// Decimal point and the symbol after it, matching the cart, checkout,
+// payment and invoice surfaces.
 function formatPrice(price: number, currency: string) {
-  return `${currency}${price.toFixed(2)}`;
+  return formatEuro(price, currency);
 }
 
 // Memoized menu row — only re-renders when its product, its cart quantity or

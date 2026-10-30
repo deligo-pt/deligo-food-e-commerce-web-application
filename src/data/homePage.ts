@@ -44,7 +44,7 @@ export const restaurantCards = [
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuANEKHdzcYdjAy9XCwkp5RGFIgwI8GeMcCgB3usfF5YzAsY9CQPstXjyZSlg7aUNhn3sz4qT3zdho1XG9G1oo81mOGVD5y_nVUPT1bGOnZcKt5t17pr7TlUGI7PgOzP2XXLxTpl3L-YZDaAfN8Y7sUUf0gVjjLmhV6X8BOS6lGEoGAJHNUfjUtEiGTfqH6TlbAdcGhswPBA4twM0lIffnqh9K12ATx7z6HanOgNitx2JHK7Smzs0kVzo-Eha_18cwwTjS2BuYnB20s",
     cuisine: "Portuguese • Traditional • Seafood",
-    delivery: "€2.50 Delivery",
+    delivery: "2.50 € Delivery",
     secondary: "2 Offers",
     secondaryIcon: "local_offer",
   },
@@ -66,7 +66,7 @@ export const restaurantCards = [
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuDckrKGYC4J0a3WrgfhmMt5ORsGbVDZMy71ZP3LhusVtpVtBpgnm3jBE7samSd88MxsBuxSyuIxwFttBEJxJSOlDhP4ZbWfhALmCIjwtXDeSjymUxkky2lb5qUfBZi_a_Hdl5okDXtK1loDAhCIBqdBeL_f59K3On8BpFUIYuBkDmZfws44bpLmkrwpTkeaMhgXKqHYXY2Zu5LtKJU9tI2v4Vc3m2I-SBWlT9KuWOi3Eh5NFEyvZ3rEdTasmVQ2-YqS9OE9yJ1sC6w",
     cuisine: "Cafe • Brunch • Organic",
-    delivery: "€1.99 Delivery",
+    delivery: "1.99 € Delivery",
     secondary: "Trending",
     secondaryIcon: "trending_up",
   },

@@ -1,8 +1,13 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
+import type { DotLottie } from "@lottiefiles/dotlottie-react";
 import { Button } from "@/components/ui/button";
+import {
+  DotLottieReact,
+  holdLastFrameIfReduced,
+} from "@/components/orders/TrackOrder/OrderStatusAnimation";
 
 /**
  * One card for every payment outcome screen (8 Oct 2026): confirmed, still
@@ -24,6 +29,12 @@ type Props = {
   icon: LucideIcon;
   /** Spins the icon (checking states). */
   iconSpinning?: boolean;
+  /**
+   * A file in `public/animations/` (no extension) played once in place of the
+   * icon — the success screen's "order placed" (26 Oct 2026). The icon stays
+   * the fallback while the player loads.
+   */
+  animation?: string;
   title: string;
   body?: ReactNode;
   /** Extra content under the text: steps, an order number. */
@@ -58,6 +69,7 @@ export default function PaymentStateCard({
   tone,
   icon: Icon,
   iconSpinning = false,
+  animation,
   title,
   body,
   children,
@@ -67,6 +79,18 @@ export default function PaymentStateCard({
   referenceLabel,
 }: Props) {
   const colors = TONES[tone];
+  // The player and its engine load on first use; until the animation is ready
+  // the tick shows in its place, so the screen is never an empty gap.
+  const [animationReady, setAnimationReady] = useState(false);
+  const onPlayer = useCallback((player: DotLottie | null) => {
+    holdLastFrameIfReduced(player);
+    player?.addEventListener("load", () => setAnimationReady(true));
+  }, []);
+  const iconCircle = (
+    <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ring-8 ${colors.circle}`}>
+      <Icon className={`h-8 w-8 ${colors.icon} ${iconSpinning ? "animate-spin" : ""}`} />
+    </div>
+  );
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-4 py-12">
       <div
@@ -74,9 +98,21 @@ export default function PaymentStateCard({
         aria-live="polite"
         className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-md sm:p-8"
       >
-        <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ring-8 ${colors.circle}`}>
-          <Icon className={`h-8 w-8 ${colors.icon} ${iconSpinning ? "animate-spin" : ""}`} />
-        </div>
+        {animation ? (
+          <div className="relative mx-auto aspect-square w-full max-w-48" aria-hidden="true">
+            {!animationReady && (
+              <div className="absolute inset-0 flex items-center justify-center">{iconCircle}</div>
+            )}
+            <DotLottieReact
+              src={`/animations/${animation}.lottie`}
+              autoplay
+              dotLottieRefCallback={onPlayer}
+              className={`h-full w-full transition-opacity duration-300 ${animationReady ? "opacity-100" : "opacity-0"}`}
+            />
+          </div>
+        ) : (
+          iconCircle
+        )}
 
         <h1 className="mt-6 text-xl font-bold text-gray-900 dark:text-neutral-50">{title}</h1>
         {body ? (

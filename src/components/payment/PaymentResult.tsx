@@ -46,8 +46,11 @@ import PaymentStateCard from "./PaymentStateCard";
 
 /** Re-checks while the result is unknown: 2 s, 4 s, 8 s, 15 s. */
 const RECHECK_DELAYS_MS = [2000, 4000, 8000, 15000];
-/** How long "Payment confirmed" shows before tracking opens. */
-const CONFIRMED_PAUSE_MS = 1500;
+/**
+ * How long "Order placed" shows before tracking opens — long enough for its
+ * animation to play through (26 Oct 2026; was 1.5 s with a still tick).
+ */
+const CONFIRMED_PAUSE_MS = 2800;
 
 type View =
   | { kind: "checking"; attempt: number }
@@ -302,6 +305,7 @@ function PaymentResultCard({
         <PaymentStateCard
           tone="success"
           icon={CheckCircle2}
+          animation="order-placed"
           title={t("orderPlacedTitle")}
           body={t("orderPlacedBody")}
           {...reference}

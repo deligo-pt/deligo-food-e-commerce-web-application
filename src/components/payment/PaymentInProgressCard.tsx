@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
+import { formatEuro } from "@/lib/currency";
 
 /**
  * Takes the place of the payment methods when this checkout already has a
@@ -86,7 +87,7 @@ export default function PaymentInProgressCard({
           {amount !== undefined && (
             <p className="mt-3 text-sm text-gray-500 dark:text-neutral-400">
               {t("paymentInProgressAmount")}{" "}
-              <span className="font-bold text-gray-900 dark:text-neutral-50">€{amount.toFixed(2)}</span>
+              <span className="font-bold text-gray-900 dark:text-neutral-50">{formatEuro(amount)}</span>
             </p>
           )}
         </div>

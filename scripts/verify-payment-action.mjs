@@ -294,5 +294,21 @@ section("13. 🔴 \"Page closed\" flags are reset when the page comes back");
   check("no cleanup-only flag pattern left in either", ![cart, result].some((src) => /useEffect\(\s*\(\) => \(\) => \{\s*unmounted(Ref)?\.current = true;/.test(src)));
 }
 
+section("14. 🔴 every successful payment ends on the same animated success screen");
+{
+  // 26 Oct 2026: a saved-card payment used to jump to /orders with no
+  // confirmation, and the success screen showed a still tick for 1.5 s.
+  const page = code("src/components/payment/PaymentPage.tsx");
+  const result = code("src/components/payment/PaymentResult.tsx");
+  const card = code("src/components/payment/PaymentStateCard.tsx");
+  const oneClick = page.slice(page.indexOf("await payWithSavedCard({"), page.indexOf("const result = await createPaymentSession("));
+  check("🔴 a saved-card payment goes to the success screen", /router\.replace\(`\/payment-success\?summaryId=\$\{encodeURIComponent\(summary\._id\)\}`\)/.test(oneClick));
+  check("…and never straight to the orders list", !/router\.replace\("\/orders"\)/.test(oneClick));
+  check("🔴 the success screen plays the order-placed animation", /animation="order-placed"/.test(result) && /src=\{`\/animations\/\$\{animation\}\.lottie`\}/.test(card));
+  check("it stays long enough to be seen before tracking opens", (() => { const m = result.match(/CONFIRMED_PAUSE_MS = (\d+)/); return !!m && Number(m[1]) >= 2500; })());
+  check("reduced motion rests on the finished frame", /holdLastFrameIfReduced\(player\)/.test(card));
+  check("the tick fills the space until the animation has loaded", /\{!animationReady && \(/.test(card) && /addEventListener\("load", \(\) => setAnimationReady\(true\)\)/.test(card));
+}
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed === 0 ? 0 : 1);

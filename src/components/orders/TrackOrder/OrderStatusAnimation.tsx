@@ -9,7 +9,7 @@ import { toTimelineStatus } from "@/lib/orderTimeline";
  * on first use, so it is split out of the page bundle and never server-rendered.
  * The placeholder holds the same square, so nothing shifts when it arrives.
  */
-const DotLottieReact = dynamic(
+export const DotLottieReact = dynamic(
   () => import("@lottiefiles/dotlottie-react").then((m) => m.DotLottieReact),
   { ssr: false, loading: () => <div className="h-full w-full" /> },
 );
@@ -51,7 +51,7 @@ export function orderAnimationFor(status: string | null | undefined): string {
  * With reduced motion the animation does not play; it rests on its last frame,
  * which is the finished picture (the first frame of several is still empty).
  */
-function holdLastFrameIfReduced(player: DotLottie | null) {
+export function holdLastFrameIfReduced(player: DotLottie | null) {
   if (!player || !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
   player.addEventListener("load", () => {
     player.pause();

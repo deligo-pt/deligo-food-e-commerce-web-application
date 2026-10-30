@@ -47,6 +47,12 @@ import {
 import { useTranslation } from "@/hooks/useTranslation";
 import { useStore } from "@/stores/translationStore";
 import { useCart } from "@/hooks/queries/useCart";
+import { useCartAddonGroups } from "@/hooks/queries/useCartAddonGroups";
+import {
+  addonGroupMinimum,
+  addonsPayload,
+  isAddonDecrementBlocked,
+} from "@/lib/requiredAddons";
 import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { activateOrder } from "@/lib/cartActivation";
 import { vendorHref, vendorRouteId } from "@/lib/vendorId";
@@ -65,6 +71,9 @@ import {
 } from "@/lib/pickupTime";
 import { Button } from "@/components/ui/button";
 import { lineDeposit } from "@/lib/sdr";
+import { subtotalBreakdown } from "@/lib/vatBreakdown";
+import VatInfoButton from "@/components/shared/VatInfoButton";
+import { formatEuro } from "@/lib/currency";
 
 interface CheckoutPageProps {
   vendorId: string;
@@ -172,6 +181,8 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     error: cartError,
     refetch: refetchCart,
   } = useCart<CartResponse>();
+  // Which add-ons belong to a required group — see `lib/requiredAddons.ts`.
+  const { data: addonGroups } = useCartAddonGroups(cartData?.items);
   const {
     data: vendorList = [],
     isLoading: vendorsLoading,
@@ -461,6 +472,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       { originalPrice: 0, discount: 0, vat: 0, total: 0, deposit: 0 },
     );
   }, [vendorItems]);
+  // The ⓘ breakdown of `summary.vat`: products and add-ons only — the fees
+  // are priced at the payment step, which the popup says.
+  const vatBreakdown = subtotalBreakdown({ items: vendorItems, lang, t, totalLabel: t("finalPrice") });
 
   const executeSync = async (key: string, item: any) => {
     const targetQty = pendingQtyRef.current[key];
@@ -476,12 +490,20 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
 
     try {
       // add-to-cart now SETs the line to the exact quantity, so we send the
-      // absolute target the user landed on after they stopped clicking.
+      // absolute target the user landed on after they stopped clicking. The
+      // line's add-ons go with it: the backend checks a required group against
+      // the request alone and refuses one that leaves it out
+      // (`lib/requiredAddons.ts`).
+      const liveItem = cartRef.current?.items.find(
+        (ci) => ci.productId + "_" + (ci.variationSku || "default") === key,
+      );
+      const addons = addonsPayload(liveItem?.addons ?? item.addons);
       const payload: any = {
         items: [
           {
             productId: item.productId,
             quantity: targetQty,
+            ...(addons.length ? { addons } : {}),
           },
         ],
       };
@@ -584,7 +606,9 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       // by optionSku so untouched add-ons on the line survive, and SETs the
       // product-line quantity — which is [Required] — so we must resend the
       // line's current quantity (a pending qty edit, else the live cart value)
-      // to avoid resetting it.
+      // to avoid resetting it. The rest of the line's add-ons are resent as
+      // they are: the backend checks a required group against the request
+      // alone, so leaving it out is refused (`lib/requiredAddons.ts`).
       const key = item.productId + "_" + (item.variationSku || "default");
       const liveItem = cartRef.current?.items.find(
         (ci) => ci.productId + "_" + (ci.variationSku || "default") === key,
@@ -602,7 +626,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
           {
             productId: item.productId,
             quantity: productQty,
-            addons: [{ optionSku: addon.sku, quantity: targetQty }],
+            addons: addonsPayload(liveItem?.addons ?? item.addons, {
+              sku: addon.sku,
+              quantity: targetQty,
+            }),
           },
         ],
       };
@@ -649,6 +676,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     const newAddonQty = addon.quantity + (action === "increment" ? 1 : -1);
     // Zero removes the add-on (the API drops it); never go negative.
     if (newAddonQty < 0) return;
+    // A required group keeps its minimum; the button is disabled too.
+    if (
+      action === "decrement" &&
+      isAddonDecrementBlocked(item.addons ?? [], addon, addonGroups)
+    ) {
+      return;
+    }
 
     setCart((prevCart) => {
       if (!prevCart) return null;
@@ -954,7 +988,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-12">
-        <div className="space-y-4 lg:col-span-8">
+        <div className="min-w-0 space-y-4 lg:col-span-8">
           {vendorItems.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-gray-300 dark:border-neutral-800 bg-card p-12 text-center">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-neutral-50">{t("noProductsFound")}</h3>
@@ -979,9 +1013,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                         fallbackIcon={<UtensilsCrossed className="h-10 w-10" />}
                       />
                     </div>
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-4">
-                        <div>
+                        {/* min-w-0 down this column so an add-on's name
+                            truncates instead of pushing the row off a phone. */}
+                        <div className="min-w-0 flex-1">
                           <h3 className="text-xl font-bold text-gray-900 dark:text-neutral-50">
                             {item.name}
                           </h3>
@@ -992,7 +1028,16 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                           )}
                           {item.addons && item.addons.length > 0 && (
                             <ul className="mt-3 space-y-2">
-                              {item.addons.map((addon) => (
+                              {item.addons.map((addon) => {
+                                // A required group can't drop below its
+                                // minimum, so its last add-on has no delete.
+                                const required = addonGroupMinimum(addon, addonGroups) > 0;
+                                const locked = isAddonDecrementBlocked(item.addons ?? [], addon, addonGroups);
+                                const lockedHint = t("addonRequiredHint").replace(
+                                  "{min}",
+                                  String(addonGroupMinimum(addon, addonGroups)),
+                                );
+                                return (
                                 <li
                                   key={addon.sku}
                                   className="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-neutral-800/50 px-3 py-2"
@@ -1002,11 +1047,22 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                                       <span className="text-primary dark:text-pink-400">+ </span>
                                       {resolveAddonName(addon.name, lang)}
                                     </span>
-                                    {/* Free add-ons (€0) skip the unit line; the
+                                    {/* The badge sits on the second line so the
+                                        name keeps the width on a phone. Free
+                                        add-ons (€0) skip the unit price; the
                                         total column says "Free"/"Grátis". */}
-                                    {addon.unitPrice > 0 && (
-                                      <span className="text-xs text-gray-400 dark:text-neutral-500">
-                                        €{addon.unitPrice.toFixed(2)} × {addon.quantity}
+                                    {(required || addon.unitPrice > 0) && (
+                                      <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                        {required && (
+                                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium capitalize text-primary dark:bg-pink-950/30 dark:text-pink-400">
+                                            {t("required")}
+                                          </span>
+                                        )}
+                                        {addon.unitPrice > 0 && (
+                                          <span className="text-xs text-gray-400 dark:text-neutral-500">
+                                            {formatEuro(addon.unitPrice)} × {addon.quantity}
+                                          </span>
+                                        )}
                                       </span>
                                     )}
                                   </div>
@@ -1015,11 +1071,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                                       type="button"
                                       size="icon-sm"
                                       variant="ghost"
-                                      aria-label={t("decreaseQuantity")}
+                                      aria-label={locked ? lockedHint : t("decreaseQuantity")}
+                                      title={locked ? lockedHint : undefined}
+                                      disabled={locked}
                                       onClick={() => updateAddonQuantity(item, addon, "decrement")}
                                       className="rounded-full text-gray-500 active:scale-90 dark:text-neutral-400"
                                     >
-                                      {addon.quantity <= 1 ? (
+                                      {addon.quantity <= 1 && !locked ? (
                                         <Trash2 size={13} />
                                       ) : (
                                         <Minus size={13} />
@@ -1039,10 +1097,11 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                                     </Button>
                                   </div>
                                   <span className="w-14 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-neutral-50">
-                                    {addon.unitPrice > 0 ? `€${addon.lineTotal.toFixed(2)}` : t("addonFree")}
+                                    {addon.unitPrice > 0 ? formatEuro(addon.lineTotal) : t("addonFree")}
                                   </span>
                                 </li>
-                              ))}
+                                );
+                              })}
                             </ul>
                           )}
                         </div>
@@ -1093,15 +1152,15 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                           {getLineOriginalPrice(item) >
                             item.itemSummary.grandTotal + 0.005 && (
                             <p className="text-sm text-gray-400 dark:text-neutral-500 line-through">
-                              €{getLineOriginalPrice(item).toFixed(2)}
+                              {formatEuro(getLineOriginalPrice(item))}
                             </p>
                           )}
                           <p className="text-2xl font-bold text-primary dark:text-pink-400">
-                            €{item.itemSummary.grandTotal.toFixed(2)}
+                            {formatEuro(item.itemSummary.grandTotal)}
                           </p>
                           {lineDeposit(item).total > 0 && (
                             <p className="text-xs font-medium text-muted-foreground dark:text-neutral-400" title={t("sdrExplanation")}>
-                              +€{lineDeposit(item).total.toFixed(2)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × €{lineDeposit(item).unit.toFixed(2)})
+                              +{formatEuro(lineDeposit(item).total)} {t("sdrDepositShort")} ({lineDeposit(item).containers} × {formatEuro(lineDeposit(item).unit)})
                             </p>
                           )}
                         </div>
@@ -1128,13 +1187,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-neutral-400">{t("totalPrice")}</span>
                 <span className="font-semibold text-gray-900 dark:text-neutral-50">
-                  €{summary.originalPrice.toFixed(2)}
+                  {formatEuro(summary.originalPrice)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-neutral-400">{t("discount")}</span>
                 <span className="font-semibold text-green-600 dark:text-green-400">
-                  -€{summary.discount.toFixed(2)}
+                  -{formatEuro(summary.discount)}
                 </span>
               </div>
               <div className="border-t border-dashed border-border pt-4">
@@ -1143,12 +1202,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                     <span className="block text-xl font-bold text-gray-900 dark:text-neutral-50">
                       {t("finalPrice")}
                     </span>
-                    <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-neutral-400">
-                      ({t("inclVat")} -&nbsp;€{summary.vat.toFixed(2)})
+                    <span className="mt-0.5 flex items-center gap-1 text-xs font-normal text-gray-500 dark:text-neutral-400">
+                      ({t("inclVat")} -&nbsp;{formatEuro(summary.vat)})
+                      <VatInfoButton breakdown={vatBreakdown} label={t("vatBreakdownOpen")} />
                     </span>
                   </div>
                   <span className="shrink-0 whitespace-nowrap text-2xl font-extrabold text-primary dark:text-pink-400">
-                    €{summary.total.toFixed(2)}
+                    {formatEuro(summary.total)}
                   </span>
                 </div>
               </div>
@@ -1162,7 +1222,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                     <span className="mt-1 block text-xs text-gray-500 dark:text-neutral-400">{t("sdrAddedAtPayment")}</span>
                   </div>
                   <span className="shrink-0 font-semibold text-gray-900 dark:text-neutral-50">
-                    +€{summary.deposit.toFixed(2)}
+                    +{formatEuro(summary.deposit)}
                   </span>
                 </div>
               )}
