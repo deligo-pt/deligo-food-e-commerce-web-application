@@ -49,6 +49,22 @@ interface AddressFormProps {
   prefillRequestId?: number;
 }
 
+/** DeliGo delivers only in Portugal. */
+const DEFAULT_COUNTRY = "Portugal";
+
+/**
+ * State / region and country, which the form no longer shows (31 Oct 2026).
+ * `POST /customers/add-delivery-address` still rejects an address without both
+ * (`DELIVERY_ADDRESS_FIELDS_REQUIRED`, even for `""`), so they are still sent:
+ * what the map pin's geocode found, else the city and Portugal.
+ */
+function hiddenRegion(data: { city: string; state: string; country: string }) {
+  return {
+    state: data.state.trim() || data.city.trim(),
+    country: data.country.trim() || DEFAULT_COUNTRY,
+  };
+}
+
 export default function AddressForm({
   coordinates,
   initialAddress,
@@ -70,8 +86,6 @@ export default function AddressForm({
       // The courier needs the door, not just the street.
       "houseApartmentFloor",
       "city",
-      "stateRegion",
-      "country",
     ];
     if (requiredKeys.includes(key)) {
       return value.endsWith("*") ? value : `${value} *`;
@@ -226,22 +240,13 @@ export default function AddressForm({
         toast.error(t("cityRequired"));
         return;
       }
-      if (!formData.state.trim()) {
-        toast.error(t("regionRequired"));
-        return;
-      }
-      if (!formData.country.trim()) {
-        toast.error(t("countryRequired"));
-        return;
-      }
 
       setIsSaving(true);
       try {
         const guestAddress = {
           street: formData.street.trim(),
           city: formData.city.trim(),
-          state: formData.state.trim(),
-          country: formData.country.trim(),
+          ...hiddenRegion(formData),
           postalCode: formData.postalCode.trim(),
           latitude: coordinates.lat,
           longitude: coordinates.lng,
@@ -284,22 +289,13 @@ export default function AddressForm({
       toast.error(t("cityRequired"));
       return;
     }
-    if (!formData.state.trim()) {
-      toast.error(t("regionRequired"));
-      return;
-    }
-    if (!formData.country.trim()) {
-      toast.error(t("countryRequired"));
-      return;
-    }
 
     setIsSaving(true);
     try {
       const payload = {
         street: formData.street.trim(),
         city: formData.city.trim(),
-        state: formData.state.trim(),
-        country: formData.country.trim(),
+        ...hiddenRegion(formData),
         postalCode: formData.postalCode.trim(),
         latitude: coordinates.lat,
         longitude: coordinates.lng,
@@ -472,7 +468,7 @@ export default function AddressForm({
           rendered back ("1229 Dhaka, Bangladesh") so entry and display read the
           same way. On mobile the grid collapses to one column, which makes this
           the vertical order too. */}
-      <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
           <label className="mb-2 block text-sm font-medium text-foreground dark:text-neutral-200">
             {getLabelText("postalCode")}
@@ -500,43 +496,6 @@ export default function AddressForm({
           />
         </div>
       </div>
-
-      {/* State + Country */}
-      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-foreground dark:text-neutral-200">
-            {getLabelText("stateRegion")}
-          </label>
-          <input
-            type="text"
-            value={formData.state}
-            onChange={(e) =>
-              setFormData({ ...formData, state: e.target.value })
-            }
-            placeholder={t("enterStateRegion")}
-            className="h-14 w-full rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500 focus:border-primary"
-          />
-        </div>
-        <div>
-          <label className="mb-2 block text-sm font-medium text-foreground dark:text-neutral-200">
-            {getLabelText("country")}
-          </label>
-          <div className="flex items-center rounded-xl border border-[#e3bdc3] dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 focus-within:border-primary">
-            <Globe size={18} className="mr-3 text-muted-foreground dark:text-neutral-500" />
-            <input
-              type="text"
-              value={formData.country}
-              onChange={(e) =>
-                setFormData({ ...formData, country: e.target.value })
-              }
-              placeholder={t("enterCountry")}
-              className="h-14 w-full bg-transparent outline-none text-foreground dark:text-neutral-100 placeholder:text-gray-400 dark:placeholder:text-neutral-500"
-            />
-          </div>
-        </div>
-      </div>
-
-
 
       {/* Coordinates Card */}
       <div className="mb-8 rounded-2xl border border-[#e3bdc3] dark:border-neutral-800 bg-[#fafafa] dark:bg-[#fafafa]/5 p-4">

@@ -128,12 +128,6 @@ const en = {
   postalCode: "Postal Code *",
   enterPostalCode: "Enter postal code",
 
-  stateRegion: "State / Region",
-  enterStateRegion: "Enter state / region",
-
-  country: "Country",
-  enterCountry: "Enter country",
-
   gpsCoordinates: "GPS Coordinates",
 
   latitude: "Latitude",
@@ -1967,8 +1961,6 @@ const en = {
   streetRequired: "Street address is required.",
   houseApartmentFloorRequired: "House / apartment / floor is required.",
   cityRequired: "City is required.",
-  regionRequired: "Region/State is required.",
-  countryRequired: "Country is required.",
   locationSavedLocally: "Location saved locally!",
   failedToSaveLocation: "Failed to save location.",
   pleaseLogInToSaveAddress: "Please log in to save your address.",
