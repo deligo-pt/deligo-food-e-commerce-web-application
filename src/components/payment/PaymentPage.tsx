@@ -124,7 +124,11 @@ interface Delivery {
   vatAmount?: number;
   totalDeliveryCharge: number;
   distance: number;
+  /** The rider's travel time only, in minutes. */
   estimatedTime: number;
+  /** `estimatedTime` plus the store's preparation time — what the customer
+   *  actually waits (added by the backend Nov 2026; older checkouts lack it). */
+  estimatedTotalMinutes?: number;
 }
 
 interface PayoutSummary {
@@ -1121,10 +1125,12 @@ export default function PaymentPage() {
   // `!isPickup` states the intent rather than relying on that coincidence.
   const hasDeliveryDistance =
     !isPickup && typeof delivery.distance === "number" && delivery.distance > 0;
+  const deliveryEta =
+    typeof delivery.estimatedTotalMinutes === "number" && delivery.estimatedTotalMinutes > 0
+      ? delivery.estimatedTotalMinutes
+      : delivery.estimatedTime;
   const hasDeliveryEta =
-    !isPickup &&
-    typeof delivery.estimatedTime === "number" &&
-    delivery.estimatedTime > 0;
+    !isPickup && typeof deliveryEta === "number" && deliveryEta > 0;
 
   const vendorRating = vendor?.rating.average ?? 0;
   const vendorReviewCount = vendor?.rating.totalReviews ?? 0;
@@ -1328,7 +1334,7 @@ export default function PaymentPage() {
                           {hasDeliveryDistance && hasDeliveryEta && " • "}
                           {hasDeliveryEta && (
                             <>
-                              {t("estimatedTime")}: {formatMinutes(delivery.estimatedTime, t)}
+                              {t("estimatedTime")}: {formatMinutes(deliveryEta, t)}
                             </>
                           )}
                         </p>
