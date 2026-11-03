@@ -24,6 +24,7 @@ import { normalizeOrderStatus } from "./orderStatus";
  * waiting through, and the restaurant had already accepted.
  */
 export const STATUS_LABEL_KEYS: Record<string, string> = {
+  SCHEDULED: "scheduled",
   PENDING: "pending",
   ACCEPTED: "accepted",
   ASSIGNED: "accepted",

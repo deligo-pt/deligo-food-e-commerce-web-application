@@ -182,3 +182,30 @@ export function deliveryBreakdown(input: {
     notes: distance ? [t("deliveryDistanceNote").replace("{km}", distance.toFixed(2))] : [],
   };
 }
+
+/**
+ * The small order fee's ⓘ: one row, net + VAT (guide §3: "one combined line;
+ * put the split in a tooltip"). From the checkout's or the order's own
+ * `orderCalculation`.
+ */
+export function smallOrderFeeBreakdown(input: {
+  calc: { smallOrderFee?: unknown; smallOrderFeeTax?: unknown; smallOrderFeeTaxRate?: unknown };
+  t: Translate;
+}): Breakdown {
+  const { t, calc } = input;
+  const vat = money(calc.smallOrderFeeTax);
+  const price = Math.round((money(calc.smallOrderFee) + vat) * 100) / 100;
+  const row: BreakdownRow = {
+    label: t("smallOrderFee"),
+    rateLabel: vat > 0 ? rateLabel(rateOf(calc.smallOrderFeeTaxRate), t) : undefined,
+    price,
+    vat,
+  };
+  return {
+    title: t("smallOrderFee"),
+    intro: t("vatBreakdownIntro"),
+    rows: [row],
+    total: { label: t("smallOrderFee"), price, vat },
+    notes: [t("smallOrderFeeExplain")],
+  };
+}

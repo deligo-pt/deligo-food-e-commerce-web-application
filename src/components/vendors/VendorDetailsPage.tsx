@@ -11,7 +11,12 @@ import {
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bike, Moon, Plus, Star, UtensilsCrossed } from "lucide-react";
+import { Bike, Moon, PauseCircle, Plus, Star, UtensilsCrossed } from "lucide-react";
+import StoreStatusBanner from "@/components/vendors/StoreStatusBanner";
+import { useVendorOrdering } from "@/hooks/useSlotChoice";
+import { useQueryClient } from "@tanstack/react-query";
+import { checkoutSlotKeys } from "@/hooks/queries/useCheckoutSlots";
+import { getAvailability, type Availability } from "@/lib/availability";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useProfile, useActiveAddressCoords } from "@/hooks/queries/useProfile";
@@ -152,6 +157,8 @@ interface Vendor {
      * because older vendor records may predate the field.
      */
     timezone?: string;
+    /** Schedule + override state; read through `getAvailability`. */
+    availability?: Availability;
   };
   businessLocation?: {
     city: string;
@@ -242,6 +249,7 @@ const MenuProductCard = memo(function MenuProductCard({
   cartQuantity,
   onCartChanged,
   storeClosed = false,
+  storePaused = false,
   vendorKind = "partner",
   vendorId,
   storeName,
@@ -258,6 +266,8 @@ const MenuProductCard = memo(function MenuProductCard({
   // so the card never invites a click it won't honour. Customers can still see
   // what's on offer, which is the point of letting them in here at all.
   storeClosed?: boolean;
+  /** Closed because of a temporary pause, so the label says "paused". */
+  storePaused?: boolean;
   /** Restaurant, store or neither — decides what the closed label calls it. */
   vendorKind?: VendorKind;
   /** The store's id from the route — the one the share link needs. */
@@ -406,7 +416,7 @@ const MenuProductCard = memo(function MenuProductCard({
               disabled={storeClosed}
               aria-label={
                 storeClosed
-                  ? t(vendorCopyKey("storeClosedTitle", vendorKind))
+                  ? t(vendorCopyKey(storePaused ? "storePausedTitle" : "storeClosedTitle", vendorKind))
                   : t("addToCart")
               }
               className="size-9 shrink-0 rounded-xl hover:scale-105 disabled:hover:scale-100"
@@ -457,6 +467,7 @@ export default function VendorDetailsPage({
     data: vendor = null,
     isLoading: loading,
     error: vendorErrorObj,
+    refetch: refetchVendor,
   } = useVendor<Vendor>(vendorId, { enabled: !isLegacyLink });
   // Signed in? The cart only exists for an account, so a guest's grid renders
   // every card in its `+` state and the query is never fired. Declared this
@@ -607,8 +618,31 @@ export default function VendorDetailsPage({
 
   // Closed vendors are openable from the listings on purpose — the menu stays
   // browsable and only ordering is withdrawn — and a store can also close while
-  // this page is open. Only an explicit `false` counts as closed.
-  const isStoreClosed = vendor?.businessDetails?.isStoreOpen === false;
+  // this page is open. The backend's `availability.state` decides (guide §1):
+  // anything but OPEN withdraws ASAP ordering, a pause included. Adding to the
+  // cart stays possible when the order can be scheduled for later (Phase 4):
+  // today's delivery or pickup list has a slot, or the store books ahead.
+  const availability = getAvailability(vendor);
+  const isStoreClosed = !!availability && availability.state !== "OPEN";
+  const isStorePaused = availability?.state === "PAUSED";
+  const vendorMongoId = vendor?._id ?? vendor?.id;
+  // `VENDOR_NOT_ACCEPTING_ORDERS` from the slot list hides ordering for this
+  // vendor even while it shows as open (guide §2).
+  const { canScheduleLater, notAcceptingOrders } = useVendorOrdering(vendorMongoId, {
+    authed,
+    isStoreClosed,
+  });
+  const isOrderBlocked = notAcceptingOrders || (isStoreClosed && !canScheduleLater);
+  // Refetch when a pause ends, the store opens, or it closes while on screen —
+  // the vendor and its slot lists both (guide §1: "at zero refetch the vendor
+  // and the slots"), so "schedule for later" and the add buttons follow at once.
+  const queryClient = useQueryClient();
+  const refreshVendor = useCallback(() => {
+    void refetchVendor();
+    if (vendorMongoId) {
+      void queryClient.invalidateQueries({ queryKey: [...checkoutSlotKeys.all, vendorMongoId] });
+    }
+  }, [refetchVendor, queryClient, vendorMongoId]);
   // Restaurant, store, or neither — the vendor's own record decides the words
   // on the closed banner and on the disabled add buttons.
   const vendorKind = getVendorKind(vendor?.businessDetails?.businessType);
@@ -789,7 +823,8 @@ export default function VendorDetailsPage({
         onSelect={handleSelectProduct}
         cartQuantity={cartQuantities.get(product._id ?? product.productId) ?? 0}
         onCartChanged={invalidateCart}
-        storeClosed={isStoreClosed}
+        storeClosed={isOrderBlocked}
+        storePaused={isStorePaused}
         vendorKind={vendorKind}
         vendorId={vendorId}
         storeName={storeName}
@@ -799,7 +834,8 @@ export default function VendorDetailsPage({
       cartQuantities,
       handleSelectProduct,
       invalidateCart,
-      isStoreClosed,
+      isOrderBlocked,
+      isStorePaused,
       vendorKind,
       vendorId,
       storeName,
@@ -911,6 +947,8 @@ export default function VendorDetailsPage({
           openingHours={vendor.businessDetails.openingHours}
           closingDays={vendor.businessDetails.closingDays}
           isStoreOpen={vendor.businessDetails.isStoreOpen}
+          availability={availability}
+          onClosed={refreshVendor}
         />
 
         {/* Hero Section */}
@@ -940,8 +978,8 @@ export default function VendorDetailsPage({
               {isStoreClosed && (
                 <div className="pointer-events-none absolute inset-0 flex items-start justify-center bg-black/40 pt-8 md:pt-16">
                   <span className="flex items-center gap-2 rounded-full bg-black/70 px-4 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
-                    <Moon size={18} />
-                    {t("currentlyClosed")}
+                    {isStorePaused ? <PauseCircle size={18} /> : <Moon size={18} />}
+                    {t(isStorePaused ? "currentlyPaused" : "currentlyClosed")}
                   </span>
                 </div>
               )}
@@ -957,10 +995,14 @@ export default function VendorDetailsPage({
                       </span>
                     )}
                     <span
-                      className={`h-3 w-3 rounded-full ${vendor.businessDetails.isStoreOpen
-                        ? "bg-green-500"
-                        : "bg-red-500"
-                        }`}
+                      aria-hidden="true"
+                      className={`h-3 w-3 shrink-0 rounded-full ${
+                        isStorePaused
+                          ? "bg-amber-500"
+                          : isStoreClosed
+                            ? "bg-red-500"
+                            : "bg-green-500"
+                      }`}
                     />
                   </div>
                   <p className="mb-4 text-sm text-gray-500 dark:text-neutral-400">
@@ -1004,22 +1046,17 @@ export default function VendorDetailsPage({
           />
         )}
 
-        {isStoreClosed && (
-          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4">
-            <Moon
-              size={22}
-              className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500"
-            />
-            <div>
-              <p className="font-semibold text-amber-900 dark:text-amber-300">
-                {t(vendorCopyKey("storeClosedTitle", vendorKind))}
-              </p>
-              <p className="mt-1 text-sm text-amber-800 dark:text-amber-400/80">
-                {t(vendorCopyKey("storeClosedNotice", vendorKind))}
-              </p>
-            </div>
-          </div>
-        )}
+        {/* Closed: "Opens tomorrow at 09:00". Paused: "Back at 15:00" with a
+            countdown. Refetches the vendor when that moment arrives. */}
+        <StoreStatusBanner
+          availability={availability}
+          vendorKind={vendorKind}
+          timeZone={vendor.businessDetails.timezone}
+          onStateChange={refreshVendor}
+          canScheduleLater={canScheduleLater}
+          notAcceptingOrders={notAcceptingOrders}
+          className="mb-6"
+        />
 
         {/* Two columns from `lg`: the category list beside the catalogue, the
             way the reference lays it out. Below `lg` the sidebar is hidden and
@@ -1161,6 +1198,10 @@ export default function VendorDetailsPage({
             onClose={() => setSelectedProductId(null)}
             productId={selectedProductId}
             storeCoords={vendorCoords(vendor)}
+            storeAvailability={availability}
+            storeTimeZone={vendor.businessDetails.timezone}
+            canScheduleLater={canScheduleLater}
+            notAcceptingOrders={notAcceptingOrders}
           />
         )}
       </div>

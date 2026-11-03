@@ -20,7 +20,7 @@ import {
   normalizeOrderStatus,
 } from "./orderStatus";
 
-export type RefundState = "none" | "not_eligible" | "in_progress" | "completed";
+export type RefundState = "none" | "not_eligible" | "in_progress" | "processing" | "completed";
 
 /**
  * The backend's own verdict on the money, present on any order that has been
@@ -67,6 +67,11 @@ export function getRefundState(order: RefundableOrder | null | undefined): Refun
   const declared = (order.refundStatus ?? "").toUpperCase();
   const mapped = REFUND_STATUS_STATES[declared as RefundStatus];
   if (mapped) return mapped;
+  // The gateway refund has started, failed or cannot be read (guide §5):
+  // "being processed, contact support if it takes long".
+  if (declared === "IN_PROGRESS" || declared === "FAILED" || declared === "UNKNOWN") {
+    return "processing";
+  }
 
   // No `refundStatus`: a vendor-side rejection, or an order that predates the
   // field. Fall back to reading the payment fields.
@@ -100,8 +105,9 @@ export function isOrderFinished(order: RefundableOrder | null | undefined): bool
   // only `DELIVERED` here left a collected pickup order polling at the live
   // cadence indefinitely, because its status is settled but does not match.
   if (isCompletedStatus(order.orderStatus)) return true;
+  const refund = getRefundState(order);
   return (
-    isTerminatedStatus(order.orderStatus) && getRefundState(order) !== "in_progress"
+    isTerminatedStatus(order.orderStatus) && refund !== "in_progress" && refund !== "processing"
   );
 }
 
@@ -150,12 +156,14 @@ export function canCancelOrder(order: CancellableOrder | null | undefined): bool
 const LABEL_KEYS: Record<Exclude<RefundState, "none">, string> = {
   not_eligible: "refundNotEligible",
   in_progress: "refundInProgress",
+  processing: "refundProcessing",
   completed: "refundCompleted",
 };
 
 const DESCRIPTION_KEYS: Record<Exclude<RefundState, "none">, string> = {
   not_eligible: "refundNotEligibleDescription",
   in_progress: "refundInProgressDescription",
+  processing: "refundProcessingDescription",
   completed: "refundCompletedDescription",
 };
 

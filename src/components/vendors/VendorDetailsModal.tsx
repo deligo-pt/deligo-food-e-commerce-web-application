@@ -14,6 +14,9 @@ import {
   Check,
   MessageCircle,
 } from "lucide-react";
+import { useStore } from "@/stores/translationStore";
+import { getAvailability, type Availability } from "@/lib/availability";
+import { cardStatusLabel } from "@/lib/storeStatusText";
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { useVendor } from "@/hooks/queries/useVendors";
@@ -47,6 +50,9 @@ interface VendorData {
     closingHours: string;
     closingDays: string[];
     isStoreOpen: boolean;
+    /** Schedule + override state; read through `getAvailability`. */
+    availability?: Availability;
+    timezone?: string;
     storeClosedAt: string | null;
     deliveryZoneId: string;
     preparationTimeMinutes: number;
@@ -73,6 +79,7 @@ export default function VendorDetailsModal({
   vendorId,
 }: VendorDetailsModalProps) {
   const { t } = useTranslation();
+  const lang = useStore((state) => state.lang) as "en" | "pt";
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
@@ -89,6 +96,21 @@ export default function VendorDetailsModal({
   const error = vendorErrorObj
     ? getApiErrorMessage(vendorErrorObj, "Failed to load vendor details")
     : null;
+
+  // "Open Now", "Closed · opens at 11:00" or "Paused · back at 15:00" (guide §1).
+  const storeAvailability = getAvailability(vendorData);
+  const storeStatusLabel = cardStatusLabel(
+    storeAvailability,
+    t,
+    lang,
+    vendorData?.businessDetails?.timezone,
+  );
+  const statusTone =
+    storeAvailability?.state === "PAUSED"
+      ? { bubble: "bg-amber-100 dark:bg-amber-950/40", text: "text-amber-600 dark:text-amber-400" }
+      : storeAvailability && storeAvailability.state !== "OPEN"
+        ? { bubble: "bg-red-100 dark:bg-red-950/40", text: "text-red-600 dark:text-red-400" }
+        : { bubble: "bg-green-100 dark:bg-green-950/40", text: "text-green-600 dark:text-green-400" };
 
   // Close share dropdown when clicking outside
   useEffect(() => {
@@ -344,14 +366,12 @@ export default function VendorDetailsModal({
             {/* Status Cards */}
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="flex items-center gap-3 sm:gap-4 rounded-xl border border-border bg-gray-50 dark:bg-neutral-900/50 p-3 sm:p-4">
-                <div className="rounded-full bg-green-100 dark:bg-green-950/40 p-2 sm:p-3">
-                  <Clock3 size={20} className="text-green-600 dark:text-green-400" />
+                <div className={`rounded-full p-2 sm:p-3 ${statusTone.bubble}`}>
+                  <Clock3 size={20} className={statusTone.text} />
                 </div>
-                <div>
-                  <p className="text-xs sm:text-sm font-bold text-green-600 dark:text-green-400">
-                    {vendorData?.businessDetails?.isStoreOpen
-                      ? t("openNow")
-                      : t("closedNow")}
+                <div className="min-w-0">
+                  <p className={`text-xs sm:text-sm font-bold ${statusTone.text}`}>
+                    {storeStatusLabel}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-neutral-400">
                     {vendorData?.businessDetails?.openingHours &&

@@ -88,6 +88,18 @@ export function toTimelineStatus(status: string | null | undefined): string {
 export interface TimelineOrder extends OrderWithStatusHistory {
   rejectReason?: string | null;
   fulfillmentType?: string | null;
+  orderType?: string | null;
+}
+
+/** The first step of an order booked for later (guide §5). */
+export const SCHEDULED_STATUS = "SCHEDULED";
+
+/** Placed as a scheduled order: by `orderType`, or by its history / status. */
+function wasScheduled(order: TimelineOrder | null | undefined): boolean {
+  if ((order?.orderType ?? "").toUpperCase() === SCHEDULED_STATUS) return true;
+  if (normalizeOrderStatus(order?.orderStatus) === SCHEDULED_STATUS) return true;
+  const history = Array.isArray(order?.statusHistory) ? order.statusHistory : [];
+  return history.some((entry) => normalizeOrderStatus(entry?.status) === SCHEDULED_STATUS);
 }
 
 /**
@@ -101,9 +113,13 @@ export function getTimelineStepKeys(
   // Widened to `readonly string[]`: the two tuples have different literal
   // unions, and the code below compares against a status string the backend
   // may not have told us about yet.
-  const progress: readonly string[] = isPickup
-    ? PICKUP_PROGRESS_STATUSES
-    : PROGRESS_STATUSES;
+  const scheduled = wasScheduled(order);
+  // A scheduled order's first step is "Scheduled for {slot}", before it is
+  // sent to the restaurant (guide §5).
+  const progress: readonly string[] = [
+    ...(scheduled ? [SCHEDULED_STATUS] : []),
+    ...(isPickup ? PICKUP_PROGRESS_STATUSES : PROGRESS_STATUSES),
+  ];
 
   if (!isTerminatedStatus(order?.orderStatus)) {
     if (!isPickup) return [...progress, "DELIVERED"];
@@ -121,10 +137,11 @@ export function getTimelineStepKeys(
     return [...progress, current];
   }
 
-  // `PENDING` is not read from the history — an order that exists was created
-  // pending, so that step is true by construction even if the backend only
-  // starts recording history at the first transition.
-  const reached = new Set<string>(["PENDING"]);
+  // The first step is not read from the history: an order that exists was
+  // created in it (PENDING, or SCHEDULED for a booked one), so that step is
+  // true even if the backend only starts recording at the first transition.
+  // A scheduled order cancelled before release never reached PENDING.
+  const reached = new Set<string>([scheduled ? SCHEDULED_STATUS : "PENDING"]);
   const history = Array.isArray(order?.statusHistory) ? order.statusHistory : [];
   for (const entry of history) {
     reached.add(toTimelineStatus(entry?.status));

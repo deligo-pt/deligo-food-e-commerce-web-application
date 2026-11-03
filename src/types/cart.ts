@@ -105,5 +105,14 @@ export interface CartResponse {
     taxableAmount?: number;
     /** Sum of the active lines' deposits. */
     sdrTotal?: number;
+    /**
+     * Small order fee the basket would pay at checkout, net (Nov 2026). `0`
+     * when waived, disabled or the cart is empty. NOT part of `grandTotal`.
+     */
+    smallOrderFee?: number;
+    /** Tax on `smallOrderFee`; `0` when waived or not taxable. */
+    smallOrderFeeTax?: number;
+    /** How much more to add to avoid the fee; `0` when there is no fee. */
+    differenceToFree?: number;
   };
 }

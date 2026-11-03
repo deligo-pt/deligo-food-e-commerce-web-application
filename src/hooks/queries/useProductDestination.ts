@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { getAvailability } from "@/lib/availability";
 import { apiClient } from "@/lib/apiClient";
 import { useAuthed } from "@/hooks/useAuthed";
 import { vendorRouteId } from "@/lib/vendorId";
@@ -93,12 +94,13 @@ async function fetchDestination(
     throw new Error(`No vendor id for product ${productId}`);
   }
 
-  const isStoreOpen = vendor?.businessDetails?.isStoreOpen;
+  // `availability` first (a pause counts as not open), else the legacy flag.
+  const availability = getAvailability(vendor);
 
   return {
     productId,
     vendorId,
-    isStoreOpen: typeof isStoreOpen === "boolean" ? isStoreOpen : null,
+    isStoreOpen: availability ? availability.isOpen : null,
   };
 }
 

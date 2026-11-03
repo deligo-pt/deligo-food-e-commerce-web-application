@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Clock3, Download, HandCoins, Info, Loader2, RotateCcw, Store, UtensilsCrossed, Star, XCircle } from "lucide-react";
+import { CalendarClock, CheckCircle, Clock3, Download, HandCoins, Info, Loader2, RotateCcw, Store, UtensilsCrossed, Star, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -31,6 +31,10 @@ const REFUND_CHIP: Record<
     icon: CheckCircle,
   },
   in_progress: {
+    className: "bg-primary/5 dark:bg-pink-950/30 text-primary dark:text-pink-400",
+    icon: HandCoins,
+  },
+  processing: {
     className: "bg-primary/5 dark:bg-pink-950/30 text-primary dark:text-pink-400",
     icon: HandCoins,
   },
@@ -116,6 +120,11 @@ interface OrderCardProps {
    * customer should set off rather than that a rider is on their way.
    */
   isPickup?: boolean;
+  /**
+   * The booked slot of a scheduled order, already worded ("Hoje 21:00–21:30").
+   * Shown while the order is ongoing: the slot is the promise (guide §5).
+   */
+  scheduledLabel?: string;
 }
 
 export default function OrderCard({
@@ -138,6 +147,7 @@ export default function OrderCard({
   canCancel = false,
   onCancelOrder,
   isPickup = false,
+  scheduledLabel,
 }: OrderCardProps) {
   const { t } = useTranslation();
   const storeTitle = useVendorCardTitle(vendor);
@@ -222,6 +232,12 @@ export default function OrderCard({
                   {t("selfPickup")}
                 </span>
               )}
+              {scheduledLabel && !isFinishedCardStatus(status) && (
+                <span className="flex items-center gap-1 rounded-full bg-primary/5 px-2 py-0.5 font-semibold text-primary dark:bg-pink-950/30 dark:text-pink-400">
+                  <CalendarClock size={11} />
+                  {scheduledLabel}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -229,7 +245,13 @@ export default function OrderCard({
         <div className="flex flex-col items-end gap-2">
           <span className="font-semibold text-primary dark:text-pink-400">{price}</span>
 
-          {status === "accepted" ? (
+          {status === "scheduled" ? (
+            // Paid and booked, not sent to the restaurant yet.
+            <div className="flex items-center gap-1 rounded-full bg-primary/5 dark:bg-pink-950/30 px-2 py-1 text-xs text-primary dark:text-pink-400">
+              <CalendarClock size={12} />
+              {t("scheduled")}
+            </div>
+          ) : status === "accepted" ? (
             <div className="flex items-center gap-1 rounded-full bg-primary/5 dark:bg-pink-950/30 px-2 py-1 text-xs text-primary dark:text-pink-400">
               <CheckCircle size={12} />
               {t("accepted")}

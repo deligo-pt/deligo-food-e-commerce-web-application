@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getApiErrorMessage } from "@/lib/apiClient";
+import { getApiErrorKey, getApiErrorMessage } from "@/lib/apiClient";
+import { formatEuro } from "@/lib/currency";
+import { normalizeOrderStatus } from "@/lib/orderStatus";
 import { cancelOrder } from "@/services/orderApi";
 import {
   CANCEL_REASON_OPTIONS,
@@ -29,6 +31,30 @@ interface CancelOrderDialogProps {
   onClose: () => void;
   /** Handed the updated order the API returns, so callers can repaint. */
   onCancelled: (updatedOrder: unknown) => void | Promise<void>;
+  /**
+   * The order as the caller has it, for the refund line: before the kitchen
+   * accepts (SCHEDULED, PENDING) the whole `grandTotal` is refunded; after,
+   * nothing is (guide §5). Without it the generic wording is shown.
+   */
+  order?: { orderStatus?: string | null; payoutSummary?: { grandTotal?: number | null } | null } | null;
+  /** The order moved on and can no longer be cancelled: reload it. */
+  onStale?: () => void | Promise<void>;
+}
+
+/** The refund line for this order's stage, or the generic one. */
+function refundLine(
+  order: CancelOrderDialogProps["order"],
+  t: (key: string) => string,
+): string {
+  const status = normalizeOrderStatus(order?.orderStatus);
+  if (!status) return t("cancelOrderDescription");
+  if (status === "SCHEDULED" || status === "PENDING") {
+    const total = order?.payoutSummary?.grandTotal;
+    return typeof total === "number"
+      ? t("cancelFullRefund").replace("{amount}", formatEuro(total))
+      : t("cancelOrderDescription");
+  }
+  return t("cancelNoRefund");
 }
 
 /**
@@ -48,6 +74,8 @@ export default function CancelOrderDialog({
   orderId,
   onClose,
   onCancelled,
+  order,
+  onStale,
 }: CancelOrderDialogProps) {
   const { t } = useTranslation();
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
@@ -78,6 +106,12 @@ export default function CancelOrderDialog({
       await onCancelled(updated);
     } catch (error) {
       toast.error(getApiErrorMessage(error, t("cancelOrderFailed")));
+      // The order moved past the point it can be cancelled (it was released,
+      // accepted, or finished meanwhile): close and show where it is now.
+      if (getApiErrorKey(error) === "ORDER_CANNOT_BE_CANCELED_OR_REJECTED_AT_STAGE") {
+        close();
+        await onStale?.();
+      }
     } finally {
       setSubmitting(false);
     }
@@ -98,7 +132,7 @@ export default function CancelOrderDialog({
           </AlertDialogMedia>
           <AlertDialogTitle>{t("cancelOrderTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t("cancelOrderDescription")}
+            {refundLine(order, t)}
           </AlertDialogDescription>
         </AlertDialogHeader>
 

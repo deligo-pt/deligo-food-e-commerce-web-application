@@ -26,6 +26,8 @@ import {
 } from "@/lib/paymentAction";
 import { useInvalidateSavedCards } from "@/hooks/queries/usePaymentTokens";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useStore } from "@/stores/translationStore";
+import { formatScheduledWindow } from "@/lib/storeStatusText";
 import { callPaymentAction, clearPendingOrder, readPendingOrder } from "@/services/paymentActionApi";
 import ContactSupportDialog from "@/components/support/ContactSupportDialog";
 import PaymentStateCard from "./PaymentStateCard";
@@ -110,6 +112,9 @@ function PaymentResultCard({
     routeVendorId || (pending?.checkoutSummaryId === summaryId ? pending?.vendorId : null) || null,
   );
   const [isContinuing, setIsContinuing] = useState(false);
+  /** The booked slot when this checkout was a SCHEDULED order. */
+  const [scheduledFor, setScheduledFor] = useState<{ start: string; end: string } | null>(null);
+  const lang = useStore((state) => state.lang) as "en" | "pt";
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmounted = useRef(false);
   /** Each fresh check starts a new run; an older run's answer is ignored. */
@@ -125,19 +130,47 @@ function PaymentResultCard({
     };
   }, []);
 
-  // The way back to this checkout's payment page needs the store; the summary
-  // has it when nothing else did.
+  // The summary supplies the store (the way back to this checkout's payment
+  // page) when nothing else did, and the booked slot of a scheduled order, so
+  // the success card can say when it is for.
   useEffect(() => {
-    if (vendorId || !summaryId) return;
+    if (!summaryId) return;
     apiClient
       .get(`/checkout/summary/${encodeURIComponent(summaryId)}`)
       .then((res) => {
-        const ref = res.data?.data?.vendorId;
+        if (unmounted.current) return;
+        const summary = res.data?.data;
+        const ref = summary?.vendorId;
         const id = typeof ref === "string" ? ref : (ref?._id ?? ref?.id ?? null);
-        if (!unmounted.current && id) setVendorId(id);
+        if (id) setVendorId((current) => current ?? id);
+        const slot = summary?.scheduledFor;
+        if (summary?.orderType === "SCHEDULED" && slot?.start && slot?.end) {
+          setScheduledFor({ start: slot.start, end: slot.end });
+        }
       })
       .catch(() => {});
-  }, [summaryId, vendorId]);
+  }, [summaryId]);
+
+  /**
+   * The booked slot, from the placed order. A paid checkout summary answers
+   * "already processed into an order" (seen 3 Nov 2026), so the summary read
+   * above only has it before payment; the order always does. Waits at most
+   * 1.5 s, so a slow answer never holds up the success card.
+   */
+  const loadScheduledSlot = async (displayOrderId: string | null) => {
+    if (!displayOrderId) return;
+    const read = apiClient
+      .get(`/orders/${encodeURIComponent(displayOrderId)}`)
+      .then((res) => {
+        const order = res.data?.data;
+        const slot = order?.scheduledFor;
+        if (!unmounted.current && order?.orderType === "SCHEDULED" && slot?.start && slot?.end) {
+          setScheduledFor({ start: slot.start, end: slot.end });
+        }
+      })
+      .catch(() => {});
+    await Promise.race([read, new Promise((resolve) => setTimeout(resolve, 1500))]);
+  };
 
   /** Waits, unless the page goes away first (the timer is cleared on unmount). */
   const wait = (ms: number) =>
@@ -173,6 +206,8 @@ function PaymentResultCard({
           }
           // "Save this card" happens with the payment; the cached list is stale.
           invalidateSavedCards();
+          await loadScheduledSlot(result.displayOrderId);
+          if (stale()) return;
           setView({ kind: "result", result });
           await wait(CONFIRMED_PAUSE_MS);
           if (!stale()) router.replace(orderTrackingPath(result));
@@ -300,14 +335,17 @@ function PaymentResultCard({
 
   const { result } = view;
   switch (result.state) {
-    case "ORDER_PLACED":
+    case "ORDER_PLACED": {
+      // "Encomenda agendada · Agendada para Hoje 15:00–15:30" for a scheduled
+      // order; the usual words otherwise.
+      const slotLabel = scheduledFor ? formatScheduledWindow(scheduledFor, t, lang) : "";
       return (
         <PaymentStateCard
           tone="success"
           icon={CheckCircle2}
           animation="order-placed"
-          title={t("orderPlacedTitle")}
-          body={t("orderPlacedBody")}
+          title={t(slotLabel ? "orderScheduledTitle" : "orderPlacedTitle")}
+          body={slotLabel ? t("orderScheduledBody").replace("{slot}", slotLabel) : t("orderPlacedBody")}
           {...reference}
         >
           {result.displayOrderId ? (
@@ -315,6 +353,7 @@ function PaymentResultCard({
           ) : null}
         </PaymentStateCard>
       );
+    }
     case "IN_PROGRESS":
       // Came back without finishing (e.g. "Cancel payment" on RedUniq's page —
       // the payment stays open). Continue it, or go back to the payment page,

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Clock } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getMsUntilClosing } from "@/lib/storeHours";
+import type { Availability } from "@/lib/availability";
 
 // Only surface the countdown inside the final hour before closing (user spec).
 const COUNTDOWN_WINDOW_MS = 60 * 60 * 1000;
@@ -13,6 +14,14 @@ interface ClosingCountdownProps {
   openingHours?: string | null;
   closingDays?: string[] | null;
   isStoreOpen: boolean;
+  /**
+   * The backend's state (Phase 2). When given, it decides: nothing unless the
+   * store is `OPEN`, and nothing during extended hours, whose end time is not
+   * sent to customers — the normal closing time would be wrong.
+   */
+  availability?: Pick<Availability, "state" | "overrideType"> | null;
+  /** Called once when the countdown reaches zero, to refetch the vendor. */
+  onClosed?: () => void;
 }
 
 // Live "closing soon" badge shown under the vendor name. Renders nothing unless
@@ -23,11 +32,23 @@ export default function ClosingCountdown({
   openingHours,
   closingDays,
   isStoreOpen,
+  availability,
+  onClosed,
 }: ClosingCountdownProps) {
   const { t } = useTranslation();
   // `null` until the client computes it (keeps SSR output empty — no hydration
   // mismatch from a server/client clock difference).
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
+
+  const applies = availability
+    ? availability.state === "OPEN" && availability.overrideType !== "EXTENDED"
+    : isStoreOpen;
+
+  // The latest callback, without restarting the ticker when it changes.
+  const onClosedRef = useRef(onClosed);
+  useEffect(() => {
+    onClosedRef.current = onClosed;
+  }, [onClosed]);
 
   useEffect(() => {
     // Recompute from the real store-local clock each tick (cheap) — inherently
@@ -36,16 +57,23 @@ export default function ClosingCountdown({
       const ms = getMsUntilClosing(closingHours, {
         openingHours,
         closingDays,
-        isStoreOpen,
+        isStoreOpen: applies,
       });
       setRemainingMs(ms === null ? null : Math.max(0, ms));
-      if (ms === null || ms <= 0) clearInterval(interval);
+      // `getMsUntilClosing` rolls a passed closing time over to tomorrow, so
+      // closing shows up as the remaining time jumping from ~0 back up.
+      if (previous !== null && previous <= 3000 && (ms === null || ms > previous)) {
+        onClosedRef.current?.();
+      }
+      previous = ms;
+      if (ms === null) clearInterval(interval);
     };
+    let previous: number | null = null;
 
     const interval = setInterval(tick, 1000);
     tick();
     return () => clearInterval(interval);
-  }, [closingHours, openingHours, closingDays, isStoreOpen]);
+  }, [closingHours, openingHours, closingDays, applies]);
 
   // Outside the final hour, already closed, or not applicable → render nothing.
   if (remainingMs === null || remainingMs <= 0 || remainingMs > COUNTDOWN_WINDOW_MS) {

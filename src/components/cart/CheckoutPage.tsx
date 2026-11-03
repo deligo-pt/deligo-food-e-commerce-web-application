@@ -19,6 +19,8 @@ import {
   ArrowRight,
   RefreshCw,
   ShieldCheck,
+  Truck,
+  CalendarClock,
 } from "lucide-react";
 import axios from "axios";
 import { callPaymentAction } from "@/services/paymentActionApi";
@@ -33,7 +35,12 @@ import {
   checkoutNotesBody,
 } from "@/lib/deliveryNotes";
 import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
-import { apiClient, getApiErrorKey, getApiErrorMessage } from "@/lib/apiClient";
+import {
+  apiClient,
+  getApiErrorKey,
+  getApiErrorMessage,
+  getApiErrorPath,
+} from "@/lib/apiClient";
 import { CartResponse } from "@/types/cart";
 import {
   getCartVendorDetails,
@@ -57,18 +64,16 @@ import { useVendorsCustomer } from "@/hooks/queries/useVendors";
 import { activateOrder } from "@/lib/cartActivation";
 import { vendorHref, vendorRouteId } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
-import PickupTimePicker from "./PickupTimePicker";
-import {
-  formatDayShort,
-  formatSlotRange,
-  getPickupDays,
-  hasAnySlots,
-  isSameDate,
-  isSlotStillValid,
-  slotToIso,
-  type PickupSlot,
-  type PickupVendorHours,
-} from "@/lib/pickupTime";
+import SlotPicker from "./SlotPicker";
+import SmallOrderFeeNudge from "./SmallOrderFeeNudge";
+import { smallOrderFeeNudge } from "@/lib/smallOrderFee";
+import { useQueryClient } from "@tanstack/react-query";
+import { checkoutSlotKeys } from "@/hooks/queries/useCheckoutSlots";
+import { useSlotChoice } from "@/hooks/useSlotChoice";
+import { useAvailabilityRefresh } from "@/hooks/useAvailabilityRefresh";
+import { getAvailability } from "@/lib/availability";
+import { backText, capitalize, formatScheduledWindow, opensText } from "@/lib/storeStatusText";
+import { SLOT_DATE_WINDOW_ERRORS, toScheduledWindow, type FulfillmentType } from "@/types/slots";
 import { Button } from "@/components/ui/button";
 import { lineDeposit } from "@/lib/sdr";
 import { subtotalBreakdown } from "@/lib/vatBreakdown";
@@ -162,17 +167,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     };
   }, []);
 
-  // Self-pickup. The slot is held as a store-local date + wall-clock start
-  // rather than an ISO string, so that reopening the picker resumes on the slot
-  // the customer actually chose; the ISO is derived at submit, against the
-  // offset in force then.
+  // Self-pickup or delivery. Pickup is always booked as a slot (sent as a
+  // SCHEDULED order); delivery is ASAP unless the customer schedules it, or the
+  // store cannot take an ASAP order right now.
   const [isSelfPickup, setIsSelfPickup] = useState(false);
-  // What the customer last confirmed — a **date and a start**, since a store
-  // can be booked two days ahead and a time alone would not say which day.
-  // Read through `pickupSlot` below, which discards it once it stops being
-  // offered.
-  const [selectedPickupSlot, setPickupSlot] = useState<PickupSlot | null>(null);
-  const [showPickupPicker, setShowPickupPicker] = useState(false);
+  const [wantsScheduledDelivery, setWantsScheduledDelivery] = useState(false);
+  /** Which slot sheet is open, if any. */
+  const [pickerFor, setPickerFor] = useState<FulfillmentType | null>(null);
 
   // Shared, cached cart + vendor list — deduped with CartPage, Navbar, etc.
   const {
@@ -211,33 +212,6 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
   const vendorKind = getVendorKind(cartVendor?.businessType);
 
   /**
-   * Everything the pickup model needs, from whichever source actually has it.
-   *
-   * The hours and the business type come from the **cart**, which cannot
-   * disagree with itself: they are attached to the very lines being checked
-   * out. They used to come from `useVendorsCustomer()` matched on id, and a
-   * miss there was silent and total — `vendor` is `null`, the window is `null`,
-   * and the page tells the customer "this store is closed for pickup today"
-   * about a store that is open.
-   *
-   * `closingDays` has no such fallback: **the cart does not carry it**, only the
-   * vendor list does. So it is a genuine enhancement — present when the list
-   * happens to have loaded, absent otherwise, and the model treats absence as
-   * "no day is filtered" rather than as an error. Whether the backend even
-   * enforces closing days on a future pickup date is still unknown (Plan.md
-   * U10), so hiding those days is a courtesy either way.
-   */
-  const pickupVendor = useMemo<PickupVendorHours | null>(() => {
-    if (!cartVendor) return null;
-    return {
-      openingHours: cartVendor.openingHours,
-      closingHours: cartVendor.closingHours,
-      businessType: cartVendor.businessType,
-      closingDays: vendor?.businessDetails?.closingDays ?? null,
-    };
-  }, [cartVendor, vendor]);
-
-  /**
    * The store's name, cart first for the same reason as its hours.
    *
    * The cart's populated vendor carries `businessDetails.businessName`, so the
@@ -250,65 +224,57 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     storeTitle.title || cartVendor?.businessName || vendor?.businessDetails?.businessName || "";
 
   /**
-   * A coarse clock, so anything derived from "now" stays true on a page that is
-   * left open.
-   *
-   * Thirty seconds is fine-grained enough that the earliest offered slot is
-   * never more than half a minute stale, and coarse enough to be invisible.
+   * Each fulfilment type's slot (guide §2): today's server list, the
+   * confirmed choice, and that choice re-checked against its own day.
    */
-  const [clockTick, setClockTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setClockTick((tick) => tick + 1), 30_000);
-    return () => clearInterval(id);
-  }, []);
+  const queryClient = useQueryClient();
+  const pickup = useSlotChoice({ vendorId, fulfillmentType: "PICKUP", active: isSelfPickup });
+  const delivery = useSlotChoice({
+    vendorId,
+    fulfillmentType: "DELIVERY",
+    active: !isSelfPickup,
+  });
+  const canSelfPickup = pickup.canSchedule;
+  const pickupSlot = pickup.slot;
 
   /**
-   * The days this store can be collected on, each with its bookable slots.
-   *
-   * Recomputed as the clock moves, not once per vendor — a page left open for
-   * twenty minutes would otherwise still offer a slot that has since passed,
-   * and the customer would only find out when the backend rejected it. The
-   * tick also rolls the window forward at midnight, so a sheet left open
-   * overnight stops claiming that yesterday is "today".
+   * Can delivery be ASAP? Only while the store is OPEN (extended hours
+   * included). The slots answer is the fresher source — it refetches every
+   * 3 min and on focus — and the vendor list is the fallback while it loads.
    */
-  const pickupDays = useMemo(
-    () => getPickupDays(pickupVendor),
-    // `clockTick` is the dependency that matters; `getPickupDays` reads the
-    // current time internally.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pickupVendor, clockTick],
-  );
+  const storeStatus = delivery.today.data?.store ?? getAvailability(vendor);
+  const storeState = storeStatus?.state ?? "OPEN";
+  // At the pause's `resumeAt` / the store's `nextOpenAt`, refetch the slots
+  // (which carry the store state) and the vendor (guide §1), so ASAP comes back
+  // without waiting for the 3-minute refresh.
+  useAvailabilityRefresh(storeStatus, () => {
+    void queryClient.invalidateQueries({ queryKey: checkoutSlotKeys.all });
+    void queryClient.invalidateQueries({ queryKey: ["vendors"] });
+  });
+  const canDeliverAsap = storeState === "OPEN";
+  const isScheduledDelivery = !isSelfPickup && (wantsScheduledDelivery || !canDeliverAsap);
+  const deliverySlot = delivery.slot;
 
-  /** Whether self-pickup can be offered at all: any day with any slot left. */
-  const canSelfPickup = hasAnySlots(pickupDays);
+  /** Why ASAP is off: "Closed right now… Opens tomorrow at 09:00." */
+  const asapUnavailableNote = useMemo(() => {
+    if (canDeliverAsap) return "";
+    const lng = lang as "en" | "pt";
+    const zone = delivery.today.data?.timezone;
+    const isPaused = storeState === "PAUSED";
+    const when = isPaused
+      ? backText(storeStatus, t, lng, zone)
+      : opensText(storeStatus, t, lng, zone);
+    const base = t(isPaused ? "asapUnavailablePaused" : "asapUnavailableClosed");
+    return when ? `${base} ${capitalize(when)}.` : base;
+  }, [canDeliverAsap, storeState, storeStatus, delivery.today.data?.timezone, t, lang]);
 
-  /**
-   * The chosen slot, or null once it stops being offered.
-   *
-   * Derived rather than cleared by an effect. The picker normalises its own
-   * draft while it is open, but this value outlives the sheet: a customer can
-   * choose 14:30, switch tabs, and come back at 14:40 to a Proceed button that
-   * looks ready and is not. Treating a stale slot as no selection sends the row
-   * back to "Select pickup time" so the choice is made again deliberately —
-   * rather than silently rebooking them for a time they never picked.
-   */
-  const pickupSlot = isSlotStillValid(selectedPickupSlot, pickupDays)
-    ? selectedPickupSlot
-    : null;
-
-  /** The chosen slot as the summary row shows it: "Tomorrow  15:00 → 15:30". */
-  const pickupSlotLabel = useMemo(() => {
-    if (!pickupSlot) return "";
-    const day = pickupDays.find((candidate) => isSameDate(candidate.date, pickupSlot.date));
-    const dayName =
-      day?.offset === 0
-        ? t("today")
-        : day?.offset === 1
-          ? t("tomorrow")
-          : formatDayShort(pickupSlot.date, lang);
-
-    return `${dayName}  ${formatSlotRange(pickupSlot.time, pickupVendor?.closingHours)}`;
-  }, [pickupSlot, pickupDays, pickupVendor, t, lang]);
+  /** "Hoje 15:00–15:30", as the summary rows show a chosen slot. */
+  const slotLabel = (choice: typeof pickupSlot) =>
+    choice
+      ? formatScheduledWindow(toScheduledWindow(choice.slot), t, lang as "en" | "pt", choice.timezone)
+      : "";
+  const pickupSlotLabel = slotLabel(pickupSlot);
+  const deliverySlotLabel = slotLabel(deliverySlot);
 
   const loading = cartLoading || vendorsLoading;
   const error =
@@ -472,6 +438,19 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       { originalPrice: 0, discount: 0, vat: 0, total: 0, deposit: 0 },
     );
   }, [vendorItems]);
+  /**
+   * The small order fee as the cart quotes it (guide §3). `cartCalculation`
+   * covers the cart's active lines, so it is this order's only while no other
+   * store's lines are active — which checkout makes sure of, but a second tab
+   * could undo. Read from the query result, never computed here.
+   */
+  const feeNudge = useMemo(() => {
+    const activeElsewhere = cartData?.items.some(
+      (item) => item.isActive === true && getCartVendorId(item.vendorId) !== vendorId,
+    );
+    return activeElsewhere ? null : smallOrderFeeNudge(cartData?.cartCalculation);
+  }, [cartData, vendorId]);
+
   // The ⓘ breakdown of `summary.vat`: products and add-ons only — the fees
   // are priced at the payment step, which the popup says.
   const vatBreakdown = subtotalBreakdown({ items: vendorItems, lang, t, totalLabel: t("finalPrice") });
@@ -763,22 +742,40 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       return;
     }
 
-    // Catch the missing time here rather than letting the backend answer with
-    // its generic Zod wrapper ("Validation failed. Please check the highlighted
-    // fields"), which names no field and gives the customer nothing to act on.
+    // Catch a missing time here rather than letting the backend answer with
+    // its generic Zod wrapper, which names no field.
     if (isSelfPickup && !pickupSlot) {
       toast.error(t("pickupTimeRequired"));
-      setShowPickupPicker(true);
+      setPickerFor("PICKUP");
+      return;
+    }
+    if (isScheduledDelivery && !delivery.canSchedule) {
+      toast.error(t("noDeliverySlots"));
+      return;
+    }
+    if (isScheduledDelivery && !deliverySlot) {
+      toast.error(t("deliveryTimeRequired"));
+      setPickerFor("DELIVERY");
       return;
     }
 
-    // Delivery sends exactly what it always sent — both pickup keys are
-    // omitted, not sent as null, so the existing path is provably untouched.
+    // The slot being booked, if any. Its `startTime`/`endTime` go back exactly
+    // as the server listed them. Pickup is always SCHEDULED, so `pickupTime`
+    // is never sent (guide §4).
+    const booked = isSelfPickup ? pickupSlot : isScheduledDelivery ? deliverySlot : null;
+    const fulfillmentType: FulfillmentType = isSelfPickup ? "PICKUP" : "DELIVERY";
+
+    // ASAP delivery sends exactly what it always sent — no fulfilment or
+    // scheduling keys at all.
     const createCheckout = async (): Promise<string> => {
       const response = await apiClient.post("/checkout", {
         useCart: true,
-        ...(isSelfPickup && pickupSlot
-          ? { fulfillmentType: "PICKUP", pickupTime: slotToIso(pickupSlot) }
+        ...(booked
+          ? {
+              fulfillmentType,
+              orderType: "SCHEDULED",
+              scheduledFor: toScheduledWindow(booked.slot),
+            }
           : {}),
         // Stored on the checkout since 15 Oct 2026. Only keys with something
         // to say are sent, and pickup never sends the rider note.
@@ -808,36 +805,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         return;
       }
 
-      // Every one of these means the chosen slot is not bookable — it passed
-      // while the page sat open, the store closed, or the model and the backend
-      // disagree about what is offerable. Clearing it and reopening the picker
-      // is the only useful next step; leaving the stale value in place would
-      // let the customer press the button again and get the same rejection.
-      // Branching on errorKey, never on message text.
-      //
-      // The last two should be unreachable: `getPickupDays` only emits
-      // half-hour starts inside the vendor's advance window. That is exactly
-      // why they are listed. If a rule moves server-side — the window shrinks,
-      // the grid changes, or `closingDays` starts being enforced on a future
-      // date (Plan.md U10) — this is the difference between a customer who
-      // reopens the sheet and picks again, and one stuck pressing a button that
-      // fails identically every time.
-      const errorKey = getApiErrorKey(error);
-      if (
-        errorKey === "PICKUP_TIME_MUST_BE_IN_FUTURE" ||
-        errorKey === "PICKUP_TIME_OUTSIDE_STORE_HOURS" ||
-        errorKey === "PICKUP_TIME_MUST_BE_TODAY" ||
-        errorKey === "INVALID_PICKUP_TIME" ||
-        errorKey === "PICKUP_TIME_NOT_HALF_HOUR_SLOT" ||
-        errorKey === "PICKUP_DATE_EXCEEDS_MAX_ADVANCE_WINDOW"
-      ) {
-        setPickupSlot(null);
-        setShowPickupPicker(true);
-      }
+      handleSlotRejection(error, fulfillmentType, !!booked);
 
-      // The pickup rejections arrive already translated, so the server's own
-      // wording is the right thing to show — `PICKUP_TIME_OUTSIDE_STORE_HOURS`
-      // even names the store's hours.
+      // These rejections arrive already translated, so the server's own
+      // wording is the right thing to show.
       toast.error(
         getApiErrorMessage(error, "Failed to create checkout session"),
       );
@@ -902,17 +873,59 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     setBlockedCheckout({ kind: "stuck", checkoutId: blockingId, displayOrderId });
   };
 
+  /**
+   * After `POST /checkout` refuses the time (guide §4 error table). Branches
+   * on errorKey, never on message text; the backend's validation errors carry
+   * no key, only the field path, so `scheduledFor` / `pickupTime` count too.
+   *
+   * - The slot is not bookable any more (passed, too soon, after last order,
+   *   outside the window): clear it, refetch the lists, reopen the picker.
+   * - The store paused or closed under an ASAP delivery: switch to "Schedule
+   *   for later" and open the picker, which shows when it is back.
+   */
+  const handleSlotRejection = (
+    error: unknown,
+    fulfillmentType: FulfillmentType,
+    wasScheduled: boolean,
+  ) => {
+    const errorKey = getApiErrorKey(error);
+    const path = getApiErrorPath(error);
+    const slotRejected =
+      (!!errorKey &&
+        (errorKey.startsWith("SCHEDULED_") ||
+          errorKey.startsWith("PICKUP_") ||
+          errorKey === "INVALID_PICKUP_TIME" ||
+          SLOT_DATE_WINDOW_ERRORS.has(errorKey))) ||
+      (!errorKey && (path?.startsWith("scheduledFor") || path?.startsWith("pickupTime")));
+    const storeStopped = errorKey === "VENDOR_PAUSED" || errorKey === "VENDOR_CLOSED";
+
+    if (!slotRejected && !storeStopped) return;
+
+    // Whatever the list said is out of date now.
+    void queryClient.invalidateQueries({ queryKey: checkoutSlotKeys.all });
+    const slotState = fulfillmentType === "PICKUP" ? pickup : delivery;
+    if (wasScheduled || slotRejected) slotState.setChoice(null);
+    if (fulfillmentType === "DELIVERY") setWantsScheduledDelivery(true);
+    setPickerFor(fulfillmentType);
+  };
+
   const handleToggleSelfPickup = () => {
-    setIsSelfPickup((wasSelected) => {
-      const isNowSelected = !wasSelected;
-      // Drop any chosen time when switching back to delivery, so re-ticking
-      // the box never silently reuses a slot that has since passed.
-      if (!isNowSelected) setPickupSlot(null);
-      // Going straight into the picker saves a second click: choosing pickup
-      // without a time is not a state the customer can check out from.
-      if (isNowSelected && !pickupSlot) setShowPickupPicker(true);
-      return isNowSelected;
-    });
+    const isNowSelected = !isSelfPickup;
+    setIsSelfPickup(isNowSelected);
+    // Drop the pickup time when switching back to delivery, so re-ticking the
+    // box never silently reuses a slot that has since passed.
+    if (!isNowSelected) pickup.setChoice(null);
+    // Choosing pickup without a time is not a state the customer can check
+    // out from, so go straight into the picker.
+    if (isNowSelected && !pickupSlot) setPickerFor("PICKUP");
+  };
+
+  /** ASAP or "Schedule for later" for delivery. */
+  const handleDeliveryTiming = (scheduled: boolean) => {
+    if (!scheduled && !canDeliverAsap) return;
+    setWantsScheduledDelivery(scheduled);
+    if (!scheduled) delivery.setChoice(null);
+    if (scheduled && !deliverySlot && delivery.canSchedule) setPickerFor("DELIVERY");
   };
 
   if (loading) {
@@ -1212,6 +1225,25 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                   </span>
                 </div>
               </div>
+              {/* Like the deposit: not in the final price above (the cart's
+                  `grandTotal` excludes it), added to the amount charged at
+                  payment. With the nudge to avoid it. */}
+              {feeNudge && (
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <span className="block text-gray-600 dark:text-neutral-400">{t("smallOrderFee")}</span>
+                      <span className="mt-1 block text-xs text-gray-500 dark:text-neutral-400">
+                        {t("smallOrderFeeAddedAtPayment").replace("{threshold}", formatEuro(feeNudge.threshold))}
+                      </span>
+                    </div>
+                    <span className="shrink-0 font-semibold text-gray-900 dark:text-neutral-50">
+                      +{formatEuro(feeNudge.fee)}
+                    </span>
+                  </div>
+                  <SmallOrderFeeNudge nudge={feeNudge} />
+                </div>
+              )}
               {/* Its own row under the final price, never folded into it:
                   this figure is the cart's, and the deposit is added to the
                   amount charged only at payment. */}
@@ -1279,7 +1311,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               {isSelfPickup && canSelfPickup && (
                 <button
                   type="button"
-                  onClick={() => setShowPickupPicker(true)}
+                  onClick={() => setPickerFor("PICKUP")}
                   className="focus-ring mt-3 flex w-full items-center gap-3 rounded-2xl border border-primary p-4 text-left transition hover:bg-primary/5 dark:border-pink-400 dark:hover:bg-pink-950/20"
                 >
                   <Clock size={18} className="shrink-0 text-primary dark:text-pink-400" />
@@ -1290,10 +1322,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                         : "text-gray-500 dark:text-neutral-400"
                     }`}
                   >
-                    {/* Composed in `pickupSlotLabel`, not interpolated here:
-                        t() takes a single key and has no placeholder support.
-                        It names the day as well as the time — "Today" was a
-                        safe assumption only while today was the only option. */}
+                    {/* "Hoje 15:00–15:30": the day as well as the time. */}
                     {pickupSlot ? pickupSlotLabel : t("selectPickupTime")}
                   </span>
                   <ChevronRight
@@ -1301,6 +1330,84 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                     className="shrink-0 text-gray-400 dark:text-neutral-500"
                   />
                 </button>
+              )}
+
+              {/* Delivery timing: ASAP, or a slot. ASAP is off while the store
+                  is closed or paused, with the reason and when it is back. */}
+              {!isSelfPickup && (
+                <div className="mt-5">
+                  <p className="mb-2 font-semibold text-gray-900 dark:text-neutral-50">
+                    {t("deliveryTime")}
+                  </p>
+                  <div
+                    role="radiogroup"
+                    aria-label={t("deliveryTime")}
+                    className="grid grid-cols-2 gap-1 rounded-2xl bg-gray-100 p-1 dark:bg-neutral-800/60"
+                  >
+                    {[
+                      { scheduled: false, label: t("deliverAsap"), Icon: Truck },
+                      { scheduled: true, label: t("scheduleForLater"), Icon: CalendarClock },
+                    ].map(({ scheduled, label, Icon }) => {
+                      const selected = isScheduledDelivery === scheduled;
+                      const disabled = scheduled ? !delivery.canSchedule : !canDeliverAsap;
+                      return (
+                        <button
+                          key={String(scheduled)}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          disabled={disabled}
+                          onClick={() => handleDeliveryTiming(scheduled)}
+                          className={`focus-ring flex min-h-11 items-center justify-center gap-2 rounded-xl px-2 py-2 text-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            selected
+                              ? "bg-card text-primary shadow-sm dark:text-pink-400"
+                              : "text-gray-600 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+                          }`}
+                        >
+                          <Icon size={16} className="shrink-0" />
+                          <span>{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {!canDeliverAsap && (
+                    <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                      {asapUnavailableNote}
+                    </p>
+                  )}
+
+                  {isScheduledDelivery && !delivery.canSchedule && (
+                    <p className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
+                      {delivery.todayKey === "VENDOR_NOT_ACCEPTING_ORDERS"
+                        ? t(vendorCopyKey("vendorNotAcceptingOrders", vendorKind))
+                        : t("noDeliverySlots")}
+                    </p>
+                  )}
+
+                  {isScheduledDelivery && delivery.canSchedule && (
+                    <button
+                      type="button"
+                      onClick={() => setPickerFor("DELIVERY")}
+                      className="focus-ring mt-3 flex w-full items-center gap-3 rounded-2xl border border-primary p-4 text-left transition hover:bg-primary/5 dark:border-pink-400 dark:hover:bg-pink-950/20"
+                    >
+                      <Clock size={18} className="shrink-0 text-primary dark:text-pink-400" />
+                      <span
+                        className={`min-w-0 flex-1 text-sm ${
+                          deliverySlot
+                            ? "font-semibold text-gray-900 dark:text-neutral-50"
+                            : "text-gray-500 dark:text-neutral-400"
+                        }`}
+                      >
+                        {deliverySlot ? deliverySlotLabel : t("selectDeliveryTime")}
+                      </span>
+                      <ChevronRight
+                        size={18}
+                        className="shrink-0 text-gray-400 dark:text-neutral-500"
+                      />
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -1460,22 +1567,22 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
         </div>
       </div>
 
-      {/* Gated on the days existing, NOT on any of them having slots. The
-          toggle above is already disabled when pickup is unavailable, so the
-          only way to be here with nothing bookable is the store closing while
-          the sheet sits open — and a sheet that vanishes mid-choice explains
-          nothing. The picker renders its own "closed for the rest of today"
-          state instead, with Confirm disabled. */}
-      {showPickupPicker && pickupDays.length > 0 && (
-        <PickupTimePicker
-          days={pickupDays}
-          closingHours={pickupVendor?.closingHours}
-          value={pickupSlot}
-          onConfirm={(slot) => {
-            setPickupSlot(slot);
-            setShowPickupPicker(false);
+      {/* The picker loads its own days and slots from the server and renders
+          its own empty, closed and error states, with Confirm disabled. */}
+      {pickerFor && (
+        <SlotPicker
+          key={pickerFor}
+          vendorId={vendorId}
+          vendorKind={vendorKind}
+          fulfillmentType={pickerFor}
+          value={pickerFor === "PICKUP" ? pickupSlot : deliverySlot}
+          title={t(pickerFor === "PICKUP" ? "pickupSheetTitle" : "deliveryTime")}
+          confirmLabel={t(pickerFor === "PICKUP" ? "confirmPickupTime" : "confirmDeliveryTime")}
+          onConfirm={(choice) => {
+            (pickerFor === "PICKUP" ? pickup : delivery).setChoice(choice);
+            setPickerFor(null);
           }}
-          onClose={() => setShowPickupPicker(false)}
+          onClose={() => setPickerFor(null)}
         />
       )}
     </div>

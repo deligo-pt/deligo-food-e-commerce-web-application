@@ -3,6 +3,7 @@
 // (occasionally a single string, sometimes absent). Typing it as a union here is
 // what prevents the string-only assumptions that crashed search (see Issue.md #11).
 import type { EstimatedDeliveryTime } from "@/lib/deliveryEstimate";
+import type { Availability } from "@/lib/availability";
 
 export interface Vendor {
   _id?: string;
@@ -18,7 +19,17 @@ export interface Vendor {
     restaurantCuisineType?: string[] | string;
     openingHours: string;
     closingHours: string;
+    /** Legacy open flag. Read `getAvailability()` instead, which prefers `availability`. */
     isStoreOpen: boolean;
+    /**
+     * Schedule + override state (Nov 2026). Drive every open/closed/paused
+     * decision from this via `getAvailability()` in `lib/availability.ts`.
+     */
+    availability?: Availability;
+    /** Weekday names, e.g. `["Sunday"]`. */
+    closingDays?: string[];
+    /** The store's IANA timezone, e.g. `"Europe/Lisbon"`. Not sent by every list. */
+    timezone?: string;
   };
   businessLocation: {
     city: string;

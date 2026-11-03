@@ -11,7 +11,6 @@ import {
   Sparkles,
   ChevronDown,
   UtensilsCrossed,
-  Moon,
 } from "lucide-react";
 import SafeImage from "@/components/shared/SafeImage";
 import { useRouter } from "next/navigation";
@@ -26,6 +25,8 @@ import { useCustomerCoords } from "@/hooks/useCustomerCoords";
 import { hasCoords, isOutOfArea, withCoords, type Coords } from "@/lib/customerCoords";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
+import { getAvailability, type Availability } from "@/lib/availability";
+import StoreStatusBanner from "@/components/vendors/StoreStatusBanner";
 import { currencySymbol, formatEuro } from "@/lib/currency";
 import type { ProductSdr } from "@/types/sdr";
 import { addonDeposit, productDeposit } from "@/lib/sdr";
@@ -53,6 +54,18 @@ interface ProductDetailsModalProps {
    * there, so "not available in your area" stays the true answer.
    */
   storeCoords?: Coords | null;
+  /**
+   * The store's state as the store page has it (from the vendor endpoint).
+   * `/products/:id` sends only the legacy `isStoreOpen` (3 Nov 2026), which
+   * cannot say "paused" or when the store opens, so the page's value wins.
+   */
+  storeAvailability?: Availability | null;
+  /** The store's IANA zone, for the times in the banner. */
+  storeTimeZone?: string | null;
+  /** Closed or paused, but the order can be scheduled for later: adding stays on. */
+  canScheduleLater?: boolean;
+  /** The slot list said `VENDOR_NOT_ACCEPTING_ORDERS`: no ordering at all. */
+  notAcceptingOrders?: boolean;
 }
 
 interface Product {
@@ -96,6 +109,9 @@ interface Product {
     userId?: string;
     businessDetails?: {
       isStoreOpen?: boolean;
+      /** Not sent by `/products/:id` yet (3 Nov 2026); `getAvailability` falls back to `isStoreOpen`. */
+      availability?: Availability;
+      timezone?: string;
       // Two shapes, both live: a string on the vendor lists, an object here.
       // `getVendorKind` reads either.
       businessType?:
@@ -140,6 +156,10 @@ export default function ProductDetailsModal({
   onClose,
   productId,
   storeCoords,
+  storeAvailability: pageAvailability,
+  canScheduleLater = false,
+  notAcceptingOrders = false,
+  storeTimeZone,
 }: ProductDetailsModalProps) {
   const { t } = useTranslation();
   const coords = useCustomerCoords();
@@ -436,6 +456,8 @@ export default function ProductDetailsModal({
     productSubtotal - productSubtotal / (1 + vatRate / 100) + addonsVat;
   const total = subtotal;
   const currency = currencySymbol(product?.pricing?.currency);
+  /** "5%" for the discount line's bracket; null when there is no discount. */
+  const percentLabel = formatDiscountValue(product?.pricing, currency);
   // Container deposit (SDR) per item. Charged at checkout, not in the cart:
   // the button keeps the food total and the line under it names the deposit.
   const depositPerItem = productDeposit(product);
@@ -470,10 +492,13 @@ export default function ProductDetailsModal({
     return `${t("chooseAtLeast")} ${group.minSelectable} · ${t("upTo")} ${group.maxSelectable}`;
   };
 
-  // Only an explicit `false` means closed — if the backend omits the flag,
-  // stay out of the way and let the API be the judge.
-  const isStoreClosed =
-    product?.vendorId?.businessDetails?.isStoreOpen === false;
+  // Anything but OPEN withdraws ordering, a pause included (guide §1). With no
+  // availability data at all, stay out of the way and let the API be the judge.
+  // The store page's value first; the product response only as a fallback.
+  const storeAvailability = pageAvailability ?? getAvailability(product?.vendorId);
+  const isStoreClosed = !!storeAvailability && storeAvailability.state !== "OPEN";
+  const isStorePaused = storeAvailability?.state === "PAUSED";
+  const isOrderBlocked = notAcceptingOrders || (isStoreClosed && !canScheduleLater);
 
   // What this vendor is called. A cosmetics store was being told "This
   // restaurant is closed — you can browse the menu"; the vendor's own record
@@ -492,8 +517,14 @@ export default function ProductDetailsModal({
 
     // The store can close between page load and this click (the backend flips
     // this on a schedule), so re-check rather than trusting the disabled state.
-    if (isStoreClosed) {
-      toast.error(t(vendorCopyKey("storeClosedCannotOrder", vendorKind)));
+    if (notAcceptingOrders) {
+      toast.error(t(vendorCopyKey("vendorNotAcceptingOrders", vendorKind)));
+      return;
+    }
+    if (isOrderBlocked) {
+      toast.error(
+        t(vendorCopyKey(isStorePaused ? "storePausedCannotOrder" : "storeClosedCannotOrder", vendorKind)),
+      );
       return;
     }
 
@@ -700,16 +731,17 @@ export default function ProductDetailsModal({
                     {hasDiscount && (
                       <span className="flex items-center gap-1 text-xs font-semibold text-primary dark:text-pink-400">
                         <Tag size={12} className="fill-primary/15" />
-                        Save{" "}
-                        {formatPrice(
-                          currentOriginalUnitPrice - unitPrice,
-                          currency,
+                        {/* Translated: PT reads "Poupe 0,60 € (5% de Desconto)". */}
+                        {t("saveAmount").replace(
+                          "{amount}",
+                          formatPrice(currentOriginalUnitPrice - unitPrice, currency),
                         )}
                         {/* Only worth appending for a percentage — on a FLAT
                             discount the rate *is* the saving already printed,
                             so "(€0.60 Off)" would just say it twice. */}
                         {product?.pricing?.discountType === "PERCENTAGE" &&
-                          ` (${formatDiscountValue(product.pricing, currency)} Off)`}
+                          percentLabel &&
+                          ` (${t("percentOff").replace("{value}", percentLabel)})`}
                       </span>
                     )}
                   </div>
@@ -944,22 +976,15 @@ export default function ProductDetailsModal({
         {/* Sticky Footer */}
         {!loading && !error && product && (
           <div className="border-t border-border bg-card p-4 sm:px-6">
-            {isStoreClosed && (
-              <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4">
-                <Moon
-                  size={20}
-                  className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-500"
-                />
-                <div>
-                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">
-                    {t(vendorCopyKey("storeClosedTitle", vendorKind))}
-                  </p>
-                  <p className="mt-0.5 text-sm text-amber-800 dark:text-amber-400/80">
-                    {t(vendorCopyKey("storeClosedNotice", vendorKind))}
-                  </p>
-                </div>
-              </div>
-            )}
+            <StoreStatusBanner
+              availability={storeAvailability}
+              vendorKind={vendorKind}
+              timeZone={storeTimeZone ?? product.vendorId?.businessDetails?.timezone}
+              compact
+              canScheduleLater={canScheduleLater}
+              notAcceptingOrders={notAcceptingOrders}
+              className="mb-4"
+            />
             <div className="flex items-center gap-3">
               {/* Quantity — beside the button, so it is never scrolled away */}
               <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-border p-1">
@@ -995,7 +1020,7 @@ export default function ProductDetailsModal({
               <Button
                 size="lg"
                 onClick={handleAddToCart}
-                disabled={cartLoading || isStoreClosed}
+                disabled={cartLoading || isOrderBlocked}
                 aria-disabled={missingRequired || undefined}
                 className={`relative min-w-0 flex-1 gap-3 overflow-hidden rounded-2xl font-semibold active:scale-[0.98] ${
                   missingRequired

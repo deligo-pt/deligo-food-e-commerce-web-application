@@ -26,6 +26,7 @@
 import { normalizeOrderStatus } from "./orderStatus";
 
 export type OrderCardStatus =
+  | "scheduled"
   | "pending"
   | "accepted"
   | "delivered"
@@ -47,6 +48,7 @@ export type OrderCardStatus =
  * finished order back on the Ongoing tab with a Cancel button.
  */
 const CARD_STATUS_BY_ORDER_STATUS: Record<string, OrderCardStatus> = {
+  SCHEDULED: "scheduled",
   PENDING: "pending",
   ACCEPTED: "accepted",
   ASSIGNED: "accepted",

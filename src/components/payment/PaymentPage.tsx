@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
+import { getAvailability, type Availability } from "@/lib/availability";
 import { formatMinutes } from "@/lib/deliveryEstimate";
 import {
   Home,
@@ -54,6 +55,8 @@ import {
   formatAddressLine2,
 } from "@/lib/addressFormat";
 import { formatPickupMoment } from "@/lib/pickupTime";
+import { formatScheduledWindow } from "@/lib/storeStatusText";
+import { smallOrderFeeGross } from "@/lib/smallOrderFee";
 import type { CartAddon } from "@/types/cart";
 import { useSavedCards } from "@/hooks/queries/usePaymentTokens";
 import { payWithSavedCard } from "@/services/paymentTokenApi";
@@ -71,12 +74,12 @@ import {
 import PaymentInProgressCard from "@/components/payment/PaymentInProgressCard";
 import { toast } from "sonner";
 import { checkoutNotesBody, outgoingDeliveryNotes } from "@/lib/deliveryNotes";
-import { getVendorKind, vendorCopyKey } from "@/lib/vendorKind";
+import { getVendorKind, vendorCopyKey, type VendorKind } from "@/lib/vendorKind";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { LineSdr, OrderCalculationSdr, PayoutSdr } from "@/types/sdr";
 import { lineDeposit, orderDepositTotal } from "@/lib/sdr";
-import { deliveryBreakdown, subtotalBreakdown } from "@/lib/vatBreakdown";
+import { deliveryBreakdown, smallOrderFeeBreakdown, subtotalBreakdown } from "@/lib/vatBreakdown";
 import VatInfoButton from "@/components/shared/VatInfoButton";
 import { formatEuro } from "@/lib/currency";
 
@@ -115,6 +118,10 @@ interface OrderCalculation {
   serviceChargeVatAmount?: number;
   /** Absent when the checkout has no deposit. */
   sdr?: OrderCalculationSdr;
+  /** Small order fee, net; `0` when waived or off (guide §3). In `grandTotal`. */
+  smallOrderFee?: number;
+  smallOrderFeeTax?: number;
+  smallOrderFeeTaxRate?: number;
 }
 
 interface Delivery {
@@ -124,7 +131,11 @@ interface Delivery {
   vatAmount?: number;
   totalDeliveryCharge: number;
   distance: number;
+  /** The rider's travel time only, in minutes. */
   estimatedTime: number;
+  /** `estimatedTime` plus the store's preparation time — what the customer
+   *  actually waits (added by the backend Nov 2026; older checkouts lack it). */
+  estimatedTotalMinutes?: number;
 }
 
 interface PayoutSummary {
@@ -195,6 +206,29 @@ interface RewardOption {
   variationSku?: string;
 }
 
+/**
+ * Payment-start refusals that mean "this time cannot be booked any more"
+ * (guide §4): the slot passed or left the window, or the store paused or
+ * closed. Nothing is charged; the customer picks a new time in checkout.
+ */
+function isSlotRefusal(errorKey: string | null): boolean {
+  if (!errorKey) return false;
+  return (
+    errorKey.startsWith("SCHEDULED_") ||
+    errorKey.startsWith("PICKUP_") ||
+    errorKey === "VENDOR_PAUSED" ||
+    errorKey === "VENDOR_CLOSED" ||
+    errorKey === "VENDOR_NOT_ACCEPTING_ORDERS"
+  );
+}
+
+/** The fallback words for a refusal that arrives without a message. */
+function slotRefusalCopy(errorKey: string | null, vendorKind: VendorKind): string {
+  if (errorKey === "VENDOR_NOT_ACCEPTING_ORDERS") return vendorCopyKey("vendorNotAcceptingOrders", vendorKind);
+  if (errorKey === "VENDOR_PAUSED" || errorKey === "VENDOR_CLOSED") return "storeStoppedTakingOrders";
+  return "slotNoLongerAvailable";
+}
+
 interface CheckoutSummary {
   _id: string;
   /**
@@ -220,8 +254,12 @@ interface CheckoutSummary {
   deliveryAddress?: DeliveryAddress;
   /** Omitted by the backend on delivery orders; only ever `"PICKUP"` when set. */
   fulfillmentType?: "DELIVERY" | "PICKUP";
-  /** ISO instant, present only on pickup. */
+  /** ISO instant, present only on pickup (a scheduled pickup echoes `scheduledFor.start`). */
   pickupTime?: string;
+  /** Missing on older checkouts, which were all ASAP. */
+  orderType?: "ASAP" | "SCHEDULED";
+  /** The booked slot, exactly as chosen in checkout; only on SCHEDULED. */
+  scheduledFor?: { start: string; end: string } | null;
   /** For the rider, as sent on `POST /checkout` (15 Oct 2026); `""` when none. */
   deliveryNotes?: string;
   /** For the restaurant or store, as sent on `POST /checkout`; `""` when none. */
@@ -247,6 +285,10 @@ interface Vendor {
     closingHours: string;
     closingDays: string[];
     isStoreOpen: boolean;
+    /** Schedule + override state; read through `getAvailability`. */
+    availability?: Availability;
+    /** IANA zone; sent by the single-vendor route. */
+    timezone?: string;
   };
   businessLocation: {
     street: string;
@@ -422,6 +464,8 @@ export default function PaymentPage() {
 
   const [summary, setSummary] = useState<CheckoutSummary | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
+  // OPEN / CLOSED / PAUSED for the store header; null until the vendor loads.
+  const vendorState = getAvailability(vendor)?.state ?? null;
   // `resolveVendor` reads `/vendors/customer/:id` first, which carries
   // `branchName`, so a branch is named without a further lookup.
   const storeTitle = useVendorCardTitle(vendor);
@@ -452,6 +496,12 @@ export default function PaymentPage() {
   // The deposit (or another price) changed after this checkout was built, and
   // the summary was refreshed: say so beside the new total before they pay.
   const [totalsChanged, setTotalsChanged] = useState(false);
+  /**
+   * Payment start refused the booked time (the slot passed, the store paused
+   * or closed). Nothing was charged; the fix is a new time in checkout, so the
+   * error box then offers "Choose another time".
+   */
+  const [slotRefused, setSlotRefused] = useState(false);
   /**
    * This checkout's payment, as `/action` reports it (8 Oct 2026). While one
    * is open (`IN_PROGRESS`) or unknown (`VERIFYING`, `UNREACHABLE` on a
@@ -964,6 +1014,7 @@ export default function PaymentPage() {
     try {
       setIsPlacingOrder(true);
       setPaymentError("");
+      setSlotRefused(false);
 
       // One-click: no hosted page, no redirect, no return trip. The order
       // already exists once this resolves, so none of the redirect bookkeeping
@@ -1005,6 +1056,12 @@ export default function PaymentPage() {
         await refreshChangedTotals();
         return;
       }
+      if (isSlotRefusal(result.errorKey)) {
+        // This response carries no message, only the key.
+        setSlotRefused(true);
+        setPaymentError(t(slotRefusalCopy(result.errorKey, getVendorKind(vendor?.businessDetails?.businessType))));
+        return;
+      }
 
       if (result.state === "IN_PROGRESS" && result.code === "REDUNIQ_PAYMENT_SESSION_CREATED" && result.redirectUrl) {
         // RedUniq's return URL carries the checkout id (checked); this is the
@@ -1036,6 +1093,12 @@ export default function PaymentPage() {
       // is no longer called: the backend removed it (404, 8 Oct 2026).
       if (getApiErrorKey(err) === "CHECKOUT_TOTALS_CHANGED") {
         await refreshChangedTotals();
+        return;
+      }
+      const errKey = getApiErrorKey(err);
+      if (isSlotRefusal(errKey)) {
+        setSlotRefused(true);
+        setPaymentError(getApiErrorMessage(err, t(slotRefusalCopy(errKey, getVendorKind(vendor?.businessDetails?.businessType)))));
         return;
       }
       setPaymentError(getApiErrorMessage(err, t("paymentCouldNotStart")));
@@ -1106,12 +1169,16 @@ export default function PaymentPage() {
     pageSubtotal: subtotal + serviceCharge,
   });
   const deliveryInfo = deliveryBreakdown({ delivery, t });
+  // One combined row (fee + tax), the split in its ⓘ. Already inside
+  // `grandTotal`; decided before any offer, so an offer never removes it.
+  const smallOrderFee = smallOrderFeeGross(orderCalculation);
+  const smallOrderFeeInfo = smallOrderFeeBreakdown({ calc: orderCalculation, t });
   // The notes left on the cart page, shown back read-only: the checkout
   // already carries them, and no call edits them in place (see
   // `lib/deliveryNotes.ts`). "Edit" goes back to the cart page.
+  const vendorKind = getVendorKind(vendor?.businessDetails?.businessType);
   const riderNote = isPickup ? "" : (summary.deliveryNotes ?? "").trim();
   const vendorNote = (summary.vendorInstructions ?? "").trim();
-  const vendorKind = getVendorKind(vendor?.businessDetails?.businessType);
   const editNotesHref = pathname.replace(/\/payment\/?$/, "");
 
   // Guarded rather than assumed: these are typed as required, but an order the
@@ -1121,10 +1188,25 @@ export default function PaymentPage() {
   // `!isPickup` states the intent rather than relying on that coincidence.
   const hasDeliveryDistance =
     !isPickup && typeof delivery.distance === "number" && delivery.distance > 0;
+  const deliveryEta =
+    typeof delivery.estimatedTotalMinutes === "number" && delivery.estimatedTotalMinutes > 0
+      ? delivery.estimatedTotalMinutes
+      : delivery.estimatedTime;
+  // A scheduled order's promise is its slot ("Hoje 15:00–15:30"), so the
+  // ASAP estimate is not shown beside it.
+  const scheduledLabel =
+    summary.orderType === "SCHEDULED" && summary.scheduledFor
+      ? formatScheduledWindow(
+          summary.scheduledFor,
+          t,
+          lang === "pt" ? "pt" : "en",
+          vendor?.businessDetails?.timezone,
+        )
+      : "";
+  const isScheduledDelivery = !isPickup && !!scheduledLabel;
   const hasDeliveryEta =
-    !isPickup &&
-    typeof delivery.estimatedTime === "number" &&
-    delivery.estimatedTime > 0;
+    !isPickup && !isScheduledDelivery && typeof deliveryEta === "number" && deliveryEta > 0;
+  const hasTimingPanel = hasDeliveryDistance || hasDeliveryEta || isScheduledDelivery;
 
   const vendorRating = vendor?.rating.average ?? 0;
   const vendorReviewCount = vendor?.rating.totalReviews ?? 0;
@@ -1176,15 +1258,21 @@ export default function PaymentPage() {
                           <div className="flex items-center gap-2">
                             <div
                               className={`h-2 w-2 rounded-full ${
-                                vendor.businessDetails.isStoreOpen
-                                  ? "bg-green-500"
-                                  : "bg-red-500"
+                                vendorState === "PAUSED"
+                                  ? "bg-amber-500"
+                                  : vendorState === "CLOSED"
+                                    ? "bg-red-500"
+                                    : "bg-green-500"
                               }`}
                             />
                             <span className="text-xs font-medium text-gray-650 dark:text-neutral-400">
-                              {vendor.businessDetails.isStoreOpen
-                                ? t("open")
-                                : t("closed")}
+                              {t(
+                                vendorState === "PAUSED"
+                                  ? "paused"
+                                  : vendorState === "CLOSED"
+                                    ? "closed"
+                                    : "open",
+                              )}
                             </span>
                             {vendorRating > 0 && (
                               <div className="flex items-center gap-1 ml-2 text-gray-900 dark:text-neutral-200">
@@ -1227,7 +1315,9 @@ export default function PaymentPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold wrap-break-word text-gray-900 dark:text-neutral-50">
-                          {summary.pickupTime
+                          {scheduledLabel
+                            ? scheduledLabel
+                            : summary.pickupTime
                             ? formatPickupMoment(summary.pickupTime, lang, {
                                 today: t("today"),
                                 tomorrow: t("tomorrow"),
@@ -1313,8 +1403,8 @@ export default function PaymentPage() {
               {/* Always drawn: the notes box is in it, for pickup too. Two
                   columns only when the distance panel shares the row. */}
               {(
-                <div className={`mt-6 grid gap-6 ${hasDeliveryDistance || hasDeliveryEta ? "md:grid-cols-2" : ""}`}>
-                  {(hasDeliveryDistance || hasDeliveryEta) && (
+                <div className={`mt-6 grid gap-6 ${hasTimingPanel ? "md:grid-cols-2" : ""}`}>
+                  {hasTimingPanel && (
                     <div className="flex items-center gap-3 rounded-lg border border-dashed border-primary/20 dark:border-pink-900/30 bg-gray-50 dark:bg-neutral-950/50 p-4">
                       <MapPinned className="h-5 w-5 shrink-0 text-primary dark:text-pink-400" />
                       <div>
@@ -1328,10 +1418,15 @@ export default function PaymentPage() {
                           {hasDeliveryDistance && hasDeliveryEta && " • "}
                           {hasDeliveryEta && (
                             <>
-                              {t("estimatedTime")}: {formatMinutes(delivery.estimatedTime, t)}
+                              {t("estimatedTime")}: {formatMinutes(deliveryEta, t)}
                             </>
                           )}
                         </p>
+                        {isScheduledDelivery && (
+                          <p className="text-sm font-semibold text-gray-900 dark:text-neutral-100">
+                            {t("scheduledForLabel")}: {scheduledLabel}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1522,6 +1617,25 @@ export default function PaymentPage() {
                       {delivery.totalDeliveryCharge > 0
                         ? formatEuro(delivery.totalDeliveryCharge)
                         : t("free")}
+                    </span>
+                  </div>
+                )}
+
+                {smallOrderFee > 0 && (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 text-gray-500 dark:text-neutral-400">
+                      {t("smallOrderFee")}
+                      {(orderCalculation.smallOrderFeeTax ?? 0) > 0 && (
+                        <span className="ml-1 whitespace-nowrap text-xs text-gray-400 dark:text-neutral-500">
+                          ({t("inclVat")} -&nbsp;{formatEuro(orderCalculation.smallOrderFeeTax ?? 0)})
+                        </span>
+                      )}
+                      <span className="ml-1 inline-flex align-middle">
+                        <VatInfoButton breakdown={smallOrderFeeInfo} label={t("smallOrderFeeBreakdownOpen")} />
+                      </span>
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap font-semibold text-gray-900 dark:text-neutral-50">
+                      {formatEuro(smallOrderFee)}
                     </span>
                   </div>
                 )}
@@ -1853,6 +1967,14 @@ export default function PaymentPage() {
                         {t("paymentFailed")}
                       </p>
                       <p className="text-sm text-gray-600 dark:text-neutral-400">{paymentError}</p>
+                      {slotRefused && (
+                        <Link
+                          href={editNotesHref}
+                          className="focus-ring mt-2 inline-block rounded-sm text-sm font-semibold text-primary transition hover:opacity-80 dark:text-pink-400"
+                        >
+                          {t("chooseAnotherTime")}
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>

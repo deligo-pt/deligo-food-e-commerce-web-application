@@ -17,13 +17,21 @@ import { isPickupOrder } from "@/lib/orderTimeline";
 import { useOrderRatingStore } from "@/stores/orderRatingStore";
 import { getVendorDisplayName } from "@/lib/vendorName";
 import { formatOrderPrice } from "@/lib/currency";
-import { getOrderBucket } from "@/lib/orderStatus";
+import { getOrderBucket, getScheduledWindow } from "@/lib/orderStatus";
+import { formatScheduledWindow } from "@/lib/storeStatusText";
+import { useStore } from "@/stores/translationStore";
 import { getOrderCardStatus } from "@/lib/orderCardStatus";
 import { getOrderStatusLabel } from "@/lib/orderStatusLabel";
 import { Button } from "@/components/ui/button";
 
 export default function OrdersPage() {
   const { t } = useTranslation();
+  const lang = useStore((state) => state.lang) as "en" | "pt";
+  /** "Hoje 21:00–21:30" for a scheduled order, "" otherwise. */
+  const scheduledLabelOf = (order: any) => {
+    const slot = getScheduledWindow(order);
+    return slot ? formatScheduledWindow(slot, t, lang) : "";
+  };
   const [activeTab, setActiveTab] = useState<"ongoing" | "history">("ongoing");
   // Local, not synced to the URL. An order history is private and single-user,
   // so a shareable `?search=` buys nothing — and reading search params here
@@ -233,8 +241,14 @@ export default function OrdersPage() {
   // order's journey ends two steps earlier than a delivery's — there is no
   // rider leg — so `READY_FOR_PICKUP` is nearly done for one and merely
   // three-quarters done for the other.
-  const getOrderProgress = (status: string, isPickup: boolean) => {
+  const getOrderProgress = (status: string, isPickup: boolean, scheduledLabel = "") => {
     switch (status) {
+      case "SCHEDULED":
+        // Paid and booked; the slot is the promise.
+        return {
+          progress: 5,
+          text: scheduledLabel ? t("scheduledFor").replace("{slot}", scheduledLabel) : t("scheduled"),
+        };
       case "PENDING":
         return { progress: 15, text: t("waitingRestaurantConfirmation") };
       case "ACCEPTED":
@@ -329,15 +343,18 @@ export default function OrdersPage() {
             ) : (
               visibleOngoing.map((order) => {
                 const isPickup = isPickupOrder(order);
+                const scheduledLabel = scheduledLabelOf(order);
                 const { progress, text } = getOrderProgress(
                   order.orderStatus,
                   isPickup,
+                  scheduledLabel,
                 );
                 return (
                   <OrderCard
                     key={order._id}
                     dbId={order._id}
                     isPickup={isPickup}
+                    scheduledLabel={scheduledLabel}
                     image={order.items?.[0]?.image}
                     imageProductId={order.items?.[0]?.productId}
                     restaurant={
@@ -469,10 +486,12 @@ export default function OrdersPage() {
           card into History rather than just restyling it in place. */}
       <CancelOrderDialog
         orderId={orderToCancel}
+        order={orders.find((order: any) => order.orderId === orderToCancel) ?? null}
         onClose={() => setOrderToCancel(null)}
         onCancelled={async () => {
           await invalidateOrders();
         }}
+        onStale={invalidateOrders}
       />
     </section>
   );
