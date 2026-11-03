@@ -3,7 +3,7 @@
 import { memo, useEffect, useState, useMemo } from "react";
 import SafeImage from "@/components/shared/SafeImage";
 import Link from "next/link";
-import { Star, Truck, Check, Store, Moon } from "lucide-react";
+import { Star, Truck, Check, Store } from "lucide-react";
 
 import { getApiErrorMessage } from "../../lib/apiClient";
 import { useBusinessCategoryStore } from "@/stores/businessCategoryStore";
@@ -24,6 +24,11 @@ import { cn } from "@/lib/utils";
 import { vendorHref } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { cardVariants } from "@/components/ui/card";
+import {
+  CardStatusLine,
+  CardStatusOverlay,
+  useCardStoreStatus,
+} from "@/components/vendors/CardStoreStatus";
 import { SectionHeading } from "@/components/ui/section-heading";
 
 // Memoized card: "Load more" and filter changes re-render the grid, and a card
@@ -38,7 +43,9 @@ const RestaurantCard = memo(function RestaurantCard({ vendor }: { vendor: Vendor
   // Closed stores are shown dimmed with a "Currently Closed" badge but stay
   // openable — the menu is browsable, only ordering is withdrawn. Only an
   // explicit `false` counts as closed.
-  const isClosed = vendor.businessDetails?.isStoreOpen === false;
+  // Closed by schedule or paused (guide §1): both dim the card. See CardStoreStatus.
+  const storeStatus = useCardStoreStatus(vendor);
+  const isClosed = storeStatus.isClosed;
   const cardTitle = useVendorCardTitle(vendor);
 
   const cardBody = (
@@ -89,14 +96,7 @@ const RestaurantCard = memo(function RestaurantCard({ vendor }: { vendor: Vendor
             </span>
           </div>
         )}
-        {isClosed && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/45">
-            <span className="flex h-8 items-center gap-2 rounded-full bg-black/70 px-4 text-xs font-bold text-white shadow-lg backdrop-blur-sm">
-              <Moon size={14} />
-              {t("currentlyClosed")}
-            </span>
-          </div>
-        )}
+        <CardStatusOverlay status={storeStatus} />
       </div>
 
       {/* `p-4 sm:p-8` was 20 and 32; neither is on the §1.2 scale. And the
@@ -147,20 +147,9 @@ const RestaurantCard = memo(function RestaurantCard({ vendor }: { vendor: Vendor
             — §1.4 gives pink to action *and* availability, so painting both in
             it distinguished neither. Closed is untouched: the same muted
             #9aa0a6 it has always been. */}
-        <div className="mt-auto flex min-w-0 items-center gap-4 border-t border-border pt-3 text-sm font-semibold">
-          <span
-            className={`flex shrink-0 items-center gap-2 ${
-              isClosed ? "text-[#9aa0a6] dark:text-neutral-500" : "text-success"
-            }`}
-          >
-            <span
-              aria-hidden="true"
-              className={`size-2 shrink-0 rounded-full ${
-                isClosed ? "bg-[#9aa0a6] dark:bg-neutral-600" : "bg-success"
-              }`}
-            />
-            {vendor.businessDetails.isStoreOpen ? t("openNow") : t("closed")}
-          </span>
+        {/* Wraps rather than truncating the status: "Paused · back at 15:00" loses its point without the time, so the city drops to its own line on a narrow card. */}
+        <div className="mt-auto flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-3 text-sm font-semibold">
+          <CardStatusLine status={storeStatus} />
           <span
             className={`flex min-w-0 items-center gap-2 ${
               isClosed

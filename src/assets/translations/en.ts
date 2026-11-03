@@ -282,6 +282,49 @@ const en = {
   selectPickupDay: "Choose a day",
   noSlotsToday: "Closed for the rest of today",
   noSlotsThisDay: "No pickup slots on this day",
+  // Slot picker fed by the server (scheduled-orders plan, Phase 3).
+  noSlotsOnDay: "No times available on this day",
+  seeDay: "See {day}",
+  slotsLoadFailed: "We couldn't load the available times.",
+  vendorNotAcceptingOrdersRestaurant: "This restaurant is not taking orders right now.",
+  vendorNotAcceptingOrdersStore: "This store is not taking orders right now.",
+  vendorNotAcceptingOrdersPartner: "This partner is not taking orders right now.",
+  timesInStoreZone: "Times shown in the store's local time.",
+  orderAheadMinutes: "Order at least {n} min ahead.",
+  // Scheduled orders, tracking and cancel (scheduled-orders plan, Phase 6).
+  scheduled: "Scheduled",
+  orderScheduledStep: "Order Scheduled",
+  scheduledMayArriveEarly: "Your order may arrive a little early.",
+  scheduledPickupReady: "It will be ready for this time.",
+  cancelFullRefund: "You will be refunded the full amount, {amount}.",
+  cancelNoRefund: "The partner has already accepted this order. If you cancel now, you will not be refunded.",
+  refundProcessing: "Refund Being Processed",
+  refundProcessingDescription: "Your refund is being processed. Contact support if it takes long.",
+  // Small order fee (scheduled-orders plan, Phase 5).
+  smallOrderFee: "Small order fee",
+  smallOrderFeeNudge: "Add {amount} more to avoid the {fee} small order fee",
+  smallOrderFeeAddedAtPayment: "Added at payment for orders under {threshold}.",
+  smallOrderFeeExplain: "Charged when the items in an order add up to less than the minimum. Delivery, service fee, deposits and vouchers don't count towards it.",
+  smallOrderFeeBreakdownOpen: "Show the small order fee breakdown",
+  invoiceSmallOrderFee: "Small order fee (incl. VAT)",
+  // Scheduled orders in checkout (scheduled-orders plan, Phase 4).
+  deliveryTime: "Delivery time",
+  deliverAsap: "As soon as possible",
+  scheduleForLater: "Schedule for later",
+  selectDeliveryTime: "Select delivery time",
+  deliveryTimeRequired: "Choose a delivery time to continue",
+  confirmDeliveryTime: "Confirm Delivery Time",
+  asapUnavailableClosed: "Closed right now, so delivery can only be scheduled.",
+  asapUnavailablePaused: "Temporarily paused, so delivery can only be scheduled.",
+  noDeliverySlots: "No delivery times are available right now.",
+  scheduledFor: "Scheduled for {slot}",
+  scheduledForLabel: "Scheduled for",
+  slotNoLongerAvailable: "The time you chose can no longer be booked. Nothing was charged.",
+  storeStoppedTakingOrders: "The store can't take this order right now. Nothing was charged; you can schedule it for later.",
+  scheduleLaterNotice: "You can still add items to your cart and schedule the order for later.",
+  chooseAnotherTime: "Choose another time",
+  orderScheduledTitle: "Order scheduled",
+  orderScheduledBody: "Scheduled for {slot}. It will be prepared for that time.",
   pickupDetails: "Pickup Details",
   collectFrom: "Collect from",
   pickupTime: "Pickup Time",
@@ -461,6 +504,10 @@ const en = {
   noItemsFoundInCategory: "No items found in this category.",
 
   off: "OFF",
+  // Product modal discount line: "Save 0.60 € (5% Off)". `{amount}` and
+  // `{value}` are filled in by the caller.
+  saveAmount: "Save {amount}",
+  percentOff: "{value} Off",
 
   deliciousMenuItem: "Delicious item from our menu.",
   pleaseContactVendor: "Please contact the vendor",
@@ -473,6 +520,8 @@ const en = {
   locationNotAvailable: "Location not available",
 
   closedNow: "Closed now",
+  // A store on one of its weekly closing days (availability reason CLOSED_DAY).
+  closedToday: "Closed today",
   currentlyClosed: "Currently Closed",
   hoursNotSet: "Hours not set",
 
@@ -742,6 +791,35 @@ const en = {
   storeClosedCannotOrderPartner:
     "This partner is closed right now — you can't order from it yet.",
 
+  // Store availability (scheduled-orders plan, Phase 2). `{time}` is the store's
+  // local clock time, `{day}` a short date ("Thu 5 Nov"). Lower case: these sit
+  // after "Closed ·" / "Paused ·" and are capitalised at the start of a sentence.
+  paused: "Paused",
+  currentlyPaused: "Temporarily Paused",
+  opensAtTime: "opens at {time}",
+  opensTomorrowAt: "opens tomorrow at {time}",
+  opensOnDayAt: "opens {day} at {time}",
+  backAtTime: "back at {time}",
+  backTomorrowAt: "back tomorrow at {time}",
+  backOnDayAt: "back {day} at {time}",
+  orderingResumesIn: "Ordering resumes in",
+  hourShort: "h",
+  storePausedTitleRestaurant: "This restaurant is temporarily paused",
+  storePausedTitleStore: "This store is temporarily paused",
+  storePausedTitlePartner: "This partner is temporarily paused",
+  storePausedNoticeRestaurant:
+    "You can browse the menu, but ordering is paused until it resumes.",
+  storePausedNoticeStore:
+    "You can browse the products, but ordering is paused until it resumes.",
+  storePausedNoticePartner:
+    "You can browse what they offer, but ordering is paused until it resumes.",
+  storePausedCannotOrderRestaurant:
+    "This restaurant is temporarily paused — you can't order from it right now.",
+  storePausedCannotOrderStore:
+    "This store is temporarily paused — you can't order from it right now.",
+  storePausedCannotOrderPartner:
+    "This partner is temporarily paused — you can't order from it right now.",
+
   closingSoon: "We're Closing Soon",
   orderWithin: "Order within",
   minShort: "min",
@@ -790,9 +868,9 @@ const en = {
 
   orderDelivered: "Order has been delivered",
 
-  refundInProgress: "Refund In Progress",
+  refundInProgress: "Refund Pending",
   refundInProgressDescription:
-    "Your payment is being refunded. This may take 3–5 business days.",
+    "We will return the full amount ({amount}). You'll get an email once the refund is done.",
   refundCompleted: "Refund Completed",
   refundCompletedDescription:
     "Your payment has been successfully refunded to your account.",

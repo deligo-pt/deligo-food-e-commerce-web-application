@@ -2,7 +2,7 @@
 
 import SafeImage from "@/components/shared/SafeImage";
 import Link from "next/link";
-import { Star, Truck, Check, Store, Moon } from "lucide-react";
+import { Star, Truck, Check, Store } from "lucide-react";
 import { memo } from "react";
 import { formatCuisine } from "@/lib/cuisine";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -10,6 +10,12 @@ import { cn } from "@/lib/utils";
 import { vendorHref } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { cardVariants } from "@/components/ui/card";
+import type { Availability } from "@/lib/availability";
+import {
+  CardStatusLine,
+  CardStatusOverlay,
+  useCardStoreStatus,
+} from "@/components/vendors/CardStoreStatus";
 import { deliveryEstimateText, type EstimatedDeliveryTime } from "@/lib/deliveryEstimate";
 
 export interface Vendor {
@@ -24,6 +30,8 @@ export interface Vendor {
     openingHours: string;
     closingHours: string;
     isStoreOpen: boolean;
+    availability?: Availability;
+    timezone?: string;
   };
   businessLocation: {
     city: string;
@@ -51,7 +59,9 @@ function VendorCard({ vendor }: VendorCardProps) {
   // only the add-to-cart action is withdrawn. `isStoreOpen` is authoritative;
   // treat only an explicit `false` as closed so cards with the flag absent
   // still behave as open.
-  const isClosed = vendor.businessDetails?.isStoreOpen === false;
+  // Closed by schedule or paused (guide §1): both dim the card. See CardStoreStatus.
+  const storeStatus = useCardStoreStatus(vendor);
+  const isClosed = storeStatus.isClosed;
   const cardTitle = useVendorCardTitle(vendor);
 
   // The backend's estimate, sent with the list (see `lib/deliveryEstimate.ts`).
@@ -97,14 +107,7 @@ function VendorCard({ vendor }: VendorCardProps) {
             </span>
           </div>
         )}
-        {isClosed && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/45">
-            <span className="flex h-8 items-center gap-2 rounded-full bg-black/70 px-4 text-xs font-bold text-white shadow-lg backdrop-blur-sm">
-              <Moon size={14} />
-              {t("currentlyClosed")}
-            </span>
-          </div>
-        )}
+        <CardStatusOverlay status={storeStatus} />
       </div>
 
       {/* flex-1 + mt-auto on the footer keeps every card's divider and meta row
@@ -151,20 +154,9 @@ function VendorCard({ vendor }: VendorCardProps) {
             — §1.4 gives pink to action *and* availability, so painting both in
             it distinguished neither. Closed is untouched: the same muted
             #9aa0a6 it has always been. */}
-        <div className="mt-auto flex min-w-0 items-center gap-4 border-t border-border pt-3 text-sm font-semibold">
-          <span
-            className={`flex shrink-0 items-center gap-2 ${
-              isClosed ? "text-[#9aa0a6] dark:text-neutral-500" : "text-success"
-            }`}
-          >
-            <span
-              aria-hidden="true"
-              className={`size-2 shrink-0 rounded-full ${
-                isClosed ? "bg-[#9aa0a6] dark:bg-neutral-600" : "bg-success"
-              }`}
-            />
-            {vendor.businessDetails.isStoreOpen ? t("openNow") : t("closed")}
-          </span>
+        {/* Wraps rather than truncating the status: "Paused · back at 15:00" loses its point without the time, so the city drops to its own line on a narrow card. */}
+        <div className="mt-auto flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-3 text-sm font-semibold">
+          <CardStatusLine status={storeStatus} />
           <span
             className={`flex min-w-0 items-center gap-2 ${
               isClosed

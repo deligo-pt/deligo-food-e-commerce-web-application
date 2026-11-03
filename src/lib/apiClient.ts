@@ -2,6 +2,7 @@ import axios from "axios";
 import { clearAuthTokens } from "./authCookies";
 import { isSessionEndedResponse } from "./authError";
 import { resolveLocalized, type LocalizedField } from "./localizedField";
+import { recordApiDate } from "./serverClock";
 import { useStore } from "@/stores/translationStore";
 
 type ApiErrorResponse = {
@@ -58,6 +59,32 @@ export function getApiErrorKey(error: unknown): string | null {
   return errorKeyOf(payload) ?? null;
 }
 
+/**
+ * The field the first validation error points at (`errorSources[0].path`), or
+ * null. Needed because some validation failures arrive with no `errorKey` at
+ * all: `POST /checkout` rejects a missing or misplaced `scheduledFor` /
+ * `pickupTime` with `errorKey: null` and only the path set (tested 3 Nov 2026).
+ * An empty path or `"body"` (the request as a whole) is not a field: null.
+ */
+export function getApiErrorPath(error: unknown): string | null {
+  if (!axios.isAxiosError(error)) return null;
+  const payload = error.response?.data as ApiErrorResponse | undefined;
+  for (const source of payload?.errorSources ?? []) {
+    if (source?.path && source.path !== "body") return source.path;
+  }
+  return null;
+}
+
+/**
+ * The `data` an error response carries, e.g. `{ resumeAt }` on
+ * `VENDOR_PAUSED`. Null when absent.
+ */
+export function getApiErrorData<T = Record<string, unknown>>(error: unknown): T | null {
+  if (!axios.isAxiosError(error)) return null;
+  const data = (error.response?.data as { data?: unknown } | undefined)?.data;
+  return data && typeof data === "object" ? (data as T) : null;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api/v1";
 const ACCESS_TOKEN_COOKIE = "deligo-access-token";
 
@@ -75,7 +102,12 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
+/** When each request left, so `serverClock` can measure against its midpoint. */
+const SENT_AT = Symbol("sentAt");
+type TimedConfig = { [SENT_AT]?: number };
+
 apiClient.interceptors.request.use((config) => {
+  (config as TimedConfig)[SENT_AT] = Date.now();
   const headers = axios.AxiosHeaders.from(config.headers);
 
   if (!headers.has("Authorization")) {
@@ -99,7 +131,15 @@ apiClient.interceptors.request.use((config) => {
 let isRedirecting = false;
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Empty today: the API does not expose `Date` cross-origin. See serverClock.
+    const sentAt = (response.config as TimedConfig)[SENT_AT];
+    if (sentAt) {
+      const date = (response.headers as Record<string, unknown> | undefined)?.["date"];
+      recordApiDate(typeof date === "string" ? date : null, sentAt, Date.now());
+    }
+    return response;
+  },
   (error) => {
     // Not every 401 is a dead session: a wrong OTP digit answers
     // `401 INVALID_OTP_CODE`, and clearing the cookies for that logs out a

@@ -3,6 +3,7 @@ import { apiClient, getApiErrorMessage } from "./apiClient";
 import { resolveLocalized, type Lang, type LocalizedField } from "./localizedField";
 import { getServiceChargeGross } from "./vat";
 import { addonLineDeposit, lineDeposit, orderDepositTotal } from "./sdr";
+import { smallOrderFeeGross } from "./smallOrderFee";
 import type { LineSdr } from "@/types/sdr";
 import { useStore } from "@/stores/translationStore";
 
@@ -61,6 +62,9 @@ interface InvoiceOrder {
     // Net, with its VAT reported alongside.
     serviceCharge?: number;
     serviceChargeVatAmount?: number;
+    /** Net, with its tax alongside; `0` when there was none. */
+    smallOrderFee?: number;
+    smallOrderFeeTax?: number;
   };
   delivery?: { totalDeliveryCharge?: number; vatAmount?: number };
   /** `grandTotal` already includes `sdr.amount` when there is a deposit. */
@@ -489,11 +493,15 @@ export async function downloadInvoice(
   // Container deposit (SDR): its own row, already inside `grandTotal`, so the
   // rows still add up to the amount charged — never added to it again.
   const depositTotal = orderDepositTotal(order);
+  // Small order fee + its tax, as charged; already inside `grandTotal`.
+  const smallOrderFee = smallOrderFeeGross(calc);
 
   const T_ROW = 6.6;
   const PAY_H = 12;
-  // Total Price, Discount, Subtotal, [Offer], Service Fee, Delivery fee, [Deposit].
-  const totalsRows = 5 + (offerDiscount > 0 ? 1 : 0) + (depositTotal > 0 ? 1 : 0);
+  // Total Price, Discount, Subtotal, [Offer], Service Fee, Delivery fee,
+  // [Small Order Fee], [Deposit].
+  const totalsRows =
+    5 + (offerDiscount > 0 ? 1 : 0) + (smallOrderFee > 0 ? 1 : 0) + (depositTotal > 0 ? 1 : 0);
   const panelW = 98;
   const panelX = right - panelW;
   // Derived from where the last row's baseline actually lands (first baseline
@@ -552,6 +560,9 @@ export async function downloadInvoice(
   // up to it.
   if (!isPickup) {
     totalRow(t("invoiceDeliveryFee"), deliveryFee);
+  }
+  if (smallOrderFee > 0) {
+    totalRow(t("invoiceSmallOrderFee"), smallOrderFee);
   }
   if (depositTotal > 0) {
     totalRow(t("sdrDeposit"), depositTotal);

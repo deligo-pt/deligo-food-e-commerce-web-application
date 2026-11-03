@@ -23,6 +23,10 @@ const PRESENTATION: Record<
     accent: "border-l-primary dark:border-l-primary",
     heading: "text-primary dark:text-pink-400",
   },
+  processing: {
+    accent: "border-l-primary dark:border-l-primary",
+    heading: "text-primary dark:text-pink-400",
+  },
   completed: {
     accent: "border-l-green-600 dark:border-l-green-500",
     heading: "text-green-600 dark:text-green-400",
@@ -42,7 +46,14 @@ const PRESENTATION: Record<
  * after the restaurant accepted needs telling that no refund is coming. Only
  * `none` — an order that was never paid for — stays silent.
  */
-export default function RefundBanner({ state }: { state: RefundState }) {
+export default function RefundBanner({
+  state,
+  amount,
+}: {
+  state: RefundState;
+  /** `payoutSummary.grandTotal`, already formatted: the whole amount is owed back. */
+  amount?: string;
+}) {
   const { t } = useTranslation();
 
   const labelKey = refundStateLabelKey(state);
@@ -80,7 +91,7 @@ export default function RefundBanner({ state }: { state: RefundState }) {
       <div className="space-y-1">
         <h2 className={`text-xl font-extrabold ${heading}`}>{t(labelKey)}</h2>
         <p className="text-sm font-semibold leading-relaxed text-muted-foreground dark:text-neutral-400">
-          {t(descriptionKey)}
+          {t(descriptionKey).replace("{amount}", amount ?? "")}
         </p>
       </div>
     </div>

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { smallOrderFeeNudge } from "@/lib/smallOrderFee";
 import { useMemo } from "react";
 import CartStoreCard from "./CartStoreCard";
 import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
@@ -249,6 +250,7 @@ export default function CartPage() {
               total={store.total}
               collapsible={stores.length > 1}
               deleteTargets={getStoreDeleteTargets(store.vendorId)}
+              feeNudge={smallOrderFeeNudge(cart?.cartCalculation)}
               onCartChanged={resyncCart}
             />
           ))

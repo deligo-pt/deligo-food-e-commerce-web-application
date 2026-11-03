@@ -284,6 +284,49 @@ const pt = {
   selectPickupDay: "Escolha um dia",
   noSlotsToday: "Fechado para o resto do dia",
   noSlotsThisDay: "Sem horários de recolha neste dia",
+  // Seletor de horários vindo do servidor (plano de encomendas agendadas, Fase 3).
+  noSlotsOnDay: "Sem horários disponíveis neste dia",
+  seeDay: "Ver {day}",
+  slotsLoadFailed: "Não foi possível carregar os horários disponíveis.",
+  vendorNotAcceptingOrdersRestaurant: "Este restaurante não está a aceitar encomendas neste momento.",
+  vendorNotAcceptingOrdersStore: "Esta loja não está a aceitar encomendas neste momento.",
+  vendorNotAcceptingOrdersPartner: "Este parceiro não está a aceitar encomendas neste momento.",
+  timesInStoreZone: "Horários na hora local da loja.",
+  orderAheadMinutes: "Encomende com pelo menos {n} min de antecedência.",
+  // Encomendas agendadas, acompanhamento e cancelamento (Fase 6).
+  scheduled: "Agendado",
+  orderScheduledStep: "Pedido Agendado",
+  scheduledMayArriveEarly: "A sua encomenda pode chegar um pouco mais cedo.",
+  scheduledPickupReady: "Estará pronta para esta hora.",
+  cancelFullRefund: "Será reembolsado do valor total, {amount}.",
+  cancelNoRefund: "O parceiro já aceitou este pedido. Se cancelar agora, não será reembolsado.",
+  refundProcessing: "Reembolso em Processamento",
+  refundProcessingDescription: "O seu reembolso está a ser processado. Contacte o suporte se demorar.",
+  // Taxa de pedido mínimo (plano de encomendas agendadas, Fase 5).
+  smallOrderFee: "Taxa de pedido mínimo",
+  smallOrderFeeNudge: "Adicione mais {amount} para evitar a taxa de pedido mínimo de {fee}",
+  smallOrderFeeAddedAtPayment: "Adicionada no pagamento a encomendas abaixo de {threshold}.",
+  smallOrderFeeExplain: "Cobrada quando os artigos de uma encomenda somam menos do que o mínimo. Entrega, taxa de serviço, depósitos e vouchers não contam.",
+  smallOrderFeeBreakdownOpen: "Ver o detalhe da taxa de pedido mínimo",
+  invoiceSmallOrderFee: "Taxa de pedido mínimo (IVA incl.)",
+  // Encomendas agendadas no checkout (plano de encomendas agendadas, Fase 4).
+  deliveryTime: "Hora de entrega",
+  deliverAsap: "O mais rápido possível",
+  scheduleForLater: "Agendar para mais tarde",
+  selectDeliveryTime: "Selecionar hora de entrega",
+  deliveryTimeRequired: "Escolha uma hora de entrega para continuar",
+  confirmDeliveryTime: "Confirmar Hora de Entrega",
+  asapUnavailableClosed: "Fechado de momento, por isso a entrega só pode ser agendada.",
+  asapUnavailablePaused: "Temporariamente em pausa, por isso a entrega só pode ser agendada.",
+  noDeliverySlots: "Não há horários de entrega disponíveis de momento.",
+  scheduledFor: "Agendado para {slot}",
+  scheduledForLabel: "Agendado para",
+  slotNoLongerAvailable: "A hora escolhida já não pode ser reservada. Nada foi cobrado.",
+  storeStoppedTakingOrders: "A loja não pode aceitar esta encomenda neste momento. Nada foi cobrado; pode agendá-la para mais tarde.",
+  scheduleLaterNotice: "Pode adicionar ao carrinho na mesma e agendar a encomenda para mais tarde.",
+  chooseAnotherTime: "Escolher outra hora",
+  orderScheduledTitle: "Encomenda agendada",
+  orderScheduledBody: "Agendada para {slot}. Será preparada para essa hora.",
   pickupDetails: "Detalhes da Recolha",
   collectFrom: "Recolher em",
   pickupTime: "Hora de Recolha",
@@ -464,6 +507,10 @@ const pt = {
   // pt-PT weekday abbreviations: Seg Ter Qua Qui Sex Sáb Dom.
 
   off: "DESCONTO",
+  // Product modal discount line: "Poupe 0,60 € (5% de Desconto)". `{amount}`
+  // and `{value}` are filled in by the caller.
+  saveAmount: "Poupe {amount}",
+  percentOff: "{value} de Desconto",
 
   deliciousMenuItem: "Item delicioso do nosso menu.",
 
@@ -477,6 +524,8 @@ const pt = {
   locationNotAvailable: "Localização indisponível",
 
   closedNow: "Fechado agora",
+  // A store on one of its weekly closing days (availability reason CLOSED_DAY).
+  closedToday: "Fechado hoje",
   currentlyClosed: "Fechado de Momento",
   hoursNotSet: "Horário não definido",
 
@@ -751,6 +800,34 @@ const pt = {
   storeClosedCannotOrderPartner:
     "Este parceiro está fechado neste momento — ainda não pode encomendar.",
 
+  // Disponibilidade da loja (plano de encomendas agendadas, Fase 2). `{time}` é a
+  // hora local da loja, `{day}` uma data curta ("qui., 5 de nov.").
+  paused: "Em pausa",
+  currentlyPaused: "Temporariamente em Pausa",
+  opensAtTime: "abre às {time}",
+  opensTomorrowAt: "abre amanhã às {time}",
+  opensOnDayAt: "abre {day} às {time}",
+  backAtTime: "volta às {time}",
+  backTomorrowAt: "volta amanhã às {time}",
+  backOnDayAt: "volta {day} às {time}",
+  orderingResumesIn: "As encomendas retomam dentro de",
+  hourShort: "h",
+  storePausedTitleRestaurant: "Este restaurante está temporariamente em pausa",
+  storePausedTitleStore: "Esta loja está temporariamente em pausa",
+  storePausedTitlePartner: "Este parceiro está temporariamente em pausa",
+  storePausedNoticeRestaurant:
+    "Pode ver o menu, mas as encomendas estão em pausa até retomar.",
+  storePausedNoticeStore:
+    "Pode ver os produtos, mas as encomendas estão em pausa até retomar.",
+  storePausedNoticePartner:
+    "Pode ver o que oferecem, mas as encomendas estão em pausa até retomar.",
+  storePausedCannotOrderRestaurant:
+    "Este restaurante está temporariamente em pausa — não pode encomendar agora.",
+  storePausedCannotOrderStore:
+    "Esta loja está temporariamente em pausa — não pode encomendar agora.",
+  storePausedCannotOrderPartner:
+    "Este parceiro está temporariamente em pausa — não pode encomendar agora.",
+
   closingSoon: "Estamos a Fechar em Breve",
   orderWithin: "Peça em",
   minShort: "min",
@@ -795,9 +872,9 @@ const pt = {
 
   orderDelivered: "O pedido foi entregue",
 
-  refundInProgress: "Reembolso Em Progresso",
+  refundInProgress: "Reembolso Pendente",
   refundInProgressDescription:
-    "O seu pagamento está a ser reembolsado. Pode demorar 3 a 5 dias úteis.",
+    "Vamos devolver o valor total ({amount}). Receberá um email quando o reembolso estiver concluído.",
   refundCompleted: "Reembolso Concluído",
   refundCompletedDescription:
     "O seu pagamento foi reembolsado com sucesso para a sua conta.",

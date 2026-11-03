@@ -1,6 +1,8 @@
 // /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import SmallOrderFeeNudge from "./SmallOrderFeeNudge";
+import type { SmallOrderFeeNudge as SmallOrderFeeNudgeData } from "@/lib/smallOrderFee";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import {
@@ -82,6 +84,11 @@ interface CartStoreCardProps {
    * subtree, including the ones that failed — see `CartPage.resyncCart`.
    */
   onCartChanged: () => Promise<void>;
+  /**
+   * The cart's small order fee nudge (guide §3). The cart prices only the
+   * active store, so the page passes it to that store's card alone.
+   */
+  feeNudge?: SmallOrderFeeNudgeData | null;
 }
 
 export default function CartStoreCard({
@@ -93,6 +100,7 @@ export default function CartStoreCard({
   items,
   collapsible = false,
   deleteTargets,
+  feeNudge = null,
   onCartChanged,
 }: CartStoreCardProps) {
   const { t } = useTranslation();
@@ -339,6 +347,7 @@ export default function CartStoreCard({
 
       {/* Store checkout button – enabled if at least one active item */}
       <div className="mt-6">
+        {hasActive && <SmallOrderFeeNudge nudge={feeNudge} className="mb-3" />}
         <Link
           href={hasActive ? `/cart/checkout/${vendorId}` : "#"}
           onClick={(e) => {

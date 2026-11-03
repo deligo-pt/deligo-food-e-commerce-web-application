@@ -24,6 +24,8 @@ export function normalizeOrderStatus(status: string | null | undefined): string 
  * seen. `getOrderBucket` is what the page asks, and it is total.
  */
 const ONGOING_STATUSES = new Set([
+  // Booked for later and paid, not yet sent to the restaurant (guide §5).
+  "SCHEDULED",
   "PENDING",
   "ACCEPTED",
   "ASSIGNED",
@@ -88,6 +90,31 @@ export function isTerminatedStatus(status: string | null | undefined): boolean {
  */
 export function isNotCollectedStatus(status: string | null | undefined): boolean {
   return normalizeOrderStatus(status) === "NO_SHOW";
+}
+
+/** The booked window of a scheduled order, exactly as the API sent it. */
+export interface ScheduledOrderFields {
+  orderType?: string | null;
+  scheduledFor?: { start?: string | null; end?: string | null } | null;
+}
+
+/**
+ * The slot of an order placed as SCHEDULED, or null. A missing `orderType`
+ * is an ASAP order (every order before Nov 2026). The slot stays the promise
+ * after release too, so this reads `orderType`, not `orderStatus`.
+ */
+export function getScheduledWindow(
+  order: ScheduledOrderFields | null | undefined,
+): { start: string; end: string } | null {
+  if ((order?.orderType ?? "").toUpperCase() !== "SCHEDULED") return null;
+  const start = order?.scheduledFor?.start;
+  const end = order?.scheduledFor?.end;
+  return start && end ? { start, end } : null;
+}
+
+/** Still waiting for its release: paid, booked, not sent to the restaurant yet. */
+export function isAwaitingRelease(status: string | null | undefined): boolean {
+  return normalizeOrderStatus(status) === "SCHEDULED";
 }
 
 /** Which tab of `/orders` an order belongs to. */

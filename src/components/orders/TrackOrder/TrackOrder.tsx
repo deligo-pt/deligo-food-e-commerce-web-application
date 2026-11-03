@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   Utensils,
   XCircle,
+  CalendarClock,
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
@@ -44,7 +45,9 @@ import {
   toTimelineStatus,
 } from "@/lib/orderTimeline";
 import { getPaymentStatusDisplay } from "@/lib/paymentStatus";
-import { isCompletedStatus } from "@/lib/orderStatus";
+import { getScheduledWindow, isAwaitingRelease, isCompletedStatus } from "@/lib/orderStatus";
+import { formatScheduledWindow } from "@/lib/storeStatusText";
+import { msUntil } from "@/lib/serverClock";
 import { getOrderStatusLabel, humanizeStatus } from "@/lib/orderStatusLabel";
 import { useInvalidateOrders } from "@/hooks/queries/useOrders";
 import { useVendor, useVendorsCustomer } from "@/hooks/queries/useVendors";
@@ -58,7 +61,8 @@ import OrderMap from "./OrderMap/OrderMap";
 import OrderStatusAnimation from "./OrderStatusAnimation";
 import { addonLineDeposit, lineDeposit, orderDepositTotal } from "@/lib/sdr";
 import { resolveAddonName } from "@/lib/cart";
-import { deliveryBreakdown, subtotalBreakdown } from "@/lib/vatBreakdown";
+import { deliveryBreakdown, smallOrderFeeBreakdown, subtotalBreakdown } from "@/lib/vatBreakdown";
+import { smallOrderFeeGross } from "@/lib/smallOrderFee";
 import VatInfoButton from "@/components/shared/VatInfoButton";
 import DeliveryCodeCard from "./DeliveryCodeCard";
 import PickupCodeCard from "./PickupCodeCard";
@@ -74,6 +78,11 @@ import { formatEuro } from "@/lib/currency";
 // requests to catch one field flip, so it drops to a background cadence.
 const LIVE_POLL_MS = 5000;
 const REFUND_POLL_MS = 30000;
+// A scheduled order waiting for release changes rarely: once a minute, then
+// every 15 s from 30 min before its slot (when release gets close).
+const SCHEDULED_POLL_MS = 60_000;
+const SCHEDULED_SOON_POLL_MS = 15_000;
+const SCHEDULED_SOON_WINDOW_MS = 30 * 60_000;
 
 // Caption above a single field inside a card — smaller and fainter than the
 // card's own heading caption, so the two read as a hierarchy rather than
@@ -88,6 +97,13 @@ const STEP_PRESENTATION: Record<
   string,
   { labelKey: string; descriptionKey: string; icon: typeof Check }
 > = {
+  // A booked order before release. Its line is the slot, filled in by
+  // `getOrderStep`; `scheduled` is only the fallback without one.
+  SCHEDULED: {
+    labelKey: "orderScheduledStep",
+    descriptionKey: "scheduled",
+    icon: CalendarClock,
+  },
   PENDING: {
     labelKey: "orderPending",
     descriptionKey: "waitingRestaurantResponse",
@@ -158,6 +174,8 @@ function getOrderStep(
   t: (key: string) => string,
   terminalNote: string | null,
   isPickup: boolean,
+  /** "Hoje 21:00–21:30" for a scheduled order, "" otherwise. */
+  scheduledLabel = "",
 ) {
   return getTimelineStepKeys(order).map((key) => {
     const presentation = STEP_PRESENTATION[key];
@@ -179,6 +197,15 @@ function getOrderStep(
       isPickup && key === "READY_FOR_PICKUP"
         ? "readyForPickupSelf"
         : presentation.descriptionKey;
+
+    if (key === "SCHEDULED" && scheduledLabel) {
+      return {
+        key,
+        label: t(presentation.labelKey),
+        description: t("scheduledFor").replace("{slot}", scheduledLabel),
+        icon: presentation.icon,
+      };
+    }
 
     return {
       key,
@@ -340,8 +367,21 @@ export default function TrackOrder() {
             stopped = true;
             stopPolling();
           } else {
-            const refundPending = getRefundState(orderData) === "in_progress";
-            setPollDelay(refundPending ? REFUND_POLL_MS : LIVE_POLL_MS);
+            const refund = getRefundState(orderData);
+            const refundPending = refund === "in_progress" || refund === "processing";
+            const slot = getScheduledWindow(orderData);
+            if (refundPending) {
+              setPollDelay(REFUND_POLL_MS);
+            } else if (isAwaitingRelease(orderData.orderStatus)) {
+              const untilSlot = slot ? msUntil(slot.start) : null;
+              setPollDelay(
+                untilSlot !== null && untilSlot <= SCHEDULED_SOON_WINDOW_MS
+                  ? SCHEDULED_SOON_POLL_MS
+                  : SCHEDULED_POLL_MS,
+              );
+            } else {
+              setPollDelay(LIVE_POLL_MS);
+            }
           }
         }
       } catch (err: any) {
@@ -560,8 +600,21 @@ export default function TrackOrder() {
     pageSubtotal: subtotalShown,
   });
   const deliveryInfo = deliveryBreakdown({ delivery: order.delivery || {}, t });
+  // Copied onto the order when it was placed; a later settings change never
+  // alters it (guide §3). Already inside `grandTotal`.
+  const smallOrderFee = smallOrderFeeGross(calc);
+  const smallOrderFeeVat = calc.smallOrderFeeTax || 0;
+  const smallOrderFeeInfo = smallOrderFeeBreakdown({ calc, t });
 
-  const steps = getOrderStep(order, t, getTerminalReason(order), isPickup);
+  // The booked slot is the promise for a scheduled order (guide §5). The
+  // internal `scheduledReleaseAt` / `scheduledDispatchAt` are never shown.
+  const scheduledWindow = getScheduledWindow(order);
+  const scheduledLabel = scheduledWindow
+    ? formatScheduledWindow(scheduledWindow, t, lang === "pt" ? "pt" : "en")
+    : "";
+  const showScheduledSlot =
+    !!scheduledLabel && !isOrderFinished(order) && !isTerminatedStatus(order.orderStatus);
+  const steps = getOrderStep(order, t, getTerminalReason(order), isPickup, scheduledLabel);
   // The order's own step, with the same label and line (and a vendor's
   // rejection reason) the timeline shows. Not the last step: a delivery
   // timeline always runs to DELIVERED. The dispatch statuses between PREPARING
@@ -611,7 +664,35 @@ export default function TrackOrder() {
                 min-h-175 timeline, so dropping the map would leave the grid
                 badly lopsided on desktop. Renders nothing unless a refund is
                 actually owed. */}
-            <RefundBanner state={refundState} />
+            <RefundBanner
+              state={refundState}
+              amount={formatEuro(order.payoutSummary?.grandTotal ?? 0)}
+            />
+
+            {/* The slot is the promise: no countdown or ETA for a booked
+                order. A delivery can come early (early dispatch), so that
+                is said rather than an exact time promised. */}
+            {showScheduledSlot && (
+              <div
+                role="status"
+                className="flex items-start gap-4 rounded-3xl border border-transparent border-l-4 border-l-primary bg-card p-6 shadow-md dark:border-neutral-800 dark:border-l-primary"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/20 dark:bg-pink-950/30">
+                  <CalendarClock className="h-6 w-6 text-primary dark:text-pink-400" />
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground dark:text-neutral-400">
+                    {t("scheduledForLabel")}
+                  </p>
+                  <h3 className="text-xl font-bold text-foreground wrap-break-word dark:text-neutral-50">
+                    {scheduledLabel}
+                  </h3>
+                  <p className="text-sm font-semibold text-muted-foreground dark:text-neutral-400">
+                    {t(isPickup ? "scheduledPickupReady" : "scheduledMayArriveEarly")}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* The map draws a restaurant→customer route and follows a rider
                 along it — neither of which a self-pickup order has. Fed the
@@ -800,7 +881,9 @@ export default function TrackOrder() {
                   </p>
                   <h3 className="text-xl font-bold text-foreground dark:text-neutral-50 break-words">
                     {isPickup
-                      ? order.pickup?.pickupTime
+                      ? scheduledLabel
+                        ? scheduledLabel
+                        : order.pickup?.pickupTime
                         ? formatPickupMoment(order.pickup.pickupTime, lang, {
                             today: t("today"),
                             tomorrow: t("tomorrow"),
@@ -942,6 +1025,22 @@ export default function TrackOrder() {
                         )}
                       </span>
                       <span className="shrink-0 whitespace-nowrap">{formatEuro(deliveryFee)}</span>
+                    </div>
+                  )}
+                  {smallOrderFee > 0 && (
+                    <div className="flex items-baseline justify-between gap-3 text-muted-foreground dark:text-neutral-400">
+                      <span className="min-w-0">
+                        {t("smallOrderFee")}
+                        {smallOrderFeeVat > 0 && (
+                          <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground dark:text-neutral-500">
+                            ({t("inclVat")}&nbsp;{formatEuro(smallOrderFeeVat)})
+                          </span>
+                        )}
+                        <span className="ml-1 inline-flex align-middle">
+                          <VatInfoButton breakdown={smallOrderFeeInfo} label={t("smallOrderFeeBreakdownOpen")} />
+                        </span>
+                      </span>
+                      <span className="shrink-0 whitespace-nowrap">{formatEuro(smallOrderFee)}</span>
                     </div>
                   )}
                   {depositTotal > 0 && (
@@ -1105,6 +1204,19 @@ export default function TrackOrder() {
           to wait for the next poll tick, which then stops the polling itself. */}
       <CancelOrderDialog
         orderId={cancelDialogOpen ? order.orderId : null}
+        order={order}
+        onStale={async () => {
+          try {
+            const res = await apiClient.get(`/orders/${order.orderId}`);
+            if (res.data?.data) {
+              setOrder(res.data.data);
+              setMaxStatusIndex(getTimelineStepIndex(res.data.data));
+            }
+          } catch {
+            // The next poll picks it up.
+          }
+          await invalidateOrders();
+        }}
         onClose={() => setCancelDialogOpen(false)}
         onCancelled={async (updated) => {
           if (updated) {

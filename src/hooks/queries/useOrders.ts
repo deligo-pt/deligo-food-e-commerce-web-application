@@ -65,6 +65,9 @@ const ORDERS_LIST_FIELDS = [
   "refundStatus",
   "createdAt",
   "fulfillmentType",
+  // Scheduled orders (Phase 6): the card shows the booked slot.
+  "orderType",
+  "scheduledFor",
   "isRated",
   "ratingStatus",
   "deliveryPartnerId",
