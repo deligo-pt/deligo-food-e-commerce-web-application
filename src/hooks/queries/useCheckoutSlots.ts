@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { calibrateServerClock } from "@/lib/serverClock";
-import type { CheckoutSlotsResponse, FulfillmentType } from "@/types/slots";
+import { normalizeSlotsResponse, type CheckoutSlotsResponse, type FulfillmentType } from "@/types/slots";
 
 export const checkoutSlotKeys = {
   all: ["checkout-slots"] as const,
@@ -58,7 +58,9 @@ export function useCheckoutSlots({
         params: { vendorId, fulfillmentType, ...(date ? { date } : {}) },
         signal,
       });
-      return res.data?.data as CheckoutSlotsResponse;
+      // Read through the normaliser: the backend now sends `days[]` instead
+      // of `slots` (4 Nov 2026), and `slots` is what every screen reads.
+      return normalizeSlotsResponse(res.data?.data as CheckoutSlotsResponse, date) ?? null;
     },
     enabled: isEnabled,
     staleTime: 60_000,

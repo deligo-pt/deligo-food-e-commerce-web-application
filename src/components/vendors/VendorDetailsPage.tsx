@@ -314,7 +314,7 @@ const MenuProductCard = memo(function MenuProductCard({
     */
     <div
       onClick={() => onSelect(product.productId)}
-      className={`group flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition dark:shadow-none ${
+      className={`@container group relative flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition dark:shadow-none ${
         storeClosed ? "" : "hover:shadow-lg dark:hover:bg-neutral-800/30"
       }`}
     >
@@ -373,22 +373,27 @@ const MenuProductCard = memo(function MenuProductCard({
 
         <div className="mt-auto flex items-end justify-between gap-2 pt-3">
           <div className="min-w-0">
-            <p className="truncate text-base font-bold text-primary dark:text-pink-400">
-              {formatPrice(finalPrice, currency)}
+            {/* At most two lines (manager's request, 4 Nov 2026): the price
+                with the SDR mark on the same line — "4.50 € (+ depósito)" —
+                and, when discounted, the old price under it. The mark is a
+                word, not the amount: the modal and the cart give the figure.
+                On a narrow card the mark is cut with "…", never the price. */}
+            <p className="flex min-w-0 items-baseline gap-1">
+              <span className="shrink-0 text-base font-bold text-primary dark:text-pink-400">
+                {formatPrice(finalPrice, currency)}
+              </span>
+              {productDeposit(product) > 0 && (
+                <span
+                  className="min-w-0 truncate text-xs font-medium text-muted-foreground dark:text-neutral-400"
+                  title={t("sdrExplanation")}
+                >
+                  (+ {t("sdrDepositShort")})
+                </span>
+              )}
             </p>
             {hasDiscount && (
               <p className="truncate text-xs text-gray-400 line-through dark:text-neutral-500">
                 {formatPrice(originalPrice, currency)}
-              </p>
-            )}
-            {/* SDR products: a mark, not the amount — the modal and the cart
-                give the figure, and the card stays short. */}
-            {productDeposit(product) > 0 && (
-              <p
-                className="truncate text-xs font-medium text-muted-foreground dark:text-neutral-400"
-                title={t("sdrExplanation")}
-              >
-                + {t("sdrDepositShort")}
               </p>
             )}
           </div>
@@ -400,30 +405,37 @@ const MenuProductCard = memo(function MenuProductCard({
             a card that added one blind would build a cart line the customer
             never agreed to.
           */}
-          {oneTap ? (
-            <ProductQuantityStepper
-              productId={cartId}
-              productName={product.name}
-              quantity={cartQuantity}
-              disabled={storeClosed}
-              vendorKind={vendorKind}
-              onCartChanged={onCartChanged}
-            />
-          ) : (
-            <Button
-              size="icon"
-              onClick={() => onSelect(product.productId)}
-              disabled={storeClosed}
-              aria-label={
-                storeClosed
-                  ? t(vendorCopyKey(storePaused ? "storePausedTitle" : "storeClosedTitle", vendorKind))
-                  : t("addToCart")
-              }
-              className="size-9 shrink-0 rounded-xl hover:scale-105 disabled:hover:scale-100"
-            >
-              <Plus size={16} />
-            </Button>
-          )}
+          {/* Phones (two columns, below `md`): the add control sits on the
+              photo's bottom-right corner, so the price line gets the card's
+              full width and "4.50 € (+ depósito)" is never cut. The photo is
+              4:3, so its bottom edge is 75% of the card's width (`cqw`, the
+              card being a size container). From `md` it is back in the row. */}
+          <div className="absolute right-2 top-[calc(75cqw-2.75rem)] drop-shadow-md md:static md:drop-shadow-none">
+            {oneTap ? (
+              <ProductQuantityStepper
+                productId={cartId}
+                productName={product.name}
+                quantity={cartQuantity}
+                disabled={storeClosed}
+                vendorKind={vendorKind}
+                onCartChanged={onCartChanged}
+              />
+            ) : (
+              <Button
+                size="icon"
+                onClick={() => onSelect(product.productId)}
+                disabled={storeClosed}
+                aria-label={
+                  storeClosed
+                    ? t(vendorCopyKey(storePaused ? "storePausedTitle" : "storeClosedTitle", vendorKind))
+                    : t("addToCart")
+                }
+                className="size-9 shrink-0 rounded-xl hover:scale-105 disabled:hover:scale-100"
+              >
+                <Plus size={16} />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
