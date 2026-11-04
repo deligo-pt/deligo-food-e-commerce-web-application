@@ -33,7 +33,43 @@ export interface CheckoutSlotsResponse {
   slotDurationMinutes: number;
   /** Store state, for the empty state (`resumeAt` when paused, `nextOpenAt` when closed). */
   store: StoreStatus;
+  /**
+   * The asked-for day's slots. Filled in by `useCheckoutSlots` from `days`
+   * (see `normalizeSlotsResponse`), so screens read one list either way.
+   */
   slots: CheckoutSlot[];
+  /** Every day in `allowedDates` with its own slots (backend shape since 4 Nov 2026). */
+  days?: CheckoutSlotDay[];
+}
+
+/** One day of `days[]`: closed days come with `isOpen: false` and no slots. */
+export interface CheckoutSlotDay {
+  /** `YYYY-MM-DD` in the store's timezone. */
+  date: string;
+  isOpen: boolean;
+  reason: string | null;
+  slots: CheckoutSlot[];
+}
+
+/**
+ * The slots endpoint changed shape on 4 Nov 2026 without a guide update: the
+ * top-level `slots` list became `days[]` (every allowed date, each with its
+ * own `slots`), and `date` is no longer used to pick the day. This reads both
+ * shapes into one: `slots` is the asked-for day's list (`date`, or
+ * `allowedDates.from` for today), and an unknown shape gives no slots rather
+ * than a crash.
+ */
+export function normalizeSlotsResponse(
+  raw: CheckoutSlotsResponse | null | undefined,
+  date: string | null,
+): CheckoutSlotsResponse | undefined {
+  if (!raw) return undefined;
+  const wanted = date ?? raw.allowedDates?.from ?? raw.date;
+  if (Array.isArray(raw.days)) {
+    const day = raw.days.find((d) => d.date === wanted);
+    return { ...raw, date: wanted, slots: Array.isArray(day?.slots) ? day.slots : [] };
+  }
+  return { ...raw, slots: Array.isArray(raw.slots) ? raw.slots : [] };
 }
 
 /** What `POST /checkout` takes as `scheduledFor`, copied from a `CheckoutSlot`. */
