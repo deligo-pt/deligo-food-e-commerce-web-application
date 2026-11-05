@@ -904,11 +904,11 @@ export default function ProductDetailsModal({
                                   )}
                                 </span>
                               );
-                              // A free add-on (€0) says "Free"/"Grátis"; picking and
+                              // A free add-on (€0) shows no price here; picking and
                               // the group limit work the same.
-                              const price = (
+                              const price = opt.price > 0 && (
                                 <span className="shrink-0 text-sm text-gray-500 tabular-nums dark:text-neutral-400">
-                                  {opt.price > 0 ? `+${formatPrice(opt.price, currency)}` : t("addonFree")}
+                                  +{formatPrice(opt.price, currency)}
                                 </span>
                               );
                               if (single) {
