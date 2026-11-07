@@ -1460,7 +1460,7 @@ const pt = {
   // Contact Cards
   contactCallTitle: "Ligue-nos",
   contactCallDetail1: "+351 21 757 0184",
-  contactCallDetail2: "+351 920 136 680",
+  contactCallDetail2: "+351 932 164 451",
   contactEmailTitle: "Envie-nos um Email",
   contactEmailDetail1: "contact@deligo.pt",
   contactEmailDetail2: "geral@deligo.pt",
@@ -1944,7 +1944,7 @@ const pt = {
   supportEmail: "E-mail de Suporte: contact@deligo.pt",
   headquarters:
     "Endereço da Sede: Rua Joaquim Agostinho 16C, 1750-126 Lisboa, Portugal",
-  whatsapp: "WhatsApp Corporativo: +351 920 136 680",
+  whatsapp: "WhatsApp Corporativo: +351 932 164 451",
   telephone: "Telefone Fixo: +351 217 570 184",
 
   superAppService1:

@@ -1482,7 +1482,7 @@ const en = {
   // Contact Cards
   contactCallTitle: "Call Us",
   contactCallDetail1: "+351 21 757 0184",
-  contactCallDetail2: "+351 920 136 680",
+  contactCallDetail2: "+351 932 164 451",
   contactEmailTitle: "Email Us",
   contactEmailDetail1: "contact@deligo.pt",
   contactEmailDetail2: "geral@deligo.pt",
@@ -1962,7 +1962,7 @@ const en = {
   supportEmail: "Corporate Support Email: contact@deligo.pt",
   headquarters:
     "Headquarters Address: Rua Joaquim Agostinho 16C, 1750-126 Lisboa, Portugal",
-  whatsapp: "Corporate WhatsApp: +351 920 136 680",
+  whatsapp: "Corporate WhatsApp: +351 932 164 451",
   telephone: "Office Telephone: +351 217 570 184",
 
   // 2. Multi-Service Super App Architecture

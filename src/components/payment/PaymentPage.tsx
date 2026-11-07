@@ -2442,7 +2442,7 @@ export default function PaymentPage() {
 
               {/* Phone */}
               <a
-                href="tel:+351920136680"
+                href="tel:+351932164451"
                 className="flex items-center gap-4 rounded-xl border border-border bg-gray-50 dark:bg-neutral-900/60 p-4 transition hover:bg-primary/5 dark:hover:bg-pink-950/20 hover:border-primary/20 dark:hover:border-pink-850 group"
               >
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 dark:bg-pink-950/40 group-hover:bg-primary/20 dark:group-hover:bg-pink-900 transition">
@@ -2465,7 +2465,7 @@ export default function PaymentPage() {
                     {t("phone")}
                   </p>
                   <p className="font-semibold text-gray-800 dark:text-neutral-200 group-hover:text-primary dark:group-hover:text-pink-400 transition">
-                    +351 920 136 680
+                    +351 932 164 451
                   </p>
                 </div>
               </a>
