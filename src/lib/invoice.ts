@@ -618,7 +618,7 @@ export async function downloadInvoice(
     };
 
     footerLine("invoiceAddress", "R. Joaquim Agostinho 16C, 1750-126 Lisboa.", 0, 0);
-    footerLine("invoicePhone", "+35121 757 0184 | +351 920 136 680", 0, 1);
+    footerLine("invoicePhone", "+351 932 164 451 | +35121 757 0184", 0, 1);
     footerLine("invoiceEmail", "contact@deligo.pt", 1, 0);
     footerLine("invoiceWebsite", "deligo.pt", 1, 1);
   };

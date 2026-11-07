@@ -12,7 +12,7 @@ export default function ContactPage() {
     {
       icon: Phone,
       title: t("contactCallTitle"),
-      details: [t("contactCallDetail1"), t("contactCallDetail2")],
+      details: [t("contactCallDetail2"), t("contactCallDetail1")],
     },
     {
       icon: Mail,
@@ -109,7 +109,7 @@ export default function ContactPage() {
                 </Link>
 
                 <Link
-                  href={`https://wa.me/${t("contactCallDetail2").replace(/\s/g, "")}`}
+                  href={`https://wa.me/${t("contactCallDetail2").replace(/\D/g, "")}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl border border-white px-6 py-3 font-medium text-white transition hover:bg-white/10"

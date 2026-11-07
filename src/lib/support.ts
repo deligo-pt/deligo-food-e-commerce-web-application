@@ -47,7 +47,7 @@ import { DATE_LOCALES } from "./dateFormat";
  * the Contact Support dialog so the two can't drift apart.
  */
 export const SUPPORT_EMAIL = "contact@deligo.pt";
-export const SUPPORT_PHONE = "+351 920 136 680";
+export const SUPPORT_PHONE = "+351 932 164 451";
 
 /* ────────────────────────────────────────────────────────────────────────────
  * The enums the API validates against
