@@ -66,6 +66,7 @@ import { vendorHref, vendorRouteId } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import SlotPicker from "./SlotPicker";
 import SmallOrderFeeNudge from "./SmallOrderFeeNudge";
+import FirstOrderTeaser from "./FirstOrderTeaser";
 import { smallOrderFeeNudge } from "@/lib/smallOrderFee";
 import { useQueryClient } from "@tanstack/react-query";
 import { checkoutSlotKeys } from "@/hooks/queries/useCheckoutSlots";
@@ -449,6 +450,18 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       (item) => item.isActive === true && getCartVendorId(item.vendorId) !== vendorId,
     );
     return activeElsewhere ? null : smallOrderFeeNudge(cartData?.cartCalculation);
+  }, [cartData, vendorId]);
+
+  /**
+   * The store's welcome offer as the cart quotes it (`first-order-offers.md`
+   * §6.1). Same rule as the fee: the cart describes its active lines, so it is
+   * this store's only while no other store's lines are active.
+   */
+  const firstOrderOffer = useMemo(() => {
+    const activeElsewhere = cartData?.items.some(
+      (item) => item.isActive === true && getCartVendorId(item.vendorId) !== vendorId,
+    );
+    return activeElsewhere ? null : cartData?.firstOrderOffer ?? null;
   }, [cartData, vendorId]);
 
   // The ⓘ breakdown of `summary.vat`: products and add-ons only — the fees
@@ -1195,6 +1208,7 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
               <p className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
                 {t("reviewOrderDetails")}
               </p>
+              <FirstOrderTeaser offer={firstOrderOffer} className="mt-4" />
             </div>
             <div className="space-y-4 p-6">
               <div className="flex justify-between">

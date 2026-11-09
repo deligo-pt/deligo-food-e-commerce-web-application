@@ -71,6 +71,7 @@ import RefundBanner from "./RefundBanner";
 import CancelOrderDialog from "../CancelOrderDialog";
 import { Button } from "@/components/ui/button";
 import { formatEuro } from "@/lib/currency";
+import { isFirstOrderApplied } from "@/lib/firstOrderOffer";
 
 
 // A live order changes minute to minute, so it is worth watching closely. A
@@ -578,6 +579,10 @@ export default function TrackOrder() {
   // VAT €0.00" beside a gross figure that plainly contains some.
   const serviceChargeVat = getServiceChargeVat(calc);
   const offerDiscount = calc.totalOfferDiscount || 0;
+  // Labelled "Welcome offer" when the order says so (same `offer` shape as
+  // the checkout; not yet seen on a real order, so absent = ordinary label).
+  const isWelcomeOffer =
+    order.offer?.isApplied === true && isFirstOrderApplied(order.offer?.offerApplied);
   const deliveryFee = order.delivery?.totalDeliveryCharge || 0;
   const deliveryVat = getDeliveryVat(order.delivery || {});
   // Container deposit (SDR), copied from the checkout when the order was
@@ -1051,7 +1056,7 @@ export default function TrackOrder() {
                   )}
                   {offerDiscount > 0 && (
                     <div className="flex justify-between text-green-600 dark:text-green-400">
-                      <span>{t("offerDiscount")}</span>
+                      <span>{isWelcomeOffer ? t("firstOrderBadge") : t("offerDiscount")}</span>
                       <span>-{formatEuro(offerDiscount)}</span>
                     </div>
                   )}

@@ -5,6 +5,8 @@ import { getServiceChargeGross } from "./vat";
 import { addonLineDeposit, lineDeposit, orderDepositTotal } from "./sdr";
 import { smallOrderFeeGross } from "./smallOrderFee";
 import type { LineSdr } from "@/types/sdr";
+import type { FirstOrderAppliedFields } from "@/types/offer";
+import { isFirstOrderApplied } from "./firstOrderOffer";
 import { useStore } from "@/stores/translationStore";
 
 /** The `t` from `useTranslation`, passed in because this is not a component. */
@@ -67,6 +69,12 @@ interface InvoiceOrder {
     smallOrderFeeTax?: number;
   };
   delivery?: { totalDeliveryCharge?: number; vatAmount?: number };
+  /**
+   * Same shape as the checkout's `offer`. `isFirstOrder` labels the discount
+   * "Welcome offer"; not yet seen on a real order (9 Nov 2026), so absent means
+   * the ordinary label.
+   */
+  offer?: { isApplied?: boolean; offerApplied?: FirstOrderAppliedFields | null } | null;
   /** `grandTotal` already includes `sdr.amount` when there is a deposit. */
   payoutSummary?: { grandTotal?: number; sdr?: { amount?: number } };
 }
@@ -548,7 +556,8 @@ export async function downloadInvoice(
 
   totalRow(t("invoiceSubtotal"), subtotal);
   if (offerDiscount > 0) {
-    totalRow(t("invoiceOfferDiscount"), offerDiscount, {
+    const welcome = order.offer?.isApplied === true && isFirstOrderApplied(order.offer.offerApplied);
+    totalRow(welcome ? t("firstOrderBadge") : t("invoiceOfferDiscount"), offerDiscount, {
       negative: true,
       color: BRAND_DEEP,
     });

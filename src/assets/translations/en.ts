@@ -2383,6 +2383,24 @@ const en = {
   noteForVendorPlaceholderRestaurant: "e.g. No onions, extra sauce",
   noteForVendorPlaceholderStore: "e.g. Call me if an item is unavailable",
   noteForVendorPlaceholderPartner: "e.g. Anything they should know about your order",
+  // First-Order (welcome) offers — `lib/firstOrderOffer.ts`. `{amount}` is
+  // already formatted with `formatEuro`.
+  firstOrderBadge: "Welcome offer",
+  firstOrderOncePerCustomer: "Once per customer",
+  firstOrderTeaserEstimate: "About {amount} off your first order here, applied at checkout.",
+  firstOrderTeaserCode: "Use code {code} at checkout to save about {amount}.",
+  firstOrderTeaserLocked: "Your first order here comes with a welcome offer. Add a few more items to unlock it.",
+  firstOrderTeaserVerifyPhone: "Verify your phone number to get the welcome offer on your first order here.",
+  firstOrderVerifyPhoneAction: "Verify phone",
+  firstOrderApplied: "Welcome offer applied",
+  firstOrderDropped: "Your welcome offer no longer applies to this order, so the total has gone up. Please check it before paying.",
+  firstOrderPhoneRequired: "Verify your phone number to use this welcome offer.",
+  firstOrderAlreadyUsed: "You have already used this welcome offer.",
+  firstOrderNotEligible: "Not available for this order",
+  firstOrderCardBadge: "{amount} off 1st order",
+  firstOrderCardTitle: "Welcome offer for new customers: {amount} off your first order here.",
+  firstOrderCardTitleGeneric: "Welcome offer for new customers on their first order here.",
+  firstOrderCardMin: "Minimum order {min}.",
 };
 
 export default en;

@@ -17,6 +17,7 @@ import {
   useCardStoreStatus,
 } from "@/components/vendors/CardStoreStatus";
 import { deliveryEstimateText, type EstimatedDeliveryTime } from "@/lib/deliveryEstimate";
+import WelcomeOfferPill from "@/components/vendors/WelcomeOfferPill";
 
 export interface Vendor {
   id: string;
@@ -107,6 +108,9 @@ function VendorCard({ vendor }: VendorCardProps) {
             </span>
           </div>
         )}
+        {/* Top-right, the corner the other two pills leave free. Under the
+            closed overlay, like the rating, so a closed store dims it too. */}
+        <WelcomeOfferPill vendorId={vendor.id} />
         <CardStatusOverlay status={storeStatus} />
       </div>
 

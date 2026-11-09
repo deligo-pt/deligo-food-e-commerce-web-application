@@ -28,6 +28,7 @@ import {
   Navigation,
   Zap,
   Clock,
+  Gift,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -82,6 +83,15 @@ import { lineDeposit, orderDepositTotal } from "@/lib/sdr";
 import { deliveryBreakdown, smallOrderFeeBreakdown, subtotalBreakdown } from "@/lib/vatBreakdown";
 import VatInfoButton from "@/components/shared/VatInfoButton";
 import { formatEuro } from "@/lib/currency";
+import type {
+  CheckoutOfferStatus,
+  CheckoutStaleReason,
+  FirstOrderAppliedFields,
+  OfferEligibility,
+} from "@/types/offer";
+import type { CartResponse } from "@/types/cart";
+import { useCart } from "@/hooks/queries/useCart";
+import { isFirstOrderApplied, isFirstOrderOffer } from "@/lib/firstOrderOffer";
 
 interface CheckoutItem {
   productId: string;
@@ -191,7 +201,8 @@ interface RewardSnapshot {
   selectedFromOptions?: { productId: string; productName: LocalizedField }[];
 }
 
-interface OfferApplied {
+/** First-order fields (`isFirstOrder`, `firstOrderScope`, …) come from `FirstOrderAppliedFields`. */
+interface OfferApplied extends FirstOrderAppliedFields {
   promoId: string;
   title: LocalizedField;
   discountValue: number;
@@ -272,6 +283,9 @@ interface CheckoutSummary {
     isApplied: boolean;
     offerApplied: OfferApplied | null;
   };
+  /** On `GET /checkout/summary/:id`: the quote is older than 30 min or the address changed. */
+  isStale?: boolean;
+  staleReasons?: CheckoutStaleReason[];
 }
 
 interface Vendor {
@@ -429,6 +443,8 @@ interface AvailableOffer {
   expiresAt: string;
   isEligible: boolean;
   message: LocalizedField;
+  /** `type: "FIRST_ORDER"` on a welcome offer — see `isFirstOrderOffer`. */
+  eligibility?: OfferEligibility | null;
 }
 
 /**
@@ -496,6 +512,15 @@ export default function PaymentPage() {
   // The deposit (or another price) changed after this checkout was built, and
   // the summary was refreshed: say so beside the new total before they pay.
   const [totalsChanged, setTotalsChanged] = useState(false);
+  // A refresh could not keep the welcome offer (`offerStatus: "DROPPED"`, or
+  // it simply is no longer on the summary): say so beside the new total.
+  const [welcomeOfferDropped, setWelcomeOfferDropped] = useState(false);
+  // The store's welcome-offer code, from the cart (Phase 6 teaser), so the
+  // voucher box can start with it filled in. Read from the cached cart query.
+  const { data: cartForOffer } = useCart<CartResponse | null>();
+  const welcomeOfferCode = cartForOffer?.firstOrderOffer?.eligible
+    ? cartForOffer.firstOrderOffer.promoCode?.trim() || ""
+    : "";
   /**
    * Payment start refused the booked time (the slot passed, the store paused
    * or closed). Nothing was charged; the fix is a new time in checkout, so the
@@ -539,6 +564,8 @@ export default function PaymentPage() {
    *  from the store's product list when the offers modal opens. */
   const [rewardNames, setRewardNames] = useState<Record<string, string>>({});
   const [offerApplyError, setOfferApplyError] = useState("");
+  // The apply failed only because the phone is not verified: offer the link.
+  const [offerNeedsPhone, setOfferNeedsPhone] = useState(false);
   const [isRemovingOffer, setIsRemovingOffer] = useState(false);
   // Separate from `offerApplyError`, which only renders inside the offer modal —
   // removal happens with that modal closed, so its error needs its own slot.
@@ -707,7 +734,8 @@ export default function PaymentPage() {
     setShowOfferModal(true);
     setOffersError("");
     setOfferApplyError("");
-    setManualCode("");
+    setOfferNeedsPhone(false);
+    setManualCode(welcomeOfferCode);
 
     try {
       setOffersLoading(true);
@@ -756,6 +784,7 @@ export default function PaymentPage() {
     const key = offer ? offer._id : "manual";
     setApplyingOfferId(key);
     setOfferApplyError("");
+    setOfferNeedsPhone(false);
 
     try {
       const res = await apiClient.post("/offers/validate-apply-offer", {
@@ -780,7 +809,17 @@ export default function PaymentPage() {
       setManualCode("");
       setRewardChoice(null);
     } catch (err) {
-      setOfferApplyError(getApiErrorMessage(err, "Failed to apply offer"));
+      // First-order refusals (`first-order-offers.md` §6.2) get our own copy;
+      // every other refusal keeps the server's message.
+      const errKey = getApiErrorKey(err);
+      if (errKey === "PHONE_VERIFICATION_REQUIRED_FOR_OFFER") {
+        setOfferApplyError(t("firstOrderPhoneRequired"));
+        setOfferNeedsPhone(true);
+      } else if (errKey === "FIRST_ORDER_CLAIM_ALREADY_EXISTS") {
+        setOfferApplyError(t("firstOrderAlreadyUsed"));
+      } else {
+        setOfferApplyError(getApiErrorMessage(err, "Failed to apply offer"));
+      }
     } finally {
       setApplyingOfferId(null);
     }
@@ -987,11 +1026,26 @@ export default function PaymentPage() {
    */
   const refreshChangedTotals = async () => {
     if (!summary) return;
+    const hadWelcomeOffer =
+      summary.offer?.isApplied === true && isFirstOrderApplied(summary.offer.offerApplied);
+    let offerStatus: CheckoutOfferStatus | undefined;
     try {
-      await apiClient.post(`/checkout/summary/${summary._id}/refresh`);
+      try {
+        const refreshed = await apiClient.post(`/checkout/summary/${summary._id}/refresh`);
+        offerStatus = refreshed.data?.data?.offerStatus ?? refreshed.data?.offerStatus;
+      } catch (err) {
+        // `409 CHECKOUT_REFRESH_NOT_NEEDED` is not a failure (guide §6.5): the
+        // current summary is correct. Re-read it below and carry on, once.
+        if (getApiErrorKey(err) !== "CHECKOUT_REFRESH_NOT_NEEDED") throw err;
+      }
       const res = await apiClient.get(`/checkout/summary/${summary._id}`);
-      setSummary(res.data.data);
+      const next: CheckoutSummary = res.data.data;
+      setSummary(next);
       setTotalsChanged(true);
+      // Trust `DROPPED`, but also notice an offer that quietly went missing.
+      const stillApplied =
+        next.offer?.isApplied === true && isFirstOrderApplied(next.offer.offerApplied);
+      setWelcomeOfferDropped(offerStatus === "DROPPED" || (hadWelcomeOffer && !stillApplied));
     } catch (err) {
       setPaymentError(getApiErrorMessage(err, t("paymentCouldNotStart")));
     }
@@ -1000,6 +1054,7 @@ export default function PaymentPage() {
   const handlePlaceOrder = async () => {
     if (!summary) return;
     setTotalsChanged(false);
+    setWelcomeOfferDropped(false);
 
     // Trimmed once, here, so both payment paths send the same string and a box
     // holding only spaces is no instruction at all. Pickup never sends one:
@@ -1052,7 +1107,9 @@ export default function PaymentPage() {
 
       // No `data.code` on this refusal, so it is read off the error key
       // before the states below would call it "unreachable".
-      if (result.errorKey === "CHECKOUT_TOTALS_CHANGED") {
+      // Totals changed, or the 30-minute quote expired (guide §6.3, §6.5):
+      // re-price and let the customer confirm the new total.
+      if (result.errorKey === "CHECKOUT_TOTALS_CHANGED" || result.errorKey === "CHECKOUT_EXPIRED") {
         await refreshChangedTotals();
         return;
       }
@@ -1091,7 +1148,10 @@ export default function PaymentPage() {
     } catch (err) {
       // Only the one-click saved-card path throws here. `handle-payment-failure`
       // is no longer called: the backend removed it (404, 8 Oct 2026).
-      if (getApiErrorKey(err) === "CHECKOUT_TOTALS_CHANGED") {
+      if (
+        getApiErrorKey(err) === "CHECKOUT_TOTALS_CHANGED" ||
+        getApiErrorKey(err) === "CHECKOUT_EXPIRED"
+      ) {
         await refreshChangedTotals();
         return;
       }
@@ -1681,9 +1741,19 @@ export default function PaymentPage() {
                     <div className="flex items-center justify-between gap-3 rounded-lg border border-green-200 dark:border-green-900/30 bg-green-50 dark:bg-green-950/20 px-4 py-3">
                       <div className="flex min-w-0 items-center gap-2">
                         <CheckCircle className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
-                        <span className="truncate text-sm font-semibold text-green-700 dark:text-green-400">
-                          {resolveLocalized(appliedOffer.title, lang)}
-                        </span>
+                        {/* The welcome label sits above the title, not beside
+                            it, so the title keeps the row's full width. */}
+                        <div className="min-w-0">
+                          {isFirstOrderApplied(appliedOffer) && (
+                            <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-green-700 dark:text-green-300">
+                              <Gift className="h-3 w-3 shrink-0" aria-hidden="true" />
+                              {t("firstOrderBadge")}
+                            </span>
+                          )}
+                          <span className="block truncate text-sm font-semibold text-green-700 dark:text-green-400">
+                            {resolveLocalized(appliedOffer.title, lang)}
+                          </span>
+                        </div>
                         {/* A buy-and-reward offer has no promo code. */}
                         {appliedOffer.code && (
                           <span className="shrink-0 rounded bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 text-xs font-bold text-green-700 dark:text-green-300">
@@ -1954,7 +2024,7 @@ export default function PaymentPage() {
 
               {totalsChanged && !paymentError && (
                 <div role="status" className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
-                  {t("checkoutTotalsChanged")}
+                  {welcomeOfferDropped ? t("firstOrderDropped") : t("checkoutTotalsChanged")}
                 </div>
               )}
 
@@ -2097,7 +2167,17 @@ export default function PaymentPage() {
               {offerApplyError && (
                 <div className="flex items-start gap-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 p-3">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />
-                  <p className="text-sm text-red-650 dark:text-red-400">{offerApplyError}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm text-red-650 dark:text-red-400">{offerApplyError}</p>
+                    {offerNeedsPhone && (
+                      <Link
+                        href="/edit-profile"
+                        className="mt-1 inline-block text-sm font-semibold text-primary underline-offset-2 hover:underline dark:text-pink-400"
+                      >
+                        {t("firstOrderVerifyPhoneAction")}
+                      </Link>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -2143,6 +2223,12 @@ export default function PaymentPage() {
                               <span className="rounded-md bg-primary/10 dark:bg-pink-900/30 px-2 py-0.5 text-xs font-bold tracking-wide text-primary dark:text-pink-300">
                                 {offer.code}
                               </span>
+                              {isFirstOrderOffer(offer) && (
+                                <span className="inline-flex items-center gap-1 rounded-md bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                                  <Gift className="h-3 w-3" />
+                                  {t("firstOrderBadge")}
+                                </span>
+                              )}
                             </div>
                             <p className="mt-0.5 text-sm text-gray-500 dark:text-neutral-400 line-clamp-2">
                               {resolveLocalized(offer.description, lang)}

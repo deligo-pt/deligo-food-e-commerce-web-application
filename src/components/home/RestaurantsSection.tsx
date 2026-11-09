@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { vendorHref } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import { cardVariants } from "@/components/ui/card";
+import WelcomeOfferPill from "@/components/vendors/WelcomeOfferPill";
 import {
   CardStatusLine,
   CardStatusOverlay,
@@ -96,6 +97,8 @@ const RestaurantCard = memo(function RestaurantCard({ vendor }: { vendor: Vendor
             </span>
           </div>
         )}
+        {/* Same pill, same corner as `VendorCard`. */}
+        <WelcomeOfferPill vendorId={vendor.id ?? vendor._id} />
         <CardStatusOverlay status={storeStatus} />
       </div>
 

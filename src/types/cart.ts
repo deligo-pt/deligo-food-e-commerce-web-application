@@ -1,3 +1,4 @@
+import type { CartFirstOrderOffer } from "./offer";
 import type { LineSdr } from "./sdr";
 
 export interface CartAddon {
@@ -115,4 +116,6 @@ export interface CartResponse {
     /** How much more to add to avoid the fee; `0` when there is no fee. */
     differenceToFree?: number;
   };
+  /** The store's welcome offer for this customer; absent when there is none (`lib/firstOrderOffer.ts`). */
+  firstOrderOffer?: CartFirstOrderOffer;
 }
