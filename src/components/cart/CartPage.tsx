@@ -251,6 +251,7 @@ export default function CartPage() {
               collapsible={stores.length > 1}
               deleteTargets={getStoreDeleteTargets(store.vendorId)}
               feeNudge={smallOrderFeeNudge(cart?.cartCalculation)}
+              firstOrderOffer={cart?.firstOrderOffer}
               onCartChanged={resyncCart}
             />
           ))

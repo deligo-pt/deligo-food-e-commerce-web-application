@@ -2,6 +2,8 @@
 "use client";
 
 import SmallOrderFeeNudge from "./SmallOrderFeeNudge";
+import FirstOrderTeaser from "./FirstOrderTeaser";
+import type { CartFirstOrderOffer } from "@/types/offer";
 import type { SmallOrderFeeNudge as SmallOrderFeeNudgeData } from "@/lib/smallOrderFee";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
@@ -89,6 +91,11 @@ interface CartStoreCardProps {
    * active store, so the page passes it to that store's card alone.
    */
   feeNudge?: SmallOrderFeeNudgeData | null;
+  /**
+   * The cart's `firstOrderOffer`. Like the fee, the cart prices only the
+   * active store, so it is shown only on the card with active lines.
+   */
+  firstOrderOffer?: CartFirstOrderOffer | null;
 }
 
 export default function CartStoreCard({
@@ -101,6 +108,7 @@ export default function CartStoreCard({
   collapsible = false,
   deleteTargets,
   feeNudge = null,
+  firstOrderOffer = null,
   onCartChanged,
 }: CartStoreCardProps) {
   const { t } = useTranslation();
@@ -347,6 +355,7 @@ export default function CartStoreCard({
 
       {/* Store checkout button – enabled if at least one active item */}
       <div className="mt-6">
+        {hasActive && <FirstOrderTeaser offer={firstOrderOffer} compact className="mb-3" />}
         {hasActive && <SmallOrderFeeNudge nudge={feeNudge} className="mb-3" />}
         <Link
           href={hasActive ? `/cart/checkout/${vendorId}` : "#"}

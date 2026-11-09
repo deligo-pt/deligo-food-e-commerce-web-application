@@ -1460,7 +1460,7 @@ const pt = {
   // Contact Cards
   contactCallTitle: "Ligue-nos",
   contactCallDetail1: "+351 21 757 0184",
-  contactCallDetail2: "+351 920 136 680",
+  contactCallDetail2: "+351 932 164 451",
   contactEmailTitle: "Envie-nos um Email",
   contactEmailDetail1: "contact@deligo.pt",
   contactEmailDetail2: "geral@deligo.pt",
@@ -1944,7 +1944,7 @@ const pt = {
   supportEmail: "E-mail de Suporte: contact@deligo.pt",
   headquarters:
     "Endereço da Sede: Rua Joaquim Agostinho 16C, 1750-126 Lisboa, Portugal",
-  whatsapp: "WhatsApp Corporativo: +351 920 136 680",
+  whatsapp: "WhatsApp Corporativo: +351 932 164 451",
   telephone: "Telefone Fixo: +351 217 570 184",
 
   superAppService1:
@@ -2369,6 +2369,23 @@ const pt = {
   noteForVendorPlaceholderRestaurant: "ex.: Sem cebola, molho extra",
   noteForVendorPlaceholderStore: "ex.: Ligue-me se um artigo não estiver disponível",
   noteForVendorPlaceholderPartner: "ex.: Algo que devam saber sobre o seu pedido",
+  // Ofertas de primeira encomenda — `lib/firstOrderOffer.ts`.
+  firstOrderBadge: "Oferta de boas-vindas",
+  firstOrderOncePerCustomer: "Uma vez por cliente",
+  firstOrderTeaserEstimate: "Cerca de {amount} de desconto na sua primeira encomenda aqui, aplicada no checkout.",
+  firstOrderTeaserCode: "Use o código {code} no checkout para poupar cerca de {amount}.",
+  firstOrderTeaserLocked: "A sua primeira encomenda aqui tem uma oferta de boas-vindas. Adicione mais alguns artigos para a desbloquear.",
+  firstOrderTeaserVerifyPhone: "Verifique o seu número de telemóvel para receber a oferta de boas-vindas na sua primeira encomenda aqui.",
+  firstOrderVerifyPhoneAction: "Verificar telemóvel",
+  firstOrderApplied: "Oferta de boas-vindas aplicada",
+  firstOrderDropped: "A sua oferta de boas-vindas já não se aplica a esta encomenda, por isso o total aumentou. Verifique-o antes de pagar.",
+  firstOrderPhoneRequired: "Verifique o seu número de telemóvel para usar esta oferta de boas-vindas.",
+  firstOrderAlreadyUsed: "Já usou esta oferta de boas-vindas.",
+  firstOrderNotEligible: "Não disponível para esta encomenda",
+  firstOrderCardBadge: "{amount} na 1.ª encomenda",
+  firstOrderCardTitle: "Oferta de boas-vindas para novos clientes: {amount} de desconto na primeira encomenda aqui.",
+  firstOrderCardTitleGeneric: "Oferta de boas-vindas para novos clientes na primeira encomenda aqui.",
+  firstOrderCardMin: "Encomenda mínima {min}.",
 };
 
 export default pt;
