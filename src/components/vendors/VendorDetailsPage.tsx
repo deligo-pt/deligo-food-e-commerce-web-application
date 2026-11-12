@@ -383,9 +383,16 @@ const MenuProductCard = memo(function MenuProductCard({
           <div className="min-w-0">
             {/* At most two lines (manager's request, 4 Nov 2026): the price
                 with the SDR mark on the same line — "4.50 € (+ depósito)" —
-                and, when discounted, the old price under it. The mark is a
-                word, not the amount: the modal and the cart give the figure.
-                On a narrow card the mark is cut with "…", never the price. */}
+                and, when discounted, the old price struck through above it
+                (user's request, 12 Nov 2026: old price on top, final price
+                below). The mark is a word, not the amount: the modal and the
+                cart give the figure. On a narrow card the mark is cut with
+                "…", never the price. */}
+            {hasDiscount && (
+              <p className="truncate text-xs text-gray-400 line-through dark:text-neutral-500">
+                {formatPrice(originalPrice, currency)}
+              </p>
+            )}
             <p className="flex min-w-0 items-baseline gap-1">
               <span className="shrink-0 text-base font-bold text-primary dark:text-pink-400">
                 {formatPrice(finalPrice, currency)}
@@ -399,11 +406,6 @@ const MenuProductCard = memo(function MenuProductCard({
                 </span>
               )}
             </p>
-            {hasDiscount && (
-              <p className="truncate text-xs text-gray-400 line-through dark:text-neutral-500">
-                {formatPrice(originalPrice, currency)}
-              </p>
-            )}
           </div>
 
           {/*
