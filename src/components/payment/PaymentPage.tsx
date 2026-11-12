@@ -2,6 +2,7 @@
 "use client";
 
 import { getAvailability, type Availability } from "@/lib/availability";
+import type { WeeklyDaySchedule } from "@/lib/weeklySchedule";
 import { formatMinutes } from "@/lib/deliveryEstimate";
 import {
   Home,
@@ -295,9 +296,14 @@ interface Vendor {
   businessDetails: {
     businessName: string;
     businessType: string;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     openingHours: string;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     closingHours: string;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     closingDays: string[];
+    /** Per-weekday time slots (Nov 2026); the source of truth when present. See `lib/weeklySchedule.ts`. */
+    weeklySchedule?: WeeklyDaySchedule[];
     isStoreOpen: boolean;
     /** Schedule + override state; read through `getAvailability`. */
     availability?: Availability;

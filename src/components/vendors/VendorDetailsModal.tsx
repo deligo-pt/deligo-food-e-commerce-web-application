@@ -16,6 +16,10 @@ import {
 } from "lucide-react";
 import { useStore } from "@/stores/translationStore";
 import { getAvailability, type Availability } from "@/lib/availability";
+import { todaySchedule, weekFrom, type WeeklyDaySchedule } from "@/lib/weeklySchedule";
+import { DEFAULT_STORE_TIME_ZONE } from "@/lib/dateFormat";
+import { serverNow } from "@/lib/serverClock";
+import OpeningHours, { SlotList } from "@/components/vendors/OpeningHours";
 import { cardStatusLabel } from "@/lib/storeStatusText";
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "@/lib/apiClient";
@@ -46,9 +50,14 @@ interface VendorData {
     businessLicenseNumber: string;
     NIF: string;
     totalBranches: number;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     openingHours: string;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     closingHours: string;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     closingDays: string[];
+    /** Per-weekday time slots (Nov 2026); the source of truth when present. See `lib/weeklySchedule.ts`. */
+    weeklySchedule?: WeeklyDaySchedule[];
     isStoreOpen: boolean;
     /** Schedule + override state; read through `getAvailability`. */
     availability?: Availability;
@@ -105,6 +114,15 @@ export default function VendorDetailsModal({
     lang,
     vendorData?.businessDetails?.timezone,
   );
+  // Today's slots, on the store's day. Null when the store has no hours at all.
+  const scheduleWeek = weekFrom(vendorData?.businessDetails);
+  const todayHours = scheduleWeek
+    ? todaySchedule(
+        scheduleWeek,
+        serverNow(),
+        vendorData?.businessDetails?.timezone || DEFAULT_STORE_TIME_ZONE,
+      )
+    : null;
   const statusTone =
     storeAvailability?.state === "PAUSED"
       ? { bubble: "bg-amber-100 dark:bg-amber-950/40", text: "text-amber-600 dark:text-amber-400" }
@@ -373,11 +391,19 @@ export default function VendorDetailsModal({
                   <p className={`text-xs sm:text-sm font-bold ${statusTone.text}`}>
                     {storeStatusLabel}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-neutral-400">
-                    {vendorData?.businessDetails?.openingHours &&
-                    vendorData?.businessDetails?.closingHours
-                      ? `${vendorData.businessDetails.openingHours} – ${vendorData.businessDetails.closingHours}`
-                      : t("hoursNotSet")}
+                  {/* Today's slots from the weekly schedule (or the legacy
+                      hours) — not "12:00 – 23:00" for a store that is shut
+                      16:00–19:00. The whole week is in the card below. */}
+                  <p className="text-xs tabular-nums text-gray-500 dark:text-neutral-400">
+                    {!todayHours
+                      ? t("hoursNotSet")
+                      : todayHours.periods.length === 0
+                        ? t("closedToday")
+                        : (
+                          <>
+                            {t("today")}: <SlotList periods={todayHours.periods} />
+                          </>
+                        )}
                   </p>
                 </div>
               </div>
@@ -398,6 +424,10 @@ export default function VendorDetailsModal({
                 </div>
               </div>
             </div>
+
+            {/* The week (plan.md Part 3, Phase 14). Same card as the vendor
+                page: today's row and "See all hours" on phones. */}
+            <OpeningHours details={vendorData?.businessDetails} />
 
             {/* Address */}
             <div className="rounded-xl border-l-4 border-primary bg-gray-100 dark:bg-neutral-900 border dark:border-neutral-800 p-4 sm:p-6">

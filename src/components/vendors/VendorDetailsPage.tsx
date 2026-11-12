@@ -17,6 +17,7 @@ import { useVendorOrdering } from "@/hooks/useSlotChoice";
 import { useQueryClient } from "@tanstack/react-query";
 import { checkoutSlotKeys } from "@/hooks/queries/useCheckoutSlots";
 import { getAvailability, type Availability } from "@/lib/availability";
+import type { WeeklyDaySchedule } from "@/lib/weeklySchedule";
 import { getApiErrorMessage } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useProfile, useActiveAddressCoords } from "@/hooks/queries/useProfile";
@@ -32,6 +33,8 @@ const VendorDetailsModal = dynamic(() => import("./VendorDetailsModal"), {
 });
 import VendorDetailsSkeleton from "./VendorDetailsSkeleton";
 import ClosingCountdown from "./ClosingCountdown";
+import { StoreTimePill, useCardStoreStatus } from "./CardStoreStatus";
+import OpeningHours from "./OpeningHours";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getVendorKind, vendorCopyKey, type VendorKind } from "@/lib/vendorKind";
 import {
@@ -144,9 +147,14 @@ interface Vendor {
     /** A branch's own name — `/vendors/customer/:id` sends it. */
     branchName?: string;
     businessType: string;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     openingHours: string;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     closingHours: string;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     closingDays?: string[];
+    /** Per-weekday time slots (Nov 2026); the source of truth when present. See `lib/weeklySchedule.ts`. */
+    weeklySchedule?: WeeklyDaySchedule[];
     preparationTimeMinutes: number;
     restaurantCuisineType?: string[] | string;
     isStoreOpen: boolean;
@@ -635,6 +643,8 @@ export default function VendorDetailsPage({
   // cart stays possible when the order can be scheduled for later (Phase 4):
   // today's delivery or pickup list has a slot, or the store books ahead.
   const availability = getAvailability(vendor);
+  // "Opens tomorrow at 09:00" for the photo badge, worded as on the card.
+  const heroStatus = useCardStoreStatus(vendor ?? {});
   const isStoreClosed = !!availability && availability.state !== "OPEN";
   const isStorePaused = availability?.state === "PAUSED";
   const vendorMongoId = vendor?._id ?? vendor?.id;
@@ -955,6 +965,8 @@ export default function VendorDetailsPage({
     <div className="min-h-screen bg-[#f8f9fa] dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 transition-colors duration-200">
       <div className="mx-auto max-w-full px-4 py-6 lg:px-8">
         <ClosingCountdown
+          weeklySchedule={vendor.businessDetails.weeklySchedule}
+          timeZone={vendor.businessDetails.timezone}
           closingHours={vendor.businessDetails.closingHours}
           openingHours={vendor.businessDetails.openingHours}
           closingDays={vendor.businessDetails.closingDays}
@@ -989,10 +1001,20 @@ export default function VendorDetailsPage({
                   anchored to the bottom-left. */}
               {isStoreClosed && (
                 <div className="pointer-events-none absolute inset-0 flex items-start justify-center bg-black/40 pt-8 md:pt-16">
-                  <span className="flex items-center gap-2 rounded-full bg-black/70 px-4 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
-                    {isStorePaused ? <PauseCircle size={18} /> : <Moon size={18} />}
-                    {t(isStorePaused ? "currentlyPaused" : "currentlyClosed")}
-                  </span>
+                  <div className="flex flex-col items-center gap-2 px-4">
+                    <span className="flex items-center gap-2 rounded-full bg-black/70 px-4 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
+                      {isStorePaused ? <PauseCircle size={18} /> : <Moon size={18} />}
+                      {t(isStorePaused ? "currentlyPaused" : "currentlyClosed")}
+                    </span>
+                    {/* The time, as on the listing card (plan.md Part 3). From
+                        `md` only: the phone photo is too short and the pill ran
+                        into the name card; the banner below shows it there. */}
+                    {heroStatus.when && (
+                      <div className="hidden md:block">
+                        <StoreTimePill when={heroStatus.when} paused={isStorePaused} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8">
@@ -1069,6 +1091,14 @@ export default function VendorDetailsPage({
           notAcceptingOrders={notAcceptingOrders}
           className="mb-6"
         />
+
+        {/* The week, from `weeklySchedule` (or the legacy hours), only while
+            the store can't take an order now (closed or paused): that is when
+            a customer needs to know when it opens. An open store keeps the
+            menu high on the page; its hours are in "More Info". */}
+        {isStoreClosed && (
+          <OpeningHours details={vendor.businessDetails} className="mb-6" />
+        )}
 
         {/* Two columns from `lg`: the category list beside the catalogue, the
             way the reference lays it out. Below `lg` the sidebar is hidden and

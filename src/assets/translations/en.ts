@@ -524,6 +524,10 @@ const en = {
   closedToday: "Closed today",
   currentlyClosed: "Currently Closed",
   hoursNotSet: "Hours not set",
+  // Opening-hours list on the vendor page (plan.md Part 3, Phase 13).
+  storeOpeningHours: "Opening hours",
+  seeAllHours: "See all hours",
+  hideAllHours: "Hide hours",
 
   preparationTime: "Preparation Time",
   minutes: "minutes",
