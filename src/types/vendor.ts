@@ -4,6 +4,7 @@
 // what prevents the string-only assumptions that crashed search (see Issue.md #11).
 import type { EstimatedDeliveryTime } from "@/lib/deliveryEstimate";
 import type { Availability } from "@/lib/availability";
+import type { WeeklyDaySchedule } from "@/lib/weeklySchedule";
 
 export interface Vendor {
   _id?: string;
@@ -17,8 +18,12 @@ export interface Vendor {
     branchName?: string;
     businessType: string;
     restaurantCuisineType?: string[] | string;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     openingHours: string;
+    /** Legacy, read-only summary (guide §2). Display from `weeklySchedule` via `weekFrom()`. */
     closingHours: string;
+    /** Per-weekday time slots (Nov 2026); the source of truth when present. See `lib/weeklySchedule.ts`. */
+    weeklySchedule?: WeeklyDaySchedule[];
     /** Legacy open flag. Read `getAvailability()` instead, which prefers `availability`. */
     isStoreOpen: boolean;
     /**
@@ -26,7 +31,7 @@ export interface Vendor {
      * decision from this via `getAvailability()` in `lib/availability.ts`.
      */
     availability?: Availability;
-    /** Weekday names, e.g. `["Sunday"]`. */
+    /** Legacy, read-only. Weekday names, e.g. `["Sunday"]` (sometimes `"sun_short"`). */
     closingDays?: string[];
     /** The store's IANA timezone, e.g. `"Europe/Lisbon"`. Not sent by every list. */
     timezone?: string;

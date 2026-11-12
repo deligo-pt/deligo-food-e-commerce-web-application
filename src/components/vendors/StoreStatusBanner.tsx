@@ -11,6 +11,7 @@ import { backText, capitalize, formatRemaining, opensText } from "@/lib/storeSta
 import { vendorCopyKey, type VendorKind } from "@/lib/vendorKind";
 import { DEFAULT_STORE_TIME_ZONE } from "@/lib/dateFormat";
 import { cn } from "@/lib/utils";
+import { StoreTimeChip } from "@/components/vendors/CardStoreStatus";
 
 interface StoreStatusBannerProps {
   availability: Availability | null;
@@ -35,8 +36,9 @@ interface StoreStatusBannerProps {
  * The notice for a store that cannot take an order right now
  * (guide §1): renders nothing while it is `OPEN`, extended hours included.
  *
- * - `CLOSED`: "This restaurant is closed. Opens tomorrow at 09:00."
- * - `PAUSED`: "This restaurant is temporarily paused. Back at 15:00", a live
+ * - `CLOSED`: "This restaurant is closed", then the time as a chip
+ *   ("🕖 Opens tomorrow at 09:00", the listing card's `StoreTimeChip`).
+ * - `PAUSED`: "This restaurant is temporarily paused", an amber "Back at 15:00" chip, a live
  *   countdown to `resumeAt`, and the vendor's own message when it wrote one.
  *
  * When the order can be scheduled for later (`canScheduleLater`), the notice
@@ -129,8 +131,18 @@ export default function StoreStatusBanner({
           )}
         >
           {t(vendorCopyKey(isPaused ? "storePausedTitle" : "storeClosedTitle", vendorKind))}
-          {when && <span className="font-medium">. {capitalize(when)}.</span>}
+          {/* The same chip as the listing card, so the time reads the same in both. */}
+          {when && <span className="sr-only">. {capitalize(when)}.</span>}
         </p>
+        {when && (
+          <div aria-hidden="true" className="mt-2">
+            <StoreTimeChip
+              when={capitalize(when)}
+              paused={isPaused}
+              className={compact ? undefined : "text-sm"}
+            />
+          </div>
+        )}
 
         {isPaused && remainingMs !== null && remainingMs > 0 && (
           <p

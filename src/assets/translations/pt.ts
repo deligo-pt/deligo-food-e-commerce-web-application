@@ -528,6 +528,10 @@ const pt = {
   closedToday: "Fechado hoje",
   currentlyClosed: "Fechado de Momento",
   hoursNotSet: "Horário não definido",
+  // Opening-hours list on the vendor page (plan.md Part 3, Phase 13).
+  storeOpeningHours: "Horário",
+  seeAllHours: "Ver todo o horário",
+  hideAllHours: "Esconder horário",
 
   preparationTime: "Tempo de Preparação",
   minutes: "minutos",

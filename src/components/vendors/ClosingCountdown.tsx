@@ -1,15 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getMsUntilClosing } from "@/lib/storeHours";
 import type { Availability } from "@/lib/availability";
+import { DEFAULT_STORE_TIME_ZONE } from "@/lib/dateFormat";
+import { serverNow } from "@/lib/serverClock";
+import { currentPeriodEnd, normalizeWeek, type WeeklyDaySchedule } from "@/lib/weeklySchedule";
 
 // Only surface the countdown inside the final hour before closing (user spec).
 const COUNTDOWN_WINDOW_MS = 60 * 60 * 1000;
 
 interface ClosingCountdownProps {
+  /**
+   * The weekly schedule (Nov 2026). When the store has one, the countdown runs
+   * to the end of the time slot open now — 16:00 for lunch, 23:00 for dinner —
+   * and the legacy fields below are ignored (they are a lossy summary: lunch
+   * + dinner reads as 12:00–23:00). See `currentPeriodEnd`.
+   */
+  weeklySchedule?: WeeklyDaySchedule[] | null;
+  /** The store's IANA zone; Lisbon when the response has none. */
+  timeZone?: string | null;
+  /** Legacy, for a store with no weekly schedule. */
   closingHours: string | null | undefined;
   openingHours?: string | null;
   closingDays?: string[] | null;
@@ -25,9 +38,12 @@ interface ClosingCountdownProps {
 }
 
 // Live "closing soon" badge shown under the vendor name. Renders nothing unless
-// the store is open and within the final hour of its closing time; then it ticks
+// the store is open and within the final hour of its current time slot (or of
+// its legacy closing time, for a store with no weekly schedule); then it ticks
 // `Order within MM min SS sec` down to zero, once per second.
 export default function ClosingCountdown({
+  weeklySchedule,
+  timeZone,
   closingHours,
   openingHours,
   closingDays,
@@ -39,6 +55,15 @@ export default function ClosingCountdown({
   // `null` until the client computes it (keeps SSR output empty — no hydration
   // mismatch from a server/client clock difference).
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
+
+  const zone = timeZone || DEFAULT_STORE_TIME_ZONE;
+  // A stable value for the effect below: the vendor query hands a new array
+  // on every refetch, but the same hours should not restart the ticker.
+  const scheduleKey = JSON.stringify(weeklySchedule ?? null);
+  const week = useMemo(() => {
+    const parsed = JSON.parse(scheduleKey) as WeeklyDaySchedule[] | null;
+    return Array.isArray(parsed) && parsed.length > 0 ? normalizeWeek(parsed) : null;
+  }, [scheduleKey]);
 
   const applies = availability
     ? availability.state === "OPEN" && availability.overrideType !== "EXTENDED"
@@ -54,14 +79,24 @@ export default function ClosingCountdown({
     // Recompute from the real store-local clock each tick (cheap) — inherently
     // drift-free and self-correcting after a backgrounded/throttled tab.
     const tick = () => {
-      const ms = getMsUntilClosing(closingHours, {
-        openingHours,
-        closingDays,
-        isStoreOpen: applies,
-      });
+      let ms: number | null;
+      if (week) {
+        // Only while the backend says OPEN: the schedule never decides
+        // "open now" (guide §6), it only says when this slot ends.
+        const now = serverNow();
+        const end = applies ? currentPeriodEnd(week, now, zone) : null;
+        ms = end === null ? null : end - now;
+      } else {
+        ms = getMsUntilClosing(closingHours, {
+          openingHours,
+          closingDays,
+          isStoreOpen: applies,
+        });
+      }
       setRemainingMs(ms === null ? null : Math.max(0, ms));
       // `getMsUntilClosing` rolls a passed closing time over to tomorrow, so
-      // closing shows up as the remaining time jumping from ~0 back up.
+      // closing shows up as the remaining time jumping from ~0 back up; with a
+      // schedule, the slot ending shows up as `null` (a break, or closed).
       if (previous !== null && previous <= 3000 && (ms === null || ms > previous)) {
         onClosedRef.current?.();
       }
@@ -73,7 +108,7 @@ export default function ClosingCountdown({
     const interval = setInterval(tick, 1000);
     tick();
     return () => clearInterval(interval);
-  }, [closingHours, openingHours, closingDays, applies]);
+  }, [week, zone, closingHours, openingHours, closingDays, applies]);
 
   // Outside the final hour, already closed, or not applicable → render nothing.
   if (remainingMs === null || remainingMs <= 0 || remainingMs > COUNTDOWN_WINDOW_MS) {
