@@ -1239,6 +1239,7 @@ const en = {
   loginErrorEmailInvalid: "Enter a valid email address, e.g. name@example.com.",
   loginErrorRequestOtpFirst: "Request a new OTP first.",
   loginErrorEnterOtp: "Enter the OTP sent to you.",
+  loginErrorNoSession: "We couldn't sign you in. Please request a new code and try again.",
   // Resend lock. The time is composed in JSX after this ("Resend OTP in 4:59").
   resendOtpIn: "Resend OTP in",
   // Send OTP pressed again for the same number or email while the last code

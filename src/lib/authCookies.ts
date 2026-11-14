@@ -3,7 +3,10 @@ import Cookies from "js-cookie";
 export const ACCESS_TOKEN_COOKIE = "deligo-access-token";
 export const REFRESH_TOKEN_COOKIE = "deligo-refresh-token";
 
-function decodeJwtExpiry(token: string) {
+function decodeJwtExpiry(token: string | null | undefined) {
+  // Never assume a token arrived: `undefined.split` is what broke sign-in on
+  // 14 Nov 2026. No token, no expiry.
+  if (typeof token !== "string") return null;
   const tokenParts = token.split(".");
 
   if (tokenParts.length < 2) {
