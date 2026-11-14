@@ -1237,6 +1237,7 @@ const pt = {
   loginErrorEmailInvalid: "Introduza um endereço de email válido, ex.: nome@exemplo.com.",
   loginErrorRequestOtpFirst: "Peça primeiro um novo OTP.",
   loginErrorEnterOtp: "Introduza o OTP que recebeu.",
+  loginErrorNoSession: "Não foi possível iniciar sessão. Peça um novo código e tente novamente.",
   // Bloqueio do reenvio. O tempo é composto no JSX a seguir ("Reenviar OTP em 4:59").
   resendOtpIn: "Reenviar OTP em",
   // "Enviar OTP" de novo para o mesmo número ou email durante o bloqueio:
