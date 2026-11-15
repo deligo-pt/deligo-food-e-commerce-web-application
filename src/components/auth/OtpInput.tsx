@@ -98,6 +98,7 @@ export default function OtpInput({
   disabled,
   verified = false,
   length = OTP_LENGTH,
+  fit = false,
 }: {
   /** How many digits the code has: 4 by email, 6 by SMS. */
   length?: number;
@@ -108,6 +109,14 @@ export default function OtpInput({
   disabled?: boolean;
   /** The server accepted the code: play the verified moment. */
   verified?: boolean;
+  /**
+   * Shrink the tiles to the width of the nearest size container (an ancestor
+   * with `container-type: inline-size`), never past 3rem. For a narrow card
+   * such as the checkout's phone check (15 Nov 2026), where six usual tiles do
+   * not fit a 320 px phone. Set inline, so it wins over the stylesheet's sizes;
+   * the login page leaves it off and is unchanged.
+   */
+  fit?: boolean;
 }) {
   const [focused, setFocused] = useState(false);
   const [motion, setMotion] = useState<TileMotion[]>(() =>
@@ -200,6 +209,15 @@ export default function OtpInput({
 
   return (
     <div
+      style={
+        fit
+          ? ({
+              "--otp-g": "0.375rem",
+              "--otp-s": `min(3rem, calc((100cqi - ${length - 1} * 0.375rem) / ${length}))`,
+              "--otp-gap": "min(1.5rem, calc(var(--otp-s) / 2))",
+            } as React.CSSProperties)
+          : undefined
+      }
       data-verified={verified ? "true" : undefined}
       // The CSS sizes the tiles and shapes the verified block from this.
       data-length={length}

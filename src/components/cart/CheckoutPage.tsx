@@ -69,6 +69,9 @@ import SmallOrderFeeNudge from "./SmallOrderFeeNudge";
 import FirstOrderTeaser from "./FirstOrderTeaser";
 import { smallOrderFeeNudge } from "@/lib/smallOrderFee";
 import { useQueryClient } from "@tanstack/react-query";
+import VerifiedPhoneCard, { useVerifiedPhone } from "./VerifiedPhoneCard";
+import { isPhoneRequiredErrorKey } from "@/lib/verifiedPhone";
+import { profileKeys } from "@/hooks/queries/useProfile";
 import { checkoutSlotKeys } from "@/hooks/queries/useCheckoutSlots";
 import { useSlotChoice } from "@/hooks/useSlotChoice";
 import { useAvailabilityRefresh } from "@/hooks/useAvailabilityRefresh";
@@ -158,6 +161,15 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     displayOrderId: string | null;
   } | null>(null);
   const unmountedRef = useRef(false);
+  // No order without a verified mobile number (15 Nov 2026). The card under
+  // the summary adds and verifies it in place; Proceed stays off until then.
+  const phone = useVerifiedPhone();
+  const phoneCardRef = useRef<HTMLElement>(null);
+  const showPhoneCard = useCallback(() => {
+    toast.error(t("phoneRequiredToOrder"));
+    phoneCardRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    phoneCardRef.current?.focus({ preventScroll: true });
+  }, [t]);
   // Set on every mount, not only declared once: React's Strict Mode and Fast
   // Refresh unmount and remount the page, and a flag left `true` by that made
   // every blocked checkout end silently ("Processing…", then nothing).
@@ -744,6 +756,10 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
       toast.error(t("vendorInfoMissing"));
       return;
     }
+    if (!phone.verified) {
+      showPhoneCard();
+      return;
+    }
 
     // The store closed while the page sat open. Opening the picker would be a
     // dead end — it has no valid rows to offer — so say what happened and drop
@@ -815,6 +831,13 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
     } catch (error) {
       if (getApiErrorKey(error) === "CHECKOUT_PAYMENT_IN_PROGRESS") {
         await resolveBlockedCheckout(error, createCheckout, goToPayment);
+        return;
+      }
+      // Ready for the backend refusing it too: re-read the profile, so the
+      // card comes back, and point at it instead of the raw message.
+      if (isPhoneRequiredErrorKey(getApiErrorKey(error))) {
+        await queryClient.invalidateQueries({ queryKey: profileKeys.profile });
+        showPhoneCard();
         return;
       }
 
@@ -1546,18 +1569,19 @@ export default function CheckoutPage({ vendorId }: CheckoutPageProps) {
                   )}
                 </div>
               )}
+              <VerifiedPhoneCard ref={phoneCardRef} className="mb-4" />
               {/* While a payment is open, the card's Continue payment is the
                   main action; this one steps back to a quiet "Check again". */}
               <Button
                 size="lg"
                 variant={blockedCheckout?.kind === "in-progress" ? "outline" : "default"}
                 onClick={handleProceedToCheckout}
-                disabled={isProceeding || vendorItems.length === 0}
+                disabled={isProceeding || vendorItems.length === 0 || !phone.verified}
                 className={`relative w-full overflow-hidden rounded-2xl font-semibold ${
-                  !isProceeding && vendorItems.length > 0 && blockedCheckout?.kind !== "in-progress" ? "cart-cta" : ""
+                  !isProceeding && vendorItems.length > 0 && phone.verified && blockedCheckout?.kind !== "in-progress" ? "cart-cta" : ""
                 }`}
               >
-                {!isProceeding && vendorItems.length > 0 && blockedCheckout?.kind !== "in-progress" && (
+                {!isProceeding && vendorItems.length > 0 && phone.verified && blockedCheckout?.kind !== "in-progress" && (
                   <span className="cart-cta-shine" aria-hidden="true" />
                 )}
                 <span className="relative z-10 flex items-center justify-center gap-2">

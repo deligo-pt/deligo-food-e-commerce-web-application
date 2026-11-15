@@ -186,7 +186,50 @@ export async function socialLogin(payload: {
   deviceDetails: DeviceDetails;
   forceLogin?: boolean;
 }): Promise<VerifyOtpResponse> {
-  return requestJson<VerifyOtpResponse>("/auth/social-login", payload);
+  return withSessionTokens(await requestJson<unknown>("/auth/social-login", payload));
+}
+
+/** The `errorKey` for a success response that carries no session tokens. */
+export const NO_SESSION_TOKENS = "NO_SESSION_TOKENS";
+
+const isNonEmptyString = (v: unknown): v is string => typeof v === "string" && v.length > 0;
+
+/**
+ * The session tokens from a `/verify-otp` or `/social-login` success, wherever
+ * the backend put them.
+ *
+ * 14 Nov 2026: the email login started failing with "Cannot read properties
+ * of undefined (reading 'split')" after the code was accepted: the success
+ * body no longer had `data.accessToken`, and saving `undefined` as a cookie
+ * crashed. The documented place is checked first, then the shapes other
+ * DeliGo routes use (`data.tokens`, a nested `data.data`, the top level).
+ * Anything else is refused with `NO_SESSION_TOKENS`, a real sign-in error
+ * instead of a crash, and the fields that did arrive are logged by name
+ * (never their values) so the new shape can be read from the console.
+ */
+export function withSessionTokens(payload: unknown): VerifyOtpResponse {
+  const body = (payload ?? {}) as Record<string, unknown>;
+  const data = (body.data ?? {}) as Record<string, unknown>;
+  const candidates = [data, data.tokens, data.data, (data.data as Record<string, unknown> | undefined)?.tokens, body, body.tokens];
+  for (const c of candidates) {
+    const t = (c ?? {}) as Record<string, unknown>;
+    if (isNonEmptyString(t.accessToken)) {
+      return {
+        success: true,
+        message: typeof body.message === "string" ? body.message : "",
+        data: {
+          accessToken: t.accessToken,
+          refreshToken: isNonEmptyString(t.refreshToken) ? t.refreshToken : "",
+        },
+      };
+    }
+  }
+  const shape = (o: unknown) =>
+    o && typeof o === "object" ? Object.keys(o as object).join(", ") || "(empty)" : String(o);
+  console.warn(
+    `[auth] Sign-in succeeded but no accessToken was found. Response fields: {${shape(body)}}; data fields: {${shape(body.data)}}`,
+  );
+  throw new AuthError("Signed in, but no session was returned.", { errorKey: NO_SESSION_TOKENS });
 }
 
 export async function verifyLoginOtp(payload: {
@@ -196,11 +239,10 @@ export async function verifyLoginOtp(payload: {
   deviceDetails: DeviceDetails;
   forceLogin?: boolean;
 }): Promise<VerifyOtpResponse> {
-  return requestJson<VerifyOtpResponse>(
-    "/auth/verify-otp",
-    {
+  return withSessionTokens(
+    await requestJson<unknown>("/auth/verify-otp", {
       ...payload,
       role: "CUSTOMER",
-    }
+    }),
   );
 }

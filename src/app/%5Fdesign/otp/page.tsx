@@ -26,7 +26,7 @@ export default function OtpPreviewPage() {
         </p>
       </header>
       <Demo title="Mobile (SMS): 6 digits" length={MOBILE_OTP_LENGTH} code="482913" />
-      <Demo title="Email: 4 digits (unchanged)" length={EMAIL_OTP_LENGTH} code="8402" />
+      <Demo title="Email: 6 digits" length={EMAIL_OTP_LENGTH} code="222955" />
     </main>
   );
 }

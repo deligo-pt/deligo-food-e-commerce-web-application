@@ -261,7 +261,8 @@ section("🔴 Six digits for an SMS code (6 Oct 2026)");
 
 section("The model, executed");
 {
-  check("the email code is four digits", OTP_LENGTH === 4 && EMAIL_OTP_LENGTH === 4 && otpLengthFor("email") === 4);
+  // 14 Nov 2026: the email code went from four digits to six.
+  check("🔴 the email code is six digits", OTP_LENGTH === 6 && EMAIL_OTP_LENGTH === 6 && otpLengthFor("email") === 6);
   // 6 Oct 2026: the SMS code is six digits, and the field cut it to four.
   check("🔴 the SMS code is six digits", MOBILE_OTP_LENGTH === 6 && otpLengthFor("mobile") === 6);
   check("🔴 six digits are kept for a mobile code", sanitizeOtp("482-913", 6) === "482913" && sanitizeOtp("1234567", 6) === "123456");
@@ -271,17 +272,17 @@ section("The model, executed");
     sanitizeOtp("98-76") === "9876" && sanitizeOtp("Code: 1 2 3 4") === "1234",
   );
   check("letters are not digits", sanitizeOtp("abc") === "");
-  check("more than four is cut to four", sanitizeOtp("123456") === "1234");
+  check("more than six is cut to six", sanitizeOtp("1234567") === "123456");
   check("nothing is nothing", sanitizeOtp(null) === "" && sanitizeOtp(undefined) === "");
-  check("a digit fills one tile", same(tileChanges("", "1"), ["filled", null, null, null]));
-  check("a backspace clears one", same(tileChanges("12", "1"), [null, "cleared", null, null]));
+  check("a digit fills one tile", same(tileChanges("", "1"), ["filled", null, null, null, null, null]));
+  check("a backspace clears one", same(tileChanges("12", "1"), [null, "cleared", null, null, null, null]));
   check(
     "🔴 an unchanged value changes nothing",
-    same(tileChanges("12", "12"), [null, null, null, null]),
+    same(tileChanges("12", "12"), Array(6).fill(null)),
     "a letter typed into the field must not replay a tile",
   );
-  check("a paste fills every tile", same(tileChanges("", "9876"), ["filled", "filled", "filled", "filled"]));
-  check("replacing a digit is a fill", same(tileChanges("1234", "1834"), [null, "filled", null, null]));
+  check("a paste fills every tile", same(tileChanges("", "982955"), Array(6).fill("filled")));
+  check("replacing a digit is a fill", same(tileChanges("123456", "183456"), [null, "filled", null, null, null, null]));
 
   // ── Changing one digit (13 Oct 2026) ──────────────────────────────────────
   // A wrong digit used to mean backspacing from the end and retyping.

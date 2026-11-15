@@ -2,13 +2,13 @@
  * The login code's shape and the verified moment's timing — pure, so
  * `pnpm verify:otp-input` can run it with no browser.
  *
- * The code's length depends on how it was sent (6 Oct 2026): the **email**
- * code is four digits and the **SMS** code is six. The field used to allow
- * four for both, so a mobile customer's last two digits were cut off and the
- * code could never verify. Each length is a cap: typing, pasting and SMS
+ * The code's length depends on how it was sent. Since 14 Nov 2026 the
+ * **email** code is six digits, like the **SMS** code (it was four until then;
+ * the backend now sends e.g. "222955"). The two stay separate constants so one
+ * can change without the other. Each length is a cap: typing, pasting and SMS
  * autofill keep at most that many digits.
  */
-export const EMAIL_OTP_LENGTH = 4;
+export const EMAIL_OTP_LENGTH = 6;
 export const MOBILE_OTP_LENGTH = 6;
 
 /**

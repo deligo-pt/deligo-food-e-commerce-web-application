@@ -1220,6 +1220,12 @@ const pt = {
   verifyingOtp: "A verificar...",
 
   resendOtp: "Reenviar OTP",
+  phoneRequiredTitle: "Adicione o seu número de telemóvel para encomendar",
+  phoneRequiredBody: "A loja e o estafeta precisam de um número válido para o contactar. Confirme-o com um código que enviamos por SMS — o seu carrinho fica como está.",
+  phoneUnverifiedBody: "O seu número de telemóvel ainda não está confirmado. Envie um código por SMS para o confirmar — o seu carrinho fica como está.",
+  phoneRequiredToOrder: "Confirme o seu número de telemóvel para fazer esta encomenda.",
+  phoneCodeSent: "Código enviado por SMS.",
+  phoneVerifiedCanOrder: "Número de telemóvel confirmado. Já pode fazer a sua encomenda.",
   resendingOtp: "A reenviar OTP...",
 
   otpSentTo: "OTP enviado para",
@@ -1237,6 +1243,7 @@ const pt = {
   loginErrorEmailInvalid: "Introduza um endereço de email válido, ex.: nome@exemplo.com.",
   loginErrorRequestOtpFirst: "Peça primeiro um novo OTP.",
   loginErrorEnterOtp: "Introduza o OTP que recebeu.",
+  loginErrorNoSession: "Não foi possível iniciar sessão. Peça um novo código e tente novamente.",
   // Bloqueio do reenvio. O tempo é composto no JSX a seguir ("Reenviar OTP em 4:59").
   resendOtpIn: "Reenviar OTP em",
   // "Enviar OTP" de novo para o mesmo número ou email durante o bloqueio:

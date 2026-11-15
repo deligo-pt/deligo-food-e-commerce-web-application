@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AuthError,
+  NO_SESSION_TOKENS,
   buildDeviceDetails,
   sendLoginOtp,
   socialLogin,
@@ -439,6 +440,8 @@ export function useLoginFlow(initialReferralCode = "") {
       if (isDeviceLimitError(error, message)) {
         setPendingAction("verify");
         setShowDeviceLimitModal(true);
+      } else if (error instanceof AuthError && error.errorKey === NO_SESSION_TOKENS) {
+        setErrorMessageKey("loginErrorNoSession");
       } else {
         setErrorMessage(message);
       }
@@ -496,6 +499,9 @@ export function useLoginFlow(initialReferralCode = "") {
         return;
       case "INVALID_SOCIAL_TOKEN":
         setErrorMessageKey("socialLoginFailed");
+        return;
+      case NO_SESSION_TOKENS:
+        setErrorMessageKey("loginErrorNoSession");
         return;
       default:
         // USER_BLOCKED and anything unmapped: the backend's own localized
