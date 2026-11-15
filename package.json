@@ -32,6 +32,7 @@
     "verify:rating": "node --no-warnings scripts/verify-rating.mjs",
     "verify:rider-instructions": "node --no-warnings scripts/verify-rider-instructions.mjs",
     "verify:otp-input": "node --no-warnings scripts/verify-otp-input.mjs",
+    "verify:verified-phone": "node --no-warnings scripts/verify-verified-phone.mjs",
     "verify:share": "node --no-warnings scripts/verify-share.mjs",
     "verify:escape": "node --no-warnings scripts/verify-escape.mjs",
     "verify:saved-card": "node --no-warnings scripts/verify-saved-card-choice.mjs",

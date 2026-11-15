@@ -1222,6 +1222,12 @@ const en = {
   verifyingOtp: "Verifying...",
 
   resendOtp: "Resend OTP",
+  phoneRequiredTitle: "Add your mobile number to order",
+  phoneRequiredBody: "The store and your rider need a number that works to reach you. Verify it with a code we send by SMS — your cart stays as it is.",
+  phoneUnverifiedBody: "Your mobile number isn't verified yet. Send yourself a code by SMS to confirm it — your cart stays as it is.",
+  phoneRequiredToOrder: "Verify your mobile number to place this order.",
+  phoneCodeSent: "Code sent by SMS.",
+  phoneVerifiedCanOrder: "Mobile number verified. You can place your order.",
   resendingOtp: "Resending OTP...",
 
   otpSentTo: "OTP sent to",

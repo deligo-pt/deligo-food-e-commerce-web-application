@@ -1220,6 +1220,12 @@ const pt = {
   verifyingOtp: "A verificar...",
 
   resendOtp: "Reenviar OTP",
+  phoneRequiredTitle: "Adicione o seu número de telemóvel para encomendar",
+  phoneRequiredBody: "A loja e o estafeta precisam de um número válido para o contactar. Confirme-o com um código que enviamos por SMS — o seu carrinho fica como está.",
+  phoneUnverifiedBody: "O seu número de telemóvel ainda não está confirmado. Envie um código por SMS para o confirmar — o seu carrinho fica como está.",
+  phoneRequiredToOrder: "Confirme o seu número de telemóvel para fazer esta encomenda.",
+  phoneCodeSent: "Código enviado por SMS.",
+  phoneVerifiedCanOrder: "Número de telemóvel confirmado. Já pode fazer a sua encomenda.",
   resendingOtp: "A reenviar OTP...",
 
   otpSentTo: "OTP enviado para",

@@ -32,7 +32,7 @@ import {
   Gift,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiClient, getApiErrorKey, getApiErrorMessage } from "@/lib/apiClient";
 import { isVendorObjectId, vendorHref, vendorRouteId } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
@@ -92,6 +92,9 @@ import type {
 } from "@/types/offer";
 import type { CartResponse } from "@/types/cart";
 import { useCart } from "@/hooks/queries/useCart";
+import VerifiedPhoneCard, { useVerifiedPhone } from "@/components/cart/VerifiedPhoneCard";
+import { isPhoneRequiredErrorKey } from "@/lib/verifiedPhone";
+import { useInvalidateProfile } from "@/hooks/queries/useProfile";
 import { isFirstOrderApplied, isFirstOrderOffer } from "@/lib/firstOrderOffer";
 
 interface CheckoutItem {
@@ -514,6 +517,16 @@ export default function PaymentPage() {
   // Selecting a card switches the whole flow: one call, no redirect.
   const isInstantPayment = showSavedCards && selectedCardId !== null;
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  // The checkout page already asks for a verified number; this page is
+  // reachable directly (a bookmark, Back), so it asks again (15 Nov 2026).
+  const phone = useVerifiedPhone();
+  const phoneCardRef = useRef<HTMLElement>(null);
+  const invalidateProfile = useInvalidateProfile();
+  const showPhoneCard = () => {
+    toast.error(t("phoneRequiredToOrder"));
+    phoneCardRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    phoneCardRef.current?.focus({ preventScroll: true });
+  };
   const [paymentError, setPaymentError] = useState("");
   // The deposit (or another price) changed after this checkout was built, and
   // the summary was refreshed: say so beside the new total before they pay.
@@ -1059,6 +1072,10 @@ export default function PaymentPage() {
 
   const handlePlaceOrder = async () => {
     if (!summary) return;
+    if (!phone.verified) {
+      showPhoneCard();
+      return;
+    }
     setTotalsChanged(false);
     setWelcomeOfferDropped(false);
 
@@ -1162,6 +1179,11 @@ export default function PaymentPage() {
         return;
       }
       const errKey = getApiErrorKey(err);
+      if (isPhoneRequiredErrorKey(errKey)) {
+        await invalidateProfile();
+        showPhoneCard();
+        return;
+      }
       if (isSlotRefusal(errKey)) {
         setSlotRefused(true);
         setPaymentError(getApiErrorMessage(err, t(slotRefusalCopy(errKey, getVendorKind(vendor?.businessDetails?.businessType)))));
@@ -2056,15 +2078,16 @@ export default function PaymentPage() {
                 </div>
               )}
 
+              <VerifiedPhoneCard ref={phoneCardRef} className="mt-6" />
               <Button
                 size="lg"
                 onClick={handlePlaceOrder}
-                disabled={isPlacingOrder}
+                disabled={isPlacingOrder || !phone.verified}
                 className={`relative mt-6 w-full gap-2 overflow-hidden font-semibold ${
-                  isPlacingOrder ? "" : "cart-cta"
+                  isPlacingOrder || !phone.verified ? "" : "cart-cta"
                 }`}
               >
-                {!isPlacingOrder && (
+                {!isPlacingOrder && phone.verified && (
                   <span className="cart-cta-shine" aria-hidden="true" />
                 )}
                 {/* The label is the honest signal of what the tap does: a
