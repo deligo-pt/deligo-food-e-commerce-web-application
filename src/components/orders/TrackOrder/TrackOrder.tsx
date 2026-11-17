@@ -13,6 +13,7 @@ import {
   Loader2,
   MapPin,
   Navigation,
+  Phone,
   ReceiptEuro,
   ShoppingBag,
   Utensils,
@@ -69,6 +70,9 @@ import PickupCodeCard from "./PickupCodeCard";
 import PickupLocationCard from "./PickupLocationCard";
 import RefundBanner from "./RefundBanner";
 import CancelOrderDialog from "../CancelOrderDialog";
+import RiderChatButton from "../RiderChat/RiderChatButton";
+import { useSocket } from "@/providers/SocketProvider";
+import type { ChatEventBase } from "@/lib/orderChat";
 import { Button } from "@/components/ui/button";
 import { formatEuro } from "@/lib/currency";
 import { isFirstOrderApplied } from "@/lib/firstOrderOffer";
@@ -248,6 +252,8 @@ export default function TrackOrder() {
   const invalidateOrders = useInvalidateOrders();
   // The status the last poll saw, to notice the moment the order completes.
   const lastStatusRef = useRef<string | null>(null);
+  /** Re-read the order now, outside the poll (set by the polling effect). */
+  const fetchNowRef = useRef<(() => void) | null>(null);
 
   /**
    * The store's record in the cached vendor list — a pickup order's address.
@@ -431,18 +437,42 @@ export default function TrackOrder() {
       }
     };
 
+    fetchNowRef.current = () => {
+      if (!stopped) void fetchOrder(false);
+    };
+
     // Initial fetch to load page content immediately
     fetchOrder(true);
     if (document.visibilityState === "visible") startPolling();
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      fetchNowRef.current = null;
       stopPolling();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
     // langVersion: re-fetch the order in the new language (keeps the current
     // order on screen since loading only toggles on the initial load).
   }, [orderId, langVersion, invalidateOrders]);
+
+  // The rider chat opening or closing means the order moved (a rider was
+  // assigned, or the order was delivered / cancelled): re-read it at once, so
+  // the timeline and the rider card change together with the chat instead of
+  // up to one poll later.
+  const { socket } = useSocket();
+  const mongoId = order?._id as string | undefined;
+  useEffect(() => {
+    if (!socket || !mongoId) return;
+    const onChatChanged = (event: ChatEventBase) => {
+      if (event?.orderId === mongoId) fetchNowRef.current?.();
+    };
+    socket.on("order-chat:closed", onChatChanged);
+    socket.on("order-chat:activated", onChatChanged);
+    return () => {
+      socket.off("order-chat:closed", onChatChanged);
+      socket.off("order-chat:activated", onChatChanged);
+    };
+  }, [socket, mongoId]);
 
   // Animation observer
   useEffect(() => {
@@ -763,51 +793,84 @@ export default function TrackOrder() {
                 them — it only matched `motion-*` and `reveal-group`. This page
                 is where someone checks what they are being charged and where
                 their food is; the denylist means it, so it applies here too. */}
-            {order.deliveryPartnerId && (
-              <div className="bg-card rounded-3xl shadow-md p-6 flex flex-col md:flex-row items-center justify-between gap-6 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-[#008080] transition-all duration-500 hover:shadow-lg">
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                  <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-[#008080] bg-gray-100 dark:bg-neutral-950 shrink-0">
-                    {order.deliveryPartnerId.profilePhoto ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={order.deliveryPartnerId.profilePhoto}
-                        alt="Rider"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-[#e0f2f1] dark:bg-teal-950/20 text-[#008080]">
-                        <Bike className="w-8 h-8" />
-                      </div>
-                    )}
+            {order.deliveryPartnerId && (() => {
+              const rider = order.deliveryPartnerId;
+              const riderName = `${rider.name?.firstName || ""} ${rider.name?.lastName || ""}`.trim();
+              const riderPhone: string | undefined = rider.contactNumber || undefined;
+              const telHref = riderPhone ? toTelHref(riderPhone) : null;
+              const delivered = order.orderStatus === "DELIVERED";
+              return (
+                <div className="@container bg-card rounded-3xl shadow-md p-4 sm:p-6 border border-transparent dark:border-neutral-800 border-l-4 dark:border-l-4 border-[#008080] transition-all duration-500 hover:shadow-lg">
+                  {/* Who: photo, name and status, with the whole width so the
+                      status reads on one line. */}
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                    <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-full overflow-hidden border-2 border-[#008080] bg-gray-100 dark:bg-neutral-950 shrink-0">
+                      {rider.profilePhoto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={rider.profilePhoto} alt="Rider" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-[#e0f2f1] dark:bg-teal-950/20 text-[#008080]">
+                          <Bike className="w-8 h-8" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="text-xs font-bold text-muted-foreground dark:text-neutral-400 tracking-wide uppercase">
+                        {t("yourRider") || "Your Rider"}
+                      </p>
+                      <h3 className="truncate text-xl font-extrabold text-foreground dark:text-neutral-50">{riderName}</h3>
+                      <p className="flex items-start gap-2 text-sm font-semibold leading-5 text-muted-foreground dark:text-neutral-400">
+                        <span aria-hidden className="flex h-5 shrink-0 items-center">
+                          <span className={`h-2 w-2 rounded-full ${delivered ? "bg-teal-700 dark:bg-teal-400" : "bg-green-500 animate-pulse"}`} />
+                        </span>
+                        {delivered
+                          ? t("orderHasBeenDelivered")
+                          : order.orderStatus === "ON_THE_WAY" || order.orderStatus === "PICKED_UP"
+                          ? t("riderIsHeadingToYourLocation")
+                          : t("riderAssigned")}
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground dark:text-neutral-400 tracking-wide uppercase">
-                      {t("yourRider") || "Your Rider"}
-                    </p>
-                    <h3 className="text-xl font-extrabold text-foreground dark:text-neutral-50">
-                      {`${order.deliveryPartnerId.name?.firstName || ""} ${order.deliveryPartnerId.name?.lastName || ""}`.trim()}
-                    </h3>
-                    <p className="text-sm font-semibold text-muted-foreground dark:text-neutral-400 flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
-                      {order.orderStatus === "DELIVERED"
-                        ? t("orderHasBeenDelivered")
-                        : order.orderStatus === "ON_THE_WAY" || order.orderStatus === "PICKED_UP"
-                        ? t("riderIsHeadingToYourLocation")
-                        : t("riderAssigned")}
-                    </p>
+
+                  {/* How to reach them: the number, then call and chat on one
+                      row. Laid out by the card's own width (a container query):
+                      the card is full width on a tablet but sits in the narrow
+                      left column at 1024 px. In a narrow card the number goes
+                      above the buttons; in a phone-sized one the call button
+                      is the round icon alone, so both fit at 320 px. The chat button decides for itself
+                      whether to show (it follows the backend's room — see
+                      `RiderChatButton`), so it is always mounted here. */}
+                  <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4 @xl:flex-row @xl:items-center @xl:justify-between">
+                    {riderPhone ? (
+                      <p className="flex items-center gap-2 text-sm font-semibold tabular-nums text-muted-foreground dark:text-neutral-400">
+                        <Phone className="h-4 w-4 shrink-0 text-teal-700 dark:text-teal-400" aria-hidden />
+                        {riderPhone}
+                      </p>
+                    ) : (
+                      <span aria-hidden />
+                    )}
+                    <div className="flex items-center gap-3">
+                      {telHref && (
+                        <a
+                          href={telHref}
+                          aria-label={`${t("callRider") || "Call Rider"} (${riderPhone})`}
+                          title={riderPhone}
+                          className="focus-ring flex h-12 w-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#008080] font-extrabold text-white shadow-md transition-all hover:bg-[#006666] hover:shadow-lg active:scale-95 @md:w-auto @md:flex-1 @md:px-6 @xl:flex-none dark:bg-teal-600 dark:hover:bg-teal-700"
+                        >
+                          <Phone className="h-4 w-4" aria-hidden />
+                          <span className="hidden @md:inline">{t("callRider") || "Call Rider"}</span>
+                        </a>
+                      )}
+                      <RiderChatButton
+                        orderId={order._id}
+                        rider={{ name: riderName, photo: rider.profilePhoto, phone: riderPhone }}
+                        className="h-12 flex-1 whitespace-nowrap @xl:flex-none"
+                      />
+                    </div>
                   </div>
                 </div>
-                {order.deliveryPartnerId.contactNumber && (
-                  <a
-                    href={`tel:${order.deliveryPartnerId.contactNumber}`}
-                    className="w-full md:w-auto text-center bg-[#008080] hover:bg-[#006666] dark:bg-teal-600 dark:hover:bg-teal-700 text-white font-extrabold px-6 py-3.5 rounded-full transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 hover:shadow-lg"
-                  >
-                    <Navigation className="w-4 h-4 rotate-45" />
-                    {t("callRider") || "Call Rider"} ({order.deliveryPartnerId.contactNumber})
-                  </a>
-                )}
-              </div>
-            )}
+              );
+            })()}
 
             {/* Restaurant & Delivery Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

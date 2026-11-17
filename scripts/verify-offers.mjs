@@ -29,8 +29,11 @@
  */
 
 import { readFileSync } from "node:fs";
+import { register } from "node:module";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+
+register("./ts-resolve-hook.mjs", import.meta.url);
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (file) => readFileSync(join(here, "..", file), "utf8");
@@ -149,6 +152,90 @@ section("Offers without a promo code");
     "a buy-and-reward offer says what it gives",
     /buyAndRewardSummary/.test(page) && /buyAndRewardSummary:/.test(en),
     '"Buy 2, get 1 free" — the discount value means nothing on this kind',
+  );
+}
+
+section("A welcome offer the customer has used is not offered again");
+{
+  // `GET /offers` is not personalised: on 17 Nov 2026 it still listed Tasca do
+  // Bairro's 50% welcome offer as `isEligible: true, usageCount: 0` to a
+  // customer whose order ORD-CDKN43IVA9 had used it. The store card, Vouchers,
+  // the Profile count and the checkout's offer list all kept showing it.
+  const { welcomeOfferUsage, isUsedWelcomeOffer, NO_WELCOME_OFFER_USAGE } = await import(
+    join(here, "../src/lib/firstOrderOffer.ts")
+  );
+  const A = "6a6aced8f9e179566170db79";
+  const B = "6a6ad6f1f9e179566170dcba";
+  // Shapes as `?fields=` returns them (measured).
+  const welcome = (status, vendor = A, extra = {}) => ({
+    orderStatus: status,
+    statusHistory: [{ status: "PENDING" }, ...(extra.accepted ? [{ status: "ACCEPTED" }] : []), { status }],
+    offer: {
+      isApplied: true,
+      offerApplied: {
+        isFirstOrder: true,
+        firstOrderScope: extra.scope ?? "VENDOR",
+        firstOrderVendorId: extra.scope === "GLOBAL" ? undefined : vendor,
+        firstOrderPolicy: { maxRestores: extra.maxRestores ?? 2 },
+      },
+    },
+  });
+  const plain = (status) => ({ orderStatus: status, offer: { isApplied: false } });
+
+  const used = (orders) => welcomeOfferUsage(orders);
+  check(
+    "🔴 the measured case: a NO_SHOW order with the welcome offer uses it up",
+    used([plain("DELIVERED"), welcome("NO_SHOW")]).vendors.has(A),
+  );
+  check("a delivered or in-progress order uses it up", used([welcome("DELIVERED")]).vendors.has(A) && used([welcome("PENDING")]).vendors.has(A));
+  check(
+    "earlier orders without the offer don't use it (the backend counts use, not orders)",
+    !used([plain("DELIVERED"), plain("PICKED_UP_BY_CUSTOMER")]).vendors.has(A),
+  );
+  check("a store rejection gives it back", !used([welcome("REJECTED")]).vendors.has(A));
+  check("a cancel before the store accepted gives it back", !used([welcome("CANCELED")]).vendors.has(A));
+  check("a cancel after the store accepted does not", used([welcome("CANCELED", A, { accepted: true })]).vendors.has(A));
+  check(
+    "given back only up to maxRestores times",
+    !used([welcome("REJECTED"), welcome("REJECTED")]).vendors.has(A) &&
+      used([welcome("REJECTED"), welcome("REJECTED"), welcome("REJECTED")]).vendors.has(A) &&
+      used([welcome("REJECTED", A, { maxRestores: 0 })]).vendors.has(A),
+  );
+  check("per store: using store A's offer leaves store B's open", !used([welcome("DELIVERED")]).vendors.has(B));
+  check(
+    "the platform-wide offer is tracked on its own",
+    used([welcome("DELIVERED", A, { scope: "GLOBAL" })]).global && !used([welcome("DELIVERED")]).global,
+  );
+
+  const usage = used([welcome("DELIVERED")]);
+  const offerOf = (vendorId, scope = "VENDOR") => ({ vendorId, eligibility: { type: "FIRST_ORDER", scope } });
+  check(
+    "isUsedWelcomeOffer matches a list row by its store (string or populated)",
+    isUsedWelcomeOffer(offerOf(A), usage) && isUsedWelcomeOffer(offerOf({ _id: A }), usage) && !isUsedWelcomeOffer(offerOf(B), usage),
+  );
+  check(
+    "…and never hides an ordinary offer",
+    !isUsedWelcomeOffer({ vendorId: A, eligibility: null }, usage) && !isUsedWelcomeOffer({ vendorId: A }, usage),
+  );
+  check("with no usage known, nothing is hidden", !isUsedWelcomeOffer(offerOf(A), NO_WELCOME_OFFER_USAGE));
+
+  const hook = read("src/hooks/queries/useStoreWelcomeOffers.ts");
+  const orders = read("src/hooks/queries/useOrders.ts");
+  const vouchers = read("src/components/vouchers/VouchersPageContent.tsx");
+  const profile = read("src/hooks/queries/useProfile.ts");
+  check(
+    "🔴 the store cards drop a used store's offer, and wait for the answer first",
+    /useWelcomeOfferUsage/.test(hook) && /open\.delete\(vendorId\)/.test(hook) && /!ready\) return EMPTY/.test(hook),
+  );
+  check(
+    "usage is one projected read, refreshed with the orders",
+    /fields: WELCOME_OFFER_USAGE_FIELDS/.test(orders) && /welcomeOfferUsage: \["orders",/.test(orders),
+  );
+  check("the Vouchers page leaves a used welcome offer out", /isUsedWelcomeOffer\(offer, usage\)/.test(vouchers));
+  check("the Profile voucher count leaves it out too", /isUsedWelcomeOffer\(offer, usage\)/.test(profile));
+  check(
+    "the checkout's offer list leaves it out",
+    /offerList\.filter\(\(offer\) => !isUsedWelcomeOffer\(offer, welcomeOfferUsage\)\)/.test(page),
   );
 }
 

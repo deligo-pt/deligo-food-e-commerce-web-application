@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bike, Moon, PauseCircle, Plus, Star, UtensilsCrossed } from "lucide-react";
+import { Bike, Moon, PauseCircle, Plus, SlidersHorizontal, Star, UtensilsCrossed } from "lucide-react";
 import StoreStatusBanner from "@/components/vendors/StoreStatusBanner";
 import { useVendorOrdering } from "@/hooks/useSlotChoice";
 import { useQueryClient } from "@tanstack/react-query";
@@ -240,6 +240,11 @@ function isOneTapAddable(product: Product): boolean {
   return !product.variations?.length && !product.addonGroups?.length;
 }
 
+/** Whether the dish has add-on groups — what the card's "Add-ons" mark shows. */
+function hasAddons(product: Product): boolean {
+  return (product.addonGroups?.length ?? 0) > 0;
+}
+
 
 // Pure + module-scoped so it has a stable identity (safe as a memo dep).
 // Decimal point and the symbol after it, matching the cart, checkout,
@@ -347,6 +352,20 @@ const MenuProductCard = memo(function MenuProductCard({
             dish's own deep link — the store with this dish already open —
             and stays available while the store is closed: showing someone a
             dish is not ordering it. */}
+        {/* A dish with add-ons says so before it is opened (17 Nov 2026):
+            its `+` opens the options rather than adding straight away. On
+            the photo, so the card keeps exactly the size of every other
+            card; on the right, by request (18 Nov 2026). From `md` that is
+            the bottom-right corner. On phones the `+` (or the count pill)
+            already sits in that corner, so the mark stands just above it,
+            still right-aligned. Add-ons only, by request; a dish with just
+            sizes gets no mark. */}
+        {hasAddons(product) && (
+          <span className="pointer-events-none absolute bottom-14 right-2 md:bottom-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-xs font-semibold text-primary shadow-sm dark:bg-neutral-900/90 dark:text-pink-300">
+            <SlidersHorizontal size={12} strokeWidth={2.5} aria-hidden="true" />
+            {t("productHasAddons")}
+          </span>
+        )}
         <ShareButton
           className="absolute right-2 top-2"
           label={`${t("share")} ${product.name}`}
@@ -430,6 +449,37 @@ const MenuProductCard = memo(function MenuProductCard({
                 vendorKind={vendorKind}
                 onCartChanged={onCartChanged}
               />
+            ) : cartQuantity > 0 ? (
+              /* A dish with options that is already in the cart: the same
+                 pill as the stepper, so every card in the cart reads alike —
+                 its total (every line added up) beside a `+` that opens the
+                 modal. No minus: the dish can be several lines (with cheese,
+                 plain…) and a minus here couldn't know which one to take
+                 off; that is the cart's job. */
+              <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-card p-1">
+                <span className="min-w-5 px-1 text-center text-sm font-bold tabular-nums text-gray-900 dark:text-white">
+                  <span aria-hidden="true">{cartQuantity > 99 ? "99+" : cartQuantity}</span>
+                  <span className="sr-only">
+                    {t("productInCartCount").replace("{count}", String(cartQuantity))}
+                  </span>
+                </span>
+                <Button
+                  size="icon"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelect(product.productId);
+                  }}
+                  disabled={storeClosed}
+                  aria-label={
+                    storeClosed
+                      ? t(vendorCopyKey(storePaused ? "storePausedTitle" : "storeClosedTitle", vendorKind))
+                      : t("addToCart")
+                  }
+                  className="size-8 rounded-lg"
+                >
+                  <Plus size={14} />
+                </Button>
+              </div>
             ) : (
               <Button
                 size="icon"

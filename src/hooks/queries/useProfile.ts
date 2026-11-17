@@ -4,6 +4,17 @@ import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
+import { useWelcomeOfferUsage } from "@/hooks/queries/useOrders";
+import { isUsedWelcomeOffer } from "@/lib/firstOrderOffer";
+import type { OfferEligibility } from "@/types/offer";
+
+/** The slice of a `GET /offers` row the voucher count reads. */
+interface VoucherOffer {
+  isActive: boolean;
+  isDeleted: boolean;
+  vendorId?: string | { _id?: string } | null;
+  eligibility?: OfferEligibility | null;
+}
 
 // Shared query keys so every consumer of a resource hits ONE cached, deduped
 // entry instead of firing its own request. `/profile` alone had 14 call sites.
@@ -29,20 +40,28 @@ export function useProfile<T = unknown>(options?: { enabled?: boolean }) {
   });
 }
 
-/** Count of the user's active (non-deleted) offers/vouchers. */
+/**
+ * Count of the user's active (non-deleted) offers/vouchers — the same list the
+ * Vouchers page shows, so a welcome offer the customer has already used is not
+ * counted (`useWelcomeOfferUsage`).
+ */
 export function useOffersCount(options?: { enabled?: boolean }) {
-  return useQuery({
+  const enabled = options?.enabled ?? true;
+  const { usage } = useWelcomeOfferUsage({ enabled });
+  const query = useQuery({
     queryKey: profileKeys.offersCount,
     queryFn: async ({ signal }) => {
       const res = await apiClient.get("/offers", { signal });
-      const offers = (res.data?.data ?? []) as Array<{
-        isActive: boolean;
-        isDeleted: boolean;
-      }>;
-      return offers.filter((o) => o.isActive && !o.isDeleted).length;
+      const offers = (res.data?.data ?? []) as VoucherOffer[];
+      return offers.filter((o) => o.isActive && !o.isDeleted);
     },
-    enabled: options?.enabled ?? true,
+    enabled,
   });
+  const count = useMemo(
+    () => query.data?.filter((offer) => !isUsedWelcomeOffer(offer, usage)).length,
+    [query.data, usage],
+  );
+  return { ...query, data: count };
 }
 
 /** `GET /points/my-points`. A holder who never earned anything gets zeros. */

@@ -201,7 +201,7 @@ section("The page around it");
 {
   check(
     "the login page renders the tiles, wired to the hook's state",
-    /<OtpInput\b[\s\S]{0,160}value=\{otp\}[\s\S]{0,60}onChange=\{setOtp\}[\s\S]{0,120}verified=\{otpVerified\}/.test(
+    /<OtpInput\b[\s\S]{0,160}value=\{otp\}[\s\S]{0,60}onChange=\{setOtp\}[\s\S]{0,200}verified=\{otpVerified\}/.test(
       login,
     ),
   );

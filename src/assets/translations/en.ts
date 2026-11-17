@@ -562,6 +562,8 @@ const en = {
     "Freshly prepared with premium ingredients.",
 
   addToCart: "Add To Cart",
+  productInCartCount: "{count} in your cart",
+  productHasAddons: "Add-ons",
   editProfile: "Edit Profile",
   vouchers: "Vouchers",
   rewardPoints: "Reward Points",
@@ -1235,6 +1237,16 @@ const en = {
   // Replaces the generic `otpSentTo` caption on phone sends, which name their
   // channel; email sends have none.
   otpSentViaSms: "Code sent by SMS to",
+  otpErrorDeliveryFailed: "We couldn't send the code. Please check the number or email and try again in a moment.",
+  otpErrorAttemptsExceeded: "Too many wrong codes. For your security, sign-in is paused for 15 minutes. You can try again at {time}.",
+  otpErrorAttemptsExceededShort: "Too many wrong codes. Please wait 15 minutes and try again.",
+  loginErrorPhoneCountry: "Only Portuguese (+351) mobile numbers can be used.",
+  socialLinkTitle: "Link your {provider} account",
+  socialLinkSubtitle: "This email already has a DeliGo account",
+  socialLinkHint: "We sent a 6-digit code to {email}. Enter it to link {provider} to your existing account.",
+  socialLinkHintNoEmail: "We sent a 6-digit code to the email on your DeliGo account. Enter it to link {provider} to that account.",
+  socialLinkVerify: "Verify & link {provider}",
+  socialLinkCodeSent: "Code sent. Check your email, including the spam folder.",
 
   // Login form errors we word ourselves (17 Oct 2026). The server's own text
   // for a bad number was a generic "Validation failed. Please check the
@@ -2412,6 +2424,29 @@ const en = {
   firstOrderCardTitle: "Welcome offer for new customers: {amount} off your first order here.",
   firstOrderCardTitleGeneric: "Welcome offer for new customers on their first order here.",
   firstOrderCardMin: "Minimum order {min}.",
+  // Rider chat (plan.md Phase 4)
+  chatWithRider: "Chat with rider",
+  chatHistory: "Chat history",
+  riderChatReconnecting: "Reconnecting…",
+  riderTyping: "typing…",
+  riderChatClosedFinished: "This order is finished. The chat is closed.",
+  riderChatClosedRiderChanged: "The rider changed. A new chat opens when the new rider is assigned.",
+  riderChatEmptyTitle: "Say hello to your rider",
+  riderChatEmptyHint: "Messages here go only to the rider delivering this order.",
+  riderChatNotSent: "Not sent",
+  riderChatDiscard: "Delete",
+  riderChatRead: "Read",
+  riderChatSent: "Sent",
+  riderChatSending: "Sending",
+  riderChatTooLong: "Messages can be up to 2000 characters.",
+  riderChatErrorRoomChanged: "The chat was updated. Please try again.",
+  riderChatErrorUnavailable: "Chat isn't available for this order right now.",
+  riderChatErrorNotParticipant: "You can no longer chat about this order.",
+  riderChatErrorNotFound: "Order not found.",
+  riderChatUnread: "{count} unread messages",
+  riderChatNewMessages: "{count} new messages",
+  riderChatUnreadOne: "1 unread message",
+  riderChatNewMessageOne: "1 new message",
 };
 
 export default en;

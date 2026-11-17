@@ -566,6 +566,8 @@ const pt = {
     "Preparado na hora com ingredientes premium.",
 
   addToCart: "Adicionar ao Carrinho",
+  productInCartCount: "{count} no seu carrinho",
+  productHasAddons: "Com extras",
   editProfile: "Editar Perfil",
   vouchers: "Vouchers",
   rewardPoints: "Pontos de Recompensa",
@@ -1233,6 +1235,16 @@ const pt = {
   // Substitui a legenda genérica `otpSentTo` nos envios por telemóvel, que
   // nomeiam o canal; os envios por email não têm canal.
   otpSentViaSms: "Código enviado por SMS para",
+  otpErrorDeliveryFailed: "Não foi possível enviar o código. Verifique o número ou o email e tente novamente daqui a pouco.",
+  otpErrorAttemptsExceeded: "Demasiados códigos errados. Por segurança, o início de sessão está suspenso durante 15 minutos. Pode tentar novamente às {time}.",
+  otpErrorAttemptsExceededShort: "Demasiados códigos errados. Aguarde 15 minutos e tente novamente.",
+  loginErrorPhoneCountry: "Só pode usar números de telemóvel portugueses (+351).",
+  socialLinkTitle: "Associe a sua conta {provider}",
+  socialLinkSubtitle: "Este email já tem uma conta DeliGo",
+  socialLinkHint: "Enviámos um código de 6 dígitos para {email}. Introduza-o para associar o {provider} à sua conta.",
+  socialLinkHintNoEmail: "Enviámos um código de 6 dígitos para o email da sua conta DeliGo. Introduza-o para associar o {provider} a essa conta.",
+  socialLinkVerify: "Verificar e associar {provider}",
+  socialLinkCodeSent: "Código enviado. Verifique o seu email, incluindo a pasta de spam.",
 
   // Erros do formulário de login redigidos por nós (17 out 2026). O texto do
   // servidor para um número errado era um genérico "Falha na validação.
@@ -2397,6 +2409,29 @@ const pt = {
   firstOrderCardTitle: "Oferta de boas-vindas para novos clientes: {amount} de desconto na primeira encomenda aqui.",
   firstOrderCardTitleGeneric: "Oferta de boas-vindas para novos clientes na primeira encomenda aqui.",
   firstOrderCardMin: "Encomenda mínima {min}.",
+  // Rider chat (plan.md Phase 4)
+  chatWithRider: "Conversar com o estafeta",
+  chatHistory: "Histórico da conversa",
+  riderChatReconnecting: "A reconectar…",
+  riderTyping: "a escrever…",
+  riderChatClosedFinished: "Esta encomenda terminou. A conversa está fechada.",
+  riderChatClosedRiderChanged: "O estafeta mudou. Uma nova conversa abre quando o novo estafeta for atribuído.",
+  riderChatEmptyTitle: "Diga olá ao seu estafeta",
+  riderChatEmptyHint: "As mensagens aqui chegam apenas ao estafeta que entrega esta encomenda.",
+  riderChatNotSent: "Não enviada",
+  riderChatDiscard: "Eliminar",
+  riderChatRead: "Lida",
+  riderChatSent: "Enviada",
+  riderChatSending: "A enviar",
+  riderChatTooLong: "As mensagens podem ter até 2000 caracteres.",
+  riderChatErrorRoomChanged: "A conversa foi atualizada. Tente novamente.",
+  riderChatErrorUnavailable: "A conversa não está disponível para esta encomenda neste momento.",
+  riderChatErrorNotParticipant: "Já não pode conversar sobre esta encomenda.",
+  riderChatErrorNotFound: "Encomenda não encontrada.",
+  riderChatUnread: "{count} mensagens não lidas",
+  riderChatNewMessages: "{count} novas mensagens",
+  riderChatUnreadOne: "1 mensagem não lida",
+  riderChatNewMessageOne: "1 nova mensagem",
 };
 
 export default pt;

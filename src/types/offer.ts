@@ -25,6 +25,8 @@ export interface FirstOrderAppliedFields {
   isFirstOrder?: boolean;
   firstOrderScope?: FirstOrderScope;
   firstOrderPolicy?: FirstOrderPolicy;
+  /** The store a VENDOR-scope welcome offer belongs to (seen on orders, 17 Nov 2026). */
+  firstOrderVendorId?: string | null;
   /** `"VENDOR"` on store offers; the platform pays on GLOBAL ones. */
   fundedBy?: "VENDOR" | "PLATFORM" | string;
 }

@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { cardVariants } from "@/components/ui/card";
+import { useWelcomeOfferUsage } from "@/hooks/queries/useOrders";
+import { isUsedWelcomeOffer } from "@/lib/firstOrderOffer";
+import type { OfferEligibility } from "@/types/offer";
 
 type Offer = {
   _id: string;
@@ -25,6 +28,10 @@ type Offer = {
   discountValue: number;
   isActive: boolean;
   isDeleted: boolean;
+  /** A store's own offer carries its store; a platform-wide one doesn't. */
+  vendorId?: string | { _id?: string } | null;
+  /** `type: "FIRST_ORDER"` on a welcome offer. */
+  eligibility?: OfferEligibility | null;
 };
 
 type OffersResponse = {
@@ -44,6 +51,9 @@ export default function VouchersPageContent() {
   const [activeTab, setActiveTab] = useState<"available" | "expired">(
     "available",
   );
+  // `/offers` lists a welcome offer as open to everyone, including a customer
+  // who has already used it; that one is left out of both tabs.
+  const { usage, ready: usageReady } = useWelcomeOfferUsage();
 
   useEffect(() => {
     const isLangChange = prevLangVersionRef.current !== langVersion;
@@ -73,15 +83,20 @@ export default function VouchersPageContent() {
 
   const availableOffers = useMemo(() => {
     return offers.filter(
-      (offer) => offer.isActive === true && offer.isDeleted === false,
+      (offer) =>
+        offer.isActive === true &&
+        offer.isDeleted === false &&
+        !isUsedWelcomeOffer(offer, usage),
     );
-  }, [offers]);
+  }, [offers, usage]);
 
   const expiredOffers = useMemo(() => {
     return offers.filter(
-      (offer) => offer.isActive === false || offer.isDeleted === true,
+      (offer) =>
+        (offer.isActive === false || offer.isDeleted === true) &&
+        !isUsedWelcomeOffer(offer, usage),
     );
-  }, [offers]);
+  }, [offers, usage]);
 
   const displayedOffers =
     activeTab === "available" ? availableOffers : expiredOffers;
@@ -121,7 +136,7 @@ export default function VouchersPageContent() {
     }
   };
 
-  if (loading) {
+  if (loading || !usageReady) {
     return <VouchersSkeleton />;
   }
 

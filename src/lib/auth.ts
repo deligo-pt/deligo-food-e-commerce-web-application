@@ -25,12 +25,17 @@ export type LoginResponse = {
   data: null;
 };
 
+/**
+ * A sign-in that worked. Only the access token: since the security update of
+ * 17 Nov 2026 a web client gets its refresh token solely as an httpOnly cookie
+ * on the API's own `/api/v1/auth` path, which this app can neither read nor
+ * use — and never did use (it has no refresh flow).
+ */
 export type VerifyOtpResponse = {
   success: boolean;
   message: string;
   data: {
     accessToken: string;
-    refreshToken: string;
   };
 };
 
@@ -43,7 +48,8 @@ type ApiErrorResponse = {
   // to branch on, so callers should key off the key instead. Production sends
   // it only at the top level (no `err`), so read it with `errorKeyOf`.
   errorKey?: string;
-  err?: { statusCode?: number; errorKey?: string };
+  err?: { statusCode?: number; errorKey?: string; variables?: Record<string, unknown> };
+  data?: unknown;
 };
 
 // Error thrown by the auth requests that preserves the backend's machine
@@ -53,15 +59,40 @@ type ApiErrorResponse = {
 export class AuthError extends Error {
   errorKey?: string;
   statusCode?: number;
+  /** Seconds from the response's `Retry-After` header — sent with a `429`. */
+  retryAfterSeconds?: number;
+  /** The error body's `data` and `err.variables`, for answers that carry details. */
+  details?: Record<string, unknown>;
   constructor(
     message: string,
-    options?: { errorKey?: string; statusCode?: number },
+    options?: {
+      errorKey?: string;
+      statusCode?: number;
+      retryAfterSeconds?: number;
+      details?: Record<string, unknown>;
+    },
   ) {
     super(message);
     this.name = "AuthError";
     this.errorKey = options?.errorKey;
     this.statusCode = options?.statusCode;
+    this.retryAfterSeconds = options?.retryAfterSeconds;
+    this.details = options?.details;
   }
+}
+
+/** A positive number of seconds from a `Retry-After` header, or `undefined`. */
+function retryAfterOf(value: unknown): number | undefined {
+  const seconds = Number(value);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
+}
+
+/** `data` and `err.variables` of an error body, flattened (data wins). */
+function detailsOf(payload: ApiErrorResponse | undefined): Record<string, unknown> | undefined {
+  const fromData =
+    payload?.data && typeof payload.data === "object" ? (payload.data as Record<string, unknown>) : {};
+  const merged = { ...(payload?.err?.variables ?? {}), ...fromData };
+  return Object.keys(merged).length ? merged : undefined;
 }
 
 const deviceStorageKey = "deligo-device-id";
@@ -153,6 +184,12 @@ async function requestJson<T>(url: string, body: unknown): Promise<T> {
       statusCode:
         data?.err?.statusCode ??
         (axios.isAxiosError(error) ? error.response?.status : undefined),
+      // The 429s say how long to wait: the per-IP limiter sends
+      // `Retry-After: 30` with RATE_LIMIT_EXCEEDED (measured 17 Nov 2026).
+      retryAfterSeconds: axios.isAxiosError(error)
+        ? retryAfterOf(error.response?.headers?.["retry-after"])
+        : undefined,
+      details: detailsOf(data),
     });
   }
 }
@@ -167,6 +204,22 @@ async function requestJson<T>(url: string, body: unknown): Promise<T> {
  */
 export async function sendLoginOtp(payload: LoginIdentifier): Promise<LoginResponse> {
   return requestJson<LoginResponse>("/auth/login-customer", payload);
+}
+
+/**
+ * Sends a fresh code to an address that already asked for one.
+ *
+ * `POST /auth/resend-otp`, with the address and `role` (the Postman shape).
+ * The backend always issues a new code and always answers a generic `200`,
+ * whether or not the address has an account — so success here only means
+ * "if the address is valid, a code is on its way". The referral code is not
+ * sent: it was applied with the first request.
+ */
+export async function resendLoginOtp(identifier: LoginIdentifier): Promise<LoginResponse> {
+  const address = identifier.email
+    ? { email: identifier.email }
+    : { contactNumber: identifier.contactNumber };
+  return requestJson<LoginResponse>("/auth/resend-otp", { ...address, role: "CUSTOMER" });
 }
 /**
  * Exchanges a provider token for a DeliGo session.
@@ -187,6 +240,26 @@ export async function socialLogin(payload: {
   forceLogin?: boolean;
 }): Promise<VerifyOtpResponse> {
   return withSessionTokens(await requestJson<unknown>("/auth/social-login", payload));
+}
+
+/**
+ * The answer when a Google/Facebook email already belongs to an account. The
+ * backend no longer links the two by itself: it emails that account a code
+ * and waits for `linkSocialAccount` with it.
+ */
+export const SOCIAL_LINK_VERIFICATION_REQUIRED = "SOCIAL_LINK_VERIFICATION_REQUIRED";
+
+/**
+ * Finishes a social sign-in that needed linking: the same provider token,
+ * plus the code emailed to the existing account. Answers like `/social-login`.
+ */
+export async function linkSocialAccount(payload: {
+  provider: SocialProvider;
+  token: string;
+  otp: string;
+  deviceDetails: DeviceDetails;
+}): Promise<VerifyOtpResponse> {
+  return withSessionTokens(await requestJson<unknown>("/auth/social-login/link", payload));
 }
 
 /** The `errorKey` for a success response that carries no session tokens. */
@@ -217,10 +290,7 @@ export function withSessionTokens(payload: unknown): VerifyOtpResponse {
       return {
         success: true,
         message: typeof body.message === "string" ? body.message : "",
-        data: {
-          accessToken: t.accessToken,
-          refreshToken: isNonEmptyString(t.refreshToken) ? t.refreshToken : "",
-        },
+        data: { accessToken: t.accessToken },
       };
     }
   }

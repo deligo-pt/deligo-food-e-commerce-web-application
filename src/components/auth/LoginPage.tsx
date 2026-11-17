@@ -144,6 +144,8 @@ export default function LoginPage({
     successMessageKey,
     invalidField,
     resendRemainingMs,
+    verifyLocked,
+    socialLink,
     showEmailHint,
     canSendOtp,
     markEmailTouched,
@@ -169,6 +171,9 @@ export default function LoginPage({
     backToCredentials,
     clearSessionAndRetry,
   } = useLoginFlow(initialReferralCode);
+  // Linking Google/Facebook to an existing account: the code step, reworded.
+  const linkProvider = socialLink ? (socialLink.provider === "GOOGLE" ? "Google" : "Facebook") : "";
+  const withProvider = (key: string) => t(key).replace("{provider}", linkProvider);
 
   // The language sheet closes on Escape, as on its ✕ and its backdrop.
   useEscapeToClose(showLanguageModal, () => setShowLanguageModal(false));
@@ -218,14 +223,16 @@ export default function LoginPage({
           <div className="flex w-full flex-col">
             <div>
               <h2 className="text-2xl font-extrabold leading-tight tracking-[-0.03em] text-foreground dark:text-neutral-50 lg:text-display">
-                {t("welcomeBack")}
+                {socialLink ? withProvider("socialLinkTitle") : t("welcomeBack")}
               </h2>
               <p className="mt-4 text-base leading-7 text-muted-foreground dark:text-neutral-400">
-                {t("loginOrCreateAccount")}
+                {socialLink ? t("socialLinkSubtitle") : t("loginOrCreateAccount")}
               </p>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-6 border-b border-border sm:mt-8">
+            {/* No Mobile/Email tabs while linking: the code went to the
+                account's email, whichever tab was open. */}
+            <div className={`mt-8 grid grid-cols-2 gap-6 border-b border-border sm:mt-8 ${socialLink ? "hidden" : ""}`}>
               <button
                 type="button"
                 onClick={() => changeMode("mobile")}
@@ -276,7 +283,19 @@ export default function LoginPage({
                 {/* "spam folder" in bold: it is the step people miss. t() returns
                     plain text, so the phrase is split out here; a line without
                     it renders unchanged. */}
-                {(() => {
+                {socialLink ? (
+                  socialLink.email ? (
+                    <>
+                      {withProvider("socialLinkHint").split("{email}")[0]}
+                      <strong className="font-semibold text-foreground dark:text-neutral-200">
+                        {socialLink.email}
+                      </strong>
+                      {withProvider("socialLinkHint").split("{email}")[1]}
+                    </>
+                  ) : (
+                    withProvider("socialLinkHintNoEmail")
+                  )
+                ) : (() => {
                   const phrase = t("loginHintSpamFolder");
                   const at = loginHint.indexOf(phrase);
                   if (at === -1) return loginHint;
@@ -392,12 +411,14 @@ export default function LoginPage({
                         an SMS one): autofill, paste and
                         backspace behave exactly as they did in the plain
                         field this replaced. See `OtpInput`. */}
+                    {/* Closed while sign-in is paused for too many wrong
+                        codes (`verifyLocked`). */}
                     <OtpInput
                       length={otpLengthFor(mode)}
                       value={otp}
                       onChange={setOtp}
                       label={t("enterOtp")}
-                      disabled={isVerifyingOtp}
+                      disabled={isVerifyingOtp || verifyLocked}
                       verified={otpVerified}
                     />
                   </div>
@@ -533,12 +554,12 @@ export default function LoginPage({
                     className="focus-ring mt-1 inline-flex h-14 items-center justify-center gap-2 rounded-4xl border border-[#e1e1e1] dark:border-neutral-800 bg-card text-base font-semibold text-foreground dark:text-neutral-300 transition-colors hover:bg-[#fafafa] dark:hover:bg-neutral-800"
                   >
                     <ArrowLeft size={18} />
-                    {t("changeDetails")}
+                    {socialLink ? t("cancel") : t("changeDetails")}
                   </button>
                   <button
                     type="button"
                     onClick={() => verifyOtp()}
-                    disabled={isVerifyingOtp}
+                    disabled={isVerifyingOtp || verifyLocked}
                     className="focus-ring mt-1 inline-flex h-14 items-center justify-center rounded-4xl bg-linear-to-r from-[#d9357b] to-[#ff65b4] text-xl font-bold text-white shadow-[0_12px_28px_rgba(217,53,123,0.32)] transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {isVerifyingOtp ? (
@@ -546,6 +567,8 @@ export default function LoginPage({
                         <LoaderCircle size={18} className="animate-spin" />
                         {t("verifyingOtp")}
                       </span>
+                    ) : socialLink ? (
+                      withProvider("socialLinkVerify")
                     ) : (
                       t("verifyOtp")
                     )}
@@ -589,12 +612,20 @@ export default function LoginPage({
                       single key and has no placeholder support. Phone sends
                       name SMS so the user knows where to look; email has no
                       channel. */}
-                  <p className="text-sm text-muted-foreground dark:text-neutral-400">
-                    {loginIdentifier?.contactNumber
-                      ? t("otpSentViaSms")
-                      : t("otpSentTo")}{" "}
-                    {loginIdentifier?.email ?? loginIdentifier?.contactNumber}
-                  </p>
+                  {socialLink ? (
+                    socialLink.email ? (
+                      <p className="text-sm text-muted-foreground dark:text-neutral-400">
+                        {t("otpSentTo")} {socialLink.email}
+                      </p>
+                    ) : null
+                  ) : (
+                    <p className="text-sm text-muted-foreground dark:text-neutral-400">
+                      {loginIdentifier?.contactNumber
+                        ? t("otpSentViaSms")
+                        : t("otpSentTo")}{" "}
+                      {loginIdentifier?.email ?? loginIdentifier?.contactNumber}
+                    </p>
+                  )}
                 </div>
               ) : null}
 
