@@ -567,6 +567,7 @@ const pt = {
 
   addToCart: "Adicionar ao Carrinho",
   productInCartCount: "{count} no seu carrinho",
+  productHasAddons: "Com extras",
   editProfile: "Editar Perfil",
   vouchers: "Vouchers",
   rewardPoints: "Pontos de Recompensa",

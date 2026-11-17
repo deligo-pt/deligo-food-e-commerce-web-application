@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bike, Moon, PauseCircle, Plus, Star, UtensilsCrossed } from "lucide-react";
+import { Bike, Moon, PauseCircle, Plus, SlidersHorizontal, Star, UtensilsCrossed } from "lucide-react";
 import StoreStatusBanner from "@/components/vendors/StoreStatusBanner";
 import { useVendorOrdering } from "@/hooks/useSlotChoice";
 import { useQueryClient } from "@tanstack/react-query";
@@ -240,6 +240,11 @@ function isOneTapAddable(product: Product): boolean {
   return !product.variations?.length && !product.addonGroups?.length;
 }
 
+/** Whether the dish has add-on groups — what the card's "Add-ons" mark shows. */
+function hasAddons(product: Product): boolean {
+  return (product.addonGroups?.length ?? 0) > 0;
+}
+
 
 // Pure + module-scoped so it has a stable identity (safe as a memo dep).
 // Decimal point and the symbol after it, matching the cart, checkout,
@@ -347,6 +352,18 @@ const MenuProductCard = memo(function MenuProductCard({
             dish's own deep link — the store with this dish already open —
             and stays available while the store is closed: showing someone a
             dish is not ordering it. */}
+        {/* A dish with add-ons says so before it is opened (17 Nov 2026):
+            its `+` opens the options rather than adding straight away. On
+            the photo's free corner — the discount badge is top-left, share
+            top-right, and on phones the `+` sits bottom-right — so the card
+            keeps exactly the size of every other card. Add-ons only, by
+            request; a dish with just sizes gets no mark. */}
+        {hasAddons(product) && (
+          <span className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-xs font-semibold text-primary shadow-sm dark:bg-neutral-900/90 dark:text-pink-300">
+            <SlidersHorizontal size={12} strokeWidth={2.5} aria-hidden="true" />
+            {t("productHasAddons")}
+          </span>
+        )}
         <ShareButton
           className="absolute right-2 top-2"
           label={`${t("share")} ${product.name}`}

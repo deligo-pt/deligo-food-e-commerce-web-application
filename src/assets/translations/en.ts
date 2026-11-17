@@ -563,6 +563,7 @@ const en = {
 
   addToCart: "Add To Cart",
   productInCartCount: "{count} in your cart",
+  productHasAddons: "Add-ons",
   editProfile: "Edit Profile",
   vouchers: "Vouchers",
   rewardPoints: "Reward Points",
