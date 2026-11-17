@@ -3,6 +3,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import FCMProvider from "@/components/shared/FCMProvider";
 import QueryProvider from "@/providers/QueryProvider";
+import SocketProvider from "@/providers/SocketProvider";
 import WebVitals from "@/components/shared/WebVitals";
 import AppReadyMarker from "@/components/shared/AppReadyMarker";
 import { Geist } from "next/font/google";
@@ -82,7 +83,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[#f8f9fa] dark:bg-neutral-950 font-sans text-foreground dark:text-neutral-100 transition-colors duration-200">
         <QueryProvider>
-          {children}
+          <SocketProvider>{children}</SocketProvider>
           <Toaster position="top-center" richColors />
           <FCMProvider />
           <WebVitals />

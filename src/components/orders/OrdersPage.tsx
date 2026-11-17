@@ -14,6 +14,7 @@ import { hasUnratedParts } from "@/lib/ratingStatus";
 import { UtensilsCrossed } from "lucide-react";
 import { canCancelOrder, getRefundState } from "@/lib/refund";
 import { isPickupOrder } from "@/lib/orderTimeline";
+import { isChatActiveStatus } from "@/lib/orderChat";
 import { useOrderRatingStore } from "@/stores/orderRatingStore";
 import { getVendorDisplayName } from "@/lib/vendorName";
 import { formatOrderPrice } from "@/lib/currency";
@@ -355,6 +356,13 @@ export default function OrdersPage() {
                     dbId={order._id}
                     isPickup={isPickup}
                     scheduledLabel={scheduledLabel}
+                    // Rider chat (Phase 5): only a delivery order with a rider
+                    // in a live status can have messages waiting.
+                    riderChatOrderId={
+                      !isPickup && order.deliveryPartnerId && isChatActiveStatus(order.orderStatus)
+                        ? order._id
+                        : undefined
+                    }
                     image={order.items?.[0]?.image}
                     imageProductId={order.items?.[0]?.productId}
                     restaurant={

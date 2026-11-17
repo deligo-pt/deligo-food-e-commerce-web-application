@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
 import type { BranchNameSource } from "@/lib/vendorName";
 import { vendorRouteId, type VendorIdentifiers } from "@/lib/vendorId";
+import RiderChatUnreadPill from "./RiderChat/RiderChatUnreadPill";
 
 /**
  * How each refund state is chipped. `not_eligible` is amber and neutral on
@@ -125,6 +126,11 @@ interface OrderCardProps {
    * Shown while the order is ongoing: the slot is the promise (guide §5).
    */
   scheduledLabel?: string;
+  /**
+   * The order's `_id` when it is a delivery order with a rider on it — the
+   * only orders that can have a rider chat. Shows the unread-messages pill.
+   */
+  riderChatOrderId?: string;
 }
 
 export default function OrderCard({
@@ -148,6 +154,7 @@ export default function OrderCard({
   onCancelOrder,
   isPickup = false,
   scheduledLabel,
+  riderChatOrderId,
 }: OrderCardProps) {
   const { t } = useTranslation();
   const storeTitle = useVendorCardTitle(vendor);
@@ -231,6 +238,9 @@ export default function OrderCard({
                   <Store size={11} />
                   {t("selfPickup")}
                 </span>
+              )}
+              {riderChatOrderId && !isFinishedCardStatus(status) && (
+                <RiderChatUnreadPill orderId={riderChatOrderId} />
               )}
               {scheduledLabel && !isFinishedCardStatus(status) && (
                 <span className="flex items-center gap-1 rounded-full bg-primary/5 px-2 py-0.5 font-semibold text-primary dark:bg-pink-950/30 dark:text-pink-400">

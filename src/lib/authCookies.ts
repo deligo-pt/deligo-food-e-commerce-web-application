@@ -3,6 +3,19 @@ import Cookies from "js-cookie";
 export const ACCESS_TOKEN_COOKIE = "deligo-access-token";
 export const REFRESH_TOKEN_COOKIE = "deligo-refresh-token";
 
+/**
+ * Fired on `window` whenever the session cookies are written or removed here,
+ * so long-lived connections (the rider-chat socket, `SocketProvider`) follow a
+ * sign-in or sign-out at once instead of on the next navigation.
+ */
+export const AUTH_CHANGED_EVENT = "deligo:auth-changed";
+
+function announceAuthChange() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+  }
+}
+
 function decodeJwtExpiry(token: string | null | undefined) {
   // Never assume a token arrived: `undefined.split` is what broke sign-in on
   // 14 Nov 2026. No token, no expiry.
@@ -44,6 +57,7 @@ export function storeAuthTokens(accessToken: string, refreshToken: string) {
     ...cookieOptions,
     expires: decodeJwtExpiry(refreshToken) ? new Date(decodeJwtExpiry(refreshToken)! * 1000) : undefined,
   });
+  announceAuthChange();
 }
 
 export function getAccessToken() {
@@ -56,4 +70,5 @@ export function getAccessToken() {
 export function clearAuthTokens() {
   Cookies.remove(ACCESS_TOKEN_COOKIE, { path: "/" });
   Cookies.remove(REFRESH_TOKEN_COOKIE, { path: "/" });
+  announceAuthChange();
 }
