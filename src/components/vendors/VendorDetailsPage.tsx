@@ -354,12 +354,14 @@ const MenuProductCard = memo(function MenuProductCard({
             dish is not ordering it. */}
         {/* A dish with add-ons says so before it is opened (17 Nov 2026):
             its `+` opens the options rather than adding straight away. On
-            the photo's free corner — the discount badge is top-left, share
-            top-right, and on phones the `+` sits bottom-right — so the card
-            keeps exactly the size of every other card. Add-ons only, by
-            request; a dish with just sizes gets no mark. */}
+            the photo, so the card keeps exactly the size of every other
+            card; on the right, by request (18 Nov 2026). From `md` that is
+            the bottom-right corner. On phones the `+` (or the count pill)
+            already sits in that corner, so the mark stands just above it,
+            still right-aligned. Add-ons only, by request; a dish with just
+            sizes gets no mark. */}
         {hasAddons(product) && (
-          <span className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-xs font-semibold text-primary shadow-sm dark:bg-neutral-900/90 dark:text-pink-300">
+          <span className="pointer-events-none absolute bottom-14 right-2 md:bottom-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-xs font-semibold text-primary shadow-sm dark:bg-neutral-900/90 dark:text-pink-300">
             <SlidersHorizontal size={12} strokeWidth={2.5} aria-hidden="true" />
             {t("productHasAddons")}
           </span>
