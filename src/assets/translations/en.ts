@@ -562,6 +562,7 @@ const en = {
     "Freshly prepared with premium ingredients.",
 
   addToCart: "Add To Cart",
+  productInCartCount: "{count} in your cart",
   editProfile: "Edit Profile",
   vouchers: "Vouchers",
   rewardPoints: "Reward Points",
@@ -1235,6 +1236,16 @@ const en = {
   // Replaces the generic `otpSentTo` caption on phone sends, which name their
   // channel; email sends have none.
   otpSentViaSms: "Code sent by SMS to",
+  otpErrorDeliveryFailed: "We couldn't send the code. Please check the number or email and try again in a moment.",
+  otpErrorAttemptsExceeded: "Too many wrong codes. For your security, sign-in is paused for 15 minutes. You can try again at {time}.",
+  otpErrorAttemptsExceededShort: "Too many wrong codes. Please wait 15 minutes and try again.",
+  loginErrorPhoneCountry: "Only Portuguese (+351) mobile numbers can be used.",
+  socialLinkTitle: "Link your {provider} account",
+  socialLinkSubtitle: "This email already has a DeliGo account",
+  socialLinkHint: "We sent a 6-digit code to {email}. Enter it to link {provider} to your existing account.",
+  socialLinkHintNoEmail: "We sent a 6-digit code to the email on your DeliGo account. Enter it to link {provider} to that account.",
+  socialLinkVerify: "Verify & link {provider}",
+  socialLinkCodeSent: "Code sent. Check your email, including the spam folder.",
 
   // Login form errors we word ourselves (17 Oct 2026). The server's own text
   // for a bad number was a generic "Validation failed. Please check the

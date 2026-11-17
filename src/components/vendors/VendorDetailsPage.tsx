@@ -430,6 +430,37 @@ const MenuProductCard = memo(function MenuProductCard({
                 vendorKind={vendorKind}
                 onCartChanged={onCartChanged}
               />
+            ) : cartQuantity > 0 ? (
+              /* A dish with options that is already in the cart: the same
+                 pill as the stepper, so every card in the cart reads alike —
+                 its total (every line added up) beside a `+` that opens the
+                 modal. No minus: the dish can be several lines (with cheese,
+                 plain…) and a minus here couldn't know which one to take
+                 off; that is the cart's job. */
+              <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-card p-1">
+                <span className="min-w-5 px-1 text-center text-sm font-bold tabular-nums text-gray-900 dark:text-white">
+                  <span aria-hidden="true">{cartQuantity > 99 ? "99+" : cartQuantity}</span>
+                  <span className="sr-only">
+                    {t("productInCartCount").replace("{count}", String(cartQuantity))}
+                  </span>
+                </span>
+                <Button
+                  size="icon"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelect(product.productId);
+                  }}
+                  disabled={storeClosed}
+                  aria-label={
+                    storeClosed
+                      ? t(vendorCopyKey(storePaused ? "storePausedTitle" : "storeClosedTitle", vendorKind))
+                      : t("addToCart")
+                  }
+                  className="size-8 rounded-lg"
+                >
+                  <Plus size={14} />
+                </Button>
+              </div>
             ) : (
               <Button
                 size="icon"

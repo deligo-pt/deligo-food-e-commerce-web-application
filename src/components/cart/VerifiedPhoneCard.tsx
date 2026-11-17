@@ -3,7 +3,7 @@
 import { forwardRef, useState } from "react";
 import { KeyRound, Smartphone } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient, getApiErrorMessage } from "@/lib/apiClient";
+import { apiClient } from "@/lib/apiClient";
 import { getAccessToken } from "@/lib/authCookies";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useInvalidateProfile, useProfile } from "@/hooks/queries/useProfile";
@@ -18,6 +18,7 @@ import PhoneNumberField from "@/components/shared/PhoneNumberField";
 import OtpInput from "@/components/auth/OtpInput";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { otpErrorToast } from "@/lib/otpErrorToast";
 
 /**
  * Whether this customer may order: a number on the profile, verified
@@ -82,7 +83,7 @@ const VerifiedPhoneCard = forwardRef<HTMLElement, { className?: string }>(
         setOtp("");
         toast.success(t("phoneCodeSent"));
       } catch (err) {
-        toast.error(getApiErrorMessage(err, "Failed to send OTP"));
+        toast.error(otpErrorToast(err, t, "Failed to send OTP"));
       } finally {
         setSending(false);
       }
@@ -110,7 +111,7 @@ const VerifiedPhoneCard = forwardRef<HTMLElement, { className?: string }>(
         await invalidateProfile();
         setVerified(false);
       } catch (err) {
-        toast.error(getApiErrorMessage(err, "Failed to verify OTP"));
+        toast.error(otpErrorToast(err, t, "Failed to verify OTP"));
       } finally {
         setVerifying(false);
       }

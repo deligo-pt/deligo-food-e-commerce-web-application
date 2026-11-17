@@ -14,6 +14,13 @@ import { getOrderBucket } from "@/lib/orderStatus";
 import { useCartCache } from "@/hooks/queries/useCart";
 import { activateReorderedOrder } from "@/lib/cartActivation";
 import type { CartItem } from "@/types/cart";
+import {
+  NO_WELCOME_OFFER_USAGE,
+  WELCOME_OFFER_USAGE_FIELDS,
+  welcomeOfferUsage,
+  type WelcomeOfferUsage,
+  type WelcomeOfferUsageOrder,
+} from "@/lib/firstOrderOffer";
 
 /**
  * Where the fetch below starts, and where it gives up.
@@ -203,6 +210,9 @@ export const orderKeys = {
   // Under `all`, so every `useInvalidateOrders` (a rating submitted, an order
   // cancelled) refreshes the pop-up's view as well.
   ratingPrompt: (lang: string) => ["orders", "rating-prompt", lang] as const,
+  // Under `all` too: a new order (or a cancelled one) changes which welcome
+  // offers the customer still has.
+  welcomeOfferUsage: ["orders", "welcome-offer-usage"] as const,
 };
 
 /**
@@ -380,6 +390,38 @@ export function useOrderStatusIndex(options?: { enabled?: boolean }) {
     // tolerates being a minute stale in a way the orders page itself does not.
     staleTime: 60_000,
   });
+}
+
+/**
+ * Which welcome offers the signed-in customer has already used — see
+ * `welcomeOfferUsage`. One small projected read of the whole history (about
+ * 1 KB per order), shared by every store card, the Vouchers page, the Profile
+ * count and the checkout's offer list.
+ *
+ * `ready` is false until the first answer, so a caller can hold back a welcome
+ * offer rather than flash it and then take it away. A failed read counts as
+ * ready with no usage: the offers show as they did before this existed, and
+ * the cart and checkout still refuse a used one.
+ */
+export function useWelcomeOfferUsage(options?: { enabled?: boolean }): {
+  usage: WelcomeOfferUsage;
+  ready: boolean;
+} {
+  const enabled = options?.enabled ?? true;
+  const query = useQuery({
+    queryKey: orderKeys.welcomeOfferUsage,
+    queryFn: async ({ signal }) =>
+      welcomeOfferUsage(
+        await fetchAllOrders<WelcomeOfferUsageOrder>({ fields: WELCOME_OFFER_USAGE_FIELDS }, signal),
+      ),
+    enabled,
+    staleTime: 60_000,
+    retry: false,
+  });
+  return {
+    usage: query.data ?? NO_WELCOME_OFFER_USAGE,
+    ready: !enabled || query.isSuccess || query.isError,
+  };
 }
 
 /**

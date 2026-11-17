@@ -32,7 +32,7 @@ import {
   Gift,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiClient, getApiErrorKey, getApiErrorMessage } from "@/lib/apiClient";
 import { isVendorObjectId, vendorHref, vendorRouteId } from "@/lib/vendorId";
 import { useVendorCardTitle } from "@/hooks/useVendorCardTitle";
@@ -95,7 +95,8 @@ import { useCart } from "@/hooks/queries/useCart";
 import VerifiedPhoneCard, { useVerifiedPhone } from "@/components/cart/VerifiedPhoneCard";
 import { isPhoneRequiredErrorKey } from "@/lib/verifiedPhone";
 import { useInvalidateProfile } from "@/hooks/queries/useProfile";
-import { isFirstOrderApplied, isFirstOrderOffer } from "@/lib/firstOrderOffer";
+import { isFirstOrderApplied, isFirstOrderOffer, isUsedWelcomeOffer } from "@/lib/firstOrderOffer";
+import { useWelcomeOfferUsage } from "@/hooks/queries/useOrders";
 
 interface CheckoutItem {
   productId: string;
@@ -454,6 +455,8 @@ interface AvailableOffer {
   message: LocalizedField;
   /** `type: "FIRST_ORDER"` on a welcome offer — see `isFirstOrderOffer`. */
   eligibility?: OfferEligibility | null;
+  /** The store a store's own offer belongs to; absent on a platform offer. */
+  vendorId?: string | { _id?: string } | null;
 }
 
 /**
@@ -563,7 +566,15 @@ export default function PaymentPage() {
   const [isReleasingPayment, setIsReleasingPayment] = useState(false);
 
   const [showOfferModal, setShowOfferModal] = useState(false);
-  const [availableOffers, setAvailableOffers] = useState<AvailableOffer[]>([]);
+  const [offerList, setOfferList] = useState<AvailableOffer[]>([]);
+  // The list greys out a welcome offer the customer has already used, with a
+  // "not eligible" note. Used is final, so it isn't listed at all; a welcome
+  // offer that only wants a verified phone still is.
+  const { usage: welcomeOfferUsage } = useWelcomeOfferUsage();
+  const availableOffers = useMemo(
+    () => offerList.filter((offer) => !isUsedWelcomeOffer(offer, welcomeOfferUsage)),
+    [offerList, welcomeOfferUsage],
+  );
   const [offersLoading, setOffersLoading] = useState(false);
   const [offersError, setOffersError] = useState("");
   const [manualCode, setManualCode] = useState("");
@@ -765,7 +776,7 @@ export default function PaymentPage() {
       // non-array payload has to be rejected here, not there.
       const payload = res.data?.data;
       const offers: AvailableOffer[] = Array.isArray(payload) ? payload : [];
-      setAvailableOffers(offers);
+      setOfferList(offers);
       void loadRewardNames(offers);
     } catch (err) {
       setOffersError(getApiErrorMessage(err, "Failed to load offers"));

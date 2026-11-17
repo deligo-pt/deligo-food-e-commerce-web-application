@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   AuthError,
   NO_SESSION_TOKENS,
+  SOCIAL_LINK_VERIFICATION_REQUIRED,
   buildDeviceDetails,
+  linkSocialAccount,
+  resendLoginOtp,
   sendLoginOtp,
   socialLogin,
   type LoginIdentifier,
@@ -17,10 +20,17 @@ import { storeAuthTokens } from "../lib/authCookies";
 import { COUNTRY_OPTIONS } from "../data/countryCodes";
 import { requestFCMToken } from "../lib/fcmToken";
 import {
+  OTP_LOCKOUT_MS,
   OTP_RESEND_COOLDOWN_MS,
   VERIFIED_HOLD_MS,
   VERIFIED_HOLD_REDUCED_MS,
+  formatClockTime,
 } from "@/lib/otp";
+import {
+  CONTACT_NUMBER_COUNTRY_NOT_SUPPORTED,
+  OTP_ATTEMPTS_EXCEEDED,
+  OTP_DELIVERY_FAILED,
+} from "@/lib/otpErrors";
 import { apiClient } from "@/lib/apiClient";
 import { updateLiveLocation } from "@/services/addressApi";
 import { useLocationStore } from "@/stores/locationStore";
@@ -70,6 +80,50 @@ function writeResendLock(identifier: LoginIdentifier, readyAt: number) {
     window.localStorage.setItem(resendLockKey(identifier), String(readyAt));
   } catch {}
 }
+/**
+ * When sign-in with an address unlocks after too many wrong codes (`429
+ * OTP_ATTEMPTS_EXCEEDED`). Kept like the resend lock, so a reload or "Change
+ * details" does not hand back code boxes the server will refuse anyway.
+ */
+function verifyLockKey(identifier: LoginIdentifier) {
+  return `deligo-otp-locked:${identifier.contactNumber ?? identifier.email ?? ""}`;
+}
+
+function readVerifyLock(identifier: LoginIdentifier): number {
+  try {
+    return Number(window.localStorage.getItem(verifyLockKey(identifier))) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeVerifyLock(identifier: LoginIdentifier, until: number) {
+  try {
+    window.localStorage.setItem(verifyLockKey(identifier), String(until));
+  } catch {}
+}
+
+/**
+ * A Google/Facebook sign-in waiting for the code the backend emailed to the
+ * account that already has this email (`409 SOCIAL_LINK_VERIFICATION_REQUIRED`).
+ * The provider token is held so the code can be sent with it, and so a resend
+ * is the same sign-in asked again.
+ */
+export type SocialLink = {
+  provider: SocialProvider;
+  token: string;
+  /** The account's email, when the backend says it (often masked). */
+  email?: string;
+};
+
+/**
+ * What the resend and verify locks are stored under while linking: the
+ * account's address is not ours to know, so the provider stands in for it.
+ */
+function linkLockIdentifier(provider: SocialProvider): LoginIdentifier {
+  return { email: `social-link:${provider}` };
+}
+
 // Defined next to the request that carries it, in lib/auth.ts. Re-exported here
 // because the login UI imports its types from this hook.
 export type { SocialProvider };
@@ -124,6 +178,11 @@ export function useLoginFlow(initialReferralCode = "") {
   const [loginIdentifier, setLoginIdentifier] = useState<LoginIdentifier | null>(null);
   const [showDeviceLimitModal, setShowDeviceLimitModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  // Too many wrong codes: when the code boxes open again (0 = not locked).
+  const [verifyLockedUntil, setVerifyLockedUntil] = useState(0);
+  const verifyLocked = verifyLockedUntil > 0;
+  // A social sign-in waiting for its linking code; null on every other path.
+  const [socialLink, setSocialLink] = useState<SocialLink | null>(null);
 
   // Which provider is mid-exchange, so only that button shows a spinner.
   const [socialProviderInFlight, setSocialProviderInFlight] =
@@ -156,14 +215,42 @@ export function useLoginFlow(initialReferralCode = "") {
     return () => window.clearInterval(timer);
   }, [resendReadyAt]);
 
+  // The lock lifts by itself when its time is up, message and all.
+  useEffect(() => {
+    if (!verifyLockedUntil) return;
+    const timer = window.setTimeout(() => {
+      setVerifyLockedUntil(0);
+      setErrorMessage("");
+    }, Math.max(0, verifyLockedUntil - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [verifyLockedUntil]);
+
+  /** Shows the "too many wrong codes" pause until `until`. */
+  function showVerifyLock(until: number) {
+    setOtp("");
+    setVerifyLockedUntil(until);
+    setErrorMessageKey("");
+    setErrorMessage(t("otpErrorAttemptsExceeded").replace("{time}", formatClockTime(until)));
+  }
+
+  /** On reaching the code step: is this address still paused? */
+  function restoreVerifyLock(identifier: LoginIdentifier) {
+    const until = readVerifyLock(identifier);
+    if (until > Date.now()) showVerifyLock(until);
+    else setVerifyLockedUntil(0);
+  }
+
   function showResendLock(readyAt: number) {
     setResendReadyAt(readyAt);
     setNow(Date.now());
   }
 
-  /** A code just went out: lock "Resend OTP" for this address. */
-  function startResendLock(identifier: LoginIdentifier) {
-    const readyAt = Date.now() + OTP_RESEND_COOLDOWN_MS;
+  /**
+   * A code just went out — or the server said to wait: lock "Resend OTP" for
+   * this address, for the server's own wait when it gave one.
+   */
+  function startResendLock(identifier: LoginIdentifier, waitMs: number = OTP_RESEND_COOLDOWN_MS) {
+    const readyAt = Date.now() + waitMs;
     writeResendLock(identifier, readyAt);
     showResendLock(readyAt);
   }
@@ -244,17 +331,49 @@ export function useLoginFlow(initialReferralCode = "") {
     if (invalidField === "email") clearMessages();
   }
 
-  /** Reports an OTP request failure, keeping the backend's localized text. */
-  function reportOtpError(error: unknown) {
+  /**
+   * Reports an OTP request failure. Ours for the codes we word ourselves
+   * (`lib/otpErrors`), the backend's localized text for the rest. A `429`
+   * with a `Retry-After` (cooldown, daily cap, the per-IP limiter) also holds
+   * "Resend" shut for exactly that long.
+   */
+  function reportOtpError(error: unknown, identifier?: LoginIdentifier | null) {
+    const errorKey = error instanceof AuthError ? error.errorKey : undefined;
     // Our own check should catch a bad number first; this covers any number
     // the server's stricter rule still refuses. Keyed on the code, not text.
-    if (error instanceof AuthError && error.errorKey === "VALIDATION_CONTACT_NUMBER_INVALID") {
+    if (errorKey === "VALIDATION_CONTACT_NUMBER_INVALID") {
       flagField("phone", "loginErrorPhoneInvalid");
       return;
+    }
+    if (errorKey === CONTACT_NUMBER_COUNTRY_NOT_SUPPORTED) {
+      flagField("phone", "loginErrorPhoneCountry");
+      return;
+    }
+    if (errorKey === OTP_DELIVERY_FAILED) {
+      setErrorMessageKey("otpErrorDeliveryFailed");
+      return;
+    }
+    if (errorKey === OTP_ATTEMPTS_EXCEEDED && identifier) {
+      lockVerify(identifier, error);
+      return;
+    }
+    if (error instanceof AuthError && error.statusCode === 429 && error.retryAfterSeconds && identifier) {
+      startResendLock(identifier, error.retryAfterSeconds * 1000);
     }
     setErrorMessage(
       error instanceof Error ? error.message : "Unable to request OTP.",
     );
+  }
+
+  /** Too many wrong codes: pause this address for the server's time, or 15 minutes. */
+  function lockVerify(identifier: LoginIdentifier, error: unknown) {
+    const waitMs =
+      error instanceof AuthError && error.retryAfterSeconds
+        ? error.retryAfterSeconds * 1000
+        : OTP_LOCKOUT_MS;
+    const until = Date.now() + waitMs;
+    writeVerifyLock(identifier, until);
+    showVerifyLock(until);
   }
 
   async function sendOtp() {
@@ -277,6 +396,7 @@ export function useLoginFlow(initialReferralCode = "") {
       setOtp("");
       setSuccessMessageKey("otpAlreadySent");
       showResendLock(lockedUntil);
+      restoreVerifyLock(identifier);
       return;
     }
 
@@ -288,8 +408,9 @@ export function useLoginFlow(initialReferralCode = "") {
       setOtp("");
       setSuccessMessage(response.message);
       startResendLock(identifier);
+      restoreVerifyLock(identifier);
     } catch (error) {
-      reportOtpError(error);
+      reportOtpError(error, identifier);
     } finally {
       setIsSendingOtp(false);
     }
@@ -344,7 +465,7 @@ export function useLoginFlow(initialReferralCode = "") {
    * stops syncing addresses or stops refreshing the router.
    */
   async function completeLogin(response: VerifyOtpResponse) {
-    storeAuthTokens(response.data.accessToken, response.data.refreshToken);
+    storeAuthTokens(response.data.accessToken);
     await syncGuestAddress();
     router.replace("/");
     router.refresh();
@@ -387,7 +508,8 @@ export function useLoginFlow(initialReferralCode = "") {
     clearMessages();
     setShowDeviceLimitModal(false);
 
-    if (!loginIdentifier) {
+    if (verifyLocked) return;
+    if (!loginIdentifier && !socialLink) {
       setErrorMessageKey("loginErrorRequestOtpFirst");
       return;
     }
@@ -408,27 +530,40 @@ export function useLoginFlow(initialReferralCode = "") {
       const deviceDetails = { ...buildDeviceDetails(), fcmToken };
       console.log("[FCM] deviceDetails being sent:", deviceDetails);
 
-      // The address only — never the referral code. It was applied when the
-      // code was requested (`/login-customer`), and `/verify-otp`'s schema is
-      // strict: sending `referralCode` refused the whole request with
-      // "Unrecognized key(s) in object: 'referralCode'", so anyone who had
-      // typed a code — or opened a shared `/login?ref=` link — could not
-      // sign in (17 Oct 2026).
-      const address = loginIdentifier.email
-        ? { email: loginIdentifier.email }
-        : { contactNumber: loginIdentifier.contactNumber };
-      const response = await verifyLoginOtp({
-        ...address,
-        otp: trimmedOtp,
-        deviceDetails,
-        forceLogin,
-      });
+      let response: VerifyOtpResponse;
+      if (socialLink) {
+        // Linking Google/Facebook to the account that already has the email:
+        // the provider token again, with the code that account was emailed.
+        response = await linkSocialAccount({
+          provider: socialLink.provider,
+          token: socialLink.token,
+          otp: trimmedOtp,
+          deviceDetails,
+        });
+      } else {
+        // The address only — never the referral code. It was applied when the
+        // code was requested (`/login-customer`), and `/verify-otp`'s schema is
+        // strict: sending `referralCode` refused the whole request with
+        // "Unrecognized key(s) in object: 'referralCode'", so anyone who had
+        // typed a code — or opened a shared `/login?ref=` link — could not
+        // sign in (17 Oct 2026).
+        const identifier = loginIdentifier!;
+        const address = identifier.email
+          ? { email: identifier.email }
+          : { contactNumber: identifier.contactNumber };
+        response = await verifyLoginOtp({
+          ...address,
+          otp: trimmedOtp,
+          deviceDetails,
+          forceLogin,
+        });
+      }
 
       // The session is kept *before* the celebration, not after it: a customer
       // who closes the tab while the badge is drawing is still signed in.
       // `completeLogin` stores the same tokens again, which is harmless, and
       // stays byte-for-byte the path the social providers take.
-      storeAuthTokens(response.data.accessToken, response.data.refreshToken);
+      storeAuthTokens(response.data.accessToken);
       setOtpVerified(true);
       await holdForVerifiedMoment();
       await completeLogin(response);
@@ -437,9 +572,15 @@ export function useLoginFlow(initialReferralCode = "") {
       // the page would sit on the badge with no buttons. Back to the form.
       setOtpVerified(false);
       const message = error instanceof Error ? error.message : "Unable to verify OTP.";
-      if (isDeviceLimitError(error, message)) {
+      const errorKey = error instanceof AuthError ? error.errorKey : undefined;
+      if (errorKey === OTP_ATTEMPTS_EXCEEDED) {
+        // Five wrong codes: the boxes close for the server's time.
+        lockVerify(socialLink ? linkLockIdentifier(socialLink.provider) : loginIdentifier!, error);
+      } else if (isDeviceLimitError(error, message) && !socialLink) {
         setPendingAction("verify");
         setShowDeviceLimitModal(true);
+      } else if (errorKey === OTP_DELIVERY_FAILED) {
+        setErrorMessageKey("otpErrorDeliveryFailed");
       } else if (error instanceof AuthError && error.errorKey === NO_SESSION_TOKENS) {
         setErrorMessageKey("loginErrorNoSession");
       } else {
@@ -454,6 +595,7 @@ export function useLoginFlow(initialReferralCode = "") {
   async function resendOtp(): Promise<boolean> {
     // The button is disabled while locked; this guards a stale click.
     if (resendReadyAt > Date.now()) return false;
+    if (socialLink) return resendLinkCode();
     clearMessages();
     if (!loginIdentifier) {
       setErrorMessageKey("loginErrorRequestOtpFirst");
@@ -461,15 +603,50 @@ export function useLoginFlow(initialReferralCode = "") {
     }
     try {
       setIsResendingOtp(true);
-      const response = await sendLoginOtp(loginIdentifier);
+      // The resend endpoint: a fresh code every time, and a generic 200
+      // whatever the address — so the backend's own wording is shown.
+      const response = await resendLoginOtp(loginIdentifier);
       setSuccessMessage(response.message);
       // The old code died with this send. Left in the tiles it could only
       // fail on Verify. A failed resend keeps it: nothing replaced it.
       setOtp("");
       startResendLock(loginIdentifier);
+      restoreVerifyLock(loginIdentifier);
       return true;
     } catch (error) {
-      reportOtpError(error);
+      reportOtpError(error, loginIdentifier);
+      return false;
+    } finally {
+      setIsResendingOtp(false);
+    }
+  }
+
+  /**
+   * A new linking code: the same social sign-in asked again. The backend
+   * answers it with the same `409` and emails a fresh code — that `409` is
+   * the success here.
+   */
+  async function resendLinkCode(): Promise<boolean> {
+    if (!socialLink) return false;
+    clearMessages();
+    try {
+      setIsResendingOtp(true);
+      const response = await socialLogin({
+        provider: socialLink.provider,
+        token: socialLink.token,
+        deviceDetails: buildDeviceDetails(),
+      });
+      // Signed straight in after all (the link was made elsewhere meanwhile).
+      await completeLogin(response);
+      return true;
+    } catch (error) {
+      if (error instanceof AuthError && error.errorKey === SOCIAL_LINK_VERIFICATION_REQUIRED) {
+        setOtp("");
+        setSuccessMessageKey("socialLinkCodeSent");
+        startResendLock(linkLockIdentifier(socialLink.provider));
+        return true;
+      }
+      reportOtpError(error, linkLockIdentifier(socialLink.provider));
       return false;
     } finally {
       setIsResendingOtp(false);
@@ -547,7 +724,9 @@ export function useLoginFlow(initialReferralCode = "") {
       await completeLogin(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to sign in.";
-      if (isDeviceLimitError(error, message)) {
+      if (error instanceof AuthError && error.errorKey === SOCIAL_LINK_VERIFICATION_REQUIRED) {
+        startSocialLink(provider, token, error);
+      } else if (isDeviceLimitError(error, message)) {
         // Keep the token so the retry does not need a second trip through the
         // provider's consent screen.
         setPendingSocial({ provider, token });
@@ -559,6 +738,21 @@ export function useLoginFlow(initialReferralCode = "") {
     } finally {
       setSocialProviderInFlight(null);
     }
+  }
+
+  /**
+   * The provider's email already has a DeliGo account. The backend has emailed
+   * that account a code; this moves to the code step, in its linking form.
+   */
+  function startSocialLink(provider: SocialProvider, token: string, error: AuthError) {
+    const email = error.details?.email;
+    setSocialLink({ provider, token, email: typeof email === "string" && email ? email : undefined });
+    setLoginIdentifier(null);
+    setStep("otp");
+    setOtp("");
+    setSuccessMessageKey("socialLinkCodeSent");
+    startResendLock(linkLockIdentifier(provider));
+    restoreVerifyLock(linkLockIdentifier(provider));
   }
 
   /** Called by `GoogleSignInButton` once GIS hands back an ID token. */
@@ -622,6 +816,8 @@ export function useLoginFlow(initialReferralCode = "") {
     setStep("credentials");
     setOtp("");
     setLoginIdentifier(null);
+    setSocialLink(null);
+    setVerifyLockedUntil(0);
     clearMessages();
     setShowDeviceLimitModal(false);
     setPendingAction(null);
@@ -630,6 +826,10 @@ export function useLoginFlow(initialReferralCode = "") {
   function backToCredentials() {
     setStep("credentials");
     setOtp("");
+    // Leaving the linking step drops its provider token: "Cancel" means the
+    // customer chose not to link, and a later Google press starts over.
+    setSocialLink(null);
+    setVerifyLockedUntil(0);
     clearMessages();
   }
 
@@ -665,6 +865,8 @@ export function useLoginFlow(initialReferralCode = "") {
     successMessageKey,
     invalidField,
     resendRemainingMs,
+    verifyLocked,
+    socialLink,
     showEmailHint,
     canSendOtp,
     markEmailTouched: () => setEmailTouched(true),

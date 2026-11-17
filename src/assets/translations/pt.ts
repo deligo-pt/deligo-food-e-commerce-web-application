@@ -566,6 +566,7 @@ const pt = {
     "Preparado na hora com ingredientes premium.",
 
   addToCart: "Adicionar ao Carrinho",
+  productInCartCount: "{count} no seu carrinho",
   editProfile: "Editar Perfil",
   vouchers: "Vouchers",
   rewardPoints: "Pontos de Recompensa",
@@ -1233,6 +1234,16 @@ const pt = {
   // Substitui a legenda genérica `otpSentTo` nos envios por telemóvel, que
   // nomeiam o canal; os envios por email não têm canal.
   otpSentViaSms: "Código enviado por SMS para",
+  otpErrorDeliveryFailed: "Não foi possível enviar o código. Verifique o número ou o email e tente novamente daqui a pouco.",
+  otpErrorAttemptsExceeded: "Demasiados códigos errados. Por segurança, o início de sessão está suspenso durante 15 minutos. Pode tentar novamente às {time}.",
+  otpErrorAttemptsExceededShort: "Demasiados códigos errados. Aguarde 15 minutos e tente novamente.",
+  loginErrorPhoneCountry: "Só pode usar números de telemóvel portugueses (+351).",
+  socialLinkTitle: "Associe a sua conta {provider}",
+  socialLinkSubtitle: "Este email já tem uma conta DeliGo",
+  socialLinkHint: "Enviámos um código de 6 dígitos para {email}. Introduza-o para associar o {provider} à sua conta.",
+  socialLinkHintNoEmail: "Enviámos um código de 6 dígitos para o email da sua conta DeliGo. Introduza-o para associar o {provider} a essa conta.",
+  socialLinkVerify: "Verificar e associar {provider}",
+  socialLinkCodeSent: "Código enviado. Verifique o seu email, incluindo a pasta de spam.",
 
   // Erros do formulário de login redigidos por nós (17 out 2026). O texto do
   // servidor para um número errado era um genérico "Falha na validação.

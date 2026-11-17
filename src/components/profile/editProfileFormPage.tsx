@@ -24,6 +24,7 @@ import {
   VERIFIED_HOLD_MS,
   VERIFIED_HOLD_REDUCED_MS,
 } from "@/lib/otp";
+import { otpErrorToast } from "@/lib/otpErrorToast";
 
 interface ProfileData {
   userId: string;
@@ -182,7 +183,7 @@ export default function EditProfileFormPage() {
       setEmailOtpSent(true);
       toast.success(t("otpSentToNewEmail"));
     } catch (err) {
-      toast.error(getApiErrorMessage(err, "Failed to send OTP"));
+      toast.error(otpErrorToast(err, t, "Failed to send OTP"));
     } finally {
       setSendingEmailOtp(false);
     }
@@ -210,7 +211,7 @@ export default function EditProfileFormPage() {
       // reaches back into the form.
       await invalidateProfile();
     } catch (err) {
-      toast.error(getApiErrorMessage(err, "Failed to verify OTP"));
+      toast.error(otpErrorToast(err, t, "Failed to verify OTP"));
     } finally {
       setVerifyingEmail(false);
     }
@@ -237,7 +238,7 @@ export default function EditProfileFormPage() {
       setMobileOtpSent(true);
       toast.success(t("otpSentToNewMobile"));
     } catch (err) {
-      toast.error(getApiErrorMessage(err, "Failed to send OTP"));
+      toast.error(otpErrorToast(err, t, "Failed to send OTP"));
     } finally {
       setSendingMobileOtp(false);
     }
@@ -279,7 +280,7 @@ export default function EditProfileFormPage() {
       // number that is no longer the customer's.
       await invalidateProfile();
     } catch (err) {
-      toast.error(getApiErrorMessage(err, "Failed to verify OTP"));
+      toast.error(otpErrorToast(err, t, "Failed to verify OTP"));
     } finally {
       setVerifyingMobile(false);
     }

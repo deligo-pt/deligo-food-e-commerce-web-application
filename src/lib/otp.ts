@@ -12,11 +12,27 @@ export const EMAIL_OTP_LENGTH = 6;
 export const MOBILE_OTP_LENGTH = 6;
 
 /**
- * How long "Resend OTP" stays locked after a code is sent (17 Oct 2026, the
- * owner's call: five minutes, for SMS and email alike). The lock is the
- * browser's only — the backend sets no limit of its own that we know of.
+ * How long "Resend OTP" stays locked after a code is sent.
+ *
+ * 60 s, the backend's own cooldown between sends (security update, 17 Nov
+ * 2026: "60s cooldown between sends, 10/day cap per identifier"). It was five
+ * minutes while the browser was the only thing limiting resends; matching the
+ * server means the button opens exactly when a resend can succeed.
  */
-export const OTP_RESEND_COOLDOWN_MS = 5 * 60 * 1000;
+export const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
+
+/**
+ * How long sign-in stays paused after too many wrong codes: "15m lockout
+ * after 5 wrong guesses (429 OTP_ATTEMPTS_EXCEEDED)". Used when the server's
+ * answer carries no `Retry-After` of its own.
+ */
+export const OTP_LOCKOUT_MS = 15 * 60 * 1000;
+
+/** `HH:MM` in the viewer's clock, for "you can try again at 22:47". */
+export function formatClockTime(at: number): string {
+  const date = new Date(at);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
 
 /** `m:ss` for the resend countdown; never negative. */
 export function formatCountdown(ms: number): string {
