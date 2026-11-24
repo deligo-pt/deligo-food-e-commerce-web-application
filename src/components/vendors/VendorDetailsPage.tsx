@@ -11,7 +11,9 @@ import {
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bike, Moon, PauseCircle, Plus, SlidersHorizontal, Star, UtensilsCrossed } from "lucide-react";
+import { Bike, Moon, PauseCircle, Plus, Star, UtensilsCrossed } from "lucide-react";
+import ProductPhotoMarks from "@/components/vendors/ProductPhotoMarks";
+import { buyAndRewardMark, type ProductPromoBadge } from "@/lib/promoBadge";
 import StoreStatusBanner from "@/components/vendors/StoreStatusBanner";
 import { useVendorOrdering } from "@/hooks/useSlotChoice";
 import { useQueryClient } from "@tanstack/react-query";
@@ -221,6 +223,8 @@ interface Product {
   // the only merchandising signal the API exposes — there is no order-count or
   // popularity metric — so the tab is labelled "Featured" for what it is.
   meta?: { isFeatured?: boolean };
+  /** The best offer the dish is in — see `@/lib/promoBadge`. */
+  promoBadge?: ProductPromoBadge | null;
 }
 
 /**
@@ -298,6 +302,8 @@ const MenuProductCard = memo(function MenuProductCard({
   const hasDiscount = hasProductDiscount(pricing);
   // "10%" or "€0.60" — the badge's word comes from `t("off")` beside it.
   const discountValue = formatDiscountValue(pricing, currency);
+  const offerMark = buyAndRewardMark(product.promoBadge);
+  const showAddons = hasAddons(product);
   // The cart endpoints key on the Mongo `_id`; the business `productId`
   // (PROD-XXXX) is rejected as an "Invalid Id". The modal is opened by the
   // business id, because that is what `/products/:id` and the `?product=` deep
@@ -352,20 +358,16 @@ const MenuProductCard = memo(function MenuProductCard({
             dish's own deep link — the store with this dish already open —
             and stays available while the store is closed: showing someone a
             dish is not ordering it. */}
-        {/* A dish with add-ons says so before it is opened (17 Nov 2026):
-            its `+` opens the options rather than adding straight away. On
-            the photo, so the card keeps exactly the size of every other
-            card; on the right, by request (18 Nov 2026). From `md` that is
-            the bottom-right corner. On phones the `+` (or the count pill)
-            already sits in that corner, so the mark stands just above it,
-            still right-aligned. Add-ons only, by request; a dish with just
-            sizes gets no mark. */}
-        {hasAddons(product) && (
-          <span className="pointer-events-none absolute bottom-14 right-2 md:bottom-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-xs font-semibold text-primary shadow-sm dark:bg-neutral-900/90 dark:text-pink-300">
-            <SlidersHorizontal size={12} strokeWidth={2.5} aria-hidden="true" />
-            {t("productHasAddons")}
-          </span>
-        )}
+        {/* Offer ("2×1") on the left, "Add-ons" on the right, never
+            overlapping — placement and sizing in ProductPhotoMarks. The
+            add-ons mark (17 Nov 2026): a dish with add-ons says so before it
+            is opened, since its `+` opens the options; on the right by
+            request (18 Nov 2026); add-ons only, a dish with just sizes gets
+            no mark. */}
+        <ProductPhotoMarks
+          offer={offerMark}
+          addonsLabel={showAddons ? t("productHasAddons") : null}
+        />
         <ShareButton
           className="absolute right-2 top-2"
           label={`${t("share")} ${product.name}`}
